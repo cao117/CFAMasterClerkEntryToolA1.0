@@ -1,0 +1,233 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --cfa-primary: #000000; /* CFA Black */
+  --cfa-secondary: #C7B273; /* CFA Gold */
+  --cfa-accent: #8B7355; /* CFA Brown */
+  --cfa-dark: #1a1a1a; /* Dark gray */
+  --cfa-light: #f8f8f8; /* Light gray */
+  --cfa-border: #e0e0e0; /* Light border */
+  --cfa-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --cfa-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+@layer base {
+  body {
+    @apply bg-white min-h-screen;
+    font-family: 'Georgia', 'Times New Roman', serif; /* Professional serif font like CFA website */
+  }
+  
+  /* Professional typography for headings */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-weight: 600;
+  }
+  
+  /* Clean sans-serif for body text */
+  p, span, div, input, select, button {
+    font-family: 'Arial', 'Helvetica', sans-serif;
+  }
+}
+
+@layer components {
+  .cfa-card {
+    @apply bg-white rounded-lg shadow-md border border-gray-200;
+    box-shadow: var(--cfa-shadow);
+  }
+  
+  .cfa-card-hover {
+    @apply transition-all duration-300 hover:shadow-lg;
+  }
+  
+  .cfa-input {
+    @apply border border-gray-300 rounded-md px-3 py-2 text-sm transition-all duration-200;
+    @apply focus:outline-none;
+    @apply hover:border-gray-400;
+    background: #ffffff;
+    font-family: 'Arial', 'Helvetica', sans-serif;
+  }
+  
+  .cfa-input:focus {
+    border-color: #C7B273;
+    box-shadow: 0 0 0 2px rgba(199, 178, 115, 0.2);
+  }
+  
+  .cfa-input-error {
+    @apply border-red-300;
+    background: #fef2f2;
+  }
+  
+  .cfa-input-error:focus {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+  }
+  
+  .cfa-input-readonly {
+    @apply bg-gray-50 border-gray-200 text-gray-700;
+  }
+  
+  .cfa-button {
+    @apply px-6 py-3 rounded-md font-semibold text-sm transition-all duration-200;
+    @apply focus:outline-none;
+    background: var(--cfa-secondary);
+    color: #000000;
+    box-shadow: 0 2px 4px rgba(199, 178, 115, 0.2);
+    font-family: 'Arial', 'Helvetica', sans-serif;
+  }
+  
+  .cfa-button:hover {
+    @apply transform -translate-y-0.5;
+    background: #B8A366; /* Darker gold on hover */
+    box-shadow: 0 4px 8px rgba(199, 178, 115, 0.3);
+  }
+  
+  .cfa-button:focus {
+    box-shadow: 0 0 0 2px rgba(199, 178, 115, 0.4);
+  }
+  
+  .cfa-button-secondary {
+    @apply px-6 py-3 rounded-md font-semibold text-sm transition-all duration-200;
+    @apply focus:outline-none;
+    background: #f8f8f8;
+    color: #000000;
+    border: 1px solid #e0e0e0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    font-family: 'Arial', 'Helvetica', sans-serif;
+  }
+  
+  .cfa-button-secondary:hover {
+    @apply transform -translate-y-0.5;
+    background: #f0f0f0;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  }
+  
+  .cfa-button-secondary:focus {
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.2);
+  }
+  
+  .cfa-tab {
+    @apply px-6 py-3 rounded-md font-semibold text-sm transition-all duration-200;
+    @apply focus:outline-none;
+    background: #f8f8f8;
+    color: #000000;
+    border: 1px solid #e0e0e0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    font-family: 'Arial', 'Helvetica', sans-serif;
+  }
+  
+  .cfa-tab-active {
+    background: var(--cfa-primary);
+    color: var(--cfa-secondary);
+    @apply shadow-lg;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  }
+  
+  .cfa-tab:hover:not(.cfa-tab-active) {
+    @apply transform -translate-y-0.5;
+    background: #f0f0f0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  }
+  
+  .cfa-tab:focus {
+    box-shadow: 0 0 0 2px rgba(199, 178, 115, 0.4);
+  }
+  
+  .cfa-table {
+    @apply rounded-lg overflow-hidden border border-gray-200;
+    box-shadow: var(--cfa-shadow);
+  }
+  
+  .cfa-table-header {
+    @apply bg-black text-white font-semibold;
+    font-family: 'Georgia', 'Times New Roman', serif;
+  }
+  
+  .cfa-table-row {
+    @apply transition-colors duration-150 hover:bg-gray-50;
+  }
+  
+  .cfa-table-row:nth-child(even) {
+    @apply bg-gray-50;
+  }
+  
+  .cfa-section {
+    @apply bg-white rounded-lg p-4 shadow-md border border-gray-200;
+    box-shadow: var(--cfa-shadow);
+  }
+  
+  .cfa-section-header {
+    @apply text-xl font-bold text-black mb-4 pb-2;
+    font-family: 'Georgia', 'Times New Roman', serif;
+    border-bottom: 2px solid var(--cfa-secondary);
+  }
+  
+  .cfa-badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+    background: var(--cfa-secondary);
+    color: #000000;
+    font-family: 'Arial', 'Helvetica', sans-serif;
+  }
+  
+  .cfa-badge-error {
+    background: #dc2626;
+    color: #ffffff;
+  }
+  
+  .cfa-badge-warning {
+    background: #f59e0b;
+    color: #000000;
+  }
+  
+  /* CFA Header styling */
+  .cfa-header {
+    background: var(--cfa-primary);
+    color: var(--cfa-secondary);
+    border-bottom: 3px solid var(--cfa-secondary);
+  }
+  
+  .cfa-header-text {
+    color: var(--cfa-secondary);
+    font-family: 'Georgia', 'Times New Roman', serif;
+  }
+  
+  .cfa-header-subtitle {
+    color: #ffffff;
+    font-family: 'Arial', 'Helvetica', sans-serif;
+  }
+  
+  /* CFA Tab Navigation styling */
+  .cfa-tab-nav {
+    background: var(--cfa-primary);
+    border-bottom: 2px solid var(--cfa-secondary);
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100 rounded-full;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-400 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-500;
+}
+
+/* Smooth animations */
+* {
+  @apply transition-colors duration-200;
+}
+
+/* Focus styles */
+.focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(199, 178, 115, 0.4);
+}
