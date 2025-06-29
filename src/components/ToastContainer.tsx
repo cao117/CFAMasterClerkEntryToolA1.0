@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+// React types available globally, no need for explicit import
 import ToastNotification from './ToastNotification';
 import type { Toast } from './ToastNotification';
 

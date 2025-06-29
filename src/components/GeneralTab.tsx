@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Modal from './Modal';
+import { validateGeneralForm } from '../validation/generalValidation';
+import { handleSaveToTempCSV, handleGenerateFinalCSV, handleRestoreFromCSV, handleReset } from '../utils/formActions';
 
 interface Judge {
   id: number;
@@ -41,6 +43,7 @@ interface GeneralTabProps {
   showError: (title: string, message?: string, duration?: number) => void;
   showWarning: (title: string, message?: string, duration?: number) => void;
   showInfo: (title: string, message?: string, duration?: number) => void;
+  onFillChampionshipTestData?: () => void;
 }
 
 export default function GeneralTab({ 
@@ -50,8 +53,9 @@ export default function GeneralTab({
   setJudges,
   showSuccess,
   showError,
-  showWarning,
-  showInfo
+  showWarning: _showWarning,
+  showInfo: _showInfo,
+  onFillChampionshipTestData
 }: GeneralTabProps) {
   // Local state for form validation
   const [errors, setErrors] = useState<{[key: string]: string}>({});
@@ -101,7 +105,7 @@ export default function GeneralTab({
         id: currentCount + i + 1,
         name: '',
         acronym: '',
-        ringType: 'Double Specialty'
+        ringType: 'Allbreed'
       }));
       setJudges([...judges, ...newJudges]);
     } else if (targetCount < currentCount) {
@@ -241,44 +245,10 @@ export default function GeneralTab({
     }));
   };
 
-  const validateForm = () => {
-    const newErrors: {[key: string]: string} = {};
-
-    // Validate required fields
-    if (!showData.showDate) newErrors.showDate = 'Show Date is required';
-    if (!showData.clubName.trim()) newErrors.clubName = 'Club Name is required';
-    if (showData.clubName.length > 255) newErrors.clubName = 'Club Name cannot exceed 255 characters';
-    if (!showData.masterClerk.trim()) newErrors.masterClerk = 'Master Clerk Name is required';
-    if (showData.masterClerk.length > 120) newErrors.masterClerk = 'Master Clerk Name cannot exceed 120 characters';
-
-    // Validate number of judges for final submission (CSV operations)
-    if (showData.numberOfJudges < 1) {
-      newErrors.numberOfJudges = 'Number of judges must be between 1-12 for show submission';
-    } else if (showData.numberOfJudges > 12) {
-      newErrors.numberOfJudges = 'Maximum 12 judges allowed';
-    }
-
-    // Validate judges
-    judges.forEach((judge, index) => {
-      if (!judge.name) newErrors[`judge${index}Name`] = `Judge ${index + 1} name is required`;
-      if (judge.name.length > 120) newErrors[`judge${index}Name`] = `Judge ${index + 1} name cannot exceed 120 characters`;
-      if (!judge.acronym) newErrors[`judge${index}Acronym`] = `Judge ${index + 1} acronym is required`;
-      if (judge.acronym.length > 6) newErrors[`judge${index}Acronym`] = `Judge ${index + 1} acronym cannot exceed 6 characters`;
-    });
-
-    // Check for duplicate judge names
-    const judgeNames = judges.map(j => j.name).filter(name => name);
-    const uniqueNames = new Set(judgeNames);
-    if (judgeNames.length !== uniqueNames.size) {
-      newErrors.judgeNames = 'Judge names must be unique';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSaveToTempCSV = () => {
-    if (!validateForm()) {
+  const handleSaveToTempCSVClick = () => {
+    const errors = validateGeneralForm(showData, judges);
+    setErrors(errors);
+    if (Object.keys(errors).length > 0) {
       showError(
         'Validation Errors',
         'Please fix all validation errors before saving to CSV. Check the form for highlighted fields with errors.',
@@ -286,15 +256,13 @@ export default function GeneralTab({
       );
       return;
     }
-    showInfo(
-      'Coming Soon',
-      'Save to Temp CSV functionality is currently in development and will be available in the next update.',
-      6000
-    );
+    handleSaveToTempCSV(showData, judges, showSuccess, showError);
   };
 
-  const handleGenerateFinalCSV = () => {
-    if (!validateForm()) {
+  const handleGenerateFinalCSVClick = () => {
+    const errors = validateGeneralForm(showData, judges);
+    setErrors(errors);
+    if (Object.keys(errors).length > 0) {
       showError(
         'Validation Errors',
         'Please fix all validation errors before generating the final CSV. Check the form for highlighted fields with errors.',
@@ -302,23 +270,15 @@ export default function GeneralTab({
       );
       return;
     }
-    showInfo(
-      'Coming Soon',
-      'Generate Final CSV functionality is currently in development and will be available in the next update.',
-      6000
-    );
+    handleGenerateFinalCSV(showData, judges, showSuccess, showError);
   };
 
-  const handleRestoreFromCSV = () => {
-    showInfo(
-      'Coming Soon',
-      'Restore from CSV functionality is currently in development and will be available in the next update.',
-      6000
-    );
+  const handleRestoreFromCSVClick = () => {
+    handleRestoreFromCSV(showData, showSuccess, showError);
   };
 
-  const handleReset = () => {
-    setIsResetModalOpen(true);
+  const handleResetClick = () => {
+    handleReset(setIsResetModalOpen);
   };
 
   const confirmReset = () => {
@@ -347,20 +307,68 @@ export default function GeneralTab({
     );
   };
 
-  const handleDataTest = () => {
-    showInfo(
-      'Coming Soon',
-      'Fill Test Data functionality is currently in development and will be available in the next update.',
-      6000
-    );
-  };
+  // Test data generation function
+  const handleFillTestData = () => {
+    console.log('=== GeneralTab handleFillTestData called ===');
+    
+    // Set today's date
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Set number of judges to 6 if not already set
+    const numberOfJudges = showData.numberOfJudges === 0 ? 6 : showData.numberOfJudges;
+    
+    // Fill basic show information
+    const updatedShowData = {
+      ...showData,
+      showDate: today,
+      clubName: 'Cat Fanciers Club',
+      masterClerk: 'John Smith',
+      numberOfJudges: numberOfJudges,
+      championshipCounts: {
+        gcs: Math.floor(Math.random() * 50) + 20,
+        lhChs: Math.floor(Math.random() * 30) + 15,
+        shChs: Math.floor(Math.random() * 30) + 15,
+        novs: Math.floor(Math.random() * 20) + 10,
+        chs: 0, // Will be auto-calculated
+        total: 0 // Will be auto-calculated
+      },
+      kittenCount: Math.floor(Math.random() * 30) + 10,
+      premiershipCounts: {
+        gcs: Math.floor(Math.random() * 40) + 15,
+        lhPrs: Math.floor(Math.random() * 25) + 10,
+        shPrs: Math.floor(Math.random() * 25) + 10,
+        novs: Math.floor(Math.random() * 15) + 5,
+        prs: 0, // Will be auto-calculated
+        total: 0 // Will be auto-calculated
+      }
+    };
 
-  const handleModifyProject = () => {
-    showInfo(
-      'Coming Soon',
-      'Modify Project functionality is currently in development and will be available in the next update.',
-      6000
-    );
+    setShowData(updatedShowData);
+
+    // Fill judge information
+    const judgeNames = ['James Wilson', 'Robert Johnson', 'Mary Davis', 'Patricia Miller', 'Jennifer Garcia', 'Michael Brown', 'Elizabeth Jones', 'David Martinez', 'Richard Taylor', 'Susan Anderson', 'Thomas White', 'Nancy Thomas'];
+    const judgeAcronyms = ['JW', 'RJ', 'MD', 'PM', 'JG', 'MB', 'EJ', 'DM', 'RT', 'SA', 'TW', 'NT'];
+    // Force all judges to Allbreed for Allbreed testing
+    const testJudges: Judge[] = [];
+    for (let i = 0; i < numberOfJudges; i++) {
+      const nameIndex = i % judgeNames.length;
+      let judgeName = judgeNames[nameIndex];
+      let judgeAcronym = judgeAcronyms[nameIndex];
+      if (i >= judgeNames.length) {
+        const suffix = Math.floor(i / judgeNames.length) + 1;
+        judgeName += " " + suffix;
+        judgeAcronym += suffix;
+      }
+      testJudges.push({
+        id: i + 1,
+        name: judgeName,
+        acronym: judgeAcronym,
+        ringType: 'Allbreed' // Force Allbreed for all judges
+      });
+    }
+    console.log('Setting judges:', testJudges);
+    setJudges(testJudges);
+    showSuccess('Test Data Filled', 'General tab has been filled with realistic test data. Championship tab will now be available with test data.');
   };
 
   return (
@@ -607,7 +615,6 @@ export default function GeneralTab({
                             onBlur={handleFieldBlur}
                             className="cfa-input w-40 text-sm"
                           >
-                            <option value="">Select Type</option>
                             <option value="Longhair">Longhair</option>
                             <option value="Shorthair">Shorthair</option>
                             <option value="Allbreed">Allbreed</option>
@@ -651,36 +658,44 @@ export default function GeneralTab({
 
         {/* Action Buttons */}
         <div className="flex flex-wrap gap-4 justify-center mt-8">
-          <button
-            onClick={handleRestoreFromCSV}
-            className="cfa-button"
-          >
-            Restore from CSV
-          </button>
-          <button
-            onClick={handleSaveToTempCSV}
-            className="cfa-button"
-          >
-            Save to Temp CSV
-          </button>
-          <button
-            onClick={handleGenerateFinalCSV}
-            className="cfa-button-secondary"
-          >
-            Generate Final CSV
-          </button>
-          <button
-            onClick={handleReset}
-            className="cfa-button-secondary"
-          >
-            Reset
-          </button>
-          <button
-            onClick={handleDataTest}
-            className="cfa-button-secondary"
-          >
-            Fill Test Data
-          </button>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={handleSaveToTempCSVClick}
+              className="cfa-button"
+            >
+              Save to Temp CSV
+            </button>
+            <button
+              type="button"
+              onClick={handleGenerateFinalCSVClick}
+              className="cfa-button"
+            >
+              Generate Final CSV
+            </button>
+            <button
+              type="button"
+              onClick={handleRestoreFromCSVClick}
+              className="cfa-button-secondary"
+            >
+              Restore from CSV
+            </button>
+            <button
+              type="button"
+              onClick={handleResetClick}
+              className="cfa-button-secondary"
+            >
+              Reset
+            </button>
+            <button
+              type="button"
+              onClick={handleFillTestData}
+              className="cfa-button-secondary"
+              style={{ backgroundColor: '#dc2626', borderColor: '#dc2626' }}
+            >
+              Fill Test Data
+            </button>
+          </div>
         </div>
       </div>
     </div>

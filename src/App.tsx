@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import GeneralTab from './components/GeneralTab'
 import ChampionshipTab from './components/ChampionshipTab'
+import type { ChampionshipTabRef } from './components/ChampionshipTab'
 import ToastContainer from './components/ToastContainer'
 import { useToast } from './hooks/useToast'
 import cfaLogo from './assets/cfa-logo.png'
@@ -51,6 +52,26 @@ function App() {
 
   // Toast notification system
   const { toasts, removeToast, showSuccess, showError, showWarning, showInfo } = useToast();
+
+  // Ref for ChampionshipTab to call fillTestData
+  const championshipTabRef = useRef<ChampionshipTabRef>(null);
+
+  // State to track when Championship test data should be filled
+  const [shouldFillChampionshipData, setShouldFillChampionshipData] = useState(false);
+
+  // Effect to automatically fill Championship data when ref becomes available
+  // REMOVED: This was causing duplicate calls to fillTestData
+  // The new mechanism in ChampionshipTab handles this correctly
+
+  const handleFillChampionshipTestData = () => {
+    console.log('=== App.tsx handleFillChampionshipTestData called ===');
+    console.log('Current judges:', judges);
+    console.log('Current championshipTabRef:', championshipTabRef);
+    console.log('Current championshipTabRef.current:', championshipTabRef.current);
+    
+    // Set flag to fill Championship data when ref becomes available
+    setShouldFillChampionshipData(true);
+  };
 
   // Auto-calculate championship counts
   useEffect(() => {
@@ -113,6 +134,27 @@ function App() {
     return true;
   }
 
+  // Reset all application data and return to General tab
+  const resetAllData = () => {
+    setShowData({
+      showDate: new Date().toISOString().split('T')[0], // Set to today's date
+      clubName: '',
+      masterClerk: '',
+      numberOfJudges: 0,
+      championshipCounts: { gcs: 0, lhChs: 0, shChs: 0, novs: 0, chs: 0, total: 0 },
+      kittenCount: 0,
+      premiershipCounts: { gcs: 0, lhPrs: 0, shPrs: 0, novs: 0, prs: 0, total: 0 }
+    });
+    setJudges([]);
+    setActiveTab('general');
+    
+    showSuccess(
+      'All Data Reset',
+      'All application data has been successfully reset. You are now on the General tab.',
+      4000
+    );
+  };
+
   const championshipTabDisabled =
     showData.championshipCounts.total === 0 ||
     !isShowInfoValid(showData) ||
@@ -139,13 +181,23 @@ function App() {
         showError={showError}
         showWarning={showWarning}
         showInfo={showInfo}
+        onFillChampionshipTestData={handleFillChampionshipTestData}
       />,
       disabled: false
     },
     { 
       id: 'championship', 
       name: 'Championship', 
-      component: <ChampionshipTab judges={judges} />,
+      component: <ChampionshipTab 
+        ref={championshipTabRef}
+        judges={judges} 
+        championshipTotal={showData.championshipCounts.total}
+        showSuccess={showSuccess}
+        showError={showError}
+        showInfo={showInfo}
+        shouldFillTestData={shouldFillChampionshipData}
+        onResetAllData={resetAllData}
+      />,
       disabled: championshipTabDisabled
     },
     { 
