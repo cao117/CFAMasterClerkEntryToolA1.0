@@ -1,4 +1,4 @@
-import { useState, useEffect, useImperativeHandle, forwardRef, useCallback } from 'react';
+import { useState, useEffect, useImperativeHandle, forwardRef, useCallback, useRef } from 'react';
 import Modal from './Modal';
 import { 
   validateChampionshipTab, 
@@ -67,6 +67,81 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
 
     // 1. Define a bright yellow color for alerting CH cells
     const BRIGHT_YELLOW = '#FFF700'; // Eye-pleasing, alert yellow
+
+    // Accessibility: refs for ALL Cat # input fields (Show Awards + Finals)
+    // We'll build a 2D array: catInputRefs[columnIndex][verticalRowIndex]
+    const totalCatRows = numAwardRows + (championshipTotal >= 85 ? 5 : 3) + (championshipTotal >= 85 ? 5 : 3) + (championshipTotal >= 85 ? 5 : 3); // Show Awards + Best CH + LH CH + SH CH
+    const catInputRefs = useRef<(HTMLInputElement | null)[][]>([]);
+    useEffect(() => {
+      // Initialize refs 2D array to match columns and totalCatRows
+      catInputRefs.current = Array.from({ length: columns.length }, () => Array(totalCatRows).fill(null));
+    }, [columns.length, totalCatRows]);
+
+    // Focus first Cat # input on mount or when columns/rows change, after refs are populated
+    useEffect(() => {
+      if (columns.length > 0 && totalCatRows > 0) {
+        setTimeout(() => {
+          if (catInputRefs.current[0] && catInputRefs.current[0][0]) {
+            catInputRefs.current[0][0].focus();
+          }
+        }, 0);
+      }
+    }, [columns.length, totalCatRows]);
+
+    // Handler for custom tab/shift+tab navigation for ALL Cat # fields, skipping disabled inputs
+    const handleCatInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, colIdx: number, rowIdx: number) => {
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        const lastRow = totalCatRows - 1;
+        let nextCol = colIdx;
+        let nextRow = rowIdx;
+        let found = false;
+        // Helper to check if input is enabled
+        const isEnabled = (col: number, row: number) => {
+          const ref = catInputRefs.current[col]?.[row];
+          return ref && !ref.disabled;
+        };
+        if (!e.shiftKey) {
+          // Tab: go down, then to next column
+          let tries = 0;
+          do {
+            if (nextRow < lastRow) {
+              nextRow++;
+            } else {
+              nextRow = 0;
+              nextCol++;
+              if (nextCol >= columns.length) return; // Let default tab if at very end
+            }
+            tries++;
+            if (isEnabled(nextCol, nextRow)) {
+              found = true;
+              break;
+            }
+          } while (tries < columns.length * totalCatRows);
+        } else {
+          // Shift+Tab: go up, then to previous column
+          let tries = 0;
+          do {
+            if (nextRow > 0) {
+              nextRow--;
+            } else {
+              nextCol--;
+              if (nextCol < 0) return; // Let default shift+tab if at very start
+              nextRow = lastRow;
+            }
+            tries++;
+            if (isEnabled(nextCol, nextRow)) {
+              found = true;
+              break;
+            }
+          } while (tries < columns.length * totalCatRows);
+        }
+        if (found) {
+          const nextRef = catInputRefs.current[nextCol]?.[nextRow];
+          if (nextRef) nextRef.focus();
+        }
+      }
+    };
 
     // Generate columns based on judges
     const generateColumns = (): Column[] => {
@@ -731,8 +806,8 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
                     {columns.map((_column, columnIndex) => {
                       const award = getShowAward(columnIndex, i);
                       const errorKey = `${columnIndex}-${i}`;
-                      // In Show Awards section, add orange border to cat number input if status is 'CH'
                       const orangeBorderStyle = { border: '2px solid orange' };
+                      // Map Show Awards Cat # input to refs: rowIdx = i
                       return (
                         <td key={`award-${i}-${columnIndex}`} className="py-2 px-2 border-r border-gray-300 align-top">
                           <div className="flex flex-col">
@@ -749,11 +824,19 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
                                   handleShowAwardBlur(columnIndex, i, 'catNumber', e.target.value);
                                 }}
                                 style={award.status === 'CH' ? orangeBorderStyle : {}}
+                                ref={el => {
+                                  if (!catInputRefs.current[columnIndex]) {
+                                    catInputRefs.current[columnIndex] = Array(totalCatRows).fill(null);
+                                  }
+                                  catInputRefs.current[columnIndex][i] = el;
+                                }}
+                                onKeyDown={e => handleCatInputKeyDown(e, columnIndex, i)}
                               />
                               <select
                                 className="w-14 h-7 text-xs border border-gray-300 rounded focus:border-cfa-gold focus:outline-none"
                                 value={award.status}
                                 onChange={(e) => updateShowAward(columnIndex, i, 'status', e.target.value)}
+                                tabIndex={-1}
                               >
                                 <option value="GC">GC</option>
                                 <option value="CH">CH</option>
@@ -784,15 +867,14 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
                       const enabled = isFinalsEnabled('champions', columnIndex);
                       const value = getFinalsValue('champions', columnIndex, i);
                       const errorKey = `champions-${columnIndex}-${i}`;
-                      // In Best CH, Best LH CH, Best SH CH sections, add orange border if value is in CH cat numbers from Show Awards
                       const chCatNumbers = getCHCatNumbersFromShowAwards(columnIndex);
                       const isCHFromShowAwards = chCatNumbers.includes(value.trim());
                       const orangeBorderStyle = { border: '2px solid orange' };
-                      // Navy blue outline logic: apply if no CH cats in Show Awards but this is a Best Allbreed Champion cat
                       const isNavyBlueOutline = shouldApplyNavyBlueOutline(columnIndex, value);
-                      const navyBlueBorderStyle = { border: '2px solid #003366' }; // CFA navy blue
-                      // Orange takes priority over navy blue
+                      const navyBlueBorderStyle = { border: '2px solid #003366' };
                       const borderStyle = isCHFromShowAwards ? orangeBorderStyle : (isNavyBlueOutline ? navyBlueBorderStyle : {});
+                      // Map Finals Cat # input to refs: rowIdx = numAwardRows + i
+                      const finalsRowIdx = numAwardRows + i;
                       return (
                         <td key={`ch-final-${i}-${columnIndex}`} className="py-2 px-2 border-r border-gray-300 align-top">
                           <div className="flex flex-col">
@@ -813,6 +895,13 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
                                   handleFinalsBlur('champions', columnIndex, i, e.target.value);
                                 }}
                                 style={borderStyle}
+                                ref={el => {
+                                  if (!catInputRefs.current[columnIndex]) {
+                                    catInputRefs.current[columnIndex] = Array(totalCatRows).fill(null);
+                                  }
+                                  catInputRefs.current[columnIndex][finalsRowIdx] = el;
+                                }}
+                                onKeyDown={e => handleCatInputKeyDown(e, columnIndex, finalsRowIdx)}
                               />
                             </div>
                             {errors[errorKey] && (
@@ -839,15 +928,14 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
                       const enabled = isFinalsEnabled('lhChampions', columnIndex);
                       const value = getFinalsValue('lhChampions', columnIndex, i);
                       const errorKey = `lhChampions-${columnIndex}-${i}`;
-                      // In Best LH CH, Best SH CH sections, add orange border if value is in CH cat numbers from Show Awards
                       const chCatNumbers = getCHCatNumbersFromShowAwards(columnIndex);
                       const isCHFromShowAwards = chCatNumbers.includes(value.trim());
                       const orangeBorderStyle = { border: '2px solid orange' };
-                      // Navy blue outline logic: apply if no CH cats in Show Awards but this is a Best Allbreed Champion cat
                       const isNavyBlueOutline = shouldApplyNavyBlueOutline(columnIndex, value);
-                      const navyBlueBorderStyle = { border: '2px solid #003366' }; // CFA navy blue
-                      // Orange takes priority over navy blue
+                      const navyBlueBorderStyle = { border: '2px solid #003366' };
                       const borderStyle = isCHFromShowAwards ? orangeBorderStyle : (isNavyBlueOutline ? navyBlueBorderStyle : {});
+                      // Map Finals Cat # input to refs: rowIdx = numAwardRows + numBestCH + i
+                      const finalsRowIdx = numAwardRows + (championshipTotal >= 85 ? 5 : 3) + i;
                       return (
                         <td key={`lh-final-${i}-${columnIndex}`} className="py-2 px-2 border-r border-gray-300 align-top">
                           <div className="flex flex-col">
@@ -868,6 +956,13 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
                                   handleFinalsBlur('lhChampions', columnIndex, i, e.target.value);
                                 }}
                                 style={borderStyle}
+                                ref={el => {
+                                  if (!catInputRefs.current[columnIndex]) {
+                                    catInputRefs.current[columnIndex] = Array(totalCatRows).fill(null);
+                                  }
+                                  catInputRefs.current[columnIndex][finalsRowIdx] = el;
+                                }}
+                                onKeyDown={e => handleCatInputKeyDown(e, columnIndex, finalsRowIdx)}
                               />
                             </div>
                             {errors[errorKey] && (
@@ -894,15 +989,14 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
                       const enabled = isFinalsEnabled('shChampions', columnIndex);
                       const value = getFinalsValue('shChampions', columnIndex, i);
                       const errorKey = `shChampions-${columnIndex}-${i}`;
-                      // In Best LH CH, Best SH CH sections, add orange border if value is in CH cat numbers from Show Awards
                       const chCatNumbers = getCHCatNumbersFromShowAwards(columnIndex);
                       const isCHFromShowAwards = chCatNumbers.includes(value.trim());
                       const orangeBorderStyle = { border: '2px solid orange' };
-                      // Navy blue outline logic: apply if no CH cats in Show Awards but this is a Best Allbreed Champion cat
                       const isNavyBlueOutline = shouldApplyNavyBlueOutline(columnIndex, value);
-                      const navyBlueBorderStyle = { border: '2px solid #003366' }; // CFA navy blue
-                      // Orange takes priority over navy blue
+                      const navyBlueBorderStyle = { border: '2px solid #003366' };
                       const borderStyle = isCHFromShowAwards ? orangeBorderStyle : (isNavyBlueOutline ? navyBlueBorderStyle : {});
+                      // Map Finals Cat # input to refs: rowIdx = numAwardRows + numBestCH + numBestLHCH + i
+                      const finalsRowIdx = numAwardRows + (championshipTotal >= 85 ? 5 : 3) + (championshipTotal >= 85 ? 5 : 3) + i;
                       return (
                         <td key={`sh-final-${i}-${columnIndex}`} className="py-2 px-2 border-r border-gray-300 align-top">
                           <div className="flex flex-col">
@@ -923,6 +1017,13 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
                                   handleFinalsBlur('shChampions', columnIndex, i, e.target.value);
                                 }}
                                 style={borderStyle}
+                                ref={el => {
+                                  if (!catInputRefs.current[columnIndex]) {
+                                    catInputRefs.current[columnIndex] = Array(totalCatRows).fill(null);
+                                  }
+                                  catInputRefs.current[columnIndex][finalsRowIdx] = el;
+                                }}
+                                onKeyDown={e => handleCatInputKeyDown(e, columnIndex, finalsRowIdx)}
                               />
                             </div>
                             {errors[errorKey] && (
