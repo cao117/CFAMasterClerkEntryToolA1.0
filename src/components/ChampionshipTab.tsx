@@ -69,6 +69,7 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
     // State for validation errors and modal
     const [errors, setErrors] = useState<{[key: string]: string}>({});
     const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+    const [focusedColumnIndex, setFocusedColumnIndex] = useState<number | null>(null);
 
     // 1. Add localInputState for text fields
     const [localInputState, setLocalInputState] = useState<{ [key: string]: string }>({});
@@ -95,6 +96,18 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
         }, 0);
       }
     }, [columns.length, totalCatRows]);
+
+    /**
+     * Handles focus events for Cat # input fields.
+     * Selects all text in the input and sets the focused column.
+     * Applies to all Cat # inputs in the Championship tab.
+     * @param e React focus event
+     * @param columnIndex The column index of the focused input
+     */
+    const handleCatInputFocus = (e: React.FocusEvent<HTMLInputElement>, columnIndex: number) => {
+      e.target.select();
+      setFocusedColumnIndex(columnIndex);
+    };
 
     // Handler for custom tab/shift+tab navigation for ALL Cat # fields, skipping disabled inputs
     const handleCatInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, colIdx: number, rowIdx: number) => {
@@ -146,7 +159,10 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
         }
         if (found) {
           const nextRef = catInputRefs.current[nextCol]?.[nextRow];
-          if (nextRef) nextRef.focus();
+          if (nextRef) {
+            nextRef.focus();
+            setFocusedColumnIndex(nextCol);
+          }
         }
       }
     };
@@ -803,14 +819,43 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
       }
     };
 
-    /**
-     * Highlights the entire content of a Cat # input when it receives focus.
-     * This improves UX by allowing users to quickly overwrite or clear the field with a single keystroke.
-     * Applies to all Cat # inputs in the Championship tab.
-     * @param e React focus event
-     */
-    const handleCatInputFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-      e.target.select();
+    const shouldApplyRingGlow = (columnIndex: number): boolean => {
+      return focusedColumnIndex === columnIndex;
+    };
+
+    // Ref for the table container (for horizontal scrolling)
+    const tableContainerRef = useRef<HTMLDivElement>(null);
+
+    // Handler for dropdown selection to scroll to the selected column
+    const handleRingJump = (e: React.ChangeEvent<HTMLSelectElement>) => {
+      const selectedRingId = e.target.value;
+      if (!selectedRingId) {
+        setFocusedColumnIndex(null);
+        return;
+      }
+      
+      const ringId = parseInt(selectedRingId, 10);
+      
+      // Find the first column index with this ring id
+      const colIdx = columns.findIndex(col => col.judge.id === ringId);
+      if (colIdx === -1) return;
+      
+      // Set the focused column to this column index
+      setFocusedColumnIndex(colIdx);
+      
+      // Find the corresponding <th> element in the table
+      const th = document.getElementById(`ring-th-${colIdx}`);
+      const container = tableContainerRef.current;
+      if (th && container) {
+        // Calculate the left offset of the <th> relative to the container
+        const thRect = th.getBoundingClientRect();
+        const containerRect = container.getBoundingClientRect();
+        // The width of the frozen column (Position) is 140px
+        const frozenWidth = 140;
+        // Scroll so that the left of the <th> aligns with the left of the scroll area (after frozen column)
+        const scrollLeft = th.offsetLeft - frozenWidth;
+        container.scrollTo({ left: scrollLeft, behavior: 'smooth' });
+      }
     };
 
     if (judges.length === 0) {
@@ -845,37 +890,68 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
         />
 
         <div className="cfa-section">
-          <h2 className="cfa-section-header">Championship Finals</h2>
+          <h2 className="cfa-section-header flex items-center justify-between">
+            Championship Finals
+            {/* Dropdown for ring jump */}
+            <div className="flex-1 flex justify-end items-center">
+              <select
+                className="ml-4 px-3 py-2 rounded border border-gray-300 bg-white text-sm font-medium shadow focus:outline-none focus:border-cfa-gold transition-all duration-200"
+                style={{ minWidth: 180, maxWidth: 260 }}
+                onChange={handleRingJump}
+                defaultValue=""
+              >
+                <option value="" disabled>Jump to Ring...</option>
+                {columns.map((col, idx) => (
+                  <option key={idx} value={col.judge.id}>
+                    Ring {col.judge.id} - {col.judge.acronym}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </h2>
           
           <div className="cfa-table overflow-x-auto">
-            <div className="table-container">
+            <div className="table-container" ref={tableContainerRef}>
               <table className="border-collapse" style={{ width: 'auto', tableLayout: 'fixed' }}>
                 <thead>
                   {/* Header Row 1: Ring Numbers */}
-                  <tr className="cfa-table-header">
-                    <th className="text-left py-2 pl-4 font-medium border-r border-gray-300 frozen-column" style={{ width: '140px', minWidth: '140px' }}></th>
+                  <tr className="cfa-table-header sticky-header sticky-header-1">
+                    <th className="text-left py-1 pl-4 font-medium border-r border-gray-300 frozen-column" style={{ width: '140px', minWidth: '140px' }}></th>
                     {columns.map((column, index) => (
-                      <th key={`ring-${index}`} className="text-center py-2 px-2 font-medium text-sm border-r border-gray-300" style={{ width: '120px', minWidth: '120px' }}>
+                      <th 
+                        id={`ring-th-${index}`} 
+                        key={`ring-${index}`} 
+                        className={`text-center py-1 px-1 font-medium text-sm border-r border-gray-300 ${shouldApplyRingGlow(index) ? 'ring-glow' : ''}`} 
+                        style={{ width: '120px', minWidth: '120px' }}
+                      >
                         Ring {column.judge.id}
                       </th>
                     ))}
                   </tr>
 
                   {/* Header Row 2: Judge Acronyms */}
-                  <tr className="cfa-table-header">
-                    <th className="text-left py-2 pl-4 font-medium border-r border-gray-300 frozen-column" style={{ width: '140px', minWidth: '140px' }}></th>
+                  <tr className="cfa-table-header sticky-header sticky-header-2">
+                    <th className="text-left py-1 pl-4 font-medium border-r border-gray-300 frozen-column" style={{ width: '140px', minWidth: '140px' }}></th>
                     {columns.map((column, index) => (
-                      <th key={`acronym-${index}`} className="text-center py-2 px-2 font-medium text-sm border-r border-gray-300" style={{ width: '120px', minWidth: '120px' }}>
+                      <th 
+                        key={`acronym-${index}`} 
+                        className={`text-center py-1 px-1 font-medium text-sm border-r border-gray-300 ${shouldApplyRingGlow(index) ? 'ring-glow' : ''}`} 
+                        style={{ width: '120px', minWidth: '120px' }}
+                      >
                         {column.judge.acronym}
                       </th>
                     ))}
                   </tr>
 
                   {/* Header Row 3: Ring Types */}
-                  <tr className="cfa-table-header">
-                    <th className="text-left py-2 pl-4 font-medium border-r border-gray-300 frozen-column" style={{ width: '140px', minWidth: '140px' }}>Position</th>
+                  <tr className="cfa-table-header sticky-header sticky-header-3">
+                    <th className="text-left py-1 pl-4 font-medium border-r border-gray-300 frozen-column" style={{ width: '140px', minWidth: '140px' }}>Position</th>
                     {columns.map((column, index) => (
-                      <th key={`type-${index}`} className="text-center py-2 px-2 font-medium text-sm border-r border-gray-300" style={{ width: '120px', minWidth: '120px' }}>
+                      <th 
+                        key={`type-${index}`} 
+                        className={`text-center py-1 px-1 font-medium text-sm border-r border-gray-300 ${shouldApplyRingGlow(index) ? 'ring-glow' : ''}`} 
+                        style={{ width: '120px', minWidth: '120px' }}
+                      >
                         {column.specialty}
                       </th>
                     ))}
@@ -898,7 +974,10 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
                         const orangeBorderStyle = { border: '2px solid orange' };
                         // Map Show Awards Cat # input to refs: rowIdx = i
                         return (
-                          <td key={`award-${i}-${columnIndex}`} className="py-2 px-2 border-r border-gray-300 align-top">
+                          <td 
+                            key={`award-${i}-${columnIndex}`} 
+                            className={`py-2 px-2 border-r border-gray-300 align-top ${shouldApplyRingGlow(columnIndex) ? 'ring-glow' : ''}`}
+                          >
                             <div className="flex flex-col items-start">
                               <div className="flex gap-1 items-center">
                                 <input
@@ -922,13 +1001,14 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
                                     }
                                     catInputRefs.current[columnIndex][i] = el;
                                   }}
-                                  onKeyDown={e => handleCatInputKeyDown(e, columnIndex, i)}
-                                  onFocus={handleCatInputFocus}
+                                  onKeyDown={(e) => handleCatInputKeyDown(e, columnIndex, i)}
+                                  onFocus={(e) => handleCatInputFocus(e, columnIndex)}
                                 />
                                 <select
                                   className="w-14 h-7 text-xs border border-gray-300 rounded focus:border-cfa-gold focus:outline-none"
                                   value={award.status}
                                   onChange={(e) => updateShowAward(columnIndex, i, 'status', e.target.value)}
+                                  onFocus={() => setFocusedColumnIndex(columnIndex)}
                                   tabIndex={-1}
                                 >
                                   <option value="GC">GC</option>
@@ -942,6 +1022,7 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
                                       className="void-checkbox"
                                       checked={getVoidState('showAwards', columnIndex, i)}
                                       onChange={(e) => updateVoidState('showAwards', columnIndex, i, e.target.checked)}
+                                      onFocus={() => setFocusedColumnIndex(columnIndex)}
                                       tabIndex={-1}
                                     />
                                     <span className="tooltip-text">
@@ -983,7 +1064,10 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
                         // Map Finals Cat # input to refs: rowIdx = numAwardRows + i
                         const finalsRowIdx = numAwardRows + i;
                         return (
-                          <td key={`ch-final-${i}-${columnIndex}`} className="py-2 px-2 border-r border-gray-300 align-top">
+                          <td 
+                            key={`ch-final-${i}-${columnIndex}`} 
+                            className={`py-2 px-2 border-r border-gray-300 align-top ${shouldApplyRingGlow(columnIndex) ? 'ring-glow' : ''}`}
+                          >
                             <div className="flex flex-col items-start">
                               <div className="flex items-center">
                                 <input
@@ -1010,8 +1094,8 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
                                     }
                                     catInputRefs.current[columnIndex][finalsRowIdx] = el;
                                   }}
-                                  onKeyDown={e => handleCatInputKeyDown(e, columnIndex, finalsRowIdx)}
-                                  onFocus={handleCatInputFocus}
+                                  onKeyDown={(e) => handleCatInputKeyDown(e, columnIndex, finalsRowIdx)}
+                                  onFocus={(e) => handleCatInputFocus(e, columnIndex)}
                                 />
                                 {enabled && value && value.trim() && (
                                   <div className="void-tooltip ml-1">
@@ -1020,6 +1104,7 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
                                       className="void-checkbox"
                                       checked={getVoidState('championsFinals', columnIndex, i)}
                                       onChange={(e) => updateVoidState('championsFinals', columnIndex, i, e.target.checked)}
+                                      onFocus={() => setFocusedColumnIndex(columnIndex)}
                                       tabIndex={-1}
                                     />
                                     <span className="tooltip-text">
@@ -1061,7 +1146,10 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
                         // Map Finals Cat # input to refs: rowIdx = numAwardRows + numBestCH + i
                         const finalsRowIdx = numAwardRows + (championshipTotal >= 85 ? 5 : 3) + i;
                         return (
-                          <td key={`lh-final-${i}-${columnIndex}`} className="py-2 px-2 border-r border-gray-300 align-top">
+                          <td 
+                            key={`lh-final-${i}-${columnIndex}`} 
+                            className={`py-2 px-2 border-r border-gray-300 align-top ${shouldApplyRingGlow(columnIndex) ? 'ring-glow' : ''}`}
+                          >
                             <div className="flex flex-col items-start">
                               <div className="flex items-center">
                                 <input
@@ -1088,8 +1176,8 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
                                     }
                                     catInputRefs.current[columnIndex][finalsRowIdx] = el;
                                   }}
-                                  onKeyDown={e => handleCatInputKeyDown(e, columnIndex, finalsRowIdx)}
-                                  onFocus={handleCatInputFocus}
+                                  onKeyDown={(e) => handleCatInputKeyDown(e, columnIndex, finalsRowIdx)}
+                                  onFocus={(e) => handleCatInputFocus(e, columnIndex)}
                                 />
                                 {enabled && value && value.trim() && (
                                   <div className="void-tooltip ml-1">
@@ -1098,6 +1186,7 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
                                       className="void-checkbox"
                                       checked={getVoidState('lhChampionsFinals', columnIndex, i)}
                                       onChange={(e) => updateVoidState('lhChampionsFinals', columnIndex, i, e.target.checked)}
+                                      onFocus={() => setFocusedColumnIndex(columnIndex)}
                                       tabIndex={-1}
                                     />
                                     <span className="tooltip-text">
@@ -1139,7 +1228,10 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
                         // Map Finals Cat # input to refs: rowIdx = numAwardRows + numBestCH + numBestLHCH + i
                         const finalsRowIdx = numAwardRows + (championshipTotal >= 85 ? 5 : 3) + (championshipTotal >= 85 ? 5 : 3) + i;
                         return (
-                          <td key={`sh-final-${i}-${columnIndex}`} className="py-2 px-2 border-r border-gray-300 align-top">
+                          <td 
+                            key={`sh-final-${i}-${columnIndex}`} 
+                            className={`py-2 px-2 border-r border-gray-300 align-top ${shouldApplyRingGlow(columnIndex) ? 'ring-glow' : ''}`}
+                          >
                             <div className="flex flex-col items-start">
                               <div className="flex items-center">
                                 <input
@@ -1166,8 +1258,8 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
                                     }
                                     catInputRefs.current[columnIndex][finalsRowIdx] = el;
                                   }}
-                                  onKeyDown={e => handleCatInputKeyDown(e, columnIndex, finalsRowIdx)}
-                                  onFocus={handleCatInputFocus}
+                                  onKeyDown={(e) => handleCatInputKeyDown(e, columnIndex, finalsRowIdx)}
+                                  onFocus={(e) => handleCatInputFocus(e, columnIndex)}
                                 />
                                 {enabled && value && value.trim() && (
                                   <div className="void-tooltip ml-1">
@@ -1176,6 +1268,7 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
                                       className="void-checkbox"
                                       checked={getVoidState('shChampionsFinals', columnIndex, i)}
                                       onChange={(e) => updateVoidState('shChampionsFinals', columnIndex, i, e.target.checked)}
+                                      onFocus={() => setFocusedColumnIndex(columnIndex)}
                                       tabIndex={-1}
                                     />
                                     <span className="tooltip-text">

@@ -326,47 +326,98 @@
   border-color: #1f2937 transparent transparent transparent;
 }
 
-/* Frozen column styling for Championship tab */
+/* Frozen column styling */
+.frozen-column {
+  position: sticky;
+  left: 0;
+  background: white;
+  z-index: 10;
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Sticky header styling */
+.sticky-header {
+  position: sticky;
+  top: 0;
+  background: #000 !important;
+  color: #fff !important;
+  z-index: 20;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Table header row styling (ensure always black/white) */
+.cfa-table-header th,
+.sticky-header th {
+  background: #000 !important;
+  color: #fff !important;
+}
+
+/* Ensure frozen column in sticky headers has higher z-index and correct color */
+.sticky-header .frozen-column,
+.cfa-table-header .frozen-column {
+  z-index: 30;
+  background: #000 !important;
+  color: #fff !important;
+}
+
+/* Table container with proper scrolling */
 .table-container {
   position: relative;
-  overflow-x: auto;
-  overflow-y: visible;
+  overflow: auto;
+  max-height: 70vh;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
 }
 
 .table-container table {
-  position: relative;
+  border-collapse: collapse;
 }
 
-.frozen-column {
-  position: sticky !important;
-  left: 0;
-  z-index: 10;
-  background: inherit;
-  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-}
-
-/* Ensure frozen column background matches row styling */
+/* Ensure frozen columns maintain background color on alternating rows */
 .cfa-table-row:nth-child(even) .frozen-column {
-  background-color: #f9fafb !important;
+  background: #f9fafb;
 }
 
 .cfa-table-row:nth-child(odd) .frozen-column {
-  background-color: #ffffff !important;
+  background: white;
 }
 
-/* Header frozen column styling */
-.cfa-table-header .frozen-column {
-  background-color: #000000 !important;
-  color: #ffffff;
-  z-index: 11;
-}
-
-/* Ensure proper layering for void checkboxes in frozen column */
+/* Ensure void tooltips work properly with frozen columns */
 .frozen-column .void-tooltip {
-  z-index: 12;
+  z-index: 40;
 }
 
-/* Smooth scrolling for better UX */
-.table-container {
-  scroll-behavior: smooth;
+/* Sticky header stacking for multi-row headers */
+.sticky-header-1 {
+  top: 0 !important;
+}
+.sticky-header-2 {
+  top: 28px !important;
+}
+.sticky-header-3 {
+  top: 56px !important;
+}
+
+/* (If header row height is not 28px, adjust these values accordingly) */
+
+/* Ring Glow Effect - Pale CFA Gold background for focused column */
+.ring-glow {
+  background-color: #FFF8E1 !important; /* Pale CFA gold background */
+}
+
+/* Ensure header rows stay black even when column is focused */
+.sticky-header.ring-glow,
+.cfa-table-header.ring-glow,
+.sticky-header th.ring-glow,
+.cfa-table-header th.ring-glow {
+  background: #000 !important;
+  color: #fff !important;
+}
+
+/* Ensure frozen column in sticky headers has higher z-index and correct color even when focused */
+.sticky-header .frozen-column.ring-glow,
+.cfa-table-header .frozen-column.ring-glow {
+  z-index: 30;
+  background: #000 !important;
+  color: #fff !important;
 }
