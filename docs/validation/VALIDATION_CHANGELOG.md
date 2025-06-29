@@ -4,6 +4,26 @@ This changelog records all changes, additions, and deletions to validation rules
 
 ---
 
+### [2024-12-19] Championship Tab: Void Feature Behavior Enhanced
+- **Tab:** Championship
+- **Change:** Enhanced void functionality behavior to include:
+  - **Cross-section voiding**: When a cat number is voided in one section, ALL instances of that cat number across ALL sections are voided simultaneously. Unvoiding any instance unvoids all instances.
+  - **Conditional checkbox visibility**: Void checkboxes are grayed out and disabled when the corresponding cat number input is empty.
+  - **Read-only voided inputs**: Voided inputs become disabled (read-only) and cannot be edited until unvoided.
+  - **Visual improvements**: Enhanced CSS styling to ensure voided inputs are clearly struck-through and grayed out with proper disabled cursor.
+- **Rationale:** Provides more intuitive void behavior where voiding a cat number affects all instances consistently, prevents voiding empty inputs, and ensures voided inputs cannot be accidentally modified.
+
+### [2024-12-19] Championship Tab: Void Feature Added
+- **Tab:** Championship
+- **Change:** Added void functionality to allow marking placements as "voided" when cats win awards but are not present to receive them physically in the show hall. This includes:
+  - Added `voided` boolean field to `CellData` interface
+  - Added voided state tracking to `ChampionshipValidationInput` interface
+  - Added red-bordered void checkboxes with tooltips to all sections (Show Awards, Champions Finals, LH/SH Finals)
+  - Implemented visual styling for voided inputs (struck-through and grayed out)
+  - Added void state management functions
+  - Updated documentation to explain void feature
+- **Rationale:** Provides a way to handle real-world show scenarios where cats win placements but are not available to receive physical awards, without affecting validation rules or requiring position changes.
+
 ### [2024-12-19] Championship Tab: VOID Functionality Removed
 - **Tab:** Championship
 - **Change:** Completely removed all VOID functionality from the Championship tab. This includes:
@@ -92,6 +112,41 @@ This changelog records all changes, additions, and deletions to validation rules
 ### 2024-06
 - **Championship Tab:** Added strict per-section CH validation for single specialty rings (Longhair and Shorthair). If there are CHs in the final, they must be at the top of the enabled section, in order. If no CHs in the final, any CH from Show Awards can be used. No GC or NOV allowed. Duplicates and order are checked. Error messages and display are consistent with Allbreed logic.
 - **Rationale:** Ensures consistency with CFA rules and Allbreed logic, prevents user error, and improves clarity for single specialty ring validation.
+
+### [2024-06-19] Championship Tab: Best AB CH Error Precedence and User-Friendly Sequential Entry
+- **Tab:** Championship
+- **Change:**
+  - Enhanced error precedence for Best AB CH: sequential entry error (with user-friendly message) takes precedence, then other errors, then the LH/SH assignment warning (which only appears if all previous positions are filled and there are no other errors for that row).
+  - Sequential entry error message now clearly indicates which previous rows must be filled before entering a later position (e.g., "You must fill Best AB CH and 2nd Best AB CH before entering 3rd Best AB CH.").
+  - The "needs to be assigned to either LH or SH CH final" warning is now lowest precedence and is not shown if any other error is present for that row.
+- **Rationale:**
+  - Improves user experience by making error messages more actionable and clear, and ensures warnings do not obscure more important validation errors.
+
+### [2024-12-19] Championship Tab: Duplicate Validation Clarification and Error Message Improvements
+- **Tab:** Championship
+- **Change:**
+  - **Clarified duplicate validation behavior**: Duplicate checks are performed within each section only (Championship Final, Best AB CH Final, Best LH CH Final, Best SH CH Final), not across the entire column.
+  - **Cross-section duplicates are allowed**: A cat number can appear in multiple sections as long as it is not a duplicate within any single section.
+  - **Improved error messages**: Updated duplicate validation error messages to be more specific about which section contains the duplicate (e.g., "Duplicate cat number within Championship Final section" instead of "Duplicate cat number within this column").
+  - **Updated documentation**: Clarified duplicate validation rules in VALIDATION_CHAMPIONSHIP.md to reflect the correct behavior.
+- **Rationale:**
+  - Addresses user confusion about duplicate validation behavior where users expected cross-section duplicates to be allowed.
+  - Provides clearer error messages that help users understand exactly where the duplicate occurs.
+  - Ensures validation behavior matches CFA rules and user expectations.
+
+### [2024-06-19] Championship Tab: Finals Section Duplicate Validation Clarification
+- **Tab:** Championship
+- **Change:**
+  - Clarified that duplicate validation for finals sections (Best AB CH, Best LH CH, Best SH CH) is only within their own section, not against Show Awards or other finals sections.
+  - Improved error messages to specify the section where the duplicate occurs.
+- **Rationale:**
+  - Prevents confusion about cross-section duplicate errors and ensures validation matches CFA rules and user expectations.
+  - Makes error messages more actionable and user-friendly.
+
+### [2024-06-XX] Championship Tab: LH/SH Assignment Message Always Error
+- **Tab:** Championship
+- **Change:** The message 'X needs to be assigned to either LH or SH CH final' is now always treated as a regular error (red), regardless of section fill state or other conditions. All documentation about warning/reminder/orange for this message has been removed.
+- **Rationale:** UI/UX and documentation consistency. No validation rule change; only error display and documentation updated.
 
 ---
 

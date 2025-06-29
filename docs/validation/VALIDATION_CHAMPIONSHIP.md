@@ -2,13 +2,31 @@
 
 This document describes the **current validation rules** enforced in the Championship tab of the CFA Master Clerk Entry Tool.
 
+## Void Feature
+- **Purpose**: Allows marking placements as "voided" when a cat wins an award but is not present to receive it physically in the show hall.
+- **Visual Indication**: When a void checkbox is checked, the corresponding cat number input is struck through, grayed out, and becomes read-only (disabled).
+- **Cross-Section Behavior**: When a cat number is voided in one section, ALL instances of that cat number across ALL sections are voided simultaneously. Unvoiding any instance unvoids all instances.
+- **Conditional Visibility**: Void checkboxes are grayed out and disabled when the corresponding cat number input is empty.
+- **Validation Impact**: Voided inputs participate in validation normally - all validation rules continue to apply as if the placement is normal.
+- **Behavior**: 
+  - Void checkboxes appear after status dropdowns in Show Awards and after cat number inputs in Finals sections
+  - Checkboxes have red borders and show tooltips on hover explaining their purpose
+  - Tab navigation remains on cat number inputs only (void checkboxes are not part of tab sequence)
+  - Voided inputs are disabled and cannot be edited until unvoided
+  - Unchecking a void checkbox restores normal input appearance and editability
+
 ## Cat Number Validation
 - Must be a number between 1 and 450.
 - Empty values are allowed and skip further validation for that position.
 
 ## Duplicate Validation
-- No duplicate cat numbers allowed within the same column for Show Awards.
-- No duplicate cat numbers allowed within the same section for Finals.
+- No duplicate cat numbers allowed within the same section:
+  - **Championship Final (Top 10/15)**: No duplicates within this section only
+  - **Best AB CH Final**: No duplicates within this section only
+  - **Best LH CH Final**: No duplicates within this section only
+  - **Best SH CH Final**: No duplicates within this section only
+- **Cross-section duplicates are allowed**: A cat number can appear in multiple sections (e.g., #1 in both Championship Final and Best AB CH Final) as long as it is not a duplicate within any single section.
+- **Note:** For finals sections (Best AB CH, Best LH CH, Best SH CH), duplicate validation is only within their own section. There is no duplicate check against Show Awards or other finals sections.
 - Empty values don't count as duplicates.
 
 ## Sequential Entry Validation
@@ -87,9 +105,10 @@ If Championship Final (top 10) = [1: GC, 2: GC, 3: NOV, 4: GC, 5: GC, 6: GC, 7: 
 ## Error Display
 - Errors are shown inline, next to the relevant field.
 - Only the first problematic position is highlighted for each rule.
-- **Warning vs Error Messages**: Some validation messages are shown as warnings (orange color) when sections aren't fully filled, and as errors (red color) when sections are complete:
-  - "X needs to be assigned to either LH or SH CH final" - shown as warning when LH/SH sections aren't fully filled, as error when both sections are filled
-  - This helps guide users without being overly strict during data entry
+- **Error/Warning Precedence for Best AB CH:**
+  1. **Red Error:** Sequential entry violation (e.g., "You must fill Best AB CH and 2nd Best AB CH before entering 3rd Best AB CH.") takes precedence and is shown first.
+  2. **Red Error:** Other validation errors (e.g., duplicate, invalid cat number, GC/NOV status, etc.) are shown next.
+- The message "X needs to be assigned to either LH or SH CH final" is always shown as a regular error (red), regardless of whether LH/SH sections are fully filled or not. There is no warning/reminder distinction for this message.
 
 ## Additional Rules
 - **Required Field Indicators**

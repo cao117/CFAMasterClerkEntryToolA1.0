@@ -231,3 +231,142 @@
   outline: none;
   box-shadow: 0 0 0 2px rgba(199, 178, 115, 0.4);
 }
+
+/* Void checkbox styling */
+.void-checkbox {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #dc2626;
+  border-radius: 2px;
+  background-color: white;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.void-checkbox:checked {
+  background-color: #dc2626;
+  border-color: #dc2626;
+}
+
+.void-checkbox:checked::after {
+  content: '✓';
+  position: absolute;
+  top: -2px;
+  left: 1px;
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.void-checkbox:hover {
+  border-color: #b91c1c;
+  background-color: #fef2f2;
+}
+
+.void-checkbox:checked:hover {
+  background-color: #b91c1c;
+}
+
+/* Voided input styling */
+.voided-input {
+  text-decoration: line-through !important;
+  color: #6b7280 !important;
+  background-color: #f3f4f6 !important;
+  cursor: not-allowed !important;
+}
+
+.voided-input:focus {
+  outline: none !important;
+  border-color: #d1d5db !important;
+  box-shadow: none !important;
+}
+
+/* Tooltip styling */
+.void-tooltip {
+  position: relative;
+  display: inline-block;
+}
+
+.void-tooltip .tooltip-text {
+  visibility: hidden;
+  width: 200px;
+  background-color: #1f2937;
+  color: white;
+  text-align: center;
+  border-radius: 6px;
+  padding: 8px;
+  position: absolute;
+  z-index: 1;
+  bottom: 125%;
+  left: 50%;
+  margin-left: -100px;
+  opacity: 0;
+  transition: opacity 0.3s;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.void-tooltip:hover .tooltip-text {
+  visibility: visible;
+  opacity: 1;
+}
+
+.void-tooltip .tooltip-text::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #1f2937 transparent transparent transparent;
+}
+
+/* Frozen column styling for Championship tab */
+.table-container {
+  position: relative;
+  overflow-x: auto;
+  overflow-y: visible;
+}
+
+.table-container table {
+  position: relative;
+}
+
+.frozen-column {
+  position: sticky !important;
+  left: 0;
+  z-index: 10;
+  background: inherit;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Ensure frozen column background matches row styling */
+.cfa-table-row:nth-child(even) .frozen-column {
+  background-color: #f9fafb !important;
+}
+
+.cfa-table-row:nth-child(odd) .frozen-column {
+  background-color: #ffffff !important;
+}
+
+/* Header frozen column styling */
+.cfa-table-header .frozen-column {
+  background-color: #000000 !important;
+  color: #ffffff;
+  z-index: 11;
+}
+
+/* Ensure proper layering for void checkboxes in frozen column */
+.frozen-column .void-tooltip {
+  z-index: 12;
+}
+
+/* Smooth scrolling for better UX */
+.table-container {
+  scroll-behavior: smooth;
+}

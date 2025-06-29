@@ -11,6 +11,7 @@ export interface Judge {
 export interface CellData {
   catNumber: string;
   status: string;
+  voided?: boolean;
 }
 
 export interface ChampionshipValidationInput {
@@ -20,6 +21,10 @@ export interface ChampionshipValidationInput {
   lhChampionsFinals: { [key: string]: string };
   shChampionsFinals: { [key: string]: string };
   championshipTotal: number;
+  voidedShowAwards?: { [key: string]: boolean };
+  voidedChampionsFinals?: { [key: string]: boolean };
+  voidedLHChampionsFinals?: { [key: string]: boolean };
+  voidedSHChampionsFinals?: { [key: string]: boolean };
 }
 
 /**
@@ -904,13 +909,11 @@ export function validateChampionshipTab(input: ChampionshipValidationInput): { [
           errors[key] = 'Cat number must be between 1-450';
           continue;
         }
-        
-        // Validate sequential entry
+        // Section-specific sequential entry error for Championship Final
         if (!validateSequentialEntry(input, 'showAwards', columnIndex, position, award.catNumber)) {
-          errors[key] = 'Must fill positions sequentially (no skipping positions)';
+          errors[key] = 'You must fill in previous empty award placements in Championship Final before entering this position.';
           continue;
         }
-        
         // Validate no duplicates within column
         if (checkDuplicateCatNumbersInShowAwards(input, columnIndex, award.catNumber, key)) {
           errors[key] = 'Duplicate cat number within this column';
@@ -942,14 +945,27 @@ export function validateChampionshipTab(input: ChampionshipValidationInput): { [
             errors[errorKey] = 'Cat number must be between 1-450';
             continue;
           }
-          
-          // Validate sequential entry
+          // Enhanced sequential entry error message
           if (!validateSequentialEntry(input, section.name, columnIndex, position, value)) {
-            errors[errorKey] = 'Must fill positions sequentially (no skipping positions)';
+            // Section-specific error message
+            let sectionLabel = '';
+            switch (section.name) {
+              case 'champions':
+                sectionLabel = 'Best AB CH Final';
+                break;
+              case 'lhChampions':
+                sectionLabel = 'Best LH CH Final';
+                break;
+              case 'shChampions':
+                sectionLabel = 'Best SH CH Final';
+                break;
+              default:
+                sectionLabel = 'Championship Final';
+            }
+            errors[errorKey] = `You must fill in previous empty award placements in ${sectionLabel} before entering this position.`;
             continue;
           }
-          
-          // Validate no duplicates within section
+          // Validate no duplicates within own section only
           let hasDuplicate = false;
           switch (section.name) {
             case 'champions':
@@ -962,9 +978,20 @@ export function validateChampionshipTab(input: ChampionshipValidationInput): { [
               hasDuplicate = checkDuplicateCatNumbersInSHChampionsFinals(input, columnIndex, value, key);
               break;
           }
-          
           if (hasDuplicate) {
-            errors[errorKey] = 'Duplicate cat number within this section';
+            let sectionName = '';
+            switch (section.name) {
+              case 'champions':
+                sectionName = 'Best AB CH Final';
+                break;
+              case 'lhChampions':
+                sectionName = 'Best LH CH Final';
+                break;
+              case 'shChampions':
+                sectionName = 'Best SH CH Final';
+                break;
+            }
+            errors[errorKey] = `Duplicate cat number within ${sectionName} section`;
             continue;
           }
         }
@@ -974,11 +1001,40 @@ export function validateChampionshipTab(input: ChampionshipValidationInput): { [
   
   // Validate column relationships
   for (let columnIndex = 0; columnIndex < columns.length; columnIndex++) {
+    // --- Custom precedence for Best AB CH: sequential error > other errors > LH/SH assignment warning ---
     const columnErrors = validateColumnRelationships(input, columnIndex);
-    // Only add errors for keys that do not already exist
     Object.entries(columnErrors).forEach(([key, msg]) => {
-      if (!errors[key]) {
-        errors[key] = msg;
+      // Only add the LH/SH assignment warning if there are no other errors for this row
+      if (msg.startsWith('[REMINDER]')) {
+        if (!errors[key]) {
+          // Only show the reminder if all previous Best AB CH positions are filled
+          const match = key.match(/^champions-(\d+)-(\d+)$/);
+          if (match) {
+            const colIdx = parseInt(match[1], 10);
+            const pos = parseInt(match[2], 10);
+            let allPrevFilled = true;
+            for (let p = 0; p < pos; p++) {
+              const prevKey = `${colIdx}-${p}`;
+              const prevValue = championsFinals[prevKey];
+              if (!prevValue || prevValue.trim() === '') {
+                allPrevFilled = false;
+                break;
+              }
+            }
+            // Only show the reminder if all previous are filled and there are no other errors for this row
+            const errorKey = `champions-${colIdx}-${pos}`;
+            if (allPrevFilled && !errors[errorKey]) {
+              errors[errorKey] = msg;
+            }
+          } else {
+            errors[key] = msg;
+          }
+        }
+      } else {
+        // All other errors/warnings take precedence
+        if (!errors[key]) {
+          errors[key] = msg;
+        }
       }
     });
   }
