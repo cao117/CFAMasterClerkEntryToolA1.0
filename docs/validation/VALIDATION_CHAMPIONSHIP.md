@@ -2,12 +2,59 @@
 
 This document describes the **current validation rules** enforced in the Championship tab of the CFA Master Clerk Entry Tool.
 
+## Cat Number Validation
+- Must be a number between 1 and 450.
+- Empty values are allowed and skip further validation for that position.
+
+## Duplicate Validation
+- No duplicate cat numbers allowed within the same column for Show Awards.
+- No duplicate cat numbers allowed within the same section for Finals.
+- Empty values don't count as duplicates.
+
+## Sequential Entry Validation
+- Must fill positions sequentially (no skipping positions).
+- Empty values are allowed and don't break sequential entry.
+
+## Show Awards Validation
+- Cat numbers must be between 1-450.
+- Status must be one of: GC, CH, NOV.
+- No duplicates within the same column.
+
+## Finals Validation
+- Cat numbers must be between 1-450.
+- No duplicates within the same section.
+- Must fill positions sequentially.
+
+## Best CH Validation (Allbreed Rings Only)
+- Best CH must contain CH cats from Show Awards in the same order.
+- If there are no CHs in Show Awards, Best CH can be filled with any CH cats entered in the show.
+
+## LH/SH Split Validation (Allbreed Rings Only)
+- The union of Best LH CH and Best SH CH must exactly match all Best CH cats (no missing, no extra, no duplicates).
+- Best LH CH and Best SH CH must contain exactly all Best CH cats without duplicates.
+
+## Best LH CH Validation (Longhair Rings Only)
+- Best LH CH must contain CH cats from Show Awards in the same order.
+- If there are no CHs in Show Awards, Best LH CH can be filled with any CH cats entered in the show.
+
+## Best SH CH Validation (Shorthair Rings Only)
+- Best SH CH must contain CH cats from Show Awards in the same order.
+- If there are no CHs in Show Awards, Best SH CH can be filled with any CH cats entered in the show.
+
+## Cross-Section Validation
+- A cat cannot be both LH CH and SH CH in the same column.
+- GC and NOV cats from Show Awards cannot be awarded CH finals.
+
+## Order Validation
+- Best AB CH cats must appear in the same order in LH CH and SH CH sections.
+- Best AB CH cats must appear before any other cats in LH CH and SH CH sections.
+
 ## Championship Final Section (Top 10/15)
 - **Cat Number**
-  - Must be a number between 1 and 450, or the string "VOID" (all caps).
+  - Must be a number between 1 and 450.
   - No duplicate cat numbers within a column.
   - Must fill positions sequentially (no skipping positions).
-  - "VOID" entries are allowed and skip further validation for that position.
+  - Empty values are allowed and skip further validation for that position.
 - **Status**
   - Must be one of: GC, CH, NOV.
 
@@ -29,7 +76,7 @@ If Championship Final (top 10) = [1: GC, 2: GC, 3: NOV, 4: GC, 5: GC, 6: GC, 7: 
 ## Longhair/Short Hair Champions Finals (Best LH CH, Best SH CH)
 - **Best LH CH / Best SH CH (Allbreed only)**
   - All Best CH cats must be assigned to either LH or SH (using odd/even split for test data, but user input is free-form).
-  - The union of Best LH CH and Best SH CH (ignoring fillers/VOID) must exactly match all Best CH cats (no missing, no extra, no duplicates).
+  - The union of Best LH CH and Best SH CH must exactly match all Best CH cats (no missing, no extra, no duplicates).
   - No cat may appear in both LH and SH.
   - Filler positions (beyond the number of split cats) can be any value, but must not be a non-CH from Championship Final, a duplicate, or in both LH and SH.
 - **Best LH CH (Longhair ring)**

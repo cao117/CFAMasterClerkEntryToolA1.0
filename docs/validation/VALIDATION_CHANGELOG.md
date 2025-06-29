@@ -4,6 +4,17 @@ This changelog records all changes, additions, and deletions to validation rules
 
 ---
 
+### [2024-12-19] Championship Tab: VOID Functionality Removed
+- **Tab:** Championship
+- **Change:** Completely removed all VOID functionality from the Championship tab. This includes:
+  - Removed VOID validation from `validateCatNumber()` function
+  - Removed VOID checks from all duplicate validation functions
+  - Removed VOID-specific logic from all validation functions
+  - Updated error messages to remove VOID references
+  - Removed VOID tip from UI
+  - Updated documentation to remove VOID references
+- **Rationale:** VOID functionality is being redefined from scratch. This removal ensures a clean slate for implementing the new void feature without any legacy code or documentation conflicts.
+
 ### [2024-06-09] Championship Tab: Terminology Clarification and Best AB CH Logic Update
 - **Tab:** Championship
 - **Change:** Updated terminology to use "Championship Final" consistently instead of "Show Awards" throughout validation logic and documentation. Clarified that when no CHs exist in Championship Final (Top 10/15), Best AB CH can be filled with any CHs from Championship Final, and their order will be maintained when split into LH CH and SH CH sections.
@@ -81,35 +92,6 @@ This changelog records all changes, additions, and deletions to validation rules
 ### 2024-06
 - **Championship Tab:** Added strict per-section CH validation for single specialty rings (Longhair and Shorthair). If there are CHs in the final, they must be at the top of the enabled section, in order. If no CHs in the final, any CH from Show Awards can be used. No GC or NOV allowed. Duplicates and order are checked. Error messages and display are consistent with Allbreed logic.
 - **Rationale:** Ensures consistency with CFA rules and Allbreed logic, prevents user error, and improves clarity for single specialty ring validation.
-
-### [2024-12-19] Championship Tab: VOID Functionality and Single Specialty Ring Validation
-- **Tab:** Championship
-- **Change:** Added VOID Functionality: Implemented stylish VOID checkboxes next to each cat number input field
-  - VOIDed cats have crossed-out text with red styling and "VOID" text display
-  - Cascading VOID: when a cat is voided in one section, it's automatically voided in all sections for the same cat number
-  - VOID does not affect validation logic - cats maintain their placement for validation purposes
-  - Modern UI with hover effects and checkmark icons
-
-- **Enhanced Single Specialty Ring Validation**: Implemented per-column validation for Longhair and Shorthair rings
-  - Longhair rings: Best LH CH must contain CH cats from championship final in the same order (if any)
-  - Shorthair rings: Best SH CH must contain CH cats from championship final in the same order (if any)
-  - If no CHs in championship final, can be filled with any CH cats entered in the show
-  - Uses the same strict validation logic as Allbreed rings but only for the enabled section
-
-- **Updated Data Structure**: Modified data structures to include `isVoided` field
-  - `showAwards`: `{ catNumber: string, status: string, isVoided?: boolean }`
-  - `championsFinals`: `{ catNumber: string, isVoided?: boolean }`
-  - `lhChampionsFinals`: `{ catNumber: string, isVoided?: boolean }`
-  - `shChampionsFinals`: `{ catNumber: string, isVoided?: boolean }`
-
-- **Improved Accessibility**: Enhanced keyboard navigation for all cat number input fields
-  - Tab order follows column-by-column, top-to-bottom pattern
-  - Skips disabled fields and dropdowns
-  - Focus management for efficient data entry
-
-- **Technical Changes**: Updated validation functions to handle new data structure with VOID fields
-- **Documentation Updates**: Updated `VALIDATION_CHAMPIONSHIP.md` with comprehensive VOID functionality documentation
-- **Rationale:** Provides clearer, more actionable messaging and better user experience by distinguishing between guidance (warnings) and validation failures (errors), helping users understand when they need to complete assignments vs when they've made an actual error.
 
 ---
 

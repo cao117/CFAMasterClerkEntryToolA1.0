@@ -45,12 +45,12 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
     const [columns, setColumns] = useState<Column[]>([]);
     const [numAwardRows, setNumAwardRows] = useState(10);
     
-    // State for all championship tab data (atomic updates) - Updated for VOID functionality
+    // State for all championship tab data (atomic updates)
     interface ChampionshipData {
       showAwards: { [key: string]: CellData };
-      championsFinals: { [key: string]: { catNumber: string; isVoided?: boolean } };
-      lhChampionsFinals: { [key: string]: { catNumber: string; isVoided?: boolean } };
-      shChampionsFinals: { [key: string]: { catNumber: string; isVoided?: boolean } };
+      championsFinals: { [key: string]: string };
+      lhChampionsFinals: { [key: string]: string };
+      shChampionsFinals: { [key: string]: string };
     }
     const [championshipData, setChampionshipData] = useState<ChampionshipData>({
       showAwards: {},
@@ -200,103 +200,6 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
       });
     };
 
-    // Update VOID status for show awards - cascades to all sections
-    const updateShowAwardVoid = (columnIndex: number, position: number, isVoided: boolean) => {
-      const key = `${columnIndex}-${position}`;
-      const catNumber = championshipData.showAwards[key]?.catNumber;
-      
-      if (!catNumber) return; // No cat number to void
-      
-      setChampionshipData(prev => {
-        const newData = { ...prev };
-        
-        // Update show award VOID status
-        newData.showAwards[key] = {
-          ...newData.showAwards[key],
-          isVoided
-        };
-        
-        // Cascade VOID to all finals sections for the same cat number
-        const numFinalsPositions = championshipTotal >= 85 ? 5 : 3;
-        
-        // Check champions finals
-        for (let pos = 0; pos < numFinalsPositions; pos++) {
-          const finalsKey = `${columnIndex}-${pos}`;
-          const finalsEntry = newData.championsFinals[finalsKey];
-          if (finalsEntry && finalsEntry.catNumber === catNumber) {
-            newData.championsFinals[finalsKey] = {
-              ...finalsEntry,
-              isVoided
-            };
-          }
-        }
-        
-        // Check LH champions finals
-        for (let pos = 0; pos < numFinalsPositions; pos++) {
-          const finalsKey = `${columnIndex}-${pos}`;
-          const finalsEntry = newData.lhChampionsFinals[finalsKey];
-          if (finalsEntry && finalsEntry.catNumber === catNumber) {
-            newData.lhChampionsFinals[finalsKey] = {
-              ...finalsEntry,
-              isVoided
-            };
-          }
-        }
-        
-        // Check SH champions finals
-        for (let pos = 0; pos < numFinalsPositions; pos++) {
-          const finalsKey = `${columnIndex}-${pos}`;
-          const finalsEntry = newData.shChampionsFinals[finalsKey];
-          if (finalsEntry && finalsEntry.catNumber === catNumber) {
-            newData.shChampionsFinals[finalsKey] = {
-              ...finalsEntry,
-              isVoided
-            };
-          }
-        }
-        
-        return newData;
-      });
-    };
-
-    // Update finals with new data structure
-    const updateFinals = (section: 'champions' | 'lhChampions' | 'shChampions', columnIndex: number, position: number, value: string) => {
-      const key = `${columnIndex}-${position}`;
-      setChampionshipData(prev => {
-        const currentEntry = prev[`${section}Finals`][key] || { catNumber: '', isVoided: false };
-        return {
-          ...prev,
-          [`${section}Finals`]: {
-            ...prev[`${section}Finals`],
-            [key]: {
-              ...currentEntry,
-              catNumber: value
-            }
-          }
-        };
-      });
-    };
-
-    // Update VOID status for finals
-    const updateFinalsVoid = (section: 'champions' | 'lhChampions' | 'shChampions', columnIndex: number, position: number, isVoided: boolean) => {
-      const key = `${columnIndex}-${position}`;
-      setChampionshipData(prev => {
-        const currentEntry = prev[`${section}Finals`][key];
-        if (!currentEntry) return prev;
-        
-        return {
-          ...prev,
-          [`${section}Finals`]: {
-            ...prev[`${section}Finals`],
-            [key]: {
-              ...currentEntry,
-              isVoided
-            }
-          }
-        };
-      });
-    };
-
     // Handle blur events for show awards - run all validation here
     const handleShowAwardBlur = (columnIndex: number, position: number, field: 'catNumber' | 'status', value: string) => {
       const key = `${columnIndex}-${position}`;
@@ -306,11 +209,9 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
       if (field === 'catNumber' && value.trim() !== '') {
         // Validate cat number format
         if (!validateCatNumber(value)) {
-          setErrors(prev => ({ ...prev, [key]: 'Cat number must be between 1-450 or VOID (all caps)' }));
+          setErrors(prev => ({ ...prev, [key]: 'Cat number must be between 1-450' }));
           return;
         }
-        // Skip further validation for VOID entries
-        if (value.trim().toUpperCase() === 'VOID') return;
         // Sequential entry validation
         if (!validateSequentialEntry(input, 'showAwards', columnIndex, position, value)) {
           setErrors(prev => ({ ...prev, [key]: 'Must fill positions sequentially (no skipping positions)' }));
@@ -327,6 +228,19 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
       setErrors(validateChampionshipTab(createValidationInput()));
     };
 
+    // Update finals - update state and trigger full validation
+    const updateFinals = (section: 'champions' | 'lhChampions' | 'shChampions', columnIndex: number, position: number, value: string) => {
+      const key = `${columnIndex}-${position}`;
+      setChampionshipData(prev => ({
+        ...prev,
+        [section === 'champions' ? 'championsFinals' : section === 'lhChampions' ? 'lhChampionsFinals' : 'shChampionsFinals']:
+          {
+            ...prev[section === 'champions' ? 'championsFinals' : section === 'lhChampions' ? 'lhChampionsFinals' : 'shChampionsFinals'],
+            [key]: value
+          }
+      }));
+    };
+
     // Handle blur events for finals - run all validation here
     const handleFinalsBlur = (section: 'champions' | 'lhChampions' | 'shChampions', columnIndex: number, position: number, value: string) => {
       const errorKey = `${section}-${columnIndex}-${position}`;
@@ -337,11 +251,9 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
       if (value.trim() !== '') {
         // Validate cat number format
         if (!validateCatNumber(value)) {
-          setErrors(prev => ({ ...prev, [errorKey]: 'Cat number must be between 1-450 or VOID (all caps)' }));
+          setErrors(prev => ({ ...prev, [errorKey]: 'Cat number must be between 1-450' }));
           return;
         }
-        // Skip further validation for VOID entries
-        if (value.trim().toUpperCase() === 'VOID') return;
         // Sequential entry validation
         if (!validateSequentialEntry(input, section, columnIndex, position, value)) {
           setErrors(prev => ({ ...prev, [errorKey]: 'Must fill positions sequentially (no skipping positions)' }));
@@ -370,34 +282,22 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
       setErrors(validateChampionshipTab(createValidationInput()));
     };
 
-    // Helper function to get show award data
+    // Getter functions
     const getShowAward = (columnIndex: number, position: number): CellData => {
       const key = `${columnIndex}-${position}`;
-      return championshipData.showAwards[key] || { catNumber: '', status: 'GC', isVoided: false };
+      return championshipData.showAwards[key] || { catNumber: '', status: 'GC' };
     };
 
-    // Helper function to get finals value
     const getFinalsValue = (section: 'champions' | 'lhChampions' | 'shChampions', columnIndex: number, position: number): string => {
       const key = `${columnIndex}-${position}`;
       switch (section) {
-        case 'champions': return championshipData.championsFinals[key]?.catNumber || '';
-        case 'lhChampions': return championshipData.lhChampionsFinals[key]?.catNumber || '';
-        case 'shChampions': return championshipData.shChampionsFinals[key]?.catNumber || '';
+        case 'champions': return championshipData.championsFinals[key] || '';
+        case 'lhChampions': return championshipData.lhChampionsFinals[key] || '';
+        case 'shChampions': return championshipData.shChampionsFinals[key] || '';
       }
     };
 
-    // Helper function to get finals VOID status
-    const getFinalsVoidStatus = (section: 'champions' | 'lhChampions' | 'shChampions', columnIndex: number, position: number): boolean => {
-      const key = `${columnIndex}-${position}`;
-      switch (section) {
-        case 'champions': return championshipData.championsFinals[key]?.isVoided || false;
-        case 'lhChampions': return championshipData.lhChampionsFinals[key]?.isVoided || false;
-        case 'shChampions': return championshipData.shChampionsFinals[key]?.isVoided || false;
-      }
-    };
-
-    // Getter functions
-    const getFinalsEnabled = (section: 'champions' | 'lhChampions' | 'shChampions', columnIndex: number): boolean => {
+    const isFinalsEnabled = (section: 'champions' | 'lhChampions' | 'shChampions', columnIndex: number): boolean => {
       const column = columns[columnIndex];
       if (!column) return false;
       
@@ -422,8 +322,8 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
       const bestCH: string[] = [];
       for (let i = 0; i < numFinalsPositions; i++) {
         const key = `${columnIndex}-${i}`;
-        const value = championshipData.championsFinals[key]?.catNumber;
-        if (value && value.trim().toUpperCase() !== 'VOID') bestCH.push(value.trim());
+        const value = championshipData.championsFinals[key];
+        if (value && value.trim() !== '') bestCH.push(value.trim());
       }
       return bestCH;
     };
@@ -435,7 +335,7 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
       for (let i = 0; i < numAwardRows; i++) {
         const key = `${columnIndex}-${i}`;
         const award = championshipData.showAwards[key];
-        if (award && award.status === 'CH' && award.catNumber && award.catNumber.trim().toUpperCase() !== 'VOID') {
+        if (award && award.status === 'CH' && award.catNumber && award.catNumber.trim() !== '') {
           chCats.push(award.catNumber.trim());
         }
       }
@@ -451,8 +351,8 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
       const bestCHCats: string[] = [];
       for (let i = 0; i < numFinalsPositions; i++) {
         const key = `${columnIndex}-${i}`;
-        const value = championshipData.championsFinals[key]?.catNumber;
-        if (value && value.trim() !== '' && value.trim().toUpperCase() !== 'VOID') {
+        const value = championshipData.championsFinals[key];
+        if (value && value.trim() !== '') {
           bestCHCats.push(value.trim());
         }
       }
@@ -502,9 +402,9 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
     // Test data generation function for Championship tab - UPDATED TO COMPLY WITH VALIDATION RULES
     const fillTestData = useCallback(() => {
       const newShowAwards: {[key: string]: CellData} = {};
-      const newChampionsFinals: {[key: string]: { catNumber: string; isVoided?: boolean }} = {};
-      const newLhChampionsFinals: {[key: string]: { catNumber: string; isVoided?: boolean }} = {};
-      const newShChampionsFinals: {[key: string]: { catNumber: string; isVoided?: boolean }} = {};
+      const newChampionsFinals: {[key: string]: string} = {};
+      const newLhChampionsFinals: {[key: string]: string} = {};
+      const newShChampionsFinals: {[key: string]: string} = {};
       
       // Generate unique cat numbers for each column
       const generateUniqueNumber = (): number => {
@@ -572,20 +472,14 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
           for (let position = 0; position < numFinalsPositions; position++) {
             const key = `${columnIndex}-${position}`;
             if (position < bestCHCats.length) {
-              newChampionsFinals[key] = {
-                catNumber: bestCHCats[position],
-                isVoided: false
-              };
+              newChampionsFinals[key] = bestCHCats[position];
             } else {
               // Fill with unique unused number
               let filler;
               do {
                 filler = generateCatNumber();
               } while (bestCHCats.includes(filler.toString()));
-              newChampionsFinals[key] = {
-                catNumber: filler.toString(),
-                isVoided: false
-              };
+              newChampionsFinals[key] = filler.toString();
               bestCHCats.push(filler.toString()); // Add filler to Best CH array for splitting
             }
           }
@@ -611,10 +505,7 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
           for (let position = 0; position < numFinalsPositions; position++) {
             const key = `${columnIndex}-${position}`;
             if (position < lhCats.length) {
-              newLhChampionsFinals[key] = {
-                catNumber: lhCats[position],
-                isVoided: false
-              };
+              newLhChampionsFinals[key] = lhCats[position];
             } else {
               let filler;
               do {
@@ -624,20 +515,14 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
                 lhCats.includes(filler.toString()) ||
                 shCats.includes(filler.toString())
               );
-              newLhChampionsFinals[key] = {
-                catNumber: filler.toString(),
-                isVoided: false
-              };
+              newLhChampionsFinals[key] = filler.toString();
             }
           }
           // SH CH
           for (let position = 0; position < numFinalsPositions; position++) {
             const key = `${columnIndex}-${position}`;
             if (position < shCats.length) {
-              newShChampionsFinals[key] = {
-                catNumber: shCats[position],
-                isVoided: false
-              };
+              newShChampionsFinals[key] = shCats[position];
             } else {
               let filler;
               do {
@@ -647,10 +532,7 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
                 lhCats.includes(filler.toString()) ||
                 shCats.includes(filler.toString())
               );
-              newShChampionsFinals[key] = {
-                catNumber: filler.toString(),
-                isVoided: false
-              };
+              newShChampionsFinals[key] = filler.toString();
             }
           }
         } else if (column.specialty === 'Longhair') {
@@ -658,19 +540,13 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
           for (let position = 0; position < numFinalsPositions; position++) {
             const key = `${columnIndex}-${position}`;
             if (position < chCats.length) {
-              newLhChampionsFinals[key] = {
-                catNumber: chCats[position],
-                isVoided: false
-              };
+              newLhChampionsFinals[key] = chCats[position];
             } else {
               let filler;
               do {
                 filler = generateCatNumber();
               } while (chCats.includes(filler.toString()));
-              newLhChampionsFinals[key] = {
-                catNumber: filler.toString(),
-                isVoided: false
-              };
+              newLhChampionsFinals[key] = filler.toString();
             }
           }
         } else if (column.specialty === 'Shorthair') {
@@ -678,19 +554,13 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
           for (let position = 0; position < numFinalsPositions; position++) {
             const key = `${columnIndex}-${position}`;
             if (position < chCats.length) {
-              newShChampionsFinals[key] = {
-                catNumber: chCats[position],
-                isVoided: false
-              };
+              newShChampionsFinals[key] = chCats[position];
             } else {
               let filler;
               do {
                 filler = generateCatNumber();
               } while (chCats.includes(filler.toString()));
-              newShChampionsFinals[key] = {
-                catNumber: filler.toString(),
-                isVoided: false
-              };
+              newShChampionsFinals[key] = filler.toString();
             }
           }
         }
@@ -841,24 +711,6 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
       return 'border-gray-300';
     };
 
-    // Helper function to get VOID checkbox styling
-    const getVoidCheckboxStyle = (isVoided: boolean) => {
-      return {
-        appearance: 'none' as const,
-        width: '16px',
-        height: '16px',
-        border: isVoided ? '2px solid #dc2626' : '2px solid #d1d5db',
-        borderRadius: '3px',
-        backgroundColor: isVoided ? '#dc2626' : 'white',
-        cursor: 'pointer',
-        position: 'relative' as const,
-        transition: 'all 0.2s ease-in-out',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
-      };
-    };
-
     if (judges.length === 0) {
       return (
         <div className="p-8 space-y-8">
@@ -893,12 +745,12 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
         <div className="cfa-section">
           <h2 className="cfa-section-header">Championship Finals</h2>
           
-          {/* Legend for VOID entries */}
+          {/* Legend for cat number entries */}
           <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
             <div className="flex items-start">
               <div className="text-blue-600 mr-2 mt-0.5">💡</div>
               <div className="text-sm text-blue-800">
-                <span className="font-medium">Tip:</span> Use the VOID checkbox next to any cat number to indicate that the award placement is voided for that position. VOID status cascades across all sections for the same cat number.
+                <span className="font-medium">Tip:</span> Enter cat numbers between 1-450 in any cat number field.
               </div>
             </div>
           </div>
@@ -910,7 +762,7 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
                 <tr className="cfa-table-header">
                   <th className="text-left py-2 pl-4 font-medium border-r border-gray-300" style={{ width: '140px', minWidth: '140px' }}></th>
                   {columns.map((column, index) => (
-                    <th key={`ring-${index}`} className="text-center py-2 px-2 font-medium text-sm border-r border-gray-300" style={{ width: '140px', minWidth: '140px' }}>
+                    <th key={`ring-${index}`} className="text-center py-2 px-2 font-medium text-sm border-r border-gray-300" style={{ width: '120px', minWidth: '120px' }}>
                       Ring {column.judge.id}
                     </th>
                   ))}
@@ -920,7 +772,7 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
                 <tr className="cfa-table-header">
                   <th className="text-left py-2 pl-4 font-medium border-r border-gray-300" style={{ width: '140px', minWidth: '140px' }}></th>
                   {columns.map((column, index) => (
-                    <th key={`acronym-${index}`} className="text-center py-2 px-2 font-medium text-sm border-r border-gray-300" style={{ width: '140px', minWidth: '140px' }}>
+                    <th key={`acronym-${index}`} className="text-center py-2 px-2 font-medium text-sm border-r border-gray-300" style={{ width: '120px', minWidth: '120px' }}>
                       {column.judge.acronym}
                     </th>
                   ))}
@@ -930,7 +782,7 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
                 <tr className="cfa-table-header">
                   <th className="text-left py-2 pl-4 font-medium border-r border-gray-300" style={{ width: '140px', minWidth: '140px' }}>Position</th>
                   {columns.map((column, index) => (
-                    <th key={`type-${index}`} className="text-center py-2 px-2 font-medium text-sm border-r border-gray-300" style={{ width: '140px', minWidth: '140px' }}>
+                    <th key={`type-${index}`} className="text-center py-2 px-2 font-medium text-sm border-r border-gray-300" style={{ width: '120px', minWidth: '120px' }}>
                       {column.specialty}
                     </th>
                   ))}
@@ -940,6 +792,10 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
                 {/* Show Awards Section (Rows 4-18) */}
                 {Array.from({ length: numAwardRows }, (_, i) => (
                   <tr key={`award-${i}`} className="cfa-table-row">
+                    {/*
+                      Show Awards label column: always white background (default),
+                      but for consistency, we could add a class if needed in the future.
+                    */}
                     <td className="py-2 pl-4 font-medium text-sm border-r border-gray-300 bg-white" style={{ width: '140px', minWidth: '140px' }}>
                       {i + 1}{i >= 10 ? '*' : ''}
                     </td>
@@ -947,71 +803,42 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
                       const award = getShowAward(columnIndex, i);
                       const errorKey = `${columnIndex}-${i}`;
                       const orangeBorderStyle = { border: '2px solid orange' };
-                      const voidedStyle = award.isVoided ? { 
-                        textDecoration: 'line-through',
-                        opacity: 0.6,
-                        backgroundColor: '#fef2f2'
-                      } : {};
                       // Map Show Awards Cat # input to refs: rowIdx = i
                       return (
                         <td key={`award-${i}-${columnIndex}`} className="py-2 px-2 border-r border-gray-300 align-top">
                           <div className="flex flex-col">
                             <div className="flex gap-1 items-center justify-center">
-                              <div className="relative">
-                                <input
-                                  type="text"
-                                  className={`w-12 h-7 text-xs text-center border rounded px-1 ${getBorderStyle(errorKey, errors[errorKey] || '')} focus:border-cfa-gold focus:outline-none`}
-                                  placeholder="Cat #"
-                                  value={localInputState[errorKey] !== undefined ? localInputState[errorKey] : award.catNumber}
-                                  onChange={(e) => setLocalInputState(prev => ({ ...prev, [errorKey]: e.target.value }))}
-                                  onBlur={(e) => {
-                                    updateShowAward(columnIndex, i, 'catNumber', e.target.value);
-                                    setLocalInputState(prev => { const copy = { ...prev }; delete copy[errorKey]; return copy; });
-                                    handleShowAwardBlur(columnIndex, i, 'catNumber', e.target.value);
-                                  }}
-                                  style={{
-                                    ...(award.status === 'CH' ? orangeBorderStyle : {}),
-                                    ...voidedStyle
-                                  }}
-                                  disabled={award.isVoided}
-                                  ref={el => {
-                                    if (!catInputRefs.current[columnIndex]) {
-                                      catInputRefs.current[columnIndex] = Array(totalCatRows).fill(null);
-                                    }
-                                    catInputRefs.current[columnIndex][i] = el;
-                                  }}
-                                  onKeyDown={e => handleCatInputKeyDown(e, columnIndex, i)}
-                                />
-                                <button
-                                  type="button"
-                                  style={getVoidCheckboxStyle(award.isVoided || false)}
-                                  onClick={() => updateShowAwardVoid(columnIndex, i, !(award.isVoided || false))}
-                                  title={award.isVoided ? "Unvoid this cat" : "Void this cat"}
-                                  className="absolute -top-1 -right-1 hover:scale-110 transition-transform"
-                                >
-                                  {award.isVoided && (
-                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="white">
-                                      <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-                                    </svg>
-                                  )}
-                                </button>
-                              </div>
+                              <input
+                                type="text"
+                                className={`w-12 h-7 text-xs text-center border rounded px-1 ${getBorderStyle(errorKey, errors[errorKey] || '')} focus:border-cfa-gold focus:outline-none`}
+                                placeholder="Cat #"
+                                value={localInputState[errorKey] !== undefined ? localInputState[errorKey] : award.catNumber}
+                                onChange={(e) => setLocalInputState(prev => ({ ...prev, [errorKey]: e.target.value }))}
+                                onBlur={(e) => {
+                                  updateShowAward(columnIndex, i, 'catNumber', e.target.value);
+                                  setLocalInputState(prev => { const copy = { ...prev }; delete copy[errorKey]; return copy; });
+                                  handleShowAwardBlur(columnIndex, i, 'catNumber', e.target.value);
+                                }}
+                                style={award.status === 'CH' ? orangeBorderStyle : {}}
+                                ref={el => {
+                                  if (!catInputRefs.current[columnIndex]) {
+                                    catInputRefs.current[columnIndex] = Array(totalCatRows).fill(null);
+                                  }
+                                  catInputRefs.current[columnIndex][i] = el;
+                                }}
+                                onKeyDown={e => handleCatInputKeyDown(e, columnIndex, i)}
+                              />
                               <select
                                 className="w-14 h-7 text-xs border border-gray-300 rounded focus:border-cfa-gold focus:outline-none"
                                 value={award.status}
                                 onChange={(e) => updateShowAward(columnIndex, i, 'status', e.target.value)}
                                 tabIndex={-1}
-                                disabled={award.isVoided}
-                                style={award.isVoided ? { opacity: 0.6, backgroundColor: '#fef2f2' } : {}}
                               >
                                 <option value="GC">GC</option>
                                 <option value="CH">CH</option>
                                 <option value="NOV">NOV</option>
                               </select>
                             </div>
-                            {award.isVoided && (
-                              <div className="text-xs mt-1 text-center text-red-600 font-medium">VOID</div>
-                            )}
                             {errors[errorKey] && (
                               <div className="text-xs mt-1 text-center" style={getErrorStyle(errors[errorKey])}>{getCleanMessage(errors[errorKey])}</div>
                             )}
@@ -1033,9 +860,8 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
                       {getOrdinalLabel(i, 'AB')}
                     </td>
                     {columns.map((_column, columnIndex) => {
-                      const enabled = getFinalsEnabled('champions', columnIndex);
+                      const enabled = isFinalsEnabled('champions', columnIndex);
                       const value = getFinalsValue('champions', columnIndex, i);
-                      const isVoided = getFinalsVoidStatus('champions', columnIndex, i);
                       const errorKey = `champions-${columnIndex}-${i}`;
                       const chCatNumbers = getCHCatNumbersFromShowAwards(columnIndex);
                       const isCHFromShowAwards = chCatNumbers.includes(value.trim());
@@ -1043,64 +869,37 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
                       const isNavyBlueOutline = shouldApplyNavyBlueOutline(columnIndex, value);
                       const navyBlueBorderStyle = { border: '2px solid #003366' };
                       const borderStyle = isCHFromShowAwards ? orangeBorderStyle : (isNavyBlueOutline ? navyBlueBorderStyle : {});
-                      const voidedStyle = isVoided ? { 
-                        textDecoration: 'line-through',
-                        opacity: 0.6,
-                        backgroundColor: '#fef2f2'
-                      } : {};
                       // Map Finals Cat # input to refs: rowIdx = numAwardRows + i
                       const finalsRowIdx = numAwardRows + i;
                       return (
                         <td key={`ch-final-${i}-${columnIndex}`} className="py-2 px-2 border-r border-gray-300 align-top">
                           <div className="flex flex-col">
                             <div className="flex justify-center">
-                              <div className="relative">
-                                <input
-                                  type="text"
-                                  className={`w-20 h-7 text-xs text-center border rounded px-1 font-medium ${
-                                    !enabled ? 'bg-gray-100 cursor-not-allowed' : 
-                                    getBorderStyle(errorKey, errors[errorKey] || '')
-                                  } focus:border-cfa-gold focus:outline-none`}
-                                  placeholder="Cat #"
-                                  value={localInputState[errorKey] !== undefined ? localInputState[errorKey] : value}
-                                  onChange={(e) => setLocalInputState(prev => ({ ...prev, [errorKey]: e.target.value }))}
-                                  onBlur={(e) => {
-                                    updateFinals('champions', columnIndex, i, e.target.value);
-                                    setLocalInputState(prev => { const copy = { ...prev }; delete copy[errorKey]; return copy; });
-                                    handleFinalsBlur('champions', columnIndex, i, e.target.value);
-                                  }}
-                                  style={{
-                                    ...borderStyle,
-                                    ...voidedStyle
-                                  }}
-                                  disabled={!enabled || isVoided}
-                                  ref={el => {
-                                    if (!catInputRefs.current[columnIndex]) {
-                                      catInputRefs.current[columnIndex] = Array(totalCatRows).fill(null);
-                                    }
-                                    catInputRefs.current[columnIndex][finalsRowIdx] = el;
-                                  }}
-                                  onKeyDown={e => handleCatInputKeyDown(e, columnIndex, finalsRowIdx)}
-                                />
-                                <button
-                                  type="button"
-                                  style={getVoidCheckboxStyle(isVoided || false)}
-                                  onClick={() => updateFinalsVoid('champions', columnIndex, i, !(isVoided || false))}
-                                  title={isVoided ? "Unvoid this cat" : "Void this cat"}
-                                  className="absolute -top-1 -right-1 hover:scale-110 transition-transform"
-                                  disabled={!enabled}
-                                >
-                                  {isVoided && (
-                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="white">
-                                      <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-                                    </svg>
-                                  )}
-                                </button>
-                              </div>
+                              <input
+                                type="text"
+                                className={`w-20 h-7 text-xs text-center border rounded px-1 font-medium ${
+                                  !enabled ? 'bg-gray-100 cursor-not-allowed' : 
+                                  getBorderStyle(errorKey, errors[errorKey] || '')
+                                } focus:border-cfa-gold focus:outline-none`}
+                                placeholder={enabled ? "Cat #" : ""}
+                                value={localInputState[errorKey] !== undefined ? localInputState[errorKey] : value}
+                                disabled={!enabled}
+                                onChange={(e) => setLocalInputState(prev => ({ ...prev, [errorKey]: e.target.value }))}
+                                onBlur={(e) => {
+                                  updateFinals('champions', columnIndex, i, e.target.value);
+                                  setLocalInputState(prev => { const copy = { ...prev }; delete copy[errorKey]; return copy; });
+                                  handleFinalsBlur('champions', columnIndex, i, e.target.value);
+                                }}
+                                style={borderStyle}
+                                ref={el => {
+                                  if (!catInputRefs.current[columnIndex]) {
+                                    catInputRefs.current[columnIndex] = Array(totalCatRows).fill(null);
+                                  }
+                                  catInputRefs.current[columnIndex][finalsRowIdx] = el;
+                                }}
+                                onKeyDown={e => handleCatInputKeyDown(e, columnIndex, finalsRowIdx)}
+                              />
                             </div>
-                            {isVoided && (
-                              <div className="text-xs mt-1 text-center text-red-600 font-medium">VOID</div>
-                            )}
                             {errors[errorKey] && (
                               <div className="text-xs mt-1 text-center" style={getErrorStyle(errors[errorKey])}>{getCleanMessage(errors[errorKey])}</div>
                             )}
@@ -1122,9 +921,8 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
                       {getOrdinalLabel(i, 'LH')}
                     </td>
                     {columns.map((_column, columnIndex) => {
-                      const enabled = getFinalsEnabled('lhChampions', columnIndex);
+                      const enabled = isFinalsEnabled('lhChampions', columnIndex);
                       const value = getFinalsValue('lhChampions', columnIndex, i);
-                      const isVoided = getFinalsVoidStatus('lhChampions', columnIndex, i);
                       const errorKey = `lhChampions-${columnIndex}-${i}`;
                       const chCatNumbers = getCHCatNumbersFromShowAwards(columnIndex);
                       const isCHFromShowAwards = chCatNumbers.includes(value.trim());
@@ -1132,64 +930,37 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
                       const isNavyBlueOutline = shouldApplyNavyBlueOutline(columnIndex, value);
                       const navyBlueBorderStyle = { border: '2px solid #003366' };
                       const borderStyle = isCHFromShowAwards ? orangeBorderStyle : (isNavyBlueOutline ? navyBlueBorderStyle : {});
-                      const voidedStyle = isVoided ? { 
-                        textDecoration: 'line-through',
-                        opacity: 0.6,
-                        backgroundColor: '#fef2f2'
-                      } : {};
                       // Map Finals Cat # input to refs: rowIdx = numAwardRows + numBestCH + i
                       const finalsRowIdx = numAwardRows + (championshipTotal >= 85 ? 5 : 3) + i;
                       return (
                         <td key={`lh-final-${i}-${columnIndex}`} className="py-2 px-2 border-r border-gray-300 align-top">
                           <div className="flex flex-col">
                             <div className="flex justify-center">
-                              <div className="relative">
-                                <input
-                                  type="text"
-                                  className={`w-20 h-7 text-xs text-center border rounded px-1 font-medium ${
-                                    !enabled ? 'bg-gray-100 cursor-not-allowed' : 
-                                    getBorderStyle(errorKey, errors[errorKey] || '')
-                                  } focus:border-cfa-gold focus:outline-none`}
-                                  placeholder="Cat #"
-                                  value={localInputState[errorKey] !== undefined ? localInputState[errorKey] : value}
-                                  onChange={(e) => setLocalInputState(prev => ({ ...prev, [errorKey]: e.target.value }))}
-                                  onBlur={(e) => {
-                                    updateFinals('lhChampions', columnIndex, i, e.target.value);
-                                    setLocalInputState(prev => { const copy = { ...prev }; delete copy[errorKey]; return copy; });
-                                    handleFinalsBlur('lhChampions', columnIndex, i, e.target.value);
-                                  }}
-                                  style={{
-                                    ...borderStyle,
-                                    ...voidedStyle
-                                  }}
-                                  disabled={!enabled || isVoided}
-                                  ref={el => {
-                                    if (!catInputRefs.current[columnIndex]) {
-                                      catInputRefs.current[columnIndex] = Array(totalCatRows).fill(null);
-                                    }
-                                    catInputRefs.current[columnIndex][finalsRowIdx] = el;
-                                  }}
-                                  onKeyDown={e => handleCatInputKeyDown(e, columnIndex, finalsRowIdx)}
-                                />
-                                <button
-                                  type="button"
-                                  style={getVoidCheckboxStyle(isVoided || false)}
-                                  onClick={() => updateFinalsVoid('lhChampions', columnIndex, i, !(isVoided || false))}
-                                  title={isVoided ? "Unvoid this cat" : "Void this cat"}
-                                  className="absolute -top-1 -right-1 hover:scale-110 transition-transform"
-                                  disabled={!enabled}
-                                >
-                                  {isVoided && (
-                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="white">
-                                      <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-                                    </svg>
-                                  )}
-                                </button>
-                              </div>
+                              <input
+                                type="text"
+                                className={`w-20 h-7 text-xs text-center border rounded px-1 font-medium ${
+                                  !enabled ? 'bg-gray-100 cursor-not-allowed' : 
+                                  getBorderStyle(errorKey, errors[errorKey] || '')
+                                } focus:border-cfa-gold focus:outline-none`}
+                                placeholder={enabled ? "Cat #" : ""}
+                                value={localInputState[errorKey] !== undefined ? localInputState[errorKey] : value}
+                                disabled={!enabled}
+                                onChange={(e) => setLocalInputState(prev => ({ ...prev, [errorKey]: e.target.value }))}
+                                onBlur={(e) => {
+                                  updateFinals('lhChampions', columnIndex, i, e.target.value);
+                                  setLocalInputState(prev => { const copy = { ...prev }; delete copy[errorKey]; return copy; });
+                                  handleFinalsBlur('lhChampions', columnIndex, i, e.target.value);
+                                }}
+                                style={borderStyle}
+                                ref={el => {
+                                  if (!catInputRefs.current[columnIndex]) {
+                                    catInputRefs.current[columnIndex] = Array(totalCatRows).fill(null);
+                                  }
+                                  catInputRefs.current[columnIndex][finalsRowIdx] = el;
+                                }}
+                                onKeyDown={e => handleCatInputKeyDown(e, columnIndex, finalsRowIdx)}
+                              />
                             </div>
-                            {isVoided && (
-                              <div className="text-xs mt-1 text-center text-red-600 font-medium">VOID</div>
-                            )}
                             {errors[errorKey] && (
                               <div className="text-xs mt-1 text-center" style={getErrorStyle(errors[errorKey])}>{getCleanMessage(errors[errorKey])}</div>
                             )}
@@ -1211,9 +982,8 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
                       {getOrdinalLabel(i, 'SH')}
                     </td>
                     {columns.map((_column, columnIndex) => {
-                      const enabled = getFinalsEnabled('shChampions', columnIndex);
+                      const enabled = isFinalsEnabled('shChampions', columnIndex);
                       const value = getFinalsValue('shChampions', columnIndex, i);
-                      const isVoided = getFinalsVoidStatus('shChampions', columnIndex, i);
                       const errorKey = `shChampions-${columnIndex}-${i}`;
                       const chCatNumbers = getCHCatNumbersFromShowAwards(columnIndex);
                       const isCHFromShowAwards = chCatNumbers.includes(value.trim());
@@ -1221,64 +991,37 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
                       const isNavyBlueOutline = shouldApplyNavyBlueOutline(columnIndex, value);
                       const navyBlueBorderStyle = { border: '2px solid #003366' };
                       const borderStyle = isCHFromShowAwards ? orangeBorderStyle : (isNavyBlueOutline ? navyBlueBorderStyle : {});
-                      const voidedStyle = isVoided ? { 
-                        textDecoration: 'line-through',
-                        opacity: 0.6,
-                        backgroundColor: '#fef2f2'
-                      } : {};
                       // Map Finals Cat # input to refs: rowIdx = numAwardRows + numBestCH + numBestLHCH + i
                       const finalsRowIdx = numAwardRows + (championshipTotal >= 85 ? 5 : 3) + (championshipTotal >= 85 ? 5 : 3) + i;
                       return (
                         <td key={`sh-final-${i}-${columnIndex}`} className="py-2 px-2 border-r border-gray-300 align-top">
                           <div className="flex flex-col">
                             <div className="flex justify-center">
-                              <div className="relative">
-                                <input
-                                  type="text"
-                                  className={`w-20 h-7 text-xs text-center border rounded px-1 font-medium ${
-                                    !enabled ? 'bg-gray-100 cursor-not-allowed' : 
-                                    getBorderStyle(errorKey, errors[errorKey] || '')
-                                  } focus:border-cfa-gold focus:outline-none`}
-                                  placeholder="Cat #"
-                                  value={localInputState[errorKey] !== undefined ? localInputState[errorKey] : value}
-                                  onChange={(e) => setLocalInputState(prev => ({ ...prev, [errorKey]: e.target.value }))}
-                                  onBlur={(e) => {
-                                    updateFinals('shChampions', columnIndex, i, e.target.value);
-                                    setLocalInputState(prev => { const copy = { ...prev }; delete copy[errorKey]; return copy; });
-                                    handleFinalsBlur('shChampions', columnIndex, i, e.target.value);
-                                  }}
-                                  style={{
-                                    ...borderStyle,
-                                    ...voidedStyle
-                                  }}
-                                  disabled={!enabled || isVoided}
-                                  ref={el => {
-                                    if (!catInputRefs.current[columnIndex]) {
-                                      catInputRefs.current[columnIndex] = Array(totalCatRows).fill(null);
-                                    }
-                                    catInputRefs.current[columnIndex][finalsRowIdx] = el;
-                                  }}
-                                  onKeyDown={e => handleCatInputKeyDown(e, columnIndex, finalsRowIdx)}
-                                />
-                                <button
-                                  type="button"
-                                  style={getVoidCheckboxStyle(isVoided || false)}
-                                  onClick={() => updateFinalsVoid('shChampions', columnIndex, i, !(isVoided || false))}
-                                  title={isVoided ? "Unvoid this cat" : "Void this cat"}
-                                  className="absolute -top-1 -right-1 hover:scale-110 transition-transform"
-                                  disabled={!enabled}
-                                >
-                                  {isVoided && (
-                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="white">
-                                      <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-                                    </svg>
-                                  )}
-                                </button>
-                              </div>
+                              <input
+                                type="text"
+                                className={`w-20 h-7 text-xs text-center border rounded px-1 font-medium ${
+                                  !enabled ? 'bg-gray-100 cursor-not-allowed' : 
+                                  getBorderStyle(errorKey, errors[errorKey] || '')
+                                } focus:border-cfa-gold focus:outline-none`}
+                                placeholder={enabled ? "Cat #" : ""}
+                                value={localInputState[errorKey] !== undefined ? localInputState[errorKey] : value}
+                                disabled={!enabled}
+                                onChange={(e) => setLocalInputState(prev => ({ ...prev, [errorKey]: e.target.value }))}
+                                onBlur={(e) => {
+                                  updateFinals('shChampions', columnIndex, i, e.target.value);
+                                  setLocalInputState(prev => { const copy = { ...prev }; delete copy[errorKey]; return copy; });
+                                  handleFinalsBlur('shChampions', columnIndex, i, e.target.value);
+                                }}
+                                style={borderStyle}
+                                ref={el => {
+                                  if (!catInputRefs.current[columnIndex]) {
+                                    catInputRefs.current[columnIndex] = Array(totalCatRows).fill(null);
+                                  }
+                                  catInputRefs.current[columnIndex][finalsRowIdx] = el;
+                                }}
+                                onKeyDown={e => handleCatInputKeyDown(e, columnIndex, finalsRowIdx)}
+                              />
                             </div>
-                            {isVoided && (
-                              <div className="text-xs mt-1 text-center text-red-600 font-medium">VOID</div>
-                            )}
                             {errors[errorKey] && (
                               <div className="text-xs mt-1 text-center" style={getErrorStyle(errors[errorKey])}>{getCleanMessage(errors[errorKey])}</div>
                             )}
