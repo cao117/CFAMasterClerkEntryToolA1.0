@@ -113,3 +113,15 @@ If Best AB CH = [A, B, C, D, E] and Best SH CH = [A, D, B, X, Y]:
 - **LH/SH Assignment Reminder**: When a Best AB CH cat is not yet assigned to either LH or SH CH final, a warning message appears in orange
 - **Timing**: Warning only appears when both LH and SH sections are not fully filled, indicating the user is still in the process of assigning cats
 - **Purpose**: Provides helpful guidance without blocking validation, encouraging users to complete the assignment process 
+
+## Single Specialty Ring (LH/SH) Best CH Validation (2024-06)
+
+For **Longhair** or **Shorthair** rings (single specialty):
+- If there are CHs (Champions) in the Championship Final, those CHs (in order) must be at the top of the enabled section (LH or SH CH), in order.
+- If there are no CHs in the final, any CH entered in the show (for that column) can be used in the enabled section.
+- GC (Grand Champion) and NOV (Novice) cats are never eligible for Best LH/SH CH.
+- Duplicates are not allowed within the section.
+- The order of CHs in the enabled section must match the order in the final if present.
+- Error messages and display are consistent with Allbreed logic.
+
+This ensures strict per-section validation for single specialty rings, matching CFA rules and the Allbreed logic for Best CH. 
