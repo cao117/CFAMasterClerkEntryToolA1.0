@@ -895,7 +895,7 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
             {/* Dropdown for ring jump */}
             <div className="flex-1 flex justify-end items-center">
               <select
-                className="ml-4 px-3 py-2 rounded border border-gray-300 bg-white text-sm font-medium shadow focus:outline-none focus:border-cfa-gold transition-all duration-200"
+                className="ml-4 px-3 py-2 rounded-lg border border-gray-300 bg-white text-sm font-medium shadow-sm focus:outline-none focus:border-cfa-gold focus:ring-2 focus:ring-cfa-gold/30 transition-all duration-200 ring-jump-dropdown"
                 style={{ minWidth: 180, maxWidth: 260 }}
                 onChange={handleRingJump}
                 defaultValue=""

@@ -301,7 +301,7 @@
   padding: 8px;
   position: absolute;
   z-index: 1;
-  bottom: 125%;
+  top: 125%; /* Place below the checkbox */
   left: 50%;
   margin-left: -100px;
   opacity: 0;
@@ -318,12 +318,12 @@
 .void-tooltip .tooltip-text::after {
   content: "";
   position: absolute;
-  top: 100%;
+  bottom: 100%; /* Arrow on top of tooltip */
   left: 50%;
   margin-left: -5px;
   border-width: 5px;
   border-style: solid;
-  border-color: #1f2937 transparent transparent transparent;
+  border-color: transparent transparent #1f2937 transparent;
 }
 
 /* Frozen column styling */
@@ -420,4 +420,26 @@
   z-index: 30;
   background: #000 !important;
   color: #fff !important;
+}
+
+/* Stylish Ring Jump Dropdown */
+.ring-jump-dropdown {
+  border-radius: 1rem !important;
+  box-shadow: 0 2px 8px rgba(199, 178, 115, 0.08);
+  border: 1.5px solid #e0e0e0;
+  background: #fff;
+  color: #222;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.ring-jump-dropdown:focus {
+  border-color: #C7B273;
+  box-shadow: 0 0 0 3px rgba(199, 178, 115, 0.18);
+  outline: none;
+}
+.ring-jump-dropdown option {
+  border-radius: 0.5rem;
+  background: #fff;
+  color: #222;
 }
