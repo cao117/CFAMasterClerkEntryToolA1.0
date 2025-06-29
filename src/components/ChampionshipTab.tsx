@@ -69,6 +69,7 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
     // State for validation errors and modal
     const [errors, setErrors] = useState<{[key: string]: string}>({});
     const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+    const [isTabResetModalOpen, setIsTabResetModalOpen] = useState(false);
     const [focusedColumnIndex, setFocusedColumnIndex] = useState<number | null>(null);
 
     // 1. Add localInputState for text fields
@@ -709,7 +710,38 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
     };
 
     const handleResetClick = () => {
-      handleReset(setIsResetModalOpen);
+      setIsTabResetModalOpen(true);
+    };
+
+    const handleTabResetClick = () => {
+      setIsTabResetModalOpen(false);
+      
+      // Reset only Championship tab data
+      setChampionshipData({
+        showAwards: {},
+        championsFinals: {},
+        lhChampionsFinals: {},
+        shChampionsFinals: {},
+        voidedShowAwards: {},
+        voidedChampionsFinals: {},
+        voidedLHChampionsFinals: {},
+        voidedSHChampionsFinals: {}
+      });
+      
+      // Clear validation errors
+      setErrors({});
+      
+      // Clear focused column
+      setFocusedColumnIndex(null);
+      
+      // Clear local input state
+      setLocalInputState({});
+      
+      // Regenerate columns based on current judge information
+      setColumns(generateColumns());
+      
+      // Show success message
+      showSuccess('Championship Tab Reset', 'Championship tab data has been reset successfully.');
     };
 
     const confirmReset = () => {
@@ -887,6 +919,19 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
           cancelText="Cancel"
           onConfirm={confirmReset}
           onCancel={() => setIsResetModalOpen(false)}
+        />
+
+        {/* Tab-Specific Reset Confirmation Modal */}
+        <Modal
+          isOpen={isTabResetModalOpen}
+          onClose={() => setIsTabResetModalOpen(false)}
+          title="Reset Championship Tab"
+          message="Are you sure you want to reset the Championship tab data? This action cannot be undone and will clear all championship finals information, but will keep your show details and judge information intact."
+          type="warning"
+          confirmText="Reset Championship Tab"
+          cancelText="Cancel"
+          onConfirm={handleTabResetClick}
+          onCancel={() => setIsTabResetModalOpen(false)}
         />
 
         <div className="cfa-section">
