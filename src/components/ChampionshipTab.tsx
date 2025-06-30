@@ -11,7 +11,7 @@ import {
   type ChampionshipValidationInput,
   type CellData
 } from '../validation/championshipValidation';
-import { handleSaveToTempCSV, handleGenerateFinalCSV, handleRestoreFromCSV, handleReset } from '../utils/formActions';
+import { handleSaveToTempCSV, handleGenerateFinalCSV, handleRestoreFromCSV } from '../utils/formActions';
 
 interface Judge {
   id: number;
@@ -23,6 +23,12 @@ interface Judge {
 interface ChampionshipTabProps {
   judges: Judge[];
   championshipTotal: number;
+  championshipCounts: {
+    lhGcs: number;
+    shGcs: number;
+    lhChs: number;
+    shChs: number;
+  };
   showSuccess: (title: string, message?: string, duration?: number) => void;
   showError: (title: string, message?: string, duration?: number) => void;
   showInfo?: (title: string, message?: string, duration?: number) => void;
@@ -40,7 +46,7 @@ export interface ChampionshipTabRef {
 }
 
 const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
-  ({ judges, championshipTotal, showSuccess, showError, showInfo: _showInfo, shouldFillTestData, onResetAllData }, ref) => {
+  ({ judges, championshipTotal, championshipCounts, showSuccess, showError, showInfo: _showInfo, shouldFillTestData, onResetAllData }, ref) => {
     // State for dynamic table structure
     const [columns, setColumns] = useState<Column[]>([]);
     const [numAwardRows, setNumAwardRows] = useState(10);
@@ -74,9 +80,6 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
 
     // 1. Add localInputState for text fields
     const [localInputState, setLocalInputState] = useState<{ [key: string]: string }>({});
-
-    // 1. Define a bright yellow color for alerting CH cells
-    const BRIGHT_YELLOW = '#FFF700'; // Eye-pleasing, alert yellow
 
     // Accessibility: refs for ALL Cat # input fields (Show Awards + Finals)
     // We'll build a 2D array: catInputRefs[columnIndex][verticalRowIndex]
@@ -203,6 +206,7 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
       lhChampionsFinals: championshipData.lhChampionsFinals,
       shChampionsFinals: championshipData.shChampionsFinals,
       championshipTotal,
+      championshipCounts,
       voidedShowAwards: championshipData.voidedShowAwards,
       voidedChampionsFinals: championshipData.voidedChampionsFinals,
       voidedLHChampionsFinals: championshipData.voidedLHChampionsFinals,
@@ -338,40 +342,10 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
       }
     };
 
-    const isFinalsEnabled = (section: 'champions' | 'lhChampions' | 'shChampions', columnIndex: number): boolean => {
-      const column = columns[columnIndex];
-      if (!column) return false;
-      
-      switch (section) {
-        case 'champions':
-          // Best CH section only enabled for Allbreed rings
-          return column.specialty === 'Allbreed';
-        case 'lhChampions':
-          // Best LH CH section enabled for Longhair and Allbreed rings
-          return column.specialty === 'Longhair' || column.specialty === 'Allbreed';
-        case 'shChampions':
-          // Best SH CH section enabled for Shorthair and Allbreed rings
-          return column.specialty === 'Shorthair' || column.specialty === 'Allbreed';
-        default:
-          return false;
-      }
-    };
-
-    // Helper to get Best CH cat numbers for a column (Allbreed only)
-    const getBestCHCats = (columnIndex: number): string[] => {
-      const numFinalsPositions = championshipTotal >= 85 ? 5 : 3;
-      const bestCH: string[] = [];
-      for (let i = 0; i < numFinalsPositions; i++) {
-        const key = `${columnIndex}-${i}`;
-        const value = championshipData.championsFinals[key];
-        if (value && value.trim() !== '') bestCH.push(value.trim());
-      }
-      return bestCH;
-    };
-
     // Helper to get all CH cat numbers from Show Awards for a column
     const getCHCatNumbersFromShowAwards = (columnIndex: number): string[] => {
-      const numAwardRows = championshipTotal >= 85 ? 15 : 10;
+      const column = columns[columnIndex];
+      const numAwardRows = column ? getBreakpointForRingType(column.specialty) : 10;
       const chCats: string[] = [];
       for (let i = 0; i < numAwardRows; i++) {
         const key = `${columnIndex}-${i}`;
@@ -388,7 +362,7 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
       const column = columns[columnIndex];
       if (!column || column.specialty !== 'Allbreed') return [];
       
-      const numFinalsPositions = championshipTotal >= 85 ? 5 : 3;
+      const numFinalsPositions = getFinalsPositionsForRingType(column.specialty);
       const bestCHCats: string[] = [];
       for (let i = 0; i < numFinalsPositions; i++) {
         const key = `${columnIndex}-${i}`;
@@ -452,16 +426,6 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
         return Math.floor(Math.random() * 450) + 1;
       };
       
-      // Helper function to shuffle array
-      function shuffle<T>(array: T[]): T[] {
-        const shuffled = [...array];
-        for (let i = shuffled.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-        }
-        return shuffled;
-      }
-      
       // Generate test data for each column
       columns.forEach((column, columnIndex) => {
         // Generate unique cat numbers for this column
@@ -479,7 +443,8 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
         // For each column, randomly assign statuses (GC, CH, NOV) to each position, ensuring the correct total counts for each status (if possible).
         // Cat numbers remain unique within each section.
         const statuses = ['GC', 'CH', 'NOV'];
-        for (let position = 0; position < numAwardRows; position++) {
+        const numAwardRowsForColumn = getBreakpointForRingType(column.specialty);
+        for (let position = 0; position < numAwardRowsForColumn; position++) {
           const key = `${columnIndex}-${position}`;
           const catNumber = generateCatNumber();
           const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
@@ -492,7 +457,7 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
         
         // Get CH cats from show awards for finals
         const chCats: string[] = [];
-        for (let position = 0; position < numAwardRows; position++) {
+        for (let position = 0; position < numAwardRowsForColumn; position++) {
           const key = `${columnIndex}-${position}`;
           const award = newShowAwards[key];
           if (award.status === 'CH') {
@@ -503,7 +468,7 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
         // Finals Test Data:
         // For Allbreed columns, Best CH gets ALL CH cats, then split between LH and SH maintaining order
         // All other Championship tab validation rules must be enforced in the generated test data.
-        const numFinalsPositions = championshipTotal >= 85 ? 5 : 3;
+        const numFinalsPositions = getFinalsPositionsForRingType(column.specialty);
         
         if (column.specialty === 'Allbreed') {
           // For Allbreed rings:
@@ -628,6 +593,7 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
           lhChampionsFinals: newLhChampionsFinals,
           shChampionsFinals: newShChampionsFinals,
           championshipTotal,
+          championshipCounts,
           voidedShowAwards: {},
           voidedChampionsFinals: {},
           voidedLHChampionsFinals: {},
@@ -658,9 +624,10 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
         championsFinals: championshipData.championsFinals,
         lhChampionsFinals: championshipData.lhChampionsFinals,
         shChampionsFinals: championshipData.shChampionsFinals,
-        championshipTotal
+        championshipTotal,
+        championshipCounts
       }));
-    }, [columns, championshipData, championshipTotal]);
+    }, [columns, championshipData, championshipTotal, championshipCounts]);
 
     // Action button handlers
     const handleSaveToTempCSVClick = () => {
@@ -670,7 +637,8 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
         championsFinals: championshipData.championsFinals,
         lhChampionsFinals: championshipData.lhChampionsFinals,
         shChampionsFinals: championshipData.shChampionsFinals,
-        championshipTotal
+        championshipTotal,
+        championshipCounts
       });
       setErrors(errors);
       if (Object.keys(errors).length > 0) {
@@ -691,7 +659,8 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
         championsFinals: championshipData.championsFinals,
         lhChampionsFinals: championshipData.lhChampionsFinals,
         shChampionsFinals: championshipData.shChampionsFinals,
-        championshipTotal
+        championshipTotal,
+        championshipCounts
       });
       setErrors(errors);
       if (Object.keys(errors).length > 0) {
@@ -767,7 +736,7 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
     };
 
     // Helper function to get appropriate border styling for errors (always red)
-    const getBorderStyle = (errorKey: string, message: string) => {
+    const getBorderStyle = (errorKey: string, _message: string) => {
       if (errors[errorKey]) {
         return 'border-red-500'; // Always red border for errors
       }
@@ -800,33 +769,37 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
       setChampionshipData(prev => {
         const newData = { ...prev };
         
-        // Void/unvoid ALL instances of this cat number across ALL sections
+        // Void/unvoid ALL instances of this cat number within the SAME COLUMN only
         const catNum = catNumber.trim();
         
-        // Update Show Awards
+        // Update Show Awards for this column only
         Object.keys(newData.showAwards).forEach(key => {
-          if (newData.showAwards[key]?.catNumber === catNum) {
+          const [colIdx] = key.split('-').map(Number);
+          if (colIdx === columnIndex && newData.showAwards[key]?.catNumber === catNum) {
             newData.voidedShowAwards[key] = voided;
           }
         });
         
-        // Update Champions Finals
+        // Update Champions Finals for this column only
         Object.keys(newData.championsFinals).forEach(key => {
-          if (newData.championsFinals[key] === catNum) {
+          const [colIdx] = key.split('-').map(Number);
+          if (colIdx === columnIndex && newData.championsFinals[key] === catNum) {
             newData.voidedChampionsFinals[key] = voided;
           }
         });
         
-        // Update LH Champions Finals
+        // Update LH Champions Finals for this column only
         Object.keys(newData.lhChampionsFinals).forEach(key => {
-          if (newData.lhChampionsFinals[key] === catNum) {
+          const [colIdx] = key.split('-').map(Number);
+          if (colIdx === columnIndex && newData.lhChampionsFinals[key] === catNum) {
             newData.voidedLHChampionsFinals[key] = voided;
           }
         });
         
-        // Update SH Champions Finals
+        // Update SH Champions Finals for this column only
         Object.keys(newData.shChampionsFinals).forEach(key => {
-          if (newData.shChampionsFinals[key] === catNum) {
+          const [colIdx] = key.split('-').map(Number);
+          if (colIdx === columnIndex && newData.shChampionsFinals[key] === catNum) {
             newData.voidedSHChampionsFinals[key] = voided;
           }
         });
@@ -879,15 +852,36 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
       const th = document.getElementById(`ring-th-${colIdx}`);
       const container = tableContainerRef.current;
       if (th && container) {
-        // Calculate the left offset of the <th> relative to the container
-        const thRect = th.getBoundingClientRect();
-        const containerRect = container.getBoundingClientRect();
         // The width of the frozen column (Position) is 140px
         const frozenWidth = 140;
         // Scroll so that the left of the <th> aligns with the left of the scroll area (after frozen column)
         const scrollLeft = th.offsetLeft - frozenWidth;
         container.scrollTo({ left: scrollLeft, behavior: 'smooth' });
       }
+    };
+
+    // Helper functions to calculate breakpoints based on ring type
+    const getChampionshipCountForRingType = (ringType: string): number => {
+      switch (ringType) {
+        case 'Allbreed':
+          return championshipCounts.lhGcs + championshipCounts.shGcs + championshipCounts.lhChs + championshipCounts.shChs;
+        case 'Longhair':
+          return championshipCounts.lhGcs + championshipCounts.lhChs;
+        case 'Shorthair':
+          return championshipCounts.shGcs + championshipCounts.shChs;
+        default:
+          return championshipCounts.lhGcs + championshipCounts.shGcs + championshipCounts.lhChs + championshipCounts.shChs;
+      }
+    };
+
+    const getBreakpointForRingType = (ringType: string): number => {
+      const count = getChampionshipCountForRingType(ringType);
+      return count >= 85 ? 15 : 10;
+    };
+
+    const getFinalsPositionsForRingType = (ringType: string): number => {
+      const count = getChampionshipCountForRingType(ringType);
+      return count >= 85 ? 5 : 3;
     };
 
     if (judges.length === 0) {
@@ -1004,332 +998,353 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
                 </thead>
                 <tbody>
                   {/* Show Awards Section (Rows 4-18) */}
-                  {Array.from({ length: numAwardRows }, (_, i) => (
-                    <tr key={`award-${i}`} className="cfa-table-row">
-                      {/*
-                        Show Awards label column: always white background (default),
-                        but for consistency, we could add a class if needed in the future.
-                      */}
-                      <td className="py-2 pl-4 font-medium text-sm border-r border-gray-300 bg-white frozen-column" style={{ width: '140px', minWidth: '140px' }}>
-                        {i + 1}{i >= 10 ? '*' : ''}
-                      </td>
-                      {columns.map((_column, columnIndex) => {
-                        const award = getShowAward(columnIndex, i);
-                        const errorKey = `${columnIndex}-${i}`;
-                        const orangeBorderStyle = { border: '2px solid orange' };
-                        // Map Show Awards Cat # input to refs: rowIdx = i
-                        return (
-                          <td 
-                            key={`award-${i}-${columnIndex}`} 
-                            className={`py-2 px-2 border-r border-gray-300 align-top ${shouldApplyRingGlow(columnIndex) ? 'ring-glow' : ''}`}
-                          >
-                            <div className="flex flex-col items-start">
-                              <div className="flex gap-1 items-center">
-                                <input
-                                  type="text"
-                                  className={`w-10 h-7 text-xs text-center border rounded px-0.5 ${getBorderStyle(errorKey, errors[errorKey] || '')} focus:border-cfa-gold focus:outline-none ${
-                                    getVoidState('showAwards', columnIndex, i) ? 'voided-input' : ''
-                                  }`}
-                                  placeholder="Cat #"
-                                  value={localInputState[errorKey] !== undefined ? localInputState[errorKey] : award.catNumber}
-                                  onChange={(e) => setLocalInputState(prev => ({ ...prev, [errorKey]: e.target.value }))}
-                                  onBlur={(e) => {
-                                    updateShowAward(columnIndex, i, 'catNumber', e.target.value);
-                                    setLocalInputState(prev => { const copy = { ...prev }; delete copy[errorKey]; return copy; });
-                                    handleShowAwardBlur(columnIndex, i, 'catNumber', e.target.value);
-                                  }}
-                                  style={award.status === 'CH' ? orangeBorderStyle : {}}
-                                  disabled={getVoidState('showAwards', columnIndex, i)}
-                                  ref={el => {
-                                    if (!catInputRefs.current[columnIndex]) {
-                                      catInputRefs.current[columnIndex] = Array(totalCatRows).fill(null);
-                                    }
-                                    catInputRefs.current[columnIndex][i] = el;
-                                  }}
-                                  onKeyDown={(e) => handleCatInputKeyDown(e, columnIndex, i)}
-                                  onFocus={(e) => handleCatInputFocus(e, columnIndex)}
-                                />
-                                <select
-                                  className="w-14 h-7 text-xs border border-gray-300 rounded focus:border-cfa-gold focus:outline-none"
-                                  value={award.status}
-                                  onChange={(e) => updateShowAward(columnIndex, i, 'status', e.target.value)}
-                                  onFocus={() => setFocusedColumnIndex(columnIndex)}
-                                  tabIndex={-1}
-                                >
-                                  <option value="GC">GC</option>
-                                  <option value="CH">CH</option>
-                                  <option value="NOV">NOV</option>
-                                </select>
-                                {award.catNumber && award.catNumber.trim() && (
-                                  <div className="void-tooltip">
+                  {/*
+                    Render up to 15 rows, but for each cell, only render the input if that row is within the enabled range for that column.
+                    For columns with <85 cats, only render up to 10 rows; for >=85, up to 15 rows.
+                  */}
+                  {Array.from({ length: 15 }, (_, i) => (
+                    // Only render the row if at least one column needs it
+                    columns.some(col => i < getBreakpointForRingType(col.specialty)) ? (
+                      <tr key={`award-${i}`} className="cfa-table-row">
+                        <td className="py-2 pl-4 font-medium text-sm border-r border-gray-300 bg-white frozen-column" style={{ width: '140px', minWidth: '140px' }}>
+                          {i + 1}{i >= 10 ? '*' : ''}
+                        </td>
+                        {columns.map((_, columnIndex) => {
+                          const col = columns[columnIndex];
+                          // Only render input if this row is enabled for this column
+                          if (i < getBreakpointForRingType(col.specialty)) {
+                            const award = getShowAward(columnIndex, i);
+                            const errorKey = `${columnIndex}-${i}`;
+                            const orangeBorderStyle = { border: '2px solid orange' };
+                            return (
+                              <td key={`award-${i}-${columnIndex}`} className={`py-2 px-2 border-r border-gray-300 align-top${shouldApplyRingGlow(columnIndex) ? ' ring-glow' : ''}`}> 
+                                <div className="flex flex-col items-start">
+                                  <div className="flex gap-1 items-center">
                                     <input
-                                      type="checkbox"
-                                      className="void-checkbox"
-                                      checked={getVoidState('showAwards', columnIndex, i)}
-                                      onChange={(e) => updateVoidState('showAwards', columnIndex, i, e.target.checked)}
-                                      onFocus={() => setFocusedColumnIndex(columnIndex)}
-                                      tabIndex={-1}
+                                      type="text"
+                                      className={`w-10 h-7 text-xs text-center border rounded px-0.5 ${getBorderStyle(errorKey, errors[errorKey] || '')} focus:border-cfa-gold focus:outline-none ${
+                                        getVoidState('showAwards', columnIndex, i) ? 'voided-input' : ''
+                                      }`}
+                                      placeholder="Cat #"
+                                      value={localInputState[errorKey] !== undefined ? localInputState[errorKey] : award.catNumber}
+                                      onChange={(e) => setLocalInputState(prev => ({ ...prev, [errorKey]: e.target.value }))}
+                                      onBlur={(e) => {
+                                        updateShowAward(columnIndex, i, 'catNumber', e.target.value);
+                                        setLocalInputState(prev => { const copy = { ...prev }; delete copy[errorKey]; return copy; });
+                                        handleShowAwardBlur(columnIndex, i, 'catNumber', e.target.value);
+                                      }}
+                                      style={award.status === 'CH' ? orangeBorderStyle : {}}
+                                      disabled={getVoidState('showAwards', columnIndex, i)}
+                                      ref={el => {
+                                        if (!catInputRefs.current[columnIndex]) {
+                                          catInputRefs.current[columnIndex] = Array(totalCatRows).fill(null);
+                                        }
+                                        catInputRefs.current[columnIndex][i] = el;
+                                      }}
+                                      onKeyDown={(e) => handleCatInputKeyDown(e, columnIndex, i)}
+                                      onFocus={(e) => handleCatInputFocus(e, columnIndex)}
                                     />
-                                    <span className="tooltip-text">
-                                      Mark this placement as voided (award given but not received by cat)
-                                    </span>
+                                    <select
+                                      className="w-14 h-7 text-xs border border-gray-300 rounded focus:border-cfa-gold focus:outline-none"
+                                      value={award.status}
+                                      onChange={(e) => updateShowAward(columnIndex, i, 'status', e.target.value)}
+                                      onFocus={() => setFocusedColumnIndex(columnIndex)}
+                                      disabled={getVoidState('showAwards', columnIndex, i)}
+                                      tabIndex={-1}
+                                    >
+                                      <option value="GC">GC</option>
+                                      <option value="CH">CH</option>
+                                      <option value="NOV">NOV</option>
+                                    </select>
+                                    {award.catNumber && award.catNumber.trim() && (
+                                      <div className="void-tooltip">
+                                        <input
+                                          type="checkbox"
+                                          className="void-checkbox"
+                                          checked={getVoidState('showAwards', columnIndex, i)}
+                                          onChange={(e) => updateVoidState('showAwards', columnIndex, i, e.target.checked)}
+                                          onFocus={() => setFocusedColumnIndex(columnIndex)}
+                                          tabIndex={-1}
+                                        />
+                                        <span className="tooltip-text">
+                                          Mark this placement as voided (award given but not received by cat)
+                                        </span>
+                                      </div>
+                                    )}
                                   </div>
-                                )}
-                              </div>
-                              {errors[errorKey] && (
-                                <div className="text-xs mt-1" style={getErrorStyle(errors[errorKey])}>{getCleanMessage(errors[errorKey])}</div>
-                              )}
-                            </div>
-                          </td>
-                        );
-                      })}
-                    </tr>
+                                  {errors[errorKey] && (
+                                    <div className="text-xs mt-1" style={getErrorStyle(errors[errorKey])}>{getCleanMessage(errors[errorKey])}</div>
+                                  )}
+                                </div>
+                              </td>
+                            );
+                          } else {
+                            // Render empty cell for columns that do not need this row
+                            // Always apply border/padding classes for visual consistency
+                            // Also apply ring-glow if this is the focused column, for highlight continuity
+                            return <td key={`award-${i}-${columnIndex}`} className={`py-2 px-2 border-r border-gray-300 align-top${shouldApplyRingGlow(columnIndex) ? ' ring-glow' : ''}`}>&nbsp;</td>;
+                          }
+                        })}
+                      </tr>
+                    ) : null
                   ))}
 
-                  {/* Champions Finals Section (Rows 19-23) */}
-                  {(championshipTotal >= 85 ? 
-                    ['Best CH', '2nd CH', '3rd CH', '4th CH', '5th CH'] :
-                    ['Best CH', '2nd CH', '3rd CH']
-                  ).map((label, i) => (
-                    <tr key={`ch-final-${i}`} className="cfa-table-row">
-                      {/* Finals label column: bright yellow background for Best CH */}
-                      <td className="py-2 pl-4 font-medium text-sm text-black border-r border-gray-300 frozen-column" style={{ width: '140px', minWidth: '140px' }}>
-                        {getOrdinalLabel(i, 'AB')}
-                      </td>
-                      {columns.map((_column, columnIndex) => {
-                        const enabled = isFinalsEnabled('champions', columnIndex);
-                        const value = getFinalsValue('champions', columnIndex, i);
-                        const errorKey = `champions-${columnIndex}-${i}`;
-                        const chCatNumbers = getCHCatNumbersFromShowAwards(columnIndex);
-                        const isCHFromShowAwards = chCatNumbers.includes(value.trim());
-                        const orangeBorderStyle = { border: '2px solid orange' };
-                        const isNavyBlueOutline = shouldApplyNavyBlueOutline(columnIndex, value);
-                        const navyBlueBorderStyle = { border: '2px solid #003366' };
-                        const borderStyle = isCHFromShowAwards ? orangeBorderStyle : (isNavyBlueOutline ? navyBlueBorderStyle : {});
-                        // Map Finals Cat # input to refs: rowIdx = numAwardRows + i
-                        const finalsRowIdx = numAwardRows + i;
-                        return (
-                          <td 
-                            key={`ch-final-${i}-${columnIndex}`} 
-                            className={`py-2 px-2 border-r border-gray-300 align-top ${shouldApplyRingGlow(columnIndex) ? 'ring-glow' : ''}`}
-                          >
-                            <div className="flex flex-col items-start">
-                              <div className="flex items-center">
-                                <input
-                                  type="text"
-                                  className={`w-10 h-7 text-xs text-center border rounded px-0.5 font-medium ${
-                                    !enabled ? 'bg-gray-100 cursor-not-allowed' : 
-                                    getBorderStyle(errorKey, errors[errorKey] || '')
-                                  } focus:border-cfa-gold focus:outline-none ${
-                                    getVoidState('championsFinals', columnIndex, i) ? 'voided-input' : ''
-                                  }`}
-                                  placeholder={enabled ? "Cat #" : ""}
-                                  value={localInputState[errorKey] !== undefined ? localInputState[errorKey] : value}
-                                  disabled={!enabled || getVoidState('championsFinals', columnIndex, i)}
-                                  onChange={(e) => setLocalInputState(prev => ({ ...prev, [errorKey]: e.target.value }))}
-                                  onBlur={(e) => {
-                                    updateFinals('champions', columnIndex, i, e.target.value);
-                                    setLocalInputState(prev => { const copy = { ...prev }; delete copy[errorKey]; return copy; });
-                                    handleFinalsBlur('champions', columnIndex, i, e.target.value);
-                                  }}
-                                  style={borderStyle}
-                                  ref={el => {
-                                    if (!catInputRefs.current[columnIndex]) {
-                                      catInputRefs.current[columnIndex] = Array(totalCatRows).fill(null);
-                                    }
-                                    catInputRefs.current[columnIndex][finalsRowIdx] = el;
-                                  }}
-                                  onKeyDown={(e) => handleCatInputKeyDown(e, columnIndex, finalsRowIdx)}
-                                  onFocus={(e) => handleCatInputFocus(e, columnIndex)}
-                                />
-                                {enabled && value && value.trim() && (
-                                  <div className="void-tooltip ml-1">
+                  {/* Champions Finals Section (Rows 19-23) - Only for Allbreed rings */}
+                  {Array.from({ length: 5 }, (_, i) => (
+                    columns.some(col => col.specialty === 'Allbreed' && i < getFinalsPositionsForRingType(col.specialty)) ? (
+                      <tr key={`ch-final-${i}`} className="cfa-table-row">
+                        <td className="py-2 pl-4 font-medium text-sm text-black border-r border-gray-300 frozen-column" style={{ width: '140px', minWidth: '140px' }}>
+                          {getOrdinalLabel(i, 'AB')}
+                        </td>
+                        {columns.map((col, columnIndex) => {
+                          const enabled = col.specialty === 'Allbreed' && i < getFinalsPositionsForRingType(col.specialty);
+                          if (enabled) {
+                            const value = getFinalsValue('champions', columnIndex, i);
+                            const errorKey = `champions-${columnIndex}-${i}`;
+                            const chCatNumbers = getCHCatNumbersFromShowAwards(columnIndex);
+                            const isCHFromShowAwards = chCatNumbers.includes(value.trim());
+                            const orangeBorderStyle = { border: '2px solid orange' };
+                            const isNavyBlueOutline = shouldApplyNavyBlueOutline(columnIndex, value);
+                            const navyBlueBorderStyle = { border: '2px solid #003366' };
+                            const borderStyle = isCHFromShowAwards ? orangeBorderStyle : (isNavyBlueOutline ? navyBlueBorderStyle : {});
+                            // Map Finals Cat # input to refs: rowIdx = numAwardRows + i
+                            const finalsRowIdx = Math.max(...columns.map(col => getBreakpointForRingType(col.specialty))) + i;
+                            return (
+                              <td 
+                                key={`ch-final-${i}-${columnIndex}`} 
+                                className={`py-2 px-2 border-r border-gray-300 align-top${shouldApplyRingGlow(columnIndex) ? ' ring-glow' : ''}`}
+                              >
+                                <div className="flex flex-col items-start">
+                                  <div className="flex items-center">
                                     <input
-                                      type="checkbox"
-                                      className="void-checkbox"
-                                      checked={getVoidState('championsFinals', columnIndex, i)}
-                                      onChange={(e) => updateVoidState('championsFinals', columnIndex, i, e.target.checked)}
-                                      onFocus={() => setFocusedColumnIndex(columnIndex)}
-                                      tabIndex={-1}
+                                      type="text"
+                                      className={`w-10 h-7 text-xs text-center border rounded px-0.5 font-medium ${
+                                        getBorderStyle(errorKey, errors[errorKey] || '')
+                                      } focus:border-cfa-gold focus:outline-none ${
+                                        getVoidState('championsFinals', columnIndex, i) ? 'voided-input' : ''
+                                      }`}
+                                      placeholder="Cat #"
+                                      value={localInputState[errorKey] !== undefined ? localInputState[errorKey] : value}
+                                      disabled={getVoidState('championsFinals', columnIndex, i)}
+                                      onChange={(e) => setLocalInputState(prev => ({ ...prev, [errorKey]: e.target.value }))}
+                                      onBlur={(e) => {
+                                        updateFinals('champions', columnIndex, i, e.target.value);
+                                        setLocalInputState(prev => { const copy = { ...prev }; delete copy[errorKey]; return copy; });
+                                        handleFinalsBlur('champions', columnIndex, i, e.target.value);
+                                      }}
+                                      style={borderStyle}
+                                      ref={el => {
+                                        if (!catInputRefs.current[columnIndex]) {
+                                          catInputRefs.current[columnIndex] = Array(totalCatRows).fill(null);
+                                        }
+                                        catInputRefs.current[columnIndex][finalsRowIdx] = el;
+                                      }}
+                                      onKeyDown={(e) => handleCatInputKeyDown(e, columnIndex, finalsRowIdx)}
+                                      onFocus={(e) => handleCatInputFocus(e, columnIndex)}
                                     />
-                                    <span className="tooltip-text">
-                                      Mark this placement as voided (award given but not received by cat)
-                                    </span>
+                                    {value && value.trim() && (
+                                      <div className="void-tooltip ml-1">
+                                        <input
+                                          type="checkbox"
+                                          className="void-checkbox"
+                                          checked={getVoidState('championsFinals', columnIndex, i)}
+                                          onChange={(e) => updateVoidState('championsFinals', columnIndex, i, e.target.checked)}
+                                          onFocus={() => setFocusedColumnIndex(columnIndex)}
+                                          tabIndex={-1}
+                                        />
+                                        <span className="tooltip-text">
+                                          Mark this placement as voided (award given but not received by cat)
+                                        </span>
+                                      </div>
+                                    )}
                                   </div>
-                                )}
-                              </div>
-                              {errors[errorKey] && (
-                                <div className="text-xs mt-1" style={getErrorStyle(errors[errorKey])}>{getCleanMessage(errors[errorKey])}</div>
-                              )}
-                            </div>
-                          </td>
-                        );
-                      })}
-                    </tr>
+                                  {errors[errorKey] && (
+                                    <div className="text-xs mt-1" style={getErrorStyle(errors[errorKey])}>{getCleanMessage(errors[errorKey])}</div>
+                                  )}
+                                </div>
+                              </td>
+                            );
+                          } else {
+                            // Render empty cell for columns that do not need this row
+                            // Always apply border/padding classes for visual consistency
+                            // Also apply ring-glow if this is the focused column, for highlight continuity
+                            return <td key={`ch-final-${i}-${columnIndex}`} className={`py-2 px-2 border-r border-gray-300 align-top${shouldApplyRingGlow(columnIndex) ? ' ring-glow' : ''}`}>&nbsp;</td>;
+                          }
+                        })}
+                      </tr>
+                    ) : null
                   ))}
 
-                  {/* Longhair Champions Finals Section (Rows 24-28) */}
-                  {(championshipTotal >= 85 ?
-                    ['Best LH CH', '2nd LH CH', '3rd LH CH', '4th LH CH', '5th LH CH'] :
-                    ['Best LH CH', '2nd LH CH', '3rd LH CH']
-                  ).map((label, i) => (
-                    <tr key={`lh-final-${i}`} className="cfa-table-row">
-                      {/* Finals label column: pale blue background for Best LH CH */}
-                      <td className="py-2 pl-4 font-medium text-sm text-black border-r border-gray-300 frozen-column" style={{ width: '140px', minWidth: '140px' }}>
-                        {getOrdinalLabel(i, 'LH')}
-                      </td>
-                      {columns.map((_column, columnIndex) => {
-                        const enabled = isFinalsEnabled('lhChampions', columnIndex);
-                        const value = getFinalsValue('lhChampions', columnIndex, i);
-                        const errorKey = `lhChampions-${columnIndex}-${i}`;
-                        const chCatNumbers = getCHCatNumbersFromShowAwards(columnIndex);
-                        const isCHFromShowAwards = chCatNumbers.includes(value.trim());
-                        const orangeBorderStyle = { border: '2px solid orange' };
-                        const isNavyBlueOutline = shouldApplyNavyBlueOutline(columnIndex, value);
-                        const navyBlueBorderStyle = { border: '2px solid #003366' };
-                        const borderStyle = isCHFromShowAwards ? orangeBorderStyle : (isNavyBlueOutline ? navyBlueBorderStyle : {});
-                        // Map Finals Cat # input to refs: rowIdx = numAwardRows + numBestCH + i
-                        const finalsRowIdx = numAwardRows + (championshipTotal >= 85 ? 5 : 3) + i;
-                        return (
-                          <td 
-                            key={`lh-final-${i}-${columnIndex}`} 
-                            className={`py-2 px-2 border-r border-gray-300 align-top ${shouldApplyRingGlow(columnIndex) ? 'ring-glow' : ''}`}
-                          >
-                            <div className="flex flex-col items-start">
-                              <div className="flex items-center">
-                                <input
-                                  type="text"
-                                  className={`w-10 h-7 text-xs text-center border rounded px-0.5 font-medium ${
-                                    !enabled ? 'bg-gray-100 cursor-not-allowed' : 
-                                    getBorderStyle(errorKey, errors[errorKey] || '')
-                                  } focus:border-cfa-gold focus:outline-none ${
-                                    getVoidState('lhChampionsFinals', columnIndex, i) ? 'voided-input' : ''
-                                  }`}
-                                  placeholder={enabled ? "Cat #" : ""}
-                                  value={localInputState[errorKey] !== undefined ? localInputState[errorKey] : value}
-                                  disabled={!enabled || getVoidState('lhChampionsFinals', columnIndex, i)}
-                                  onChange={(e) => setLocalInputState(prev => ({ ...prev, [errorKey]: e.target.value }))}
-                                  onBlur={(e) => {
-                                    updateFinals('lhChampions', columnIndex, i, e.target.value);
-                                    setLocalInputState(prev => { const copy = { ...prev }; delete copy[errorKey]; return copy; });
-                                    handleFinalsBlur('lhChampions', columnIndex, i, e.target.value);
-                                  }}
-                                  style={borderStyle}
-                                  ref={el => {
-                                    if (!catInputRefs.current[columnIndex]) {
-                                      catInputRefs.current[columnIndex] = Array(totalCatRows).fill(null);
-                                    }
-                                    catInputRefs.current[columnIndex][finalsRowIdx] = el;
-                                  }}
-                                  onKeyDown={(e) => handleCatInputKeyDown(e, columnIndex, finalsRowIdx)}
-                                  onFocus={(e) => handleCatInputFocus(e, columnIndex)}
-                                />
-                                {enabled && value && value.trim() && (
-                                  <div className="void-tooltip ml-1">
+                  {/* Longhair Champions Finals Section (Rows 24-28) - Only for Longhair and Allbreed rings */}
+                  {Array.from({ length: 5 }, (_, i) => (
+                    columns.some(col => (col.specialty === 'Longhair' || col.specialty === 'Allbreed') && i < getFinalsPositionsForRingType(col.specialty)) ? (
+                      <tr key={`lh-final-${i}`} className="cfa-table-row">
+                        <td className="py-2 pl-4 font-medium text-sm text-black border-r border-gray-300 frozen-column" style={{ width: '140px', minWidth: '140px' }}>
+                          {getOrdinalLabel(i, 'LH')}
+                        </td>
+                        {columns.map((col, columnIndex) => {
+                          const enabled = (col.specialty === 'Longhair' || col.specialty === 'Allbreed') && i < getFinalsPositionsForRingType(col.specialty);
+                          if (enabled) {
+                            const value = getFinalsValue('lhChampions', columnIndex, i);
+                            const errorKey = `lhChampions-${columnIndex}-${i}`;
+                            const chCatNumbers = getCHCatNumbersFromShowAwards(columnIndex);
+                            const isCHFromShowAwards = chCatNumbers.includes(value.trim());
+                            const orangeBorderStyle = { border: '2px solid orange' };
+                            const isNavyBlueOutline = shouldApplyNavyBlueOutline(columnIndex, value);
+                            const navyBlueBorderStyle = { border: '2px solid #003366' };
+                            const borderStyle = isCHFromShowAwards ? orangeBorderStyle : (isNavyBlueOutline ? navyBlueBorderStyle : {});
+                            // Map Finals Cat # input to refs: rowIdx = numAwardRows + numBestCH + i
+                            const finalsRowIdx = Math.max(...columns.map(col => getBreakpointForRingType(col.specialty))) + Math.max(...columns.map(col => col.specialty === 'Allbreed' ? getFinalsPositionsForRingType(col.specialty) : 0)) + i;
+                            return (
+                              <td 
+                                key={`lh-final-${i}-${columnIndex}`} 
+                                className={`py-2 px-2 border-r border-gray-300 align-top${shouldApplyRingGlow(columnIndex) ? ' ring-glow' : ''}`}
+                              >
+                                <div className="flex flex-col items-start">
+                                  <div className="flex items-center">
                                     <input
-                                      type="checkbox"
-                                      className="void-checkbox"
-                                      checked={getVoidState('lhChampionsFinals', columnIndex, i)}
-                                      onChange={(e) => updateVoidState('lhChampionsFinals', columnIndex, i, e.target.checked)}
-                                      onFocus={() => setFocusedColumnIndex(columnIndex)}
-                                      tabIndex={-1}
+                                      type="text"
+                                      className={`w-10 h-7 text-xs text-center border rounded px-0.5 font-medium ${
+                                        getBorderStyle(errorKey, errors[errorKey] || '')
+                                      } focus:border-cfa-gold focus:outline-none ${
+                                        getVoidState('lhChampionsFinals', columnIndex, i) ? 'voided-input' : ''
+                                      }`}
+                                      placeholder="Cat #"
+                                      value={localInputState[errorKey] !== undefined ? localInputState[errorKey] : value}
+                                      disabled={getVoidState('lhChampionsFinals', columnIndex, i)}
+                                      onChange={(e) => setLocalInputState(prev => ({ ...prev, [errorKey]: e.target.value }))}
+                                      onBlur={(e) => {
+                                        updateFinals('lhChampions', columnIndex, i, e.target.value);
+                                        setLocalInputState(prev => { const copy = { ...prev }; delete copy[errorKey]; return copy; });
+                                        handleFinalsBlur('lhChampions', columnIndex, i, e.target.value);
+                                      }}
+                                      style={borderStyle}
+                                      ref={el => {
+                                        if (!catInputRefs.current[columnIndex]) {
+                                          catInputRefs.current[columnIndex] = Array(totalCatRows).fill(null);
+                                        }
+                                        catInputRefs.current[columnIndex][finalsRowIdx] = el;
+                                      }}
+                                      onKeyDown={(e) => handleCatInputKeyDown(e, columnIndex, finalsRowIdx)}
+                                      onFocus={(e) => handleCatInputFocus(e, columnIndex)}
                                     />
-                                    <span className="tooltip-text">
-                                      Mark this placement as voided (award given but not received by cat)
-                                    </span>
+                                    {value && value.trim() && (
+                                      <div className="void-tooltip ml-1">
+                                        <input
+                                          type="checkbox"
+                                          className="void-checkbox"
+                                          checked={getVoidState('lhChampionsFinals', columnIndex, i)}
+                                          onChange={(e) => updateVoidState('lhChampionsFinals', columnIndex, i, e.target.checked)}
+                                          onFocus={() => setFocusedColumnIndex(columnIndex)}
+                                          tabIndex={-1}
+                                        />
+                                        <span className="tooltip-text">
+                                          Mark this placement as voided (award given but not received by cat)
+                                        </span>
+                                      </div>
+                                    )}
                                   </div>
-                                )}
-                              </div>
-                              {errors[errorKey] && (
-                                <div className="text-xs mt-1" style={getErrorStyle(errors[errorKey])}>{getCleanMessage(errors[errorKey])}</div>
-                              )}
-                            </div>
-                          </td>
-                        );
-                      })}
-                    </tr>
+                                  {errors[errorKey] && (
+                                    <div className="text-xs mt-1" style={getErrorStyle(errors[errorKey])}>{getCleanMessage(errors[errorKey])}</div>
+                                  )}
+                                </div>
+                              </td>
+                            );
+                          } else {
+                            // Render empty cell for columns that do not need this row
+                            // Always apply border/padding classes for visual consistency
+                            // Also apply ring-glow if this is the focused column, for highlight continuity
+                            return <td key={`lh-final-${i}-${columnIndex}`} className={`py-2 px-2 border-r border-gray-300 align-top${shouldApplyRingGlow(columnIndex) ? ' ring-glow' : ''}`}>&nbsp;</td>;
+                          }
+                        })}
+                      </tr>
+                    ) : null
                   ))}
 
-                  {/* Shorthair Champions Finals Section (Rows 29-33) */}
-                  {(championshipTotal >= 85 ?
-                    ['Best SH CH', '2nd SH CH', '3rd SH CH', '4th SH CH', '5th SH CH'] :
-                    ['Best SH CH', '2nd SH CH', '3rd SH CH']
-                  ).map((label, i) => (
-                    <tr key={`sh-final-${i}`} className="cfa-table-row">
-                      {/* Finals label column: pale green background for Best SH CH */}
-                      <td className="py-2 pl-4 font-medium text-sm text-black border-r border-gray-300 frozen-column" style={{ width: '140px', minWidth: '140px' }}>
-                        {getOrdinalLabel(i, 'SH')}
-                      </td>
-                      {columns.map((_column, columnIndex) => {
-                        const enabled = isFinalsEnabled('shChampions', columnIndex);
-                        const value = getFinalsValue('shChampions', columnIndex, i);
-                        const errorKey = `shChampions-${columnIndex}-${i}`;
-                        const chCatNumbers = getCHCatNumbersFromShowAwards(columnIndex);
-                        const isCHFromShowAwards = chCatNumbers.includes(value.trim());
-                        const orangeBorderStyle = { border: '2px solid orange' };
-                        const isNavyBlueOutline = shouldApplyNavyBlueOutline(columnIndex, value);
-                        const navyBlueBorderStyle = { border: '2px solid #003366' };
-                        const borderStyle = isCHFromShowAwards ? orangeBorderStyle : (isNavyBlueOutline ? navyBlueBorderStyle : {});
-                        // Map Finals Cat # input to refs: rowIdx = numAwardRows + numBestCH + numBestLHCH + i
-                        const finalsRowIdx = numAwardRows + (championshipTotal >= 85 ? 5 : 3) + (championshipTotal >= 85 ? 5 : 3) + i;
-                        return (
-                          <td 
-                            key={`sh-final-${i}-${columnIndex}`} 
-                            className={`py-2 px-2 border-r border-gray-300 align-top ${shouldApplyRingGlow(columnIndex) ? 'ring-glow' : ''}`}
-                          >
-                            <div className="flex flex-col items-start">
-                              <div className="flex items-center">
-                                <input
-                                  type="text"
-                                  className={`w-10 h-7 text-xs text-center border rounded px-0.5 font-medium ${
-                                    !enabled ? 'bg-gray-100 cursor-not-allowed' : 
-                                    getBorderStyle(errorKey, errors[errorKey] || '')
-                                  } focus:border-cfa-gold focus:outline-none ${
-                                    getVoidState('shChampionsFinals', columnIndex, i) ? 'voided-input' : ''
-                                  }`}
-                                  placeholder={enabled ? "Cat #" : ""}
-                                  value={localInputState[errorKey] !== undefined ? localInputState[errorKey] : value}
-                                  disabled={!enabled || getVoidState('shChampionsFinals', columnIndex, i)}
-                                  onChange={(e) => setLocalInputState(prev => ({ ...prev, [errorKey]: e.target.value }))}
-                                  onBlur={(e) => {
-                                    updateFinals('shChampions', columnIndex, i, e.target.value);
-                                    setLocalInputState(prev => { const copy = { ...prev }; delete copy[errorKey]; return copy; });
-                                    handleFinalsBlur('shChampions', columnIndex, i, e.target.value);
-                                  }}
-                                  style={borderStyle}
-                                  ref={el => {
-                                    if (!catInputRefs.current[columnIndex]) {
-                                      catInputRefs.current[columnIndex] = Array(totalCatRows).fill(null);
-                                    }
-                                    catInputRefs.current[columnIndex][finalsRowIdx] = el;
-                                  }}
-                                  onKeyDown={(e) => handleCatInputKeyDown(e, columnIndex, finalsRowIdx)}
-                                  onFocus={(e) => handleCatInputFocus(e, columnIndex)}
-                                />
-                                {enabled && value && value.trim() && (
-                                  <div className="void-tooltip ml-1">
+                  {/* Shorthair Champions Finals Section (Rows 29-33) - Only for Shorthair and Allbreed rings */}
+                  {Array.from({ length: 5 }, (_, i) => (
+                    columns.some(col => (col.specialty === 'Shorthair' || col.specialty === 'Allbreed') && i < getFinalsPositionsForRingType(col.specialty)) ? (
+                      <tr key={`sh-final-${i}`} className="cfa-table-row">
+                        <td className="py-2 pl-4 font-medium text-sm text-black border-r border-gray-300 frozen-column" style={{ width: '140px', minWidth: '140px' }}>
+                          {getOrdinalLabel(i, 'SH')}
+                        </td>
+                        {columns.map((col, columnIndex) => {
+                          const enabled = (col.specialty === 'Shorthair' || col.specialty === 'Allbreed') && i < getFinalsPositionsForRingType(col.specialty);
+                          if (enabled) {
+                            const value = getFinalsValue('shChampions', columnIndex, i);
+                            const errorKey = `shChampions-${columnIndex}-${i}`;
+                            const chCatNumbers = getCHCatNumbersFromShowAwards(columnIndex);
+                            const isCHFromShowAwards = chCatNumbers.includes(value.trim());
+                            const orangeBorderStyle = { border: '2px solid orange' };
+                            const isNavyBlueOutline = shouldApplyNavyBlueOutline(columnIndex, value);
+                            const navyBlueBorderStyle = { border: '2px solid #003366' };
+                            const borderStyle = isCHFromShowAwards ? orangeBorderStyle : (isNavyBlueOutline ? navyBlueBorderStyle : {});
+                            // Map Finals Cat # input to refs: rowIdx = numAwardRows + numBestCH + numBestLHCH + i
+                            const finalsRowIdx = Math.max(...columns.map(col => getBreakpointForRingType(col.specialty))) + Math.max(...columns.map(col => col.specialty === 'Allbreed' ? getFinalsPositionsForRingType(col.specialty) : 0)) + i;
+                            return (
+                              <td 
+                                key={`sh-final-${i}-${columnIndex}`} 
+                                className={`py-2 px-2 border-r border-gray-300 align-top${shouldApplyRingGlow(columnIndex) ? ' ring-glow' : ''}`}
+                              >
+                                <div className="flex flex-col items-start">
+                                  <div className="flex items-center">
                                     <input
-                                      type="checkbox"
-                                      className="void-checkbox"
-                                      checked={getVoidState('shChampionsFinals', columnIndex, i)}
-                                      onChange={(e) => updateVoidState('shChampionsFinals', columnIndex, i, e.target.checked)}
-                                      onFocus={() => setFocusedColumnIndex(columnIndex)}
-                                      tabIndex={-1}
+                                      type="text"
+                                      className={`w-10 h-7 text-xs text-center border rounded px-0.5 font-medium ${
+                                        getBorderStyle(errorKey, errors[errorKey] || '')
+                                      } focus:border-cfa-gold focus:outline-none ${
+                                        getVoidState('shChampionsFinals', columnIndex, i) ? 'voided-input' : ''
+                                      }`}
+                                      placeholder="Cat #"
+                                      value={localInputState[errorKey] !== undefined ? localInputState[errorKey] : value}
+                                      disabled={getVoidState('shChampionsFinals', columnIndex, i)}
+                                      onChange={(e) => setLocalInputState(prev => ({ ...prev, [errorKey]: e.target.value }))}
+                                      onBlur={(e) => {
+                                        updateFinals('shChampions', columnIndex, i, e.target.value);
+                                        setLocalInputState(prev => { const copy = { ...prev }; delete copy[errorKey]; return copy; });
+                                        handleFinalsBlur('shChampions', columnIndex, i, e.target.value);
+                                      }}
+                                      style={borderStyle}
+                                      ref={el => {
+                                        if (!catInputRefs.current[columnIndex]) {
+                                          catInputRefs.current[columnIndex] = Array(totalCatRows).fill(null);
+                                        }
+                                        catInputRefs.current[columnIndex][finalsRowIdx] = el;
+                                      }}
+                                      onKeyDown={(e) => handleCatInputKeyDown(e, columnIndex, finalsRowIdx)}
+                                      onFocus={(e) => handleCatInputFocus(e, columnIndex)}
                                     />
-                                    <span className="tooltip-text">
-                                      Mark this placement as voided (award given but not received by cat)
-                                    </span>
+                                    {value && value.trim() && (
+                                      <div className="void-tooltip ml-1">
+                                        <input
+                                          type="checkbox"
+                                          className="void-checkbox"
+                                          checked={getVoidState('shChampionsFinals', columnIndex, i)}
+                                          onChange={(e) => updateVoidState('shChampionsFinals', columnIndex, i, e.target.checked)}
+                                          onFocus={() => setFocusedColumnIndex(columnIndex)}
+                                          tabIndex={-1}
+                                        />
+                                        <span className="tooltip-text">
+                                          Mark this placement as voided (award given but not received by cat)
+                                        </span>
+                                      </div>
+                                    )}
                                   </div>
-                                )}
-                              </div>
-                              {errors[errorKey] && (
-                                <div className="text-xs mt-1" style={getErrorStyle(errors[errorKey])}>{getCleanMessage(errors[errorKey])}</div>
-                              )}
-                            </div>
-                          </td>
-                        );
-                      })}
-                    </tr>
+                                  {errors[errorKey] && (
+                                    <div className="text-xs mt-1" style={getErrorStyle(errors[errorKey])}>{getCleanMessage(errors[errorKey])}</div>
+                                  )}
+                                </div>
+                              </td>
+                            );
+                          } else {
+                            // Render empty cell for columns that do not need this row
+                            // Always apply border/padding classes for visual consistency
+                            // Also apply ring-glow if this is the focused column, for highlight continuity
+                            return <td key={`sh-final-${i}-${columnIndex}`} className={`py-2 px-2 border-r border-gray-300 align-top${shouldApplyRingGlow(columnIndex) ? ' ring-glow' : ''}`}>&nbsp;</td>;
+                          }
+                        })}
+                      </tr>
+                    ) : null
                   ))}
                 </tbody>
               </table>

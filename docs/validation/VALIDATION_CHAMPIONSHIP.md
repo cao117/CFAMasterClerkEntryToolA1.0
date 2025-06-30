@@ -2,18 +2,59 @@
 
 This document describes the **current validation rules** enforced in the Championship tab of the CFA Master Clerk Entry Tool.
 
-## Void Feature
+## Hair-Specific Breakpoint Logic
+
+The championship tab now uses **hair-specific breakpoints** based on ring type:
+
+### Allbreed Rings
+- **Breakpoint**: Championship cats only (LH GC + SH GC + LH CH + SH CH) ≥ 85
+- **Note**: Novices (NOV) are NOT included in the championship count for breakpoint calculation
+- **If ≥ 85**: Top 15 positions, 5 Best AB CH, 5 Best LH CH, 5 Best SH CH
+- **If < 85**: Top 10 positions, 3 Best AB CH, 3 Best LH CH, 3 Best SH CH
+
+### Longhair Rings
+- **Breakpoint**: LH championship cats (LH GC + LH CH) ≥ 85
+- **If ≥ 85**: Top 15 positions, 5 Best LH CH
+- **If < 85**: Top 10 positions, 3 Best LH CH
+- **Note**: Best AB CH and Best SH CH sections are disabled (not applicable)
+
+### Shorthair Rings
+- **Breakpoint**: SH championship cats (SH GC + SH CH) ≥ 85
+- **If ≥ 85**: Top 15 positions, 5 Best SH CH
+- **If < 85**: Top 10 positions, 3 Best SH CH
+- **Note**: Best AB CH and Best LH CH sections are disabled (not applicable)
+
+### Example Scenario
+- **LH GC**: 40, **LH CH**: 44 (LH Championship: 84 cats)
+- **SH GC**: 30, **SH CH**: 35 (SH Championship: 65 cats)
+- **NOV**: 20 (not included in championship count)
+- **Total Championship**: 149 cats (including novices)
+- **Championship cats only**: 129 cats (GC + CH only)
+
+**Column 1 (Allbreed Ring)**:
+- Championship count: 129 → **≥ 85** → Top 15 enabled, 5 Best AB CH enabled
+- LH CH count: 44 → **< 85** → 3 Best LH CH enabled (positions 4-5 disabled)
+- SH CH count: 65 → **< 85** → 3 Best SH CH enabled (positions 4-5 disabled)
+
+**Column 2 (Longhair Ring)**:
+- LH Championship count: 84 → **< 85** → Top 10 enabled (positions 11-15 disabled)
+- Best LH CH: 3 positions enabled (positions 4-5 disabled)
+- Best AB CH and Best SH CH: Always disabled
+
+**Column 3 (Shorthair Ring)**:
+- SH Championship count: 65 → **< 85** → Top 10 enabled (positions 11-15 disabled)
+- Best SH CH: 3 positions enabled (positions 4-5 disabled)
+- Best AB CH and Best LH CH: Always disabled
+
+## Void Feature (Updated 2024-06-19)
 - **Purpose**: Allows marking placements as "voided" when a cat wins an award but is not present to receive it physically in the show hall.
 - **Visual Indication**: When a void checkbox is checked, the corresponding cat number input is struck through, grayed out, and becomes read-only (disabled).
-- **Cross-Section Behavior**: When a cat number is voided in one section, ALL instances of that cat number across ALL sections are voided simultaneously. Unvoiding any instance unvoids all instances.
+- **Column-Local Behavior**: When a cat number is voided in one section, ALL instances of that cat number within the SAME COLUMN (judge/ring) are voided simultaneously. Unvoiding any instance unvoids all instances in that column. It does NOT affect the same cat number in other columns.
 - **Conditional Visibility**: Void checkboxes are grayed out and disabled when the corresponding cat number input is empty.
 - **Validation Impact**: Voided inputs participate in validation normally - all validation rules continue to apply as if the placement is normal.
-- **Behavior**: 
-  - Void checkboxes appear after status dropdowns in Show Awards and after cat number inputs in Finals sections
-  - Checkboxes have red borders and show tooltips on hover explaining their purpose
-  - Tab navigation remains on cat number inputs only (void checkboxes are not part of tab sequence)
-  - Voided inputs are disabled and cannot be edited until unvoided
-  - Unchecking a void checkbox restores normal input appearance and editability
+
+**Example:**
+- If you void cat #12 in Judge 1's column, all #12 placements in Judge 1's column are voided, but #12 in Judge 2's column is unaffected.
 
 ## Cat Number Validation
 - Must be a number between 1 and 450.
@@ -190,4 +231,20 @@ For **Longhair** or **Shorthair** rings (single specialty):
 - The order of CHs in the enabled section must match the order in the final if present.
 - Error messages and display are consistent with Allbreed logic.
 
-This ensures strict per-section validation for single specialty rings, matching CFA rules and the Allbreed logic for Best CH. 
+This ensures strict per-section validation for single specialty rings, matching CFA rules and the Allbreed logic for Best CH.
+
+## UI/UX Visibility Rules (2024-06-19)
+
+- For each column (ring), only the rows/sections that are applicable to that ring type are visible. If a section or row is not applicable (e.g., Best SH CH in a Longhair ring), it is not rendered at all—not just disabled.
+- **Each column only renders the number of rows needed for its ring type and championship count.** For example, if a Shorthair ring has 84 SH championship cats, only 10 Show Awards rows and 3 Best SH CH rows are rendered for that column; extra rows are not present.
+- This applies to:
+  - Entire sections (e.g., Best AB CH and Best SH CH in a Longhair ring are not shown at all).
+  - Individual rows within a section, based on the hair-specific breakpoint (e.g., if only top 10 are awarded, rows 11-15 are not rendered at all).
+  - The same logic applies to the finals sections: if only 3 Best AB CH are awarded, rows 4-5 are not rendered at all, and so on for Best LH CH and Best SH CH.
+
+### Example
+- In a Shorthair ring with 50 SH GC and 34 SH CH (total 84 SH championship cats):
+  - Only 10 Show Awards rows and 3 Best SH CH rows are rendered for that column.
+  - Rows 11-15 and Best SH CH rows 4-5 are not present in the UI for that column.
+- In an Allbreed ring with 90 total championship cats:
+  - All sections are visible, but each only shows the number of rows matching the placements awarded (e.g., 15 for Show Awards, 5 for each Best CH section). 

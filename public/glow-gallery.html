@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Glow Gallery - CFA Entry Tool</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      background: #18181b;
+      color: #fff;
+      font-family: Arial, Helvetica, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    h1 {
+      text-align: center;
+      margin-top: 2rem;
+      font-size: 2.2rem;
+      color: #FFD700;
+      letter-spacing: 1px;
+    }
+    .gallery {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 2rem;
+      margin: 2rem auto;
+      max-width: 1200px;
+    }
+    .glow-card {
+      background: #23232b;
+      border-radius: 12px;
+      padding: 2rem 1.5rem 1.5rem 1.5rem;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+      width: 260px;
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .glow-label {
+      margin-top: 1.2rem;
+      font-size: 1.1rem;
+      color: #FFD700;
+      font-weight: bold;
+      letter-spacing: 0.5px;
+    }
+    .sample-cell {
+      margin: 0 auto;
+      margin-top: 0.5rem;
+      width: 120px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      font-weight: 600;
+      border-radius: 8px;
+      background: #18181b;
+      color: #fff;
+      border: 2px solid #333;
+      position: relative;
+      z-index: 1;
+    }
+    /* CFA Gold Glow */
+    .glow-gold {
+      box-shadow: 0 0 12px 2px #FFD700, 0 0 32px 8px #FFD70055, 0 0 0 4px #fff70022;
+      border-color: #FFD700;
+      animation: goldPulse 2s infinite alternate;
+    }
+    @keyframes goldPulse {
+      0% { box-shadow: 0 0 12px 2px #FFD700, 0 0 32px 8px #FFD70055, 0 0 0 4px #fff70022; }
+      100% { box-shadow: 0 0 24px 6px #FFD700, 0 0 48px 16px #FFD70077, 0 0 0 8px #fff70033; }
+    }
+    /* Blue Glow */
+    .glow-blue {
+      box-shadow: 0 0 16px 2px #00BFFF, 0 0 32px 8px #00BFFF55, 0 0 0 4px #00BFFF22;
+      border-color: #00BFFF;
+      animation: bluePulse 2s infinite alternate;
+    }
+    @keyframes bluePulse {
+      0% { box-shadow: 0 0 16px 2px #00BFFF, 0 0 32px 8px #00BFFF55, 0 0 0 4px #00BFFF22; }
+      100% { box-shadow: 0 0 32px 8px #00BFFF, 0 0 64px 24px #00BFFF77, 0 0 0 8px #00BFFF33; }
+    }
+    /* Green Glow */
+    .glow-green {
+      box-shadow: 0 0 16px 2px #39FF14, 0 0 32px 8px #39FF1455, 0 0 0 4px #39FF1422;
+      border-color: #39FF14;
+      animation: greenPulse 2s infinite alternate;
+    }
+    @keyframes greenPulse {
+      0% { box-shadow: 0 0 16px 2px #39FF14, 0 0 32px 8px #39FF1455, 0 0 0 4px #39FF1422; }
+      100% { box-shadow: 0 0 32px 8px #39FF14, 0 0 64px 24px #39FF1477, 0 0 0 8px #39FF1433; }
+    }
+    /* Red Glow */
+    .glow-red {
+      box-shadow: 0 0 16px 2px #FF1744, 0 0 32px 8px #FF174455, 0 0 0 4px #FF174422;
+      border-color: #FF1744;
+      animation: redPulse 2s infinite alternate;
+    }
+    @keyframes redPulse {
+      0% { box-shadow: 0 0 16px 2px #FF1744, 0 0 32px 8px #FF174455, 0 0 0 4px #FF174422; }
+      100% { box-shadow: 0 0 32px 8px #FF1744, 0 0 64px 24px #FF174477, 0 0 0 8px #FF174433; }
+    }
+    /* Purple Glow */
+    .glow-purple {
+      box-shadow: 0 0 16px 2px #B388FF, 0 0 32px 8px #B388FF55, 0 0 0 4px #B388FF22;
+      border-color: #B388FF;
+      animation: purplePulse 2s infinite alternate;
+    }
+    @keyframes purplePulse {
+      0% { box-shadow: 0 0 16px 2px #B388FF, 0 0 32px 8px #B388FF55, 0 0 0 4px #B388FF22; }
+      100% { box-shadow: 0 0 32px 8px #B388FF, 0 0 64px 24px #B388FF77, 0 0 0 8px #B388FF33; }
+    }
+    /* White Glow */
+    .glow-white {
+      box-shadow: 0 0 24px 4px #fff, 0 0 48px 16px #fff8, 0 0 0 8px #fff4;
+      border-color: #fff;
+      animation: whitePulse 2s infinite alternate;
+      color: #222;
+      background: #fff;
+    }
+    @keyframes whitePulse {
+      0% { box-shadow: 0 0 24px 4px #fff, 0 0 48px 16px #fff8, 0 0 0 8px #fff4; }
+      100% { box-shadow: 0 0 48px 12px #fff, 0 0 96px 32px #fff8, 0 0 0 16px #fff4; }
+    }
+    /* Rainbow Glow */
+    .glow-rainbow {
+      box-shadow: 0 0 24px 4px #fff, 0 0 48px 16px #fff8, 0 0 0 8px #fff4;
+      border: 2px solid transparent;
+      background: linear-gradient(90deg, #FFD700, #00BFFF, #39FF14, #FF1744, #B388FF, #FFD700);
+      background-size: 400% 400%;
+      animation: rainbowGlow 4s linear infinite, rainbowPulse 2s infinite alternate;
+      color: #222;
+    }
+    @keyframes rainbowGlow {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    @keyframes rainbowPulse {
+      0% { box-shadow: 0 0 24px 4px #fff, 0 0 48px 16px #fff8, 0 0 0 8px #fff4; }
+      100% { box-shadow: 0 0 48px 12px #fff, 0 0 96px 32px #fff8, 0 0 0 16px #fff4; }
+    }
+  </style>
+</head>
+<body>
+  <h1>Glow Gallery</h1>
+  <div class="gallery">
+    <div class="glow-card">
+      <div class="sample-cell glow-gold">CFA Gold</div>
+      <div class="glow-label">CFA Gold Glow</div>
+    </div>
+    <div class="glow-card">
+      <div class="sample-cell glow-blue">Blue</div>
+      <div class="glow-label">Blue Glow</div>
+    </div>
+    <div class="glow-card">
+      <div class="sample-cell glow-green">Green</div>
+      <div class="glow-label">Green Glow</div>
+    </div>
+    <div class="glow-card">
+      <div class="sample-cell glow-red">Red</div>
+      <div class="glow-label">Red Glow</div>
+    </div>
+    <div class="glow-card">
+      <div class="sample-cell glow-purple">Purple</div>
+      <div class="glow-label">Purple Glow</div>
+    </div>
+    <div class="glow-card">
+      <div class="sample-cell glow-white">White</div>
+      <div class="glow-label">White Glow</div>
+    </div>
+    <div class="glow-card">
+      <div class="sample-cell glow-rainbow">Rainbow</div>
+      <div class="glow-label">Rainbow Glow</div>
+    </div>
+  </div>
+  <div style="text-align:center; color:#aaa; margin-bottom:2rem; font-size:1rem;">Open this file in your browser and let your developer know which glow you want!</div>
+</body>
+</html> 

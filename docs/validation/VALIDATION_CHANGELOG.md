@@ -4,6 +4,18 @@ This changelog records all changes, additions, and deletions to validation rules
 
 ---
 
+### [2024-12-19] Championship Tab: Hair-Specific Breakpoint Implementation
+- **Tab:** Championship
+- **Change:** Implemented hair-specific breakpoint logic for championship cats. The system now calculates breakpoints based on ring type:
+  - **Allbreed Rings**: Use total championship cats (GC + CH + NOV) for breakpoint
+  - **Longhair Rings**: Use LH championship cats (LH GC + LH CH) for breakpoint
+  - **Shorthair Rings**: Use SH championship cats (SH GC + SH CH) for breakpoint
+  - Updated General Tab to include separate LH GC and SH GC input fields
+  - Updated validation functions to use ring-specific breakpoints
+  - Updated UI to dynamically enable/disable positions based on ring-specific breakpoints
+  - Updated test data generation to respect ring-specific breakpoints
+- **Rationale:** Corrects the breakpoint calculation to match CFA rules where specialty rings (Longhair/Shorthair) use hair-specific championship counts for breakpoint determination, not the total championship count. This ensures proper position availability and validation per ring type.
+
 ### [2024-12-19] Championship Tab: Void Feature Behavior Enhanced
 - **Tab:** Championship
 - **Change:** Enhanced void functionality behavior to include:
@@ -147,6 +159,22 @@ This changelog records all changes, additions, and deletions to validation rules
 - **Tab:** Championship
 - **Change:** The message 'X needs to be assigned to either LH or SH CH final' is now always treated as a regular error (red), regardless of section fill state or other conditions. All documentation about warning/reminder/orange for this message has been removed.
 - **Rationale:** UI/UX and documentation consistency. No validation rule change; only error display and documentation updated.
+
+### [2024-06-19] Championship Tab: UI/UX: Non-applicable rows and sections are now completely hidden (not just disabled) for each ring type and breakpoint. Applies to all sections and extra rows beyond awarded placements. Improves clarity and prevents user confusion.
+
+### [2024-06-19] Championship Tab: Void functionality is now column-local: voiding a cat number only affects all instances of that cat number within the same column (judge/ring), not across all columns.
+
+### [2024-06-19] Championship Tab: Allbreed Championship Count Correction
+- **Tab:** Championship
+- **Change:** Corrected the championship count calculation for Allbreed rings to exclude novices (NOV). The breakpoint for Allbreed rings now correctly uses only championship cats (LH GC + SH GC + LH CH + SH CH), not the total including novices. This aligns with CFA rules where novices are not considered championship cats for breakpoint purposes.
+- **Rationale:** Novices are a separate class from championship cats and should not be included in championship breakpoint calculations. This correction ensures proper position availability based on actual championship cat counts.
+
+### [2024-06-19] Championship Tab: UI/UX: Non-applicable rows and sections are now completely hidden (not just disabled) for each ring type and breakpoint. Applies to all sections and extra rows beyond awarded placements. Improves clarity and prevents user confusion.
+
+### [2024-06-19] Championship Tab: Per-Column Row Rendering Fix
+- **Tab:** Championship
+- **Change:** UI now renders only the number of rows needed for each column/section, per ring type and championship count. No extra rows are shown for columns that do not need them (e.g., SH ring with <85 cats only shows 10 Show Awards rows and 3 Best SH CH rows). This fixes the bug where specialty rings could show too many rows.
+- **Rationale:** Ensures the UI always matches the correct CFA logic and prevents user confusion about available placements.
 
 ---
 

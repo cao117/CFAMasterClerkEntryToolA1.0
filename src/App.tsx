@@ -20,6 +20,8 @@ interface ShowData {
   numberOfJudges: number;
   championshipCounts: {
     gcs: number;
+    lhGcs: number;
+    shGcs: number;
     lhChs: number;
     shChs: number;
     novs: number;
@@ -45,7 +47,7 @@ function App() {
     clubName: '',
     masterClerk: '',
     numberOfJudges: 0,
-    championshipCounts: { gcs: 0, lhChs: 0, shChs: 0, novs: 0, chs: 0, total: 0 },
+    championshipCounts: { gcs: 0, lhGcs: 0, shGcs: 0, lhChs: 0, shChs: 0, novs: 0, chs: 0, total: 0 },
     kittenCount: 0,
     premiershipCounts: { gcs: 0, lhPrs: 0, shPrs: 0, novs: 0, prs: 0, total: 0 }
   });
@@ -57,35 +59,23 @@ function App() {
   const championshipTabRef = useRef<ChampionshipTabRef>(null);
 
   // State to track when Championship test data should be filled
-  const [shouldFillChampionshipData, setShouldFillChampionshipData] = useState(false);
-
-  // Effect to automatically fill Championship data when ref becomes available
-  // REMOVED: This was causing duplicate calls to fillTestData
-  // The new mechanism in ChampionshipTab handles this correctly
-
-  const handleFillChampionshipTestData = () => {
-    console.log('=== App.tsx handleFillChampionshipTestData called ===');
-    console.log('Current judges:', judges);
-    console.log('Current championshipTabRef:', championshipTabRef);
-    console.log('Current championshipTabRef.current:', championshipTabRef.current);
-    
-    // Set flag to fill Championship data when ref becomes available
-    setShouldFillChampionshipData(true);
-  };
+  const [shouldFillChampionshipData] = useState(false);
 
   // Auto-calculate championship counts
   useEffect(() => {
+    const gcs = showData.championshipCounts.lhGcs + showData.championshipCounts.shGcs;
     const chs = showData.championshipCounts.lhChs + showData.championshipCounts.shChs;
-    const total = showData.championshipCounts.gcs + chs + showData.championshipCounts.novs;
+    const total = gcs + chs + showData.championshipCounts.novs;
     setShowData(prev => ({
       ...prev,
       championshipCounts: {
         ...prev.championshipCounts,
+        gcs,
         chs,
         total
       }
     }));
-  }, [showData.championshipCounts.gcs, showData.championshipCounts.lhChs, showData.championshipCounts.shChs, showData.championshipCounts.novs]);
+  }, [showData.championshipCounts.lhGcs, showData.championshipCounts.shGcs, showData.championshipCounts.lhChs, showData.championshipCounts.shChs, showData.championshipCounts.novs]);
 
   // Auto-calculate premiership counts
   useEffect(() => {
@@ -141,7 +131,7 @@ function App() {
       clubName: '',
       masterClerk: '',
       numberOfJudges: 0,
-      championshipCounts: { gcs: 0, lhChs: 0, shChs: 0, novs: 0, chs: 0, total: 0 },
+      championshipCounts: { gcs: 0, lhGcs: 0, shGcs: 0, lhChs: 0, shChs: 0, novs: 0, chs: 0, total: 0 },
       kittenCount: 0,
       premiershipCounts: { gcs: 0, lhPrs: 0, shPrs: 0, novs: 0, prs: 0, total: 0 }
     });
@@ -181,7 +171,6 @@ function App() {
         showError={showError}
         showWarning={showWarning}
         showInfo={showInfo}
-        onFillChampionshipTestData={handleFillChampionshipTestData}
       />,
       disabled: false
     },
@@ -192,6 +181,12 @@ function App() {
         ref={championshipTabRef}
         judges={judges} 
         championshipTotal={showData.championshipCounts.total}
+        championshipCounts={{
+          lhGcs: showData.championshipCounts.lhGcs,
+          shGcs: showData.championshipCounts.shGcs,
+          lhChs: showData.championshipCounts.lhChs,
+          shChs: showData.championshipCounts.shChs
+        }}
         showSuccess={showSuccess}
         showError={showError}
         showInfo={showInfo}

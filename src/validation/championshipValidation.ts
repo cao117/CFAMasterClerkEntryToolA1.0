@@ -21,6 +21,12 @@ export interface ChampionshipValidationInput {
   lhChampionsFinals: { [key: string]: string };
   shChampionsFinals: { [key: string]: string };
   championshipTotal: number;
+  championshipCounts: {
+    lhGcs: number;
+    shGcs: number;
+    lhChs: number;
+    shChs: number;
+  };
   voidedShowAwards?: { [key: string]: boolean };
   voidedChampionsFinals?: { [key: string]: boolean };
   voidedLHChampionsFinals?: { [key: string]: boolean };
@@ -78,7 +84,7 @@ export function checkDuplicateCatNumbersInChampionsFinals(
   newValue: string, 
   excludeKey?: string
 ): boolean {
-  const { championsFinals, championshipTotal } = input;
+  const { championsFinals, columns } = input;
   
   if (!newValue || newValue.trim() === '') {
     return false; // Empty values don't count as duplicates
@@ -86,7 +92,8 @@ export function checkDuplicateCatNumbersInChampionsFinals(
   
   const trimmedValue = newValue.trim();
   const valuesInSection = new Set<string>();
-  const numPositions = championshipTotal >= 85 ? 5 : 3;
+  const column = columns[columnIndex];
+  const numPositions = column ? getFinalsPositionsForRingType(input, column.specialty) : 3;
   
   // Collect all cat numbers from champions finals in this column only
   for (let position = 0; position < numPositions; position++) {
@@ -111,7 +118,7 @@ export function checkDuplicateCatNumbersInLHChampionsFinals(
   newValue: string, 
   excludeKey?: string
 ): boolean {
-  const { lhChampionsFinals, championshipTotal } = input;
+  const { lhChampionsFinals, columns } = input;
   
   if (!newValue || newValue.trim() === '') {
     return false; // Empty values don't count as duplicates
@@ -119,7 +126,8 @@ export function checkDuplicateCatNumbersInLHChampionsFinals(
   
   const trimmedValue = newValue.trim();
   const valuesInSection = new Set<string>();
-  const numPositions = championshipTotal >= 85 ? 5 : 3;
+  const column = columns[columnIndex];
+  const numPositions = column ? getFinalsPositionsForRingType(input, column.specialty) : 3;
   
   // Collect all cat numbers from longhair champions finals in this column only
   for (let position = 0; position < numPositions; position++) {
@@ -144,7 +152,7 @@ export function checkDuplicateCatNumbersInSHChampionsFinals(
   newValue: string, 
   excludeKey?: string
 ): boolean {
-  const { shChampionsFinals, championshipTotal } = input;
+  const { shChampionsFinals, columns } = input;
   
   if (!newValue || newValue.trim() === '') {
     return false; // Empty values don't count as duplicates
@@ -152,7 +160,8 @@ export function checkDuplicateCatNumbersInSHChampionsFinals(
   
   const trimmedValue = newValue.trim();
   const valuesInSection = new Set<string>();
-  const numPositions = championshipTotal >= 85 ? 5 : 3;
+  const column = columns[columnIndex];
+  const numPositions = column ? getFinalsPositionsForRingType(input, column.specialty) : 3;
   
   // Collect all cat numbers from shorthair champions finals in this column only
   for (let position = 0; position < numPositions; position++) {
@@ -255,26 +264,14 @@ export function validateBestCHWithTop15AndGetFirstError(input: ChampionshipValid
       }
     }
     // Check if this cat is a CH in the eligible set
-    let isCH = false;
     let isGC = false;
     let isNOV = false;
-    let isInChampionshipFinal = false;
     // Check all championship final entries for this cat
     for (const key in showAwards) {
       const award = showAwards[key];
       if (award && award.catNumber.trim() === finalsValue.trim()) {
-        if (award.status === 'CH') isCH = true;
         if (award.status === 'GC') isGC = true;
         if (award.status === 'NOV') isNOV = true;
-        // Check if this cat is in championship final
-        const numAwardRows = championshipTotal >= 85 ? 15 : 10;
-        for (let i = 0; i < numAwardRows; i++) {
-          const finalAward = showAwards[`${columnIndex}-${i}`];
-          if (finalAward && finalAward.catNumber.trim() === finalsValue.trim()) {
-            isInChampionshipFinal = true;
-            break;
-          }
-        }
         break;
       }
     }
@@ -321,54 +318,6 @@ function getOrdinalSuffix(num: number): string {
 // Keep the original function for backward compatibility
 export function validateBestCHWithTop15(input: ChampionshipValidationInput, columnIndex: number): boolean {
   return validateBestCHWithTop15AndGetFirstError(input, columnIndex).isValid;
-}
-
-/**
- * Helper to get all championship final cat numbers for a column
- */
-function getShowAwardsCatNumbers(input: ChampionshipValidationInput, columnIndex: number): Set<string> {
-  const { showAwards } = input;
-  const catNums = new Set<string>();
-  for (let i = 0; i < 15; i++) {
-    const key = `${columnIndex}-${i}`;
-    const award = showAwards[key];
-    if (award && award.catNumber && award.catNumber.trim() !== '') {
-      catNums.add(award.catNumber.trim());
-    }
-  }
-  return catNums;
-}
-
-/**
- * Helper to get all cat numbers in a section for a column
- */
-function getSectionCatNumbers(section: { [key: string]: string }, columnIndex: number, numPositions: number): Set<string> {
-  const catNums = new Set<string>();
-  for (let i = 0; i < numPositions; i++) {
-    const key = `${columnIndex}-${i}`;
-    const value = section[key];
-    if (value && value.trim() !== '') {
-      catNums.add(value.trim());
-    }
-  }
-  return catNums;
-}
-
-/**
- * Helper to get actual number of Best CH cats (N)
- */
-function getNumBestCHCats(input: ChampionshipValidationInput, columnIndex: number): number {
-  const { championsFinals, championshipTotal } = input;
-  const numPositions = championshipTotal >= 85 ? 5 : 3;
-  let N = 0;
-  for (let i = 0; i < numPositions; i++) {
-    const key = `${columnIndex}-${i}`;
-    const value = championsFinals[key];
-    if (value && value.trim() !== '') {
-      N++;
-    }
-  }
-  return N;
 }
 
 /**
@@ -1042,21 +991,9 @@ export function validateChampionshipTab(input: ChampionshipValidationInput): { [
   return errors;
 }
 
-// Helper to get intersection positions for strict validation
-function getStrictValidationIndices(sectionFinals: {[key: string]: string}, bestCHCats: string[], columnIndex: number, numPositions: number): number[] {
-  const indices: number[] = [];
-  for (let i = 0; i < numPositions; i++) {
-    const val = sectionFinals[`${columnIndex}-${i}`];
-    if (val && val.trim() !== '' && bestCHCats.includes(val.trim())) {
-      indices.push(i);
-    }
-  }
-  return indices;
-}
-
 // Update validateBestHairCHWithFiller to remove 'is not in Best CH' logic
 function validateBestHairCHWithFiller(input: ChampionshipValidationInput, columnIndex: number, hair: 'LH' | 'SH') {
-  const { columns, championsFinals, lhChampionsFinals, shChampionsFinals, showAwards, championshipTotal } = input;
+  const { columns, lhChampionsFinals, shChampionsFinals, showAwards, championshipTotal } = input;
   const column = columns[columnIndex];
   if (!column || column.specialty !== 'Allbreed') return {};
   const numPositions = championshipTotal >= 85 ? 5 : 3;
@@ -1221,13 +1158,12 @@ function validateSingleSpecialtyCHWithTop15AndGetFirstError(input: ChampionshipV
     }
     seen.add(finalsValue.trim());
     // Check if this cat is a CH in the eligible set
-    let isCH = false;
     let isGC = false;
     let isNOV = false;
-    for (let i = 0; i < numAwardRows; i++) {
-      const award = showAwards[`${columnIndex}-${i}`];
+    // Check all championship final entries for this cat
+    for (const key in showAwards) {
+      const award = showAwards[key];
       if (award && award.catNumber.trim() === finalsValue.trim()) {
-        if (award.status === 'CH') isCH = true;
         if (award.status === 'GC') isGC = true;
         if (award.status === 'NOV') isNOV = true;
         break;
@@ -1251,4 +1187,31 @@ function validateSingleSpecialtyCHWithTop15AndGetFirstError(input: ChampionshipV
     // If no CHs in championship final, do NOT require the cat to be found as CH in show awards; accept any cat unless it is explicitly GC or NOV
   }
   return { isValid: true, firstErrorPosition: -1, errorMessage: '' };
+}
+
+/**
+ * Helper functions to calculate breakpoints based on ring type
+ */
+export function getChampionshipCountForRingType(input: ChampionshipValidationInput, ringType: string): number {
+  const { championshipTotal, championshipCounts } = input;
+  switch (ringType) {
+    case 'Allbreed':
+      return championshipTotal;
+    case 'Longhair':
+      return championshipCounts.lhGcs + championshipCounts.lhChs;
+    case 'Shorthair':
+      return championshipCounts.shGcs + championshipCounts.shChs;
+    default:
+      return championshipTotal;
+  }
+}
+
+export function getBreakpointForRingType(input: ChampionshipValidationInput, ringType: string): number {
+  const count = getChampionshipCountForRingType(input, ringType);
+  return count >= 85 ? 15 : 10;
+}
+
+export function getFinalsPositionsForRingType(input: ChampionshipValidationInput, ringType: string): number {
+  const count = getChampionshipCountForRingType(input, ringType);
+  return count >= 85 ? 5 : 3;
 } 

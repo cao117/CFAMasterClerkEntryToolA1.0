@@ -17,6 +17,8 @@ interface ShowData {
   numberOfJudges: number;
   championshipCounts: {
     gcs: number;
+    lhGcs: number;
+    shGcs: number;
     lhChs: number;
     shChs: number;
     novs: number;
@@ -43,7 +45,6 @@ interface GeneralTabProps {
   showError: (title: string, message?: string, duration?: number) => void;
   showWarning: (title: string, message?: string, duration?: number) => void;
   showInfo: (title: string, message?: string, duration?: number) => void;
-  onFillChampionshipTestData?: () => void;
 }
 
 export default function GeneralTab({ 
@@ -54,8 +55,7 @@ export default function GeneralTab({
   showSuccess,
   showError,
   showWarning: _showWarning,
-  showInfo: _showInfo,
-  onFillChampionshipTestData
+  showInfo: _showInfo
 }: GeneralTabProps) {
   // Local state for form validation
   const [errors, setErrors] = useState<{[key: string]: string}>({});
@@ -287,7 +287,7 @@ export default function GeneralTab({
       clubName: '',
       masterClerk: '',
       numberOfJudges: 0,
-      championshipCounts: { gcs: 0, lhChs: 0, shChs: 0, novs: 0, chs: 0, total: 0 },
+      championshipCounts: { gcs: 0, lhGcs: 0, shGcs: 0, lhChs: 0, shChs: 0, novs: 0, chs: 0, total: 0 },
       kittenCount: 0,
       premiershipCounts: { gcs: 0, lhPrs: 0, shPrs: 0, novs: 0, prs: 0, total: 0 }
     });
@@ -326,6 +326,8 @@ export default function GeneralTab({
       numberOfJudges: numberOfJudges,
       championshipCounts: {
         gcs: Math.floor(Math.random() * 50) + 20,
+        lhGcs: Math.floor(Math.random() * 30) + 15,
+        shGcs: Math.floor(Math.random() * 30) + 15,
         lhChs: Math.floor(Math.random() * 30) + 15,
         shChs: Math.floor(Math.random() * 30) + 15,
         novs: Math.floor(Math.random() * 20) + 10,
@@ -483,18 +485,25 @@ export default function GeneralTab({
                   <td colSpan={12} className="py-3 pl-4">Championship Count</td>
                 </tr>
                 <tr className="cfa-table-row">
-                  <td className="text-sm font-medium pl-4 py-3"># of GCs:</td>
-                  <td className="py-3"><input type="number" min="0" value={showData.championshipCounts.gcs} onChange={e => updateChampionshipCount('gcs', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'championshipgcs')} className="cfa-input w-20 text-sm"/></td>
+                  <td className="text-sm font-medium pl-4 py-3"># of LH GCs:</td>
+                  <td className="py-3"><input type="number" min="0" value={showData.championshipCounts.lhGcs} onChange={e => updateChampionshipCount('lhGcs', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'championshiplhGcs')} className="cfa-input w-20 text-sm"/></td>
+                  <td className="text-sm font-medium"># of SH GCs:</td>
+                  <td><input type="number" min="0" value={showData.championshipCounts.shGcs} onChange={e => updateChampionshipCount('shGcs', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'championshipshGcs')} className="cfa-input w-20 text-sm"/></td>
                   <td className="text-sm font-medium"># of LH CHs:</td>
                   <td><input type="number" min="0" value={showData.championshipCounts.lhChs} onChange={e => updateChampionshipCount('lhChs', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'championshiplhChs')} className="cfa-input w-20 text-sm"/></td>
                   <td className="text-sm font-medium"># of SH CHs:</td>
                   <td><input type="number" min="0" value={showData.championshipCounts.shChs} onChange={e => updateChampionshipCount('shChs', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'championshipshChs')} className="cfa-input w-20 text-sm"/></td>
                   <td className="text-sm font-medium"># of NOVs:</td>
                   <td><input type="number" min="0" value={showData.championshipCounts.novs} onChange={e => updateChampionshipCount('novs', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'championshipnovs')} className="cfa-input w-20 text-sm"/></td>
+                </tr>
+                <tr className="cfa-table-row">
+                  <td className="text-sm font-medium pl-4 py-3"># of GCs:</td>
+                  <td className="py-3"><input type="number" value={showData.championshipCounts.gcs} readOnly className="cfa-input cfa-input-readonly w-20 text-sm"/></td>
                   <td className="text-sm font-medium"># of CHs:</td>
                   <td><input type="number" value={showData.championshipCounts.chs} readOnly className="cfa-input cfa-input-readonly w-20 text-sm"/></td>
                   <td className="text-sm font-medium">Total Count:</td>
                   <td><input type="number" value={showData.championshipCounts.total} readOnly className="cfa-input cfa-input-readonly w-20 text-sm"/></td>
+                  <td colSpan={6}></td>
                 </tr>
                 {/* Kitten Count */}
                 <tr className="cfa-table-header">

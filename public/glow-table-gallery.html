@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Glow Table Gallery - CFA Entry Tool</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      background: #18181b;
+      color: #fff;
+      font-family: Arial, Helvetica, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    h1 {
+      text-align: center;
+      margin-top: 2rem;
+      font-size: 2.2rem;
+      color: #FFD700;
+      letter-spacing: 1px;
+    }
+    .legend {
+      text-align: center;
+      color: #aaa;
+      margin-bottom: 1.5rem;
+      font-size: 1.1rem;
+    }
+    table {
+      margin: 0 auto 2rem auto;
+      border-collapse: collapse;
+      background: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+      min-width: 900px;
+      max-width: 98vw;
+    }
+    th, td {
+      padding: 0.7rem 1.2rem;
+      text-align: center;
+      font-size: 1.05rem;
+      border: 1px solid #e5e7eb;
+      min-width: 110px;
+      background: #fff;
+      transition: box-shadow 0.3s, border-color 0.3s;
+    }
+    th {
+      background: #18181b;
+      color: #FFD700;
+      font-size: 1.1rem;
+      font-weight: 700;
+      border-bottom: 2.5px solid #FFD700;
+      letter-spacing: 0.5px;
+    }
+    tr:nth-child(even) td {
+      background: #f9fafb;
+    }
+    tr:nth-child(odd) td {
+      background: #fff;
+    }
+    /* Glow styles (reuse from previous gallery) */
+    .glow-gold {
+      box-shadow: 0 0 12px 2px #FFD700, 0 0 32px 8px #FFD70055, 0 0 0 4px #fff70022;
+      border-color: #FFD700 !important;
+      animation: goldPulse 2s infinite alternate;
+      z-index: 1;
+      position: relative;
+    }
+    @keyframes goldPulse {
+      0% { box-shadow: 0 0 12px 2px #FFD700, 0 0 32px 8px #FFD70055, 0 0 0 4px #fff70022; }
+      100% { box-shadow: 0 0 24px 6px #FFD700, 0 0 48px 16px #FFD70077, 0 0 0 8px #fff70033; }
+    }
+    .glow-blue {
+      box-shadow: 0 0 16px 2px #00BFFF, 0 0 32px 8px #00BFFF55, 0 0 0 4px #00BFFF22;
+      border-color: #00BFFF !important;
+      animation: bluePulse 2s infinite alternate;
+      z-index: 1;
+      position: relative;
+    }
+    @keyframes bluePulse {
+      0% { box-shadow: 0 0 16px 2px #00BFFF, 0 0 32px 8px #00BFFF55, 0 0 0 4px #00BFFF22; }
+      100% { box-shadow: 0 0 32px 8px #00BFFF, 0 0 64px 24px #00BFFF77, 0 0 0 8px #00BFFF33; }
+    }
+    .glow-green {
+      box-shadow: 0 0 16px 2px #39FF14, 0 0 32px 8px #39FF1455, 0 0 0 4px #39FF1422;
+      border-color: #39FF14 !important;
+      animation: greenPulse 2s infinite alternate;
+      z-index: 1;
+      position: relative;
+    }
+    @keyframes greenPulse {
+      0% { box-shadow: 0 0 16px 2px #39FF14, 0 0 32px 8px #39FF1455, 0 0 0 4px #39FF1422; }
+      100% { box-shadow: 0 0 32px 8px #39FF14, 0 0 64px 24px #39FF1477, 0 0 0 8px #39FF1433; }
+    }
+    .glow-red {
+      box-shadow: 0 0 16px 2px #FF1744, 0 0 32px 8px #FF174455, 0 0 0 4px #FF174422;
+      border-color: #FF1744 !important;
+      animation: redPulse 2s infinite alternate;
+      z-index: 1;
+      position: relative;
+    }
+    @keyframes redPulse {
+      0% { box-shadow: 0 0 16px 2px #FF1744, 0 0 32px 8px #FF174455, 0 0 0 4px #FF174422; }
+      100% { box-shadow: 0 0 32px 8px #FF1744, 0 0 64px 24px #FF174477, 0 0 0 8px #FF174433; }
+    }
+    .glow-purple {
+      box-shadow: 0 0 16px 2px #B388FF, 0 0 32px 8px #B388FF55, 0 0 0 4px #B388FF22;
+      border-color: #B388FF !important;
+      animation: purplePulse 2s infinite alternate;
+      z-index: 1;
+      position: relative;
+    }
+    @keyframes purplePulse {
+      0% { box-shadow: 0 0 16px 2px #B388FF, 0 0 32px 8px #B388FF55, 0 0 0 4px #B388FF22; }
+      100% { box-shadow: 0 0 32px 8px #B388FF, 0 0 64px 24px #B388FF77, 0 0 0 8px #B388FF33; }
+    }
+    .glow-white {
+      box-shadow: 0 0 24px 4px #fff, 0 0 48px 16px #fff8, 0 0 0 8px #fff4;
+      border-color: #fff !important;
+      animation: whitePulse 2s infinite alternate;
+      color: #222;
+      background: #fff;
+      z-index: 1;
+      position: relative;
+    }
+    @keyframes whitePulse {
+      0% { box-shadow: 0 0 24px 4px #fff, 0 0 48px 16px #fff8, 0 0 0 8px #fff4; }
+      100% { box-shadow: 0 0 48px 12px #fff, 0 0 96px 32px #fff8, 0 0 0 16px #fff4; }
+    }
+    .glow-rainbow {
+      box-shadow: 0 0 24px 4px #fff, 0 0 48px 16px #fff8, 0 0 0 8px #fff4;
+      border: 2px solid transparent !important;
+      background: linear-gradient(90deg, #FFD700, #00BFFF, #39FF14, #FF1744, #B388FF, #FFD700);
+      background-size: 400% 400%;
+      animation: rainbowGlow 4s linear infinite, rainbowPulse 2s infinite alternate;
+      color: #222;
+      z-index: 1;
+      position: relative;
+    }
+    @keyframes rainbowGlow {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    @keyframes rainbowPulse {
+      0% { box-shadow: 0 0 24px 4px #fff, 0 0 48px 16px #fff8, 0 0 0 8px #fff4; }
+      100% { box-shadow: 0 0 48px 12px #fff, 0 0 96px 32px #fff8, 0 0 0 16px #fff4; }
+    }
+  </style>
+</head>
+<body>
+  <h1>Glow Table Gallery</h1>
+  <div class="legend">Each column below uses a different glow style. This is how the highlight will look in your app's table.<br>Let your developer know which column style you want!</div>
+  <table>
+    <tr>
+      <th class="glow-gold">Gold Glow</th>
+      <th class="glow-blue">Blue Glow</th>
+      <th class="glow-green">Green Glow</th>
+      <th class="glow-red">Red Glow</th>
+      <th class="glow-purple">Purple Glow</th>
+      <th class="glow-white">White Glow</th>
+      <th class="glow-rainbow">Rainbow Glow</th>
+    </tr>
+    <tr>
+      <td class="glow-gold">101</td>
+      <td class="glow-blue">102</td>
+      <td class="glow-green">103</td>
+      <td class="glow-red">104</td>
+      <td class="glow-purple">105</td>
+      <td class="glow-white">106</td>
+      <td class="glow-rainbow">107</td>
+    </tr>
+    <tr>
+      <td class="glow-gold">201</td>
+      <td class="glow-blue">202</td>
+      <td class="glow-green">203</td>
+      <td class="glow-red">204</td>
+      <td class="glow-purple">205</td>
+      <td class="glow-white">206</td>
+      <td class="glow-rainbow">207</td>
+    </tr>
+    <tr>
+      <td class="glow-gold">301</td>
+      <td class="glow-blue">302</td>
+      <td class="glow-green">303</td>
+      <td class="glow-red">304</td>
+      <td class="glow-purple">305</td>
+      <td class="glow-white">306</td>
+      <td class="glow-rainbow">307</td>
+    </tr>
+    <tr>
+      <td class="glow-gold">401</td>
+      <td class="glow-blue">402</td>
+      <td class="glow-green">403</td>
+      <td class="glow-red">404</td>
+      <td class="glow-purple">405</td>
+      <td class="glow-white">406</td>
+      <td class="glow-rainbow">407</td>
+    </tr>
+    <tr>
+      <td class="glow-gold">501</td>
+      <td class="glow-blue">502</td>
+      <td class="glow-green">503</td>
+      <td class="glow-red">504</td>
+      <td class="glow-purple">505</td>
+      <td class="glow-white">506</td>
+      <td class="glow-rainbow">507</td>
+    </tr>
+  </table>
+  <div class="legend">Open this file in your browser and pick your favorite column style!</div>
+</body>
+</html> 
