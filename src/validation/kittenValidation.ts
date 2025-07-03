@@ -5,13 +5,17 @@
  * @property {Array<{judge: any, specialty: string, columnIndex: number}>} columns - Columns for the tab
  * @property {Record<string, {catNumber: string, status: string}>} showAwards - Cat numbers/statuses by cell key
  * @property {Record<string, boolean>} voidedShowAwards - Voided state by cell key
- * @property {number} kittenTotal - Total kittens (for breakpoint)
+ * @property {Object} kittenCounts - Hair-specific kitten counts for breakpoint calculation
  */
 export type KittenValidationInput = {
   columns: { judge: any; specialty: string; columnIndex: number }[];
   showAwards: Record<string, { catNumber: string; status: string }>;
   voidedShowAwards: Record<string, boolean>;
-  kittenTotal: number;
+  kittenCounts: {
+    lhKittens: number;
+    shKittens: number;
+    total: number;
+  };
 };
 
 /**
@@ -21,13 +25,25 @@ export type KittenValidationInput = {
  */
 export function validateKittenTab(input: KittenValidationInput): Record<string, string> {
   const errors: Record<string, string> = {};
-  const { columns, showAwards, voidedShowAwards, kittenTotal } = input;
-  const maxRows = kittenTotal >= 75 ? 15 : 10;
+  const { columns, showAwards, voidedShowAwards, kittenCounts } = input;
+  
+  // Helper function to get breakpoint for a ring type
+  const getBreakpointForRingType = (ringType: string): number => {
+    if (ringType === 'Allbreed') {
+      return kittenCounts.total >= 75 ? 15 : 10;
+    } else if (ringType === 'Longhair') {
+      return kittenCounts.lhKittens >= 75 ? 15 : 10;
+    } else if (ringType === 'Shorthair') {
+      return kittenCounts.shKittens >= 75 ? 15 : 10;
+    }
+    return 10; // Default fallback
+  };
 
   // For each column
   columns.forEach((col, colIdx) => {
     const seen: Set<string> = new Set();
     let firstEmpty = -1;
+    const maxRows = getBreakpointForRingType(col.specialty);
     for (let rowIdx = 0; rowIdx < maxRows; rowIdx++) {
       const key = `${colIdx}_${rowIdx}`;
       const cell = showAwards[key] || { catNumber: '', status: 'KIT' };

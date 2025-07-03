@@ -21,7 +21,11 @@ export interface ShowData {
     chs: number;
     total: number;
   };
-  kittenCount: number;
+  kittenCounts: {
+    lhKittens: number;
+    shKittens: number;
+    total: number;
+  };
   premiershipCounts: {
     gcs: number;
     lhPrs: number;
@@ -30,6 +34,7 @@ export interface ShowData {
     prs: number;
     total: number;
   };
+  householdPetCount: number;
 }
 
 /**
@@ -66,6 +71,11 @@ export function validateGeneralForm(showData: ShowData, judges: Judge[]): { [key
   const uniqueNames = new Set(judgeNames);
   if (judgeNames.length !== uniqueNames.size) {
     newErrors.judgeNames = 'Judge names must be unique';
+  }
+
+  // Household Pet Count validation
+  if (showData.householdPetCount < 0 || isNaN(showData.householdPetCount)) {
+    newErrors.householdPetCount = 'Household Pet count must be a non-negative integer';
   }
 
   return newErrors;

@@ -18,7 +18,11 @@ interface Column {
 
 interface KittenTabProps {
   judges: Judge[];
-  kittenTotal: number;
+  kittenCounts: {
+    lhKittens: number;
+    shKittens: number;
+    total: number;
+  };
   showSuccess: (title: string, message?: string, duration?: number) => void;
   showError: (title: string, message?: string, duration?: number) => void;
   showInfo?: (title: string, message?: string, duration?: number) => void;
@@ -31,7 +35,7 @@ interface KittenTabProps {
 
 export default function KittenTab({
   judges,
-  kittenTotal,
+  kittenCounts,
   showSuccess,
   showError,
   showInfo: _showInfo,
@@ -57,8 +61,17 @@ export default function KittenTab({
 
   const columns: Column[] = useMemo(() => generateColumns(), [judges]);
 
-  // --- Breakpoint logic: 75 kittens ---
-  const getAwardCount = () => (kittenTotal >= 75 ? 15 : 10);
+  // --- Hair-specific breakpoint logic: 75 kittens per hair type ---
+  const getAwardCount = (ringType: string) => {
+    if (ringType === 'Allbreed') {
+      return kittenCounts.total >= 75 ? 15 : 10;
+    } else if (ringType === 'Longhair') {
+      return kittenCounts.lhKittens >= 75 ? 15 : 10;
+    } else if (ringType === 'Shorthair') {
+      return kittenCounts.shKittens >= 75 ? 15 : 10;
+    }
+    return 10; // Default fallback
+  };
 
   // --- State for focused column (for ring glow effect) ---
   const [focusedColumnIndex, setFocusedColumnIndex] = useState<number | null>(null);
@@ -68,7 +81,7 @@ export default function KittenTab({
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   // --- Cat input refs for keyboard navigation ---
-  const totalCatRows = getAwardCount();
+  const totalCatRows = Math.max(...columns.map(col => getAwardCount(col.specialty)));
   const catInputRefs = useRef<(HTMLInputElement | null)[][]>([]);
   React.useEffect(() => {
     catInputRefs.current = Array.from({ length: columns.length }, () => Array(totalCatRows).fill(null));
@@ -203,7 +216,7 @@ export default function KittenTab({
       columns,
       showAwards: kittenTabData.showAwards || {},
       voidedShowAwards: kittenTabData.voidedShowAwards || {},
-      kittenTotal
+      kittenCounts
     };
     setErrors(kittenValidation.validateKittenTab(validationInput));
   };
@@ -214,7 +227,7 @@ export default function KittenTab({
   };
 
   // --- Table Structure: Sticky headers, frozen position column, columns = judges ---
-  const maxFinalRows = getAwardCount();
+  const maxFinalRows = Math.max(...columns.map(col => getAwardCount(col.specialty)));
 
   // Add state for reset modal
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
@@ -331,7 +344,7 @@ export default function KittenTab({
                 </tr>
               </thead>
               <tbody>
-                {/* Kittens Final Section (Top 10/15) */}
+                                {/* Kittens Final Section (Top 10/15) */}
                 {Array.from({ length: maxFinalRows }, (_, i) => (
                   <tr key={`kitten-final-${i}`} className="cfa-table-row">
                     <td className="py-2 pl-4 font-medium text-sm border-r border-gray-300 bg-white frozen-column" style={{ width: '80px', minWidth: '80px' }}>
@@ -342,56 +355,68 @@ export default function KittenTab({
                       const cell = getShowAward(colIdx, i) || { catNumber: '', status: 'KIT' };
                       const voided = getVoidState(colIdx, i);
                       const error = errors[`${colIdx}_${i}`];
-                      return (
-                        <td key={`kitten-final-${i}-${colIdx}`} className={`py-2 px-2 border-r border-gray-300 align-top${focusedColumnIndex === colIdx ? ' ring-glow' : ''}`}> 
-                          <div className="flex flex-col items-start">
-                            <div className="flex gap-1 items-center">
-                              <input
-                                type="text"
-                                className={`w-14 h-7 text-xs text-center border rounded px-0.5 ${error ? 'cfa-input-error' : ''} ${voided ? 'voided-input' : ''} focus:outline-none focus:border-cfa-gold`}
-                                placeholder="Cat #"
-                                value={cell.catNumber ?? ''}
-                                onChange={e => updateShowAward(colIdx, i, 'catNumber', e.target.value)}
-                                onFocus={e => handleCatInputFocus(e, colIdx)}
-                                onKeyDown={e => handleCatInputKeyDown(e, colIdx, i)}
-                                onBlur={handleBlur}
-                                disabled={voided}
-                                ref={el => {
-                                  if (!catInputRefs.current[colIdx]) catInputRefs.current[colIdx] = [];
-                                  catInputRefs.current[colIdx][i] = el;
-                                  if (colIdx === 0 && i === 0) {
-                                    // Focus immediately when the ref is set (if tab is active and we haven't focused yet)
-                                    if (el && isActive && !hasFocusedOnActivation.current) {
-                                      setTimeout(() => {
-                                        el.focus();
-                                        setFocusedColumnIndex(0);
-                                        hasFocusedOnActivation.current = true; // Mark as focused
-                                      }, 0);
-                                    }
-                                  }
-                                }}
-                              />
-                              <select
-                                className={`w-14 h-7 text-xs text-center border rounded px-0.5 ${error ? 'cfa-input-error' : ''} ${voided ? 'voided-input' : ''} focus:outline-none focus:border-cfa-gold`}
-                                value="KIT"
-                                disabled
-                              >
-                                <option value="KIT">KIT</option>
-                              </select>
-                              {cell.catNumber && (
+                      const maxRowsForThisColumn = getAwardCount(col.specialty);
+                      
+                      // Only show input if this row is within the breakpoint for this column
+                      if (i < maxRowsForThisColumn) {
+                        return (
+                          <td key={`kitten-final-${i}-${colIdx}`} className={`py-2 px-2 border-r border-gray-300 align-top${focusedColumnIndex === colIdx ? ' ring-glow' : ''}`}> 
+                            <div className="flex flex-col items-start">
+                              <div className="flex gap-1 items-center">
                                 <input
-                                  type="checkbox"
-                                  className="void-checkbox"
-                                  checked={voided}
-                                  onChange={e => setKittenTabDataVoidState(colIdx, i, e.target.checked)}
-                                  disabled={!cell.catNumber}
+                                  type="text"
+                                  className={`w-14 h-7 text-xs text-center border rounded px-0.5 ${error ? 'cfa-input-error' : ''} ${voided ? 'voided-input' : ''} focus:outline-none focus:border-cfa-gold`}
+                                  placeholder="Cat #"
+                                  value={cell.catNumber ?? ''}
+                                  onChange={e => updateShowAward(colIdx, i, 'catNumber', e.target.value)}
+                                  onFocus={e => handleCatInputFocus(e, colIdx)}
+                                  onKeyDown={e => handleCatInputKeyDown(e, colIdx, i)}
+                                  onBlur={handleBlur}
+                                  disabled={voided}
+                                  ref={el => {
+                                    if (!catInputRefs.current[colIdx]) catInputRefs.current[colIdx] = [];
+                                    catInputRefs.current[colIdx][i] = el;
+                                    if (colIdx === 0 && i === 0) {
+                                      // Focus immediately when the ref is set (if tab is active and we haven't focused yet)
+                                      if (el && isActive && !hasFocusedOnActivation.current) {
+                                        setTimeout(() => {
+                                          el.focus();
+                                          setFocusedColumnIndex(0);
+                                          hasFocusedOnActivation.current = true; // Mark as focused
+                                        }, 0);
+                                      }
+                                    }
+                                  }}
                                 />
-                              )}
+                                <select
+                                  className={`w-14 h-7 text-xs text-center border rounded px-0.5 ${error ? 'cfa-input-error' : ''} ${voided ? 'voided-input' : ''} focus:outline-none focus:border-cfa-gold`}
+                                  value="KIT"
+                                  disabled
+                                >
+                                  <option value="KIT">KIT</option>
+                                </select>
+                                {cell.catNumber && (
+                                  <input
+                                    type="checkbox"
+                                    className="void-checkbox"
+                                    checked={voided}
+                                    onChange={e => setKittenTabDataVoidState(colIdx, i, e.target.checked)}
+                                    disabled={!cell.catNumber}
+                                  />
+                                )}
+                              </div>
+                              {error && <div className="text-xs mt-1 text-red-600">{error}</div>}
                             </div>
-                            {error && <div className="text-xs mt-1 text-red-600">{error}</div>}
-                          </div>
-                        </td>
-                      );
+                          </td>
+                        );
+                      } else {
+                        // Show empty cell for rows beyond this column's breakpoint
+                        return (
+                          <td key={`kitten-final-${i}-${colIdx}`} className={`py-2 px-2 border-r border-gray-300 align-top${focusedColumnIndex === colIdx ? ' ring-glow' : ''}`}>
+                            &nbsp;
+                          </td>
+                        );
+                      }
                     })}
                   </tr>
                 ))}

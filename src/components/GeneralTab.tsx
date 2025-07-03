@@ -25,7 +25,11 @@ interface ShowData {
     chs: number;
     total: number;
   };
-  kittenCount: number;
+  kittenCounts: {
+    lhKittens: number;
+    shKittens: number;
+    total: number;
+  };
   premiershipCounts: {
     gcs: number;
     lhPrs: number;
@@ -34,6 +38,7 @@ interface ShowData {
     prs: number;
     total: number;
   };
+  householdPetCount: number;
 }
 
 interface GeneralTabProps {
@@ -187,11 +192,13 @@ export default function GeneralTab({
       } else if (field.startsWith('championship')) {
         const countField = field.replace('championship', '') as keyof ShowData['championshipCounts'];
         updateChampionshipCount(countField, 0);
-      } else if (field === 'kittenCount') {
-        updateShowData('kittenCount', 0);
+      } else if (field === 'kittenCounts') {
+        updateShowData('kittenCounts', { lhKittens: 0, shKittens: 0, total: 0 });
       } else if (field.startsWith('premiership')) {
         const countField = field.replace('premiership', '') as keyof ShowData['premiershipCounts'];
         updatePremiershipCount(countField, 0);
+      } else if (field === 'householdPetCount') {
+        updateShowData('householdPetCount', 0);
       }
     }
   };
@@ -255,6 +262,17 @@ export default function GeneralTab({
     }));
   };
 
+  const updateKittenCount = (field: keyof ShowData['kittenCounts'], value: number) => {
+    setShowData(prev => ({
+      ...prev,
+      kittenCounts: {
+        ...prev.kittenCounts,
+        [field]: value,
+        total: field === 'lhKittens' ? value + prev.kittenCounts.shKittens : prev.kittenCounts.lhKittens + value
+      }
+    }));
+  };
+
   const handleSaveToTempCSVClick = () => {
     const errors = validateGeneralForm(showData, judges);
     setErrors(errors);
@@ -298,8 +316,9 @@ export default function GeneralTab({
       masterClerk: '',
       numberOfJudges: 0,
       championshipCounts: { gcs: 0, lhGcs: 0, shGcs: 0, lhChs: 0, shChs: 0, novs: 0, chs: 0, total: 0 },
-      kittenCount: 0,
-      premiershipCounts: { gcs: 0, lhPrs: 0, shPrs: 0, novs: 0, prs: 0, total: 0 }
+      kittenCounts: { lhKittens: 0, shKittens: 0, total: 0 },
+      premiershipCounts: { gcs: 0, lhPrs: 0, shPrs: 0, novs: 0, prs: 0, total: 0 },
+      householdPetCount: 0
     });
     setJudges([]);
     setErrors({});
@@ -344,7 +363,11 @@ export default function GeneralTab({
         chs: 0, // Will be auto-calculated
         total: 0 // Will be auto-calculated
       },
-      kittenCount: Math.floor(Math.random() * 30) + 10,
+      kittenCounts: {
+        lhKittens: Math.floor(Math.random() * 15) + 5,
+        shKittens: Math.floor(Math.random() * 15) + 5,
+        total: 0 // Will be auto-calculated
+      },
       premiershipCounts: {
         gcs: Math.floor(Math.random() * 40) + 15,
         lhPrs: Math.floor(Math.random() * 25) + 10,
@@ -352,7 +375,8 @@ export default function GeneralTab({
         novs: Math.floor(Math.random() * 15) + 5,
         prs: 0, // Will be auto-calculated
         total: 0 // Will be auto-calculated
-      }
+      },
+      householdPetCount: Math.floor(Math.random() * 10) + 5
     };
 
     setShowData(updatedShowData);
@@ -520,9 +544,13 @@ export default function GeneralTab({
                   <td colSpan={12} className="py-3 pl-4">Kitten Count</td>
                 </tr>
                 <tr className="cfa-table-row">
-                  <td className="text-sm font-medium pl-4 py-3"># of Kittens:</td>
-                  <td className="py-3"><input type="number" min="0" value={showData.kittenCount} onChange={e => updateShowData('kittenCount', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'kittenCount')} className="cfa-input w-20 text-sm"/></td>
-                  <td colSpan={10}></td>
+                  <td className="text-sm font-medium pl-4 py-3"># of LH Kittens:</td>
+                  <td className="py-3"><input type="number" min="0" value={showData.kittenCounts.lhKittens} onChange={e => updateKittenCount('lhKittens', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'kittenCountslhKittens')} className="cfa-input w-20 text-sm"/></td>
+                  <td className="text-sm font-medium"># of SH Kittens:</td>
+                  <td><input type="number" min="0" value={showData.kittenCounts.shKittens} onChange={e => updateKittenCount('shKittens', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'kittenCountsshKittens')} className="cfa-input w-20 text-sm"/></td>
+                  <td className="text-sm font-medium">Total Kittens:</td>
+                  <td><input type="number" value={showData.kittenCounts.total} readOnly className="cfa-input cfa-input-readonly w-20 text-sm"/></td>
+                  <td colSpan={6}></td>
                 </tr>
                 {/* Premiership Count */}
                 <tr className="cfa-table-header">
@@ -541,6 +569,15 @@ export default function GeneralTab({
                   <td><input type="number" value={showData.premiershipCounts.prs} readOnly className="cfa-input cfa-input-readonly w-20 text-sm"/></td>
                   <td className="text-sm font-medium">Total Count:</td>
                   <td><input type="number" value={showData.premiershipCounts.total} readOnly className="cfa-input cfa-input-readonly w-20 text-sm"/></td>
+                </tr>
+                {/* Household Pet Count */}
+                <tr className="cfa-table-header">
+                  <td colSpan={12} className="py-3 pl-4">Household Pet Count</td>
+                </tr>
+                <tr className="cfa-table-row">
+                  <td className="text-sm font-medium pl-4 py-3"># of Household Pets:</td>
+                  <td className="py-3"><input type="number" min="0" value={showData.householdPetCount} onChange={e => updateShowData('householdPetCount', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'householdPetCount')} className="cfa-input w-20 text-sm"/></td>
+                  <td colSpan={10}></td>
                 </tr>
               </tbody>
             </table>

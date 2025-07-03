@@ -42,6 +42,12 @@ This document describes the **current validation rules** enforced in the General
   - # of GCs, LH PRs, SH PRs, NOVs: Each must be a non-negative integer.
   - # of PRs and Total Count: Auto-calculated, read-only.
 
+## Household Pet Count
+- **# of Household Pets**
+  - Required. Must be a non-negative integer.
+  - No longhair/shorthair split; single total only.
+  - Default is 0.
+
 ## Additional Rules
 - **Required Field Indicators**
   - All required fields are marked with a red asterisk (*).

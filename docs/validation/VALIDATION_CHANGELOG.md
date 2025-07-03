@@ -343,6 +343,27 @@ This changelog records all changes, additions, and deletions to validation rules
 - **Change:** Implemented Kitten tab as a strict reduction of the Premiership tab. Only one section (Top 10/15 Kittens), only KIT status, all UI/UX, voiding, error display, and keyboard navigation match Premiership tab. Validation includes duplicate, sequential, range, and voiding logic. Column reset on ring type change is enforced. Documentation updated in VALIDATION_KITTEN.md.
 - **Rationale:** Ensures robust, user-friendly, and consistent data entry for kittens, with full parity to Premiership tab except for reduced features.
 
+### [2024-12-19] General Tab & Kitten Tab: Hair-Specific Kitten Count Implementation
+- **Tab:** General, Kitten
+- **Change:** 
+  - **General Tab**: Replaced single "Kitten Count" field with separate "Longhair Kittens" and "Shorthair Kittens" input fields. Total kittens are now auto-calculated as the sum of LH + SH kittens.
+  - **Kitten Tab**: Updated to use hair-specific breakpoint logic based on ring type:
+    - **Allbreed Rings**: Use total kittens (LH + SH) for breakpoint
+    - **Longhair Rings**: Use LH kittens only for breakpoint  
+    - **Shorthair Rings**: Use SH kittens only for breakpoint
+  - **Breakpoint**: 75 kittens per hair type (≥75 = 15 positions, <75 = 10 positions)
+  - Updated validation logic, UI rendering, and documentation to support hair-specific breakpoints
+- **Rationale:** Corrects the breakpoint calculation to match CFA rules where specialty rings (Longhair/Shorthair) use hair-specific kitten counts for breakpoint determination, not the total kitten count. This ensures proper position availability and validation per ring type.
+
+### [2024-12-19] Kitten Tab: Column-Specific Row Rendering Fix
+- **Tab:** Kitten
+- **Change:** Fixed critical bug where all columns were showing the same number of rows based on the maximum breakpoint across all columns. Now each column shows only the number of rows it actually needs based on its own ring type and hair-specific breakpoint:
+  - **Shorthair columns with <75 SH kittens**: Show only 10 rows (empty cells for rows 11-15)
+  - **Longhair columns with <75 LH kittens**: Show only 10 rows (empty cells for rows 11-15)  
+  - **Allbreed columns with ≥75 total kittens**: Show 15 rows
+  - **Mixed setup**: Table shows maximum rows needed, but each column only has inputs for its applicable rows
+- **Rationale:** Previously, if any column needed 15 rows, all columns would show 15 rows regardless of their individual breakpoints. This fix ensures each column respects its own hair-specific breakpoint calculation, matching CFA rules and user expectations.
+
 ---
 
 ## How to Use This Log

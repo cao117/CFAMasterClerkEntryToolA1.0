@@ -10,10 +10,24 @@ This document describes the **current validation rules** enforced in the Kitten 
   - Four action buttons at the bottom: Save to Temp CSV, Generate Final CSV, Restore from CSV, Reset (shared logic)
   - Voiding logic, error display, keyboard navigation, and all styling match the Premiership tab exactly
 
-## Breakpoint Logic
-- **Breakpoint:** 75 kittens
-  - If **≥75 kittens**: Top 15 positions
-  - If **<75 kittens**: Top 10 positions
+## Hair-Specific Breakpoint Logic
+
+The Kitten tab uses **hair-specific breakpoints** based on ring type:
+
+### Allbreed Rings
+- **Breakpoint**: Total kittens (LH + SH) ≥ 75
+- **If ≥ 75**: Top 15 positions
+- **If < 75**: Top 10 positions
+
+### Longhair Rings
+- **Breakpoint**: LH kittens ≥ 75
+- **If ≥ 75**: Top 15 positions
+- **If < 75**: Top 10 positions
+
+### Shorthair Rings
+- **Breakpoint**: SH kittens ≥ 75
+- **If ≥ 75**: Top 15 positions
+- **If < 75**: Top 10 positions
 
 ## Validation Rules
 - **Cat number format:** Must be between 1-450
@@ -35,11 +49,12 @@ For each cell, only the highest-precedence error is shown:
 - Other judges' columns and data are not affected.
 
 ## Example
-Suppose you have 3 judges (all Allbreed) and 80 kittens:
-- The table will have 3 columns (one per judge), 10 rows (Top 10 Kittens)
-- You enter cat numbers 1-10 in each column
-- If you void cat #3 in column 1, all instances of cat #3 in column 1 are voided
-- If you change judge 2's ring type to Double Specialty, column 2 is replaced by two columns (LH, SH), both start empty
+Suppose you have 6 judges: 5 Shorthair rings and 1 Allbreed ring:
+- **Shorthair rings**: If SH kittens < 75, each shows 10 rows (Top 10)
+- **Allbreed ring**: If total kittens ≥ 75, shows 15 rows (Top 15)
+- **Result**: Table shows 15 rows total, but only the Allbreed column has inputs for rows 11-15
+- **Shorthair columns**: Rows 11-15 show empty cells (no inputs)
+- Each column's breakpoint is calculated independently based on its ring type and hair-specific kitten count
 
 ## Parity with Premiership Tab
 - All UI/UX, error display, voiding, and keyboard navigation are identical to the Premiership tab
