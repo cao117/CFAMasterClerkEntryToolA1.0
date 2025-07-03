@@ -6,6 +6,7 @@ import ToastContainer from './components/ToastContainer'
 import { useToast } from './hooks/useToast'
 import cfaLogo from './assets/cfa-logo.png'
 import PremiershipTab from './components/PremiershipTab'
+import KittenTab from './components/KittenTab'
 
 interface Judge {
   id: number;
@@ -90,6 +91,9 @@ function App() {
     voidedSHPremiersFinals: {},
     errors: {},
   });
+
+  // Kitten tab state
+  const [kittenTabData, setKittenTabData] = useState({ showAwards: {}, voidedShowAwards: {} });
 
   // Auto-calculate championship counts
   useEffect(() => {
@@ -221,7 +225,7 @@ function App() {
     function resetColumns(
       tabData: any,
       setTabData: React.Dispatch<React.SetStateAction<any>>,
-      tabType: 'championship' | 'premiership'
+      tabType: 'championship' | 'premiership' | 'kitten'
     ) {
       // Sections to update
       const sections = tabType === 'championship'
@@ -282,6 +286,7 @@ function App() {
     }
     resetColumns(championshipTabData, setChampionshipTabData, 'championship');
     resetColumns(premiershipTabData, setPremiershipTabData, 'premiership');
+    resetColumns(kittenTabData, setKittenTabData, 'kitten');
   };
 
   const tabs = [
@@ -335,10 +340,19 @@ function App() {
       />,
       disabled: championshipTabDisabled
     },
-    { 
-      id: 'kitten', 
-      name: 'Kitten', 
-      component: <div className="p-6 bg-white rounded-lg shadow"><h2 className="text-2xl font-bold mb-6 text-gray-800">Kitten Finals</h2><p className="text-gray-600">Coming soon...</p></div>,
+    {
+      id: 'kitten',
+      name: 'Kittens',
+      component: <KittenTab
+        judges={judges}
+        kittenTotal={showData.kittenCount}
+        showSuccess={showSuccess}
+        showError={showError}
+        isActive={activeTab === 'kitten'}
+        kittenTabData={kittenTabData}
+        setKittenTabData={setKittenTabData}
+        onTabReset={() => setKittenTabData({ showAwards: {}, voidedShowAwards: {} })}
+      />,
       disabled: kittenTabDisabled
     },
     { 

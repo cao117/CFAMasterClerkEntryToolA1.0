@@ -128,4 +128,4 @@ Contains all React UI components. Each component focuses on rendering and user i
 
 #### `/src/validation/` ⭐ **New**
 **Purpose**: Centralized validation logic for maintainability and reusability
-- **Household Cats validation**: See `docs/validation/VALIDATION_HOUSEHOLD.md` for rules (to be implemented).
+- **Kitten validation**: See `docs/validation/VALIDATION_KITTEN.md` for rules (matches PremiershipTab except for reduced features).
