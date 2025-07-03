@@ -1,4 +1,5 @@
-import { useState, useEffect, useImperativeHandle, forwardRef, useCallback, useRef } from 'react';
+import { useState, useEffect, useImperativeHandle, useCallback, useRef } from 'react';
+import React from 'react';
 import Modal from './Modal';
 import { 
   validateChampionshipTab, 
@@ -34,6 +35,18 @@ interface ChampionshipTabProps {
   showInfo?: (title: string, message?: string, duration?: number) => void;
   shouldFillTestData?: boolean;
   onResetAllData?: () => void;
+  /**
+   * Championship tab data state, lifted to App.tsx for persistence across tab switches
+   */
+  championshipTabData: any;
+  /**
+   * Setter for championship tab data
+   */
+  setChampionshipTabData: React.Dispatch<React.SetStateAction<any>>;
+  /**
+   * Handler to reset only the Championship tab data
+   */
+  onTabReset: () => void;
 }
 
 interface Column {
@@ -45,38 +58,43 @@ export interface ChampionshipTabRef {
   fillTestData: () => void;
 }
 
-const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
-  ({ judges, championshipTotal, championshipCounts, showSuccess, showError, showInfo: _showInfo, shouldFillTestData, onResetAllData }, ref) => {
-    // State for dynamic table structure
-    const [columns, setColumns] = useState<Column[]>([]);
-    const [numAwardRows, setNumAwardRows] = useState(10);
-    
-    // State for all championship tab data (atomic updates)
-    interface ChampionshipData {
-      showAwards: { [key: string]: CellData };
-      championsFinals: { [key: string]: string };
-      lhChampionsFinals: { [key: string]: string };
-      shChampionsFinals: { [key: string]: string };
+// Replace the previous type alias with an explicit type definition for ChampionshipTabData
+
+type ChampionshipTabData = {
+  showAwards: { [key: string]: any };
+  championsFinals: { [key: string]: any };
+  lhChampionsFinals: { [key: string]: any };
+  shChampionsFinals: { [key: string]: any };
       voidedShowAwards: { [key: string]: boolean };
       voidedChampionsFinals: { [key: string]: boolean };
       voidedLHChampionsFinals: { [key: string]: boolean };
       voidedSHChampionsFinals: { [key: string]: boolean };
-    }
-    const [championshipData, setChampionshipData] = useState<ChampionshipData>({
-      showAwards: {},
-      championsFinals: {},
-      lhChampionsFinals: {},
-      shChampionsFinals: {},
-      voidedShowAwards: {},
-      voidedChampionsFinals: {},
-      voidedLHChampionsFinals: {},
-      voidedSHChampionsFinals: {}
-    });
+  errors: { [key: string]: string };
+};
+
+/**
+ * ChampionshipTab component for CFA Master Clerk Entry Tool
+ *
+ * This component renders the Championship Finals tab, including all dynamic table logic, validation, and voiding logic.
+ * It uses React.forwardRef to expose the fillTestData method to the parent (App.tsx) for test data injection.
+ *
+ * @component
+ * @param {ChampionshipTabProps} props - The props for the ChampionshipTab
+ * @param {React.Ref<ChampionshipTabRef>} ref - Ref to expose fillTestData
+ */
+const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
+  (props, ref) => {
+    const { judges, championshipTotal, championshipCounts, showSuccess, showError, showInfo: _showInfo, shouldFillTestData, onResetAllData, championshipTabData, setChampionshipTabData, onTabReset } = props;
+    // State for dynamic table structure
+    const [columns, setColumns] = useState<Column[]>([]);
+    const [numAwardRows, setNumAwardRows] = useState(10);
+    
     // State for validation errors and modal
-    const [errors, setErrors] = useState<{[key: string]: string}>({});
     const [isResetModalOpen, setIsResetModalOpen] = useState(false);
     const [isTabResetModalOpen, setIsTabResetModalOpen] = useState(false);
     const [focusedColumnIndex, setFocusedColumnIndex] = useState<number | null>(null);
+    // Local errors state (like PremiershipTab)
+    const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
     // 1. Add localInputState for text fields
     const [localInputState, setLocalInputState] = useState<{ [key: string]: string }>({});
@@ -201,31 +219,59 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
     // Helper function to create validation input object
     const createValidationInput = (): ChampionshipValidationInput => ({
       columns,
-      showAwards: championshipData.showAwards,
-      championsFinals: championshipData.championsFinals,
-      lhChampionsFinals: championshipData.lhChampionsFinals,
-      shChampionsFinals: championshipData.shChampionsFinals,
+      showAwards: championshipTabData.showAwards,
+      championsFinals: championshipTabData.championsFinals,
+      lhChampionsFinals: championshipTabData.lhChampionsFinals,
+      shChampionsFinals: championshipTabData.shChampionsFinals,
       championshipTotal,
       championshipCounts,
-      voidedShowAwards: championshipData.voidedShowAwards,
-      voidedChampionsFinals: championshipData.voidedChampionsFinals,
-      voidedLHChampionsFinals: championshipData.voidedLHChampionsFinals,
-      voidedSHChampionsFinals: championshipData.voidedSHChampionsFinals
+      voidedShowAwards: championshipTabData.voidedShowAwards,
+      voidedChampionsFinals: championshipTabData.voidedChampionsFinals,
+      voidedLHChampionsFinals: championshipTabData.voidedLHChampionsFinals,
+      voidedSHChampionsFinals: championshipTabData.voidedSHChampionsFinals
     });
 
-    // Update show awards - update state and trigger full validation
+    /**
+     * Updates a Show Award cell (cat number or status) and auto-syncs void state.
+     * If the entered cat number is already voided elsewhere in the column (any section),
+     * this cell is immediately set to voided. If not, void state is cleared for this cell.
+     */
     const updateShowAward = (columnIndex: number, position: number, field: 'catNumber' | 'status', value: string) => {
       const key = `${columnIndex}-${position}`;
-      setChampionshipData(prev => {
-        // Get current state for this position, using default if not exists
-        const currentAward = prev.showAwards[key] || { catNumber: '', status: 'GC' };
-        
+      setChampionshipTabData((prev: ChampionshipTabData) => {
+        if (field === 'catNumber') {
+          const prevCell = prev.showAwards[key] || {};
+          const newCell = {
+            ...prevCell,
+            catNumber: value,
+            status: prevCell.status || (value ? 'GC' : '')
+          };
+          // --- Auto-void logic: if this cat number is voided elsewhere in the column, void this cell too ---
+          if (value && value.trim() !== '') {
+            const isVoided = (
+              Object.keys(prev.voidedShowAwards).some(k => k.startsWith(`${columnIndex}-`) && prev.showAwards[k]?.catNumber === value && prev.voidedShowAwards[k]) ||
+              Object.keys(prev.voidedChampionsFinals).some(k => k.startsWith(`${columnIndex}-`) && prev.championsFinals[k] === value && prev.voidedChampionsFinals[k]) ||
+              Object.keys(prev.voidedLHChampionsFinals).some(k => k.startsWith(`${columnIndex}-`) && prev.lhChampionsFinals[k] === value && prev.voidedLHChampionsFinals[k]) ||
+              Object.keys(prev.voidedSHChampionsFinals).some(k => k.startsWith(`${columnIndex}-`) && prev.shChampionsFinals[k] === value && prev.voidedSHChampionsFinals[k])
+            );
+            setChampionshipTabDataVoidState('voidedShowAwards', columnIndex, position, isVoided);
+          } else {
+            setChampionshipTabDataVoidState('voidedShowAwards', columnIndex, position, false);
+          }
+          return {
+            ...prev,
+            showAwards: {
+              ...prev.showAwards,
+              [key]: newCell
+            }
+          };
+        }
         return {
           ...prev,
           showAwards: {
             ...prev.showAwards,
             [key]: {
-              ...currentAward,
+              ...prev.showAwards[key],
               [field]: value
             }
           }
@@ -233,112 +279,88 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
       });
     };
 
-    // Handle blur events for show awards - run all validation here
-    const handleShowAwardBlur = (columnIndex: number, position: number, field: 'catNumber' | 'status', value: string) => {
-      const key = `${columnIndex}-${position}`;
-      const input = createValidationInput();
-      
-      // Run basic validation for this input
-      if (field === 'catNumber' && value.trim() !== '') {
-        // Validate cat number format
-        if (!validateCatNumber(value)) {
-          setErrors(prev => ({ ...prev, [key]: 'Cat number must be between 1-450' }));
-          return;
-        }
-        // Sequential entry validation
-        if (!validateSequentialEntry(input, 'showAwards', columnIndex, position, value)) {
-          setErrors(prev => ({ ...prev, [key]: 'Must fill positions sequentially (no skipping positions)' }));
-          return;
-        }
-        // Duplicate validation
-        if (checkDuplicateCatNumbersInShowAwards(input, columnIndex, value, key)) {
-          setErrors(prev => ({ ...prev, [key]: 'Duplicate cat number within this column' }));
-          return;
-        }
-      }
-      
-      // Always trigger full validation after any blur to ensure all relationship-based errors are applied
-      setErrors(validateChampionshipTab(createValidationInput()));
-    };
-
-    // Update finals - update state and trigger full validation
+    /**
+     * Updates a Finals cell (Best AB CH, Best LH CH, Best SH CH) and auto-syncs void state.
+     * If the entered cat number is already voided elsewhere in the column (any section),
+     * this cell is immediately set to voided. If not, void state is cleared for this cell.
+     */
     const updateFinals = (section: 'champions' | 'lhChampions' | 'shChampions', columnIndex: number, position: number, value: string) => {
       const key = `${columnIndex}-${position}`;
-      setChampionshipData(prev => ({
-        ...prev,
-        [section === 'champions' ? 'championsFinals' : section === 'lhChampions' ? 'lhChampionsFinals' : 'shChampionsFinals']:
-          {
-            ...prev[section === 'champions' ? 'championsFinals' : section === 'lhChampions' ? 'lhChampionsFinals' : 'shChampionsFinals'],
+      setChampionshipTabData((prev: ChampionshipTabData) => {
+        // --- Auto-void logic: if this cat number is voided elsewhere in the column, void this cell too ---
+        let isVoided = false;
+        if (value && value.trim() !== '') {
+          isVoided = (
+            Object.keys(prev.voidedShowAwards).some(k => k.startsWith(`${columnIndex}-`) && prev.showAwards[k]?.catNumber === value && prev.voidedShowAwards[k]) ||
+            Object.keys(prev.voidedChampionsFinals).some(k => k.startsWith(`${columnIndex}-`) && prev.championsFinals[k] === value && prev.voidedChampionsFinals[k]) ||
+            Object.keys(prev.voidedLHChampionsFinals).some(k => k.startsWith(`${columnIndex}-`) && prev.lhChampionsFinals[k] === value && prev.voidedLHChampionsFinals[k]) ||
+            Object.keys(prev.voidedSHChampionsFinals).some(k => k.startsWith(`${columnIndex}-`) && prev.shChampionsFinals[k] === value && prev.voidedSHChampionsFinals[k])
+          );
+          setChampionshipTabDataVoidState(sectionToVoidKey(section), columnIndex, position, isVoided);
+        } else {
+          setChampionshipTabDataVoidState(sectionToVoidKey(section), columnIndex, position, false);
+        }
+        // Update the finals value
+        return {
+          ...prev,
+          [sectionToFinalsKey(section)]: {
+            ...prev[sectionToFinalsKey(section)],
             [key]: value
           }
-      }));
+        };
+      });
     };
 
-    // Handle blur events for finals - run all validation here
-    const handleFinalsBlur = (section: 'champions' | 'lhChampions' | 'shChampions', columnIndex: number, position: number, value: string) => {
-      const errorKey = `${section}-${columnIndex}-${position}`;
+    /**
+     * Helper to set void state for a given section/position.
+     */
+    function setChampionshipTabDataVoidState(section: 'voidedShowAwards' | 'voidedChampionsFinals' | 'voidedLHChampionsFinals' | 'voidedSHChampionsFinals', columnIndex: number, position: number, voided: boolean) {
       const key = `${columnIndex}-${position}`;
-      const input = createValidationInput();
-      
-      // Run basic validation for this input
-      if (value.trim() !== '') {
-        // Validate cat number format
-        if (!validateCatNumber(value)) {
-          setErrors(prev => ({ ...prev, [errorKey]: 'Cat number must be between 1-450' }));
-          return;
-        }
-        // Sequential entry validation
-        if (!validateSequentialEntry(input, section, columnIndex, position, value)) {
-          setErrors(prev => ({ ...prev, [errorKey]: 'Must fill positions sequentially (no skipping positions)' }));
-          return;
-        }
-        // Duplicate validation
-        let hasDuplicate = false;
-        switch (section) {
-          case 'champions':
-            hasDuplicate = checkDuplicateCatNumbersInChampionsFinals(input, columnIndex, value, key);
-            break;
-          case 'lhChampions':
-            hasDuplicate = checkDuplicateCatNumbersInLHChampionsFinals(input, columnIndex, value, key);
-            break;
-          case 'shChampions':
-            hasDuplicate = checkDuplicateCatNumbersInSHChampionsFinals(input, columnIndex, value, key);
-            break;
-        }
-        if (hasDuplicate) {
-          let sectionName = '';
-          switch (section) {
-            case 'champions':
-              sectionName = 'Best AB CH Final';
-              break;
-            case 'lhChampions':
-              sectionName = 'Best LH CH Final';
-              break;
-            case 'shChampions':
-              sectionName = 'Best SH CH Final';
-              break;
+      setChampionshipTabData((prev: ChampionshipTabData) => ({
+        ...prev,
+        [section]: {
+          ...prev[section],
+          [key]: voided
           }
-          setErrors(prev => ({ ...prev, [errorKey]: `Duplicate cat number within ${sectionName} section` }));
-          return;
-        }
+      }));
+    }
+
+    /**
+     * Helper to map section to void state key.
+     */
+    function sectionToVoidKey(section: 'champions' | 'lhChampions' | 'shChampions') {
+      switch (section) {
+        case 'champions': return 'voidedChampionsFinals';
+        case 'lhChampions': return 'voidedLHChampionsFinals';
+        case 'shChampions': return 'voidedSHChampionsFinals';
+        default: return 'voidedChampionsFinals';
       }
-      
-      // Always trigger full validation after any blur to ensure all relationship-based errors are applied
-      setErrors(validateChampionshipTab(createValidationInput()));
-    };
+    }
+
+    /**
+     * Helper to map section to finals key.
+     */
+    function sectionToFinalsKey(section: 'champions' | 'lhChampions' | 'shChampions') {
+        switch (section) {
+        case 'champions': return 'championsFinals';
+        case 'lhChampions': return 'lhChampionsFinals';
+        case 'shChampions': return 'shChampionsFinals';
+        default: return 'championsFinals';
+      }
+    }
 
     // Getter functions
     const getShowAward = (columnIndex: number, position: number): CellData => {
       const key = `${columnIndex}-${position}`;
-      return championshipData.showAwards[key] || { catNumber: '', status: 'GC' };
+      return championshipTabData.showAwards[key] || { catNumber: '', status: 'GC' };
     };
 
     const getFinalsValue = (section: 'champions' | 'lhChampions' | 'shChampions', columnIndex: number, position: number): string => {
       const key = `${columnIndex}-${position}`;
       switch (section) {
-        case 'champions': return championshipData.championsFinals[key] || '';
-        case 'lhChampions': return championshipData.lhChampionsFinals[key] || '';
-        case 'shChampions': return championshipData.shChampionsFinals[key] || '';
+        case 'champions': return championshipTabData.championsFinals[key] || '';
+        case 'lhChampions': return championshipTabData.lhChampionsFinals[key] || '';
+        case 'shChampions': return championshipTabData.shChampionsFinals[key] || '';
       }
     };
 
@@ -349,7 +371,7 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
       const chCats: string[] = [];
       for (let i = 0; i < numAwardRows; i++) {
         const key = `${columnIndex}-${i}`;
-        const award = championshipData.showAwards[key];
+        const award = championshipTabData.showAwards[key];
         if (award && award.status === 'CH' && award.catNumber && award.catNumber.trim() !== '') {
           chCats.push(award.catNumber.trim());
         }
@@ -366,7 +388,7 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
       const bestCHCats: string[] = [];
       for (let i = 0; i < numFinalsPositions; i++) {
         const key = `${columnIndex}-${i}`;
-        const value = championshipData.championsFinals[key];
+        const value = championshipTabData.championsFinals[key];
         if (value && value.trim() !== '') {
           bestCHCats.push(value.trim());
         }
@@ -573,7 +595,7 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
       });
       
       // Update state
-      setChampionshipData({
+      setChampionshipTabData((prev: ChampionshipTabData) => ({
         showAwards: newShowAwards,
         championsFinals: newChampionsFinals,
         lhChampionsFinals: newLhChampionsFinals,
@@ -582,11 +604,11 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
         voidedChampionsFinals: {},
         voidedLHChampionsFinals: {},
         voidedSHChampionsFinals: {}
-      });
-      setErrors({});
+      }));
       // After state is updated, trigger a full-form validation to clear any stale errors
       setTimeout(() => {
-        setErrors(validateChampionshipTab({
+        setErrors(
+          validateChampionshipTab({
           columns,
           showAwards: newShowAwards,
           championsFinals: newChampionsFinals,
@@ -598,7 +620,8 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
           voidedChampionsFinals: {},
           voidedLHChampionsFinals: {},
           voidedSHChampionsFinals: {}
-        }));
+          })
+        );
       }, 0);
       showSuccess('Test Data Filled', 'Championship tab has been filled with realistic test data that complies with all validation rules.');
     }, [judges, championshipTotal, columns, numAwardRows, showSuccess]);
@@ -618,25 +641,27 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
 
     // Add useEffect to run validation after any relevant state change
     useEffect(() => {
-      setErrors(validateChampionshipTab({
+      setErrors(
+        validateChampionshipTab({
         columns,
-        showAwards: championshipData.showAwards,
-        championsFinals: championshipData.championsFinals,
-        lhChampionsFinals: championshipData.lhChampionsFinals,
-        shChampionsFinals: championshipData.shChampionsFinals,
+          showAwards: championshipTabData.showAwards,
+          championsFinals: championshipTabData.championsFinals,
+          lhChampionsFinals: championshipTabData.lhChampionsFinals,
+          shChampionsFinals: championshipTabData.shChampionsFinals,
         championshipTotal,
         championshipCounts
-      }));
-    }, [columns, championshipData, championshipTotal, championshipCounts]);
+        })
+      );
+    }, [columns, championshipTabData.showAwards, championshipTabData.championsFinals, championshipTabData.lhChampionsFinals, championshipTabData.shChampionsFinals, championshipTotal, championshipCounts]);
 
     // Action button handlers
     const handleSaveToTempCSVClick = () => {
       const errors = validateChampionshipTab({
         columns,
-        showAwards: championshipData.showAwards,
-        championsFinals: championshipData.championsFinals,
-        lhChampionsFinals: championshipData.lhChampionsFinals,
-        shChampionsFinals: championshipData.shChampionsFinals,
+        showAwards: championshipTabData.showAwards,
+        championsFinals: championshipTabData.championsFinals,
+        lhChampionsFinals: championshipTabData.lhChampionsFinals,
+        shChampionsFinals: championshipTabData.shChampionsFinals,
         championshipTotal,
         championshipCounts
       });
@@ -649,16 +674,16 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
         );
         return;
       }
-      handleSaveToTempCSV({ columns, showAwards: championshipData.showAwards, championsFinals: championshipData.championsFinals, lhChampionsFinals: championshipData.lhChampionsFinals, shChampionsFinals: championshipData.shChampionsFinals, championshipTotal }, showSuccess, showError);
+      handleSaveToTempCSV({ columns, showAwards: championshipTabData.showAwards, championsFinals: championshipTabData.championsFinals, lhChampionsFinals: championshipTabData.lhChampionsFinals, shChampionsFinals: championshipTabData.shChampionsFinals, championshipTotal }, showSuccess, showError);
     };
 
     const handleGenerateFinalCSVClick = () => {
       const errors = validateChampionshipTab({
         columns,
-        showAwards: championshipData.showAwards,
-        championsFinals: championshipData.championsFinals,
-        lhChampionsFinals: championshipData.lhChampionsFinals,
-        shChampionsFinals: championshipData.shChampionsFinals,
+        showAwards: championshipTabData.showAwards,
+        championsFinals: championshipTabData.championsFinals,
+        lhChampionsFinals: championshipTabData.lhChampionsFinals,
+        shChampionsFinals: championshipTabData.shChampionsFinals,
         championshipTotal,
         championshipCounts
       });
@@ -671,11 +696,11 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
         );
         return;
       }
-      handleGenerateFinalCSV({ columns, showAwards: championshipData.showAwards, championsFinals: championshipData.championsFinals, lhChampionsFinals: championshipData.lhChampionsFinals, shChampionsFinals: championshipData.shChampionsFinals, championshipTotal }, showSuccess, showError);
+      handleGenerateFinalCSV({ columns, showAwards: championshipTabData.showAwards, championsFinals: championshipTabData.championsFinals, lhChampionsFinals: championshipTabData.lhChampionsFinals, shChampionsFinals: championshipTabData.shChampionsFinals, championshipTotal }, showSuccess, showError);
     };
 
     const handleRestoreFromCSVClick = () => {
-      handleRestoreFromCSV({ columns, showAwards: championshipData.showAwards, championsFinals: championshipData.championsFinals, lhChampionsFinals: championshipData.lhChampionsFinals, shChampionsFinals: championshipData.shChampionsFinals, championshipTotal }, showSuccess, showError);
+      handleRestoreFromCSV({ columns, showAwards: championshipTabData.showAwards, championsFinals: championshipTabData.championsFinals, lhChampionsFinals: championshipTabData.lhChampionsFinals, shChampionsFinals: championshipTabData.shChampionsFinals, championshipTotal }, showSuccess, showError);
     };
 
     const handleResetClick = () => {
@@ -686,7 +711,7 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
       setIsTabResetModalOpen(false);
       
       // Reset only Championship tab data
-      setChampionshipData({
+      setChampionshipTabData((prev: ChampionshipTabData) => ({
         showAwards: {},
         championsFinals: {},
         lhChampionsFinals: {},
@@ -695,10 +720,7 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
         voidedChampionsFinals: {},
         voidedLHChampionsFinals: {},
         voidedSHChampionsFinals: {}
-      });
-      
-      // Clear validation errors
-      setErrors({});
+      }));
       
       // Clear focused column
       setFocusedColumnIndex(null);
@@ -743,67 +765,61 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
       return 'border-gray-300';
     };
 
-    // Void state management functions
-    const updateVoidState = (section: 'showAwards' | 'championsFinals' | 'lhChampionsFinals' | 'shChampionsFinals', columnIndex: number, position: number, voided: boolean) => {
-      const key = `${columnIndex}-${position}`;
-      
-      // Get the cat number for this position
+    /**
+     * Synchronized voiding logic for Championship tab.
+     * If a cat number is voided in any cell in a column, all other cells in that column with the same cat number (across all sections) are also voided.
+     * If any voided checkbox is unchecked, all instances are unvoided.
+     * This matches the Premiership tab logic and CFA rules.
+     *
+     * @param section Section name ('showAwards' | 'championsFinals' | 'lhChampionsFinals' | 'shChampionsFinals')
+     * @param columnIndex Column index (ring)
+     * @param position Row/position in section
+     * @param voided Boolean: true to void, false to unvoid
+     */
+    const updateVoidStateColumnWide = (
+      section: 'showAwards' | 'championsFinals' | 'lhChampionsFinals' | 'shChampionsFinals',
+      columnIndex: number,
+      position: number,
+      voided: boolean
+    ) => {
+      // Get the Cat # for the toggled cell
       let catNumber = '';
-      switch (section) {
-        case 'showAwards':
-          catNumber = championshipData.showAwards[key]?.catNumber || '';
-          break;
-        case 'championsFinals':
-          catNumber = championshipData.championsFinals[key] || '';
-          break;
-        case 'lhChampionsFinals':
-          catNumber = championshipData.lhChampionsFinals[key] || '';
-          break;
-        case 'shChampionsFinals':
-          catNumber = championshipData.shChampionsFinals[key] || '';
-          break;
-      }
-      
-      if (!catNumber.trim()) return; // Don't allow voiding empty inputs
-      
-      setChampionshipData(prev => {
+      if (section === 'showAwards') catNumber = championshipTabData.showAwards[`${columnIndex}-${position}`]?.catNumber || '';
+      if (section === 'championsFinals') catNumber = championshipTabData.championsFinals[`${columnIndex}-${position}`] || '';
+      if (section === 'lhChampionsFinals') catNumber = championshipTabData.lhChampionsFinals[`${columnIndex}-${position}`] || '';
+      if (section === 'shChampionsFinals') catNumber = championshipTabData.shChampionsFinals[`${columnIndex}-${position}`] || '';
+      if (!catNumber) return;
+      // Find all keys in all sections for this column where the Cat # matches
+      setChampionshipTabData((prev: ChampionshipTabData) => {
         const newData = { ...prev };
-        
-        // Void/unvoid ALL instances of this cat number within the SAME COLUMN only
-        const catNum = catNumber.trim();
-        
-        // Update Show Awards for this column only
+        // Show Awards
         Object.keys(newData.showAwards).forEach(key => {
           const [colIdx] = key.split('-').map(Number);
-          if (colIdx === columnIndex && newData.showAwards[key]?.catNumber === catNum) {
+          if (colIdx === columnIndex && newData.showAwards[key]?.catNumber === catNumber) {
             newData.voidedShowAwards[key] = voided;
           }
         });
-        
-        // Update Champions Finals for this column only
+        // Best AB CH
         Object.keys(newData.championsFinals).forEach(key => {
           const [colIdx] = key.split('-').map(Number);
-          if (colIdx === columnIndex && newData.championsFinals[key] === catNum) {
+          if (colIdx === columnIndex && newData.championsFinals[key] === catNumber) {
             newData.voidedChampionsFinals[key] = voided;
           }
         });
-        
-        // Update LH Champions Finals for this column only
+        // Best LH CH
         Object.keys(newData.lhChampionsFinals).forEach(key => {
           const [colIdx] = key.split('-').map(Number);
-          if (colIdx === columnIndex && newData.lhChampionsFinals[key] === catNum) {
+          if (colIdx === columnIndex && newData.lhChampionsFinals[key] === catNumber) {
             newData.voidedLHChampionsFinals[key] = voided;
           }
         });
-        
-        // Update SH Champions Finals for this column only
+        // Best SH CH
         Object.keys(newData.shChampionsFinals).forEach(key => {
           const [colIdx] = key.split('-').map(Number);
-          if (colIdx === columnIndex && newData.shChampionsFinals[key] === catNum) {
+          if (colIdx === columnIndex && newData.shChampionsFinals[key] === catNumber) {
             newData.voidedSHChampionsFinals[key] = voided;
           }
         });
-        
         return newData;
       });
     };
@@ -812,13 +828,13 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
       const key = `${columnIndex}-${position}`;
       switch (section) {
         case 'showAwards':
-          return championshipData.voidedShowAwards[key] || false;
+          return championshipTabData.voidedShowAwards[key] || false;
         case 'championsFinals':
-          return championshipData.voidedChampionsFinals[key] || false;
+          return championshipTabData.voidedChampionsFinals[key] || false;
         case 'lhChampionsFinals':
-          return championshipData.voidedLHChampionsFinals[key] || false;
+          return championshipTabData.voidedLHChampionsFinals[key] || false;
         case 'shChampionsFinals':
-          return championshipData.voidedSHChampionsFinals[key] || false;
+          return championshipTabData.voidedSHChampionsFinals[key] || false;
         default:
           return false;
       }
@@ -1015,7 +1031,6 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
                           if (i < getBreakpointForRingType(col.specialty)) {
                             const award = getShowAward(columnIndex, i);
                             const errorKey = `${columnIndex}-${i}`;
-                            const orangeBorderStyle = { border: '2px solid orange' };
                             return (
                               <td key={`award-${i}-${columnIndex}`} className={`py-2 px-2 border-r border-gray-300 align-top${shouldApplyRingGlow(columnIndex) ? ' ring-glow' : ''}`}> 
                                 <div className="flex flex-col items-start">
@@ -1031,9 +1046,7 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
                                       onBlur={(e) => {
                                         updateShowAward(columnIndex, i, 'catNumber', e.target.value);
                                         setLocalInputState(prev => { const copy = { ...prev }; delete copy[errorKey]; return copy; });
-                                        handleShowAwardBlur(columnIndex, i, 'catNumber', e.target.value);
                                       }}
-                                      style={award.status === 'CH' ? orangeBorderStyle : {}}
                                       disabled={getVoidState('showAwards', columnIndex, i)}
                                       ref={el => {
                                         if (!catInputRefs.current[columnIndex]) {
@@ -1062,7 +1075,7 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
                                           type="checkbox"
                                           className="void-checkbox"
                                           checked={getVoidState('showAwards', columnIndex, i)}
-                                          onChange={(e) => updateVoidState('showAwards', columnIndex, i, e.target.checked)}
+                                          onChange={(e) => updateVoidStateColumnWide('showAwards', columnIndex, i, e.target.checked)}
                                           onFocus={() => setFocusedColumnIndex(columnIndex)}
                                           tabIndex={-1}
                                         />
@@ -1103,10 +1116,6 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
                             const errorKey = `champions-${columnIndex}-${i}`;
                             const chCatNumbers = getCHCatNumbersFromShowAwards(columnIndex);
                             const isCHFromShowAwards = chCatNumbers.includes(value.trim());
-                            const orangeBorderStyle = { border: '2px solid orange' };
-                            const isNavyBlueOutline = shouldApplyNavyBlueOutline(columnIndex, value);
-                            const navyBlueBorderStyle = { border: '2px solid #003366' };
-                            const borderStyle = isCHFromShowAwards ? orangeBorderStyle : (isNavyBlueOutline ? navyBlueBorderStyle : {});
                             // Map Finals Cat # input to refs: rowIdx = numAwardRows + i
                             const finalsRowIdx = Math.max(...columns.map(col => getBreakpointForRingType(col.specialty))) + i;
                             return (
@@ -1130,9 +1139,7 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
                                       onBlur={(e) => {
                                         updateFinals('champions', columnIndex, i, e.target.value);
                                         setLocalInputState(prev => { const copy = { ...prev }; delete copy[errorKey]; return copy; });
-                                        handleFinalsBlur('champions', columnIndex, i, e.target.value);
                                       }}
-                                      style={borderStyle}
                                       ref={el => {
                                         if (!catInputRefs.current[columnIndex]) {
                                           catInputRefs.current[columnIndex] = Array(totalCatRows).fill(null);
@@ -1148,7 +1155,7 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
                                           type="checkbox"
                                           className="void-checkbox"
                                           checked={getVoidState('championsFinals', columnIndex, i)}
-                                          onChange={(e) => updateVoidState('championsFinals', columnIndex, i, e.target.checked)}
+                                          onChange={(e) => updateVoidStateColumnWide('championsFinals', columnIndex, i, e.target.checked)}
                                           onFocus={() => setFocusedColumnIndex(columnIndex)}
                                           tabIndex={-1}
                                         />
@@ -1189,10 +1196,6 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
                             const errorKey = `lhChampions-${columnIndex}-${i}`;
                             const chCatNumbers = getCHCatNumbersFromShowAwards(columnIndex);
                             const isCHFromShowAwards = chCatNumbers.includes(value.trim());
-                            const orangeBorderStyle = { border: '2px solid orange' };
-                            const isNavyBlueOutline = shouldApplyNavyBlueOutline(columnIndex, value);
-                            const navyBlueBorderStyle = { border: '2px solid #003366' };
-                            const borderStyle = isCHFromShowAwards ? orangeBorderStyle : (isNavyBlueOutline ? navyBlueBorderStyle : {});
                             // Map Finals Cat # input to refs: rowIdx = numAwardRows + numBestCH + i
                             const finalsRowIdx = Math.max(...columns.map(col => getBreakpointForRingType(col.specialty))) + Math.max(...columns.map(col => col.specialty === 'Allbreed' ? getFinalsPositionsForRingType(col.specialty) : 0)) + i;
                             return (
@@ -1216,9 +1219,7 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
                                       onBlur={(e) => {
                                         updateFinals('lhChampions', columnIndex, i, e.target.value);
                                         setLocalInputState(prev => { const copy = { ...prev }; delete copy[errorKey]; return copy; });
-                                        handleFinalsBlur('lhChampions', columnIndex, i, e.target.value);
                                       }}
-                                      style={borderStyle}
                                       ref={el => {
                                         if (!catInputRefs.current[columnIndex]) {
                                           catInputRefs.current[columnIndex] = Array(totalCatRows).fill(null);
@@ -1234,7 +1235,7 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
                                           type="checkbox"
                                           className="void-checkbox"
                                           checked={getVoidState('lhChampionsFinals', columnIndex, i)}
-                                          onChange={(e) => updateVoidState('lhChampionsFinals', columnIndex, i, e.target.checked)}
+                                          onChange={(e) => updateVoidStateColumnWide('lhChampionsFinals', columnIndex, i, e.target.checked)}
                                           onFocus={() => setFocusedColumnIndex(columnIndex)}
                                           tabIndex={-1}
                                         />
@@ -1275,10 +1276,6 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
                             const errorKey = `shChampions-${columnIndex}-${i}`;
                             const chCatNumbers = getCHCatNumbersFromShowAwards(columnIndex);
                             const isCHFromShowAwards = chCatNumbers.includes(value.trim());
-                            const orangeBorderStyle = { border: '2px solid orange' };
-                            const isNavyBlueOutline = shouldApplyNavyBlueOutline(columnIndex, value);
-                            const navyBlueBorderStyle = { border: '2px solid #003366' };
-                            const borderStyle = isCHFromShowAwards ? orangeBorderStyle : (isNavyBlueOutline ? navyBlueBorderStyle : {});
                             // Map Finals Cat # input to refs: rowIdx = numAwardRows + numBestCH + numBestLHCH + i
                             const finalsRowIdx = Math.max(...columns.map(col => getBreakpointForRingType(col.specialty))) + Math.max(...columns.map(col => col.specialty === 'Allbreed' ? getFinalsPositionsForRingType(col.specialty) : 0)) + i;
                             return (
@@ -1302,9 +1299,7 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
                                       onBlur={(e) => {
                                         updateFinals('shChampions', columnIndex, i, e.target.value);
                                         setLocalInputState(prev => { const copy = { ...prev }; delete copy[errorKey]; return copy; });
-                                        handleFinalsBlur('shChampions', columnIndex, i, e.target.value);
                                       }}
-                                      style={borderStyle}
                                       ref={el => {
                                         if (!catInputRefs.current[columnIndex]) {
                                           catInputRefs.current[columnIndex] = Array(totalCatRows).fill(null);
@@ -1320,7 +1315,7 @@ const ChampionshipTab = forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
                                           type="checkbox"
                                           className="void-checkbox"
                                           checked={getVoidState('shChampionsFinals', columnIndex, i)}
-                                          onChange={(e) => updateVoidState('shChampionsFinals', columnIndex, i, e.target.checked)}
+                                          onChange={(e) => updateVoidStateColumnWide('shChampionsFinals', columnIndex, i, e.target.checked)}
                                           onFocus={() => setFocusedColumnIndex(columnIndex)}
                                           tabIndex={-1}
                                         />

@@ -53,4 +53,14 @@ This document describes the **current validation rules** enforced in the General
   - Judge numbers are automatically re-indexed when judges are added or removed.
 
 ## Last Updated
-- 2024-06-09 
+- 2024-06-09
+
+## Shared CSV Action Buttons
+
+- The following action buttons are present on all tabs (General, Championship, Kittens, Premiership):
+  - Save to Temp CSV
+  - Generate Final CSV
+  - Restore from CSV
+  - Reset
+- These buttons always operate on the full dataset (all tabs), not just the current tab.
+- The logic for these buttons is shared and implemented in `src/utils/formActions.ts`. 

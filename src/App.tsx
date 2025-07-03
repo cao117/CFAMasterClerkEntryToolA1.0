@@ -5,6 +5,7 @@ import type { ChampionshipTabRef } from './components/ChampionshipTab'
 import ToastContainer from './components/ToastContainer'
 import { useToast } from './hooks/useToast'
 import cfaLogo from './assets/cfa-logo.png'
+import PremiershipTab from './components/PremiershipTab'
 
 interface Judge {
   id: number;
@@ -60,6 +61,35 @@ function App() {
 
   // State to track when Championship test data should be filled
   const [shouldFillChampionshipData] = useState(false);
+  // State to track when Premiership test data should be filled
+  const [shouldFillPremiershipData] = useState(false);
+
+  // --- ChampionshipTab State ---
+  const [championshipTabData, setChampionshipTabData] = useState({
+    showAwards: {},
+    championsFinals: {},
+    lhChampionsFinals: {},
+    shChampionsFinals: {},
+    voidedShowAwards: {},
+    voidedChampionsFinals: {},
+    voidedLHChampionsFinals: {},
+    voidedSHChampionsFinals: {},
+    errors: {},
+  });
+  // --- PremiershipTab State ---
+  const [premiershipTabData, setPremiershipTabData] = useState({
+    showAwards: {},
+    premiersFinals: {},
+    abPremiersFinals: {},
+    lhPremiersFinals: {},
+    shPremiersFinals: {},
+    voidedShowAwards: {},
+    voidedPremiersFinals: {},
+    voidedABPremiersFinals: {},
+    voidedLHPremiersFinals: {},
+    voidedSHPremiersFinals: {},
+    errors: {},
+  });
 
   // Auto-calculate championship counts
   useEffect(() => {
@@ -158,6 +188,102 @@ function App() {
     !isShowInfoValid(showData) ||
     !areJudgesValid(judges);
 
+  // Helper: Reset championship and premiership columns for a judge when ring type changes (any change)
+  const handleJudgeRingTypeChange = (
+    judgeId: number,
+    oldType: string,
+    newType: string
+  ) => {
+    // Helper to generate columns for a given judges array
+    function generateColumns(judgesArr: Judge[]): { judge: Judge; specialty: string }[] {
+      const columns: { judge: Judge; specialty: string }[] = [];
+      judgesArr.forEach(judge => {
+        if (judge.ringType === 'Double Specialty') {
+          columns.push({ judge, specialty: 'Longhair' });
+          columns.push({ judge, specialty: 'Shorthair' });
+        } else {
+          columns.push({ judge, specialty: judge.ringType });
+        }
+      });
+      return columns;
+    }
+
+    // Helper to build a map from judgeId-specialty to column index for a given columns array
+    function buildColumnMap(columns: { judge: Judge; specialty: string }[]) {
+      const map: Record<string, number> = {};
+      columns.forEach((col, idx) => {
+        map[`${col.judge.id}-${col.specialty}`] = idx;
+      });
+      return map;
+    }
+
+    // Helper to reset tab data for the affected judge only, preserving all other data
+    function resetColumns(
+      tabData: any,
+      setTabData: React.Dispatch<React.SetStateAction<any>>,
+      tabType: 'championship' | 'premiership'
+    ) {
+      // Sections to update
+      const sections = tabType === 'championship'
+        ? ['showAwards', 'championsFinals', 'lhChampionsFinals', 'shChampionsFinals', 'voidedShowAwards', 'voidedChampionsFinals', 'voidedLHChampionsFinals', 'voidedSHChampionsFinals', 'errors']
+        : ['showAwards', 'premiersFinals', 'abPremiersFinals', 'lhPremiersFinals', 'shPremiersFinals', 'voidedShowAwards', 'voidedPremiersFinals', 'voidedABPremiersFinals', 'voidedLHPremiersFinals', 'voidedSHPremiersFinals', 'errors'];
+      setTabData((prev: any) => {
+        // Generate columns for old and new config
+        const oldJudges = judges.map(j => j.id === judgeId ? { ...j, ringType: oldType } : j);
+        const newJudges = judges.map(j => j.id === judgeId ? { ...j, ringType: newType } : j);
+        const oldColumns = generateColumns(oldJudges);
+        const newColumns = generateColumns(newJudges);
+        const oldColMap = buildColumnMap(oldColumns);
+        const newColMap = buildColumnMap(newColumns);
+        // Build a reverse map for old columns: columnIndex -> {judgeId, specialty}
+        const oldIdxToKey: Record<number, string> = {};
+        oldColumns.forEach((col, idx) => {
+          oldIdxToKey[idx] = `${col.judge.id}-${col.specialty}`;
+        });
+        // Build a map for new columns: columnIndex -> {judgeId, specialty}
+        const newIdxToKey: Record<number, string> = {};
+        newColumns.forEach((col, idx) => {
+          newIdxToKey[idx] = `${col.judge.id}-${col.specialty}`;
+        });
+        // For each section, rebuild the data:
+        const newData = { ...prev };
+        for (const section of sections) {
+          if (!newData[section]) continue;
+          const rebuilt: Record<string, any> = {};
+          // For each key in the new config, try to copy from old config if not the affected judge
+          Object.entries(newIdxToKey).forEach(([newIdxStr, key]) => {
+            const newIdx = parseInt(newIdxStr, 10);
+            const [jIdStr] = key.split('-');
+            if (parseInt(jIdStr, 10) === judgeId) {
+              // Reset all data for affected judge's columns (do not copy old data)
+              // For each possible position, leave empty (do not set)
+              // (UI will show empty cells)
+            } else {
+              // For all other judges, try to find the old column index for this judgeId-specialty
+              const oldIdx = Object.entries(oldIdxToKey).find(([_idx, k]) => k === key)?.[0];
+              if (oldIdx !== undefined) {
+                // Copy all positions for this column from old to new
+                Object.entries(newData[section]).forEach(([dataKey, value]) => {
+                  // dataKey is like 'colIdx-pos' or 'colIdx_pos'
+                  const [colIdxStr, pos] = dataKey.split(/[-_]/);
+                  if (parseInt(colIdxStr, 10) === parseInt(oldIdx, 10)) {
+                    // Re-key for new column index
+                    const newKey = dataKey.replace(/^\d+/, newIdxStr);
+                    rebuilt[newKey] = value;
+                  }
+                });
+              }
+            }
+          });
+          newData[section] = rebuilt;
+        }
+        return newData;
+      });
+    }
+    resetColumns(championshipTabData, setChampionshipTabData, 'championship');
+    resetColumns(premiershipTabData, setPremiershipTabData, 'premiership');
+  };
+
   const tabs = [
     { 
       id: 'general', 
@@ -171,6 +297,7 @@ function App() {
         showError={showError}
         showWarning={showWarning}
         showInfo={showInfo}
+        onJudgeRingTypeChange={handleJudgeRingTypeChange}
       />,
       disabled: false
     },
@@ -192,6 +319,19 @@ function App() {
         showInfo={showInfo}
         shouldFillTestData={shouldFillChampionshipData}
         onResetAllData={resetAllData}
+        championshipTabData={championshipTabData}
+        setChampionshipTabData={setChampionshipTabData}
+        onTabReset={() => setChampionshipTabData({
+          showAwards: {},
+          championsFinals: {},
+          lhChampionsFinals: {},
+          shChampionsFinals: {},
+          voidedShowAwards: {},
+          voidedChampionsFinals: {},
+          voidedLHChampionsFinals: {},
+          voidedSHChampionsFinals: {},
+          errors: {},
+        })}
       />,
       disabled: championshipTabDisabled
     },
@@ -204,8 +344,44 @@ function App() {
     { 
       id: 'premiership', 
       name: 'Premiership', 
-      component: <div className="p-6 bg-white rounded-lg shadow"><h2 className="text-2xl font-bold mb-6 text-gray-800">Premiership Finals</h2><p className="text-gray-600">Coming soon...</p></div>,
+      component: <PremiershipTab 
+        judges={judges}
+        premiershipTotal={showData.premiershipCounts.total}
+        premiershipCounts={{
+          gcs: showData.premiershipCounts.gcs,
+          lhPrs: showData.premiershipCounts.lhPrs,
+          shPrs: showData.premiershipCounts.shPrs,
+          novs: showData.premiershipCounts.novs
+        }}
+        showSuccess={showSuccess}
+        showError={showError}
+        showInfo={showInfo}
+        onResetAllData={resetAllData}
+        isActive={activeTab === 'premiership'}
+        shouldFillTestData={shouldFillPremiershipData}
+        premiershipTabData={premiershipTabData}
+        setPremiershipTabData={setPremiershipTabData}
+        onTabReset={() => setPremiershipTabData({
+          showAwards: {},
+          premiersFinals: {},
+          abPremiersFinals: {},
+          lhPremiersFinals: {},
+          shPremiersFinals: {},
+          voidedShowAwards: {},
+          voidedPremiersFinals: {},
+          voidedABPremiersFinals: {},
+          voidedLHPremiersFinals: {},
+          voidedSHPremiersFinals: {},
+          errors: {},
+        })}
+      />,
       disabled: premiershipTabDisabled
+    },
+    { 
+      id: 'household', 
+      name: 'Household Cats', 
+      component: <div className="p-6 bg-white rounded-lg shadow"><h2 className="text-2xl font-bold mb-6 text-gray-800">Household Cats</h2><p className="text-gray-600">Coming soon...</p></div>,
+      disabled: false
     }
   ];
 

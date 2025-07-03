@@ -11,6 +11,45 @@ Follow conventions for naming and organization. New features go in `src/` as com
 
 ## Folder Structure
 
+## Shared CSV Action Buttons
+
+- The following action buttons are present on all tabs (General, Championship, Kittens, Premiership, Household Cats):
+  - Save to Temp CSV
+  - Generate Final CSV
+  - Restore from CSV
+  - Reset
+- These buttons always operate on the full dataset (all tabs), not just the current tab.
+- The logic for these buttons is shared and implemented in `src/utils/formActions.ts`.
+
+## Premiership Tab UI/UX Parity
+
+- The Premiership tab uses the same UI/UX structure and shared logic as the Championship tab:
+  - Jump to Ring dropdown
+  - Sticky headers and frozen position column
+  - Paging/scrolling for large numbers of judges
+  - Voiding, error highlighting, and tooltips
+  - Accessibility and keyboard navigation features
+- Only the rules for eligibility, breakpoints, and award labels differ.
+- This parity is enforced in both code and documentation.
+
+## Tab State Management (as of 1.0.10)
+
+- All state for Championship and Premiership tabs (cat numbers, statuses, voids, errors, etc.) is now managed in `App.tsx`.
+- State is passed to each tab as props, ensuring that data is preserved when switching between tabs.
+- Each tab has its own reset handler, which only clears its own data, not the other tab or global state.
+- Data is only reset when the user clicks the reset button on that tab, not when switching tabs.
+- This ensures a seamless user experience and prevents accidental data loss when navigating between tabs.
+
+## 2024-06-21: State Management Update
+- ChampionshipTab now uses fully lifted state, with all data managed in App.tsx and passed as props (like PremiershipTab).
+- There is no local state for championship data; all updates and resets are handled by the parent.
+- This ensures data is preserved across tab switches for both tabs.
+
+## 2024-06-21: UI Border Color Update
+- All colored border logic (orange/navy blue) removed from ChampionshipTab.
+- Only red border is used for validation errors; default border otherwise.
+- This matches PremiershipTab.
+
 ```
 99_Cursor_CFA_ENTRY/
 ├── docs/                          # Documentation files
@@ -89,46 +128,4 @@ Contains all React UI components. Each component focuses on rendering and user i
 
 #### `/src/validation/` ⭐ **New**
 **Purpose**: Centralized validation logic for maintainability and reusability
-- **`generalValidation.ts`**: All validation functions for the General tab (form validation, judge validation, count validation)
-- **`championshipValidation.ts`**: All validation functions for the Championship tab (cat number validation, sequential entry, duplicate checking, relationship validations)
-- **Benefits**: 
-  - Easy to test individual validation functions
-  - Reusable across multiple components
-  - Clear separation of validation logic from UI logic
-  - Type-safe with comprehensive interfaces
-
-#### `/src/utils/` ⭐ **New**
-**Purpose**: Shared utility functions and common functionality
-- **`formActions.ts`**: Common action button handlers (Save to Temp CSV, Generate Final CSV, Restore from CSV, Reset)
-- **Benefits**:
-  - DRY principle implementation - no code duplication
-  - Consistent behavior across tabs
-  - Easy to modify common functionality in one place
-
-#### `/src/hooks/`
-Custom React hooks for state management and side effects. Currently contains toast notification management.
-
-#### `/docs/`
-Comprehensive documentation covering all aspects of the project, from setup to usage to contribution guidelines.
-
-#### `/yyy/` (Legacy)
-Contains the original JavaScript implementation for reference. This helps understand the requirements and serves as a specification for the React implementation.
-
-#### `/src-tauri/`
-Configuration and backend code for the Tauri desktop application wrapper, allowing the web app to run as a native desktop application.
-
-### Architecture Principles
-
-1. **Separation of Concerns**: UI components, validation logic, and utility functions are clearly separated
-2. **Code Reusability**: Common functionality is extracted into shared modules
-3. **Type Safety**: Comprehensive TypeScript interfaces ensure data integrity
-4. **Maintainability**: Clear folder structure makes it easy to find and modify code
-5. **Testability**: Extracted functions can be easily unit tested
-
-### Code Organization Best Practices
-
-- **Components**: Focus on rendering and user interaction
-- **Validation**: Pure functions for data validation, easily testable
-- **Utils**: Shared functionality used across multiple components
-- **Hooks**: Reusable state logic and side effects
-- **Types**: Comprehensive interfaces for type safety 
+- **Household Cats validation**: See `docs/validation/VALIDATION_HOUSEHOLD.md` for rules (to be implemented).

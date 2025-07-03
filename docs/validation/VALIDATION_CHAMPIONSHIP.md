@@ -91,27 +91,28 @@ Suppose you have the following cats in the Championship Final (Top 10/15):
 ## Cross-Section Validation Rules
 
 ### Best AB CH Assignment Reminder
-- If a cat is entered in Best AB CH but not assigned to either LH or SH section, a reminder message appears: `"{catNumber} must be assigned to either Longhair or Shorthair section."`
-- This reminder only appears if all previous Best AB CH positions are filled and there are no other errors.
+- If a cat is entered in Best AB CH but not assigned to either LH or SH section, a reminder message appears: `"{catNumber} needs to be assigned to either LH or SH CH final."`
+- **This reminder is now shown in every filled Best AB CH cell where the cat is not assigned to LH or SH CH final, regardless of other cells.**
+- This matches the Premiership tab logic and ensures all unassigned cats are flagged.
+- This logic avoids off-by-one errors and ensures the error appears in the correct cell, even if earlier cells are empty.
+- This matches the behavior of the Premiership tab.
 
-### Order Validation
-- **Best AB CH**: Must contain CH cats from Top 10/15 in the same order (when CHs exist in Top 10/15)
-- **Best LH/SH CH**: Cats must appear in the same order as they appear in Best AB CH
-- **Single Specialty**: For Longhair/Shorthair only rings, strict order validation with Top 10/15
+_Last Updated: 2024-06-20_
 
-### Error Precedence and Reminder Suppression (2024-06-09)
+### Order Validation & Error Precedence (2024-06-21, strictly enforced)
+- For each cell in Best AB CH, only the highest-precedence error is ever shown:
+  1. Duplicate error (within section)
+  2. Status error (GC/NOV from Show Awards)
+  3. Sequential entry error (e.g., "You must fill in previous empty award placements in Best AB CH Final before entering this position.")
+  4. Order error (e.g., "Must be X (Nth CH required by CFA rules)")
+  5. Assignment reminder (e.g., "needs to be assigned to LH/SH")
+- The sequential entry error now appears immediately in the correct cell if required, and is suppressed by higher-precedence errors.
+- Assignment reminder is only shown if all previous errors are absent for that cell.
+- This logic is now strictly enforced in code (see `validateChampionshipTab` in `championshipValidation.ts`).
+- This matches the Premiership tab logic and ensures full UI/UX parity.
 
-- **Sequential entry errors** ("You must fill in previous empty award placements...") now take precedence over all other errors and reminders in Best AB CH.
-- **Assignment reminders** (e.g., "needs to be assigned to either LH or SH CH final") are **suppressed** for all positions at or before the highest sequential error position in a column.
-- This ensures that if a sequential error exists for a later position, no reminder will show for earlier empty positions.
-- This matches the intended UI/UX: reminders only appear if all previous positions are filled and there are no sequential errors for later positions.
-
-1. **Format errors** (cat number must be 1-450)
-2. **Sequential entry errors** (must fill positions sequentially)
-3. **Duplicate errors** (no duplicates within section)
-4. **Status errors** (GC/NOV/MISSING/INVALID cats cannot be in Best CH)
-5. **Order errors** (must match Top 10/15 order)
-6. **Assignment reminders** (must assign to LH/SH)
+## 2024-06-20: Strict Error Precedence Enforcement (updated)
+- Assignment reminders are now only shown if there is no duplicate or GC/NOV error for that cell. This prevents multiple errors from appearing in the same cell and ensures clear, unambiguous UI feedback.
 
 ## Void Feature
 - Works exactly as in Championship tab: voiding a cat number only affects all instances of that cat number within the same column (judge/ring), not across all columns.
@@ -158,10 +159,61 @@ The Championship tab serves as the reference implementation for validation logic
 - The CSV action buttons and their logic are shared across all tabs. See `docs/specs/FOLDER_STRUCTURE.md` for details.
 
 ## Last Updated
+- 2024-06-20 (Assignment reminder error placement fix in Best AB CH)
 - 2024-06-19 (UI/UX parity with Championship tab)
 - 2024-12-19 (Complete validation parity with Championship tab - all rules, order, and error messages now match exactly)
 
 ## 2024-06-09: Infinite Recursion Bug Fixed
 - Fixed a critical bug in `validateColumnRelationships` where the function would recursively call itself for all columns, causing a stack overflow (maximum call stack size exceeded).
 - The function now only validates the current column, as intended, and does not call itself recursively.
-- This prevents stack overflow errors and ensures stable validation logic. 
+- This prevents stack overflow errors and ensures stable validation logic.
+
+## 2024-06-10: Bugfix - Assignment Reminder Display
+
+- Fixed a bug where the 'assign to LH/SH' reminder for Best AB CH did not appear in the UI due to an error key mismatch in the validation logic.
+- The error key for the reminder must be 'champions-{columnIndex}-{i}' to match the UI's expectations. If the key does not match, the reminder will not display.
+- This fix ensures that the reminder now appears in every filled Best AB CH cell where the cat is not assigned to either LH or SH, unless a higher-precedence error is present.
+
+## 2024-06-20: Assignment Reminder Error Placement Fix & Precedence Patch
+
+- Fixed assignment reminder error placement in Best AB CH. The 'needs to be assigned to either LH or SH CH final' error is now always shown in the cell where the cat is entered and not assigned, using the actual position index. This prevents off-by-one errors (where the error would appear in the previous/empty cell) and matches the Premiership tab behavior.
+- **Assignment reminders are now always suppressed in the cell with a duplicate or GC/NOV error. Duplicate errors always take precedence over reminders.**
+- This ensures the assignment reminder always appears in the correct cell, providing clear and accurate feedback to the user and maintaining UI/UX parity between tabs.
+
+### Voiding Logic (2024-06-20, strictly enforced)
+- If a cat number is voided in any cell in a given column (ring), **all other cells in that column with the same cat number (across all CH award sections: Championship Final, Best AB CH, Best LH CH, Best SH CH) are also voided automatically**.
+- If any of these voided checkboxes is unchecked, **all instances of that cat number in that column are unvoided**.
+- This ensures the void state is always synchronized for all matching cat numbers in the same column.
+- **This logic is now strictly enforced in the codebase (see `updateVoidStateColumnWide` in `ChampionshipTab.tsx`).**
+- **Example:**
+  - If you void cat #1 in Championship Final, Best AB CH, or Best LH CH in Ring 1, all other cells in Ring 1 with cat #1 will also be voided.
+  - If you unvoid any of them, all will be unvoided.
+- This logic is enforced in the UI and validation code.
+
+## 2024-06-21: State Persistence Update
+- As of this date, all ChampionshipTab data (showAwards, finals, voids, errors) is now managed in App.tsx and passed as props, matching PremiershipTab.
+- This ensures that all data is preserved across tab switches and that UI/UX parity is maintained between tabs.
+- There is no longer any local state for championship data in the component; all updates go through the parent.
+
+## 2024-06-21: UI Border Color Update
+- Removed all logic and documentation for orange and navy blue borders in ChampionshipTab.
+- Only red border is used for validation errors; default border otherwise.
+- This matches PremiershipTab, which never used these borders.
+
+## Bug Fixes & Technical Notes
+
+### 2024-06-21: Error State Refactor & Infinite Loop Fix
+- Error state is now managed locally in `ChampionshipTab` (not inside `championshipTabData`), matching the approach used in `PremiershipTab`.
+- This change fixes a critical bug: "Maximum update depth exceeded" (infinite update loop) caused by updating errors inside the main tab data state.
+- All error lookups in the UI now use the local `errors` state.
+- There is no user-facing behavior change; this is a technical/internal refactor for stability and maintainability.
+
+_Last Updated: 2024-06-21_
+
+## Column Reset on Ring Type Change
+
+- If a judge's ring type is changed to any other type (regardless of the old or new type), the affected columns in the Championship tab are reset: all data for those columns is cleared and the columns start empty.
+- This ensures that data from the previous configuration does not persist when the number or type of columns changes for a judge.
+- Other judges' columns and data are not affected.
+
+_Last Updated: 2024-06-22_ 

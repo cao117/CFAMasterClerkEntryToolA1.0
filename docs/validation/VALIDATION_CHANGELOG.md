@@ -293,6 +293,51 @@ This changelog records all changes, additions, and deletions to validation rules
 ### 2024-06-09
 - [Championship Tab] Fixed infinite recursion in `validateColumnRelationships` that caused stack overflow. The function now only validates the current column, not all columns recursively.
 
+### 2024-06-09
+- [Championship & Premiership Tabs] Clarified and enforced error precedence logic: only the highest-precedence error is shown per cell (duplicate > GC/NOV > assignment reminder). Assignment reminders are only suppressed in the cell with a hard error, not in other cells. Documentation updated to reflect this logic.
+
+### 2024-06-09
+- [Championship Tab] Refined error precedence logic: assignment reminders are only suppressed in the cell with a hard error (duplicate or GC/NOV), not in other cells. All other cells show the assignment reminder if appropriate. Documentation updated to reflect this logic.
+
+### [2024-06-20] Championship Tab: Assignment Reminder Error Placement Fix
+- **Tab:** Championship
+- **Change:** Fixed assignment reminder error placement in Best AB CH. The 'needs to be assigned to either LH or SH CH final' error is now always shown in the cell where the cat is entered and not assigned, using the actual position index. This prevents off-by-one errors (where the error would appear in the previous/empty cell) and matches the Premiership tab behavior.
+- **Rationale:** Ensures the assignment reminder always appears in the correct cell, providing clear and accurate feedback to the user and maintaining UI/UX parity between tabs.
+
+### [2024-06-20] Championship Tab: Assignment Reminder Patch
+- **Tab:** Championship
+- **Change:** Patched assignment reminder logic. Now, every filled Best AB CH cell where the cat is not assigned to LH or SH CH final will show the reminder, matching Premiership logic. This fixes the bug where reminders were missing for multiple unassigned cats.
+- **Rationale:** Ensures all unassigned cats are flagged, not just the first or last, and matches Premiership tab behavior.
+
+### [2024-06-20] Championship & Premiership Tabs: Assignment Reminder Error Precedence Fix
+- **Tab:** Championship, Premiership
+- **Change:** Assignment reminders are now always suppressed in the cell with a duplicate or GC/GP/NOV error. Duplicate errors always take precedence over reminders. This ensures that only the highest-precedence error is shown per cell, and reminders are never shown alongside hard errors in the same cell.
+- **Rationale:** Ensures correct error display and strict UI/UX parity between tabs. Prevents confusing or misleading error messages and matches documented validation rules.
+
+### [2024-06-20] Championship Tab: Strict Error Precedence Enforcement (updated)
+- **Tab:** Championship
+- **Change:** Assignment reminders are now only shown if there is no duplicate or GC/NOV error for that cell. This prevents multiple errors from appearing in the same cell and ensures clear, unambiguous UI feedback.
+- **Rationale:** Prevents confusion and maintains strict, predictable error display for users.
+
+### [2024-06-20] Premiership Tab: Best AB PR strict order validation and error precedence
+- **Tab:** Premiership
+- **Change:** Best AB PR now strictly enforces that PR cats from Premiership Final (Top 10/15) must be placed in the same order in Best AB PR. If the order is violated, the error 'Must be X (Nth PR required by CFA rules)' is shown in the relevant cell. This matches the logic and error precedence of the Championship tab.
+- **Documentation:** Updated VALIDATION_PREMIERSHIP.md to clarify the rule and error precedence. Updated changelog for parity.
+- **Rationale:** Ensures strict CFA rule enforcement and UI/UX parity between Championship and Premiership tabs.
+
+### [2024-06-20] Championship Tab: Implemented synchronized voiding logic: toggling the void checkbox for any cat number in any section (Show Awards, Best AB CH, Best LH CH, Best SH CH) in a column will void/unvoid all instances of that cat number in that column. This matches the Premiership tab logic. See `updateVoidStateColumnWide` in `ChampionshipTab.tsx`.
+
+### 2024-06-21
+- [Championship Tab] Strict error precedence for 'Must be X' order error in Best AB CH now matches Premiership tab. Only the highest-precedence error is shown per cell: duplicate > GC/NOV > order > assignment reminder. See championshipValidation.ts for details.
+
+## 2024-06-21
+- [Championship Tab] Strict error precedence for Best AB CH now enforced: duplicate > status > sequential entry > order > assignment reminder. Assignment reminder only shown if all previous errors are absent. See championshipValidation.ts for details.
+
+### [2024-06-22] Household Cats Tab: Placeholder Tab and Documentation Created
+- **Tab:** Household Cats
+- **Change:** Added a new Household Cats tab to the UI (after Premiership tab). For now, the tab is a placeholder with 'Coming soon...' and no logic. Created docs/validation/VALIDATION_HOUSEHOLD.md as a placeholder for future validation rules.
+- **Rationale:** Prepares the codebase and documentation for future Household Cats features and validation logic, matching the structure of other tabs.
+
 ---
 
 ## How to Use This Log

@@ -430,117 +430,61 @@ export function validateBestSHCHWithTop15(input: ChampionshipValidationInput, co
 }
 
 /**
- * Enhanced: Validates LH and SH CH finals against Best CH for Allbreed rings
- * For Allbreed rings: Best LH CH + Best SH CH must contain exactly all Best CH cats without duplicates
- * Shows reminders on all unassigned Best AB CH cats
+ * PATCH: For each filled Best AB CH cell, if the cat is not assigned to either LH or SH CH final,
+ * set the assignment reminder in that cell. This ensures reminders are shown for all unassigned cats,
+ * matching Premiership logic. Previous logic could miss reminders for multiple unassigned cats.
  */
 export function validateLHSHWithBestCHAndGetFirstError(input: ChampionshipValidationInput, columnIndex: number): { isValid: boolean, errorKeys?: string[], errorMessages?: string[], isReminder?: boolean } {
-  const { columns, championsFinals, lhChampionsFinals, shChampionsFinals, championshipTotal, showAwards } = input;
+  const { columns, championsFinals, lhChampionsFinals, shChampionsFinals } = input;
   const column = columns[columnIndex];
+  // Only validate for Allbreed rings
   if (!column || column.specialty !== 'Allbreed') {
     return { isValid: true };
   }
-  const numPositions = championshipTotal >= 85 ? 5 : 3;
-  
-  // Get all Best CH cats in order
-  const bestCHCats: string[] = [];
-  for (let position = 0; position < numPositions; position++) {
-    const key = `${columnIndex}-${position}`;
-    const chValue = championsFinals[key];
-    if (chValue && chValue.trim() !== '') {
-      bestCHCats.push(chValue.trim());
-    }
-  }
-  
-  // Get all LH CH cats
-  const lhCHCats: string[] = [];
-  for (let position = 0; position < numPositions; position++) {
-    const key = `${columnIndex}-${position}`;
-    const lhValue = lhChampionsFinals[key];
-    if (lhValue && lhValue.trim() !== '') {
-      lhCHCats.push(lhValue.trim());
-    }
-  }
-  
-  // Get all SH CH cats
-  const shCHCats: string[] = [];
-  for (let position = 0; position < numPositions; position++) {
-    const key = `${columnIndex}-${position}`;
-    const shValue = shChampionsFinals[key];
-    if (shValue && shValue.trim() !== '') {
-      shCHCats.push(shValue.trim());
-    }
-  }
-  
-  // Combine LH and SH sets
-  const combinedLHSH = new Set([...lhCHCats, ...shCHCats]);
-  
-  // Collect all missing Best CH cats
-  const missingCats: { key: string, cat: string }[] = [];
-  for (let i = 0; i < bestCHCats.length; i++) {
-    const cat = bestCHCats[i];
-    if (!combinedLHSH.has(cat)) {
-      // Check Show Awards status for this cat
-      let status: string | null = null;
-      const numAwardRows = championshipTotal >= 85 ? 15 : 10;
-      for (let j = 0; j < numAwardRows; j++) {
-        const award = showAwards[`${columnIndex}-${j}`];
-        if (award && award.catNumber === cat) {
-          status = award.status;
+  const numPositions = getFinalsPositionsForRingType(input, column.specialty);
+  const errorKeys: string[] = [];
+  const errorMessages: string[] = [];
+  // For each Best AB CH cat, check if assigned to LH or SH
+  for (let i = 0; i < numPositions; i++) {
+    const abValue = championsFinals[`${columnIndex}-${i}`];
+    if (abValue && abValue.trim() !== '') {
+      let foundInLH = false;
+      let foundInSH = false;
+      // Check if this cat appears in LH section
+      for (let j = 0; j < numPositions; j++) {
+        const lhValue = lhChampionsFinals[`${columnIndex}-${j}`];
+        if (lhValue && lhValue.trim() === abValue.trim()) {
+          foundInLH = true;
           break;
         }
       }
-      if (status === 'GC' || status === 'NOV') {
-        // Do not report missing split error for GC/NOV cats
-        continue;
+      // Check if this cat appears in SH section
+      for (let j = 0; j < numPositions; j++) {
+        const shValue = shChampionsFinals[`${columnIndex}-${j}`];
+        if (shValue && shValue.trim() === abValue.trim()) {
+          foundInSH = true;
+          break;
+        }
       }
-      missingCats.push({ key: `champions-${columnIndex}-${i}`, cat });
+      // If cat is not assigned to either LH or SH, set reminder in this cell
+      if (!foundInLH && !foundInSH) {
+        /**
+         * IMPORTANT: Error key must match 'champions-${columnIndex}-${i}' for UI to display the reminder in the correct cell.
+         * If the key does not match, the reminder will not appear in the UI.
+         */
+        errorKeys.push(`champions-${columnIndex}-${i}`);
+        errorMessages.push(`${abValue.trim()} needs to be assigned to either LH or SH CH final.`);
+      }
     }
   }
-  if (missingCats.length > 0) {
+  if (errorKeys.length > 0) {
     return {
-      isValid: true,
-      errorKeys: missingCats.map(m => m.key),
-      errorMessages: missingCats.map(m => `${m.cat} needs to be assigned to either LH or SH CH final.`),
-      isReminder: true
+      isValid: false,
+      errorKeys,
+      errorMessages,
+      isReminder: true // This is a reminder, not a hard error
     };
   }
-  
-  // Check for duplicates between LH and SH
-  const lhSet = new Set(lhCHCats);
-  const shSet = new Set(shCHCats);
-  for (const cat of lhSet) {
-    if (shSet.has(cat)) {
-      // Find first duplicate and return error
-      for (let i = 0; i < numPositions; i++) {
-        if (lhCHCats[i] && shCHCats.includes(lhCHCats[i])) {
-          return { isValid: false, errorKeys: [`lhChampions-${columnIndex}-${i}`], errorMessages: [`${lhCHCats[i]} cannot be both LH and SH CH.`] };
-        }
-      }
-      for (let i = 0; i < numPositions; i++) {
-        if (shCHCats[i] && lhCHCats.includes(shCHCats[i])) {
-          return { isValid: false, errorKeys: [`shChampions-${columnIndex}-${i}`], errorMessages: [`${shCHCats[i]} cannot be both LH and SH CH.`] };
-        }
-      }
-    }
-  }
-  
-  // Check for duplicates within LH or SH
-  const seenLH = new Set<string>();
-  for (let i = 0; i < lhCHCats.length; i++) {
-    if (seenLH.has(lhCHCats[i])) {
-      return { isValid: false, errorKeys: [`lhChampions-${columnIndex}-${i}`], errorMessages: [`${lhCHCats[i]} is a duplicate in LH CH.`] };
-    }
-    seenLH.add(lhCHCats[i]);
-  }
-  const seenSH = new Set<string>();
-  for (let i = 0; i < shCHCats.length; i++) {
-    if (seenSH.has(shCHCats[i])) {
-      return { isValid: false, errorKeys: [`shChampions-${columnIndex}-${i}`], errorMessages: [`${shCHCats[i]} is a duplicate in SH CH.`] };
-    }
-    seenSH.add(shCHCats[i]);
-  }
-  
   return { isValid: true };
 }
 
@@ -639,14 +583,10 @@ export function validateColumnRelationships(input: ChampionshipValidationInput, 
         typeof award.catNumber === 'string' &&
         award.catNumber.trim().toUpperCase() === catNum.trim().toUpperCase()
       ) {
-        // Check if status is missing or invalid
         if (!award.status || typeof award.status !== 'string' || award.status.trim() === '') {
           return 'MISSING';
         }
-        
         const status = award.status.trim().toUpperCase();
-        
-        // Only accept valid statuses
         if (status === 'GC' || status === 'CH' || status === 'NOV') {
           return status;
         } else {
@@ -657,9 +597,9 @@ export function validateColumnRelationships(input: ChampionshipValidationInput, 
     return null;
   }
   
-  // Check Best AB CH for GC/NOV/MISSING/INVALID errors first
-  let hasBestABCHGCError = false;
+  // --- Best AB CH: Validate each cell independently for GC/NOV, order, and assignment reminder ---
   if (column.specialty === 'Allbreed') {
+    // 1. GC/NOV/MISSING/INVALID errors per cell
     for (let i = 0; i < numPositions; i++) {
       const key = `champions-${columnIndex}-${i}`;
       const value = championsFinals[`${columnIndex}-${i}`];
@@ -667,15 +607,33 @@ export function validateColumnRelationships(input: ChampionshipValidationInput, 
         const status = getShowAwardStatus(value.trim());
         if (status === 'GC' || status === 'NOV') {
           errors[key] = `${value.trim()} is listed as a ${status} in Show Awards and cannot be awarded CH final.`;
-          hasBestABCHGCError = true;
+          continue;
         } else if (status === 'MISSING') {
           errors[key] = `${value.trim()} in Show Awards is missing a status (GC/CH/NOV) and cannot be awarded CH final.`;
-          hasBestABCHGCError = true;
+          continue;
         } else if (status === 'INVALID') {
           errors[key] = `${value.trim()} in Show Awards has an invalid status and cannot be awarded CH final.`;
-          hasBestABCHGCError = true;
+          continue;
         }
       }
+    }
+    // 2. Order error: Must be X (Nth CH required by CFA rules)
+    const bestCHResult = validateBestCHWithTop15AndGetFirstError(input, columnIndex);
+    if (!bestCHResult.isValid && bestCHResult.firstErrorPosition !== -1) {
+      const key = `champions-${columnIndex}-${bestCHResult.firstErrorPosition}`;
+      // Only set if no duplicate or GC/NOV error already present
+      if (!errors[key]) {
+        errors[key] = bestCHResult.errorMessage;
+      }
+    }
+    // 3. Assignment reminder for each cell (if no higher-precedence error in that cell)
+    const lhshResult = validateLHSHWithBestCHAndGetFirstError(input, columnIndex);
+    if (lhshResult.errorKeys && lhshResult.errorMessages) {
+      lhshResult.errorKeys.forEach((key, idx) => {
+        if (!errors[key]) {
+          errors[key] = `[REMINDER] ${lhshResult.errorMessages ? lhshResult.errorMessages[idx] : 'LH/SH split reminder'}`;
+        }
+      });
     }
   }
   
@@ -712,41 +670,6 @@ export function validateColumnRelationships(input: ChampionshipValidationInput, 
           errors[key] = `${value.trim()} in Show Awards has an invalid status and cannot be awarded CH final.`;
         }
       }
-    }
-  }
-  
-  // If there are any GC/NOV errors, return them immediately and skip all other validation
-  if (Object.keys(errors).length > 0) return errors;
-  
-  // Validate Best CH with top 15 CH
-  const bestCHResult = validateBestCHWithTop15AndGetFirstError(input, columnIndex);
-  if (!bestCHResult.isValid) {
-    const key = `champions-${columnIndex}-${bestCHResult.firstErrorPosition}`;
-    // Only set error if not already set (sequential errors take precedence)
-    if (!errors[key]) {
-      errors[key] = bestCHResult.errorMessage;
-    }
-    // If Best AB CH is not valid, do not proceed to LH/SH split validation
-    return errors;
-  }
-  
-  // Validate LH/SH split with new logic (only if no GC/NOV errors in Best AB CH)
-  if (!hasBestABCHGCError) {
-    const lhshResult = validateLHSHWithBestCHAndGetFirstError(input, columnIndex);
-    if (!lhshResult.isValid && lhshResult.errorKeys && lhshResult.errorMessages) {
-      lhshResult.errorKeys.forEach((key, idx) => {
-        // Only set error if not already set (sequential errors take precedence)
-        if (!errors[key]) {
-          errors[key] = lhshResult.errorMessages ? lhshResult.errorMessages[idx] || 'LH/SH split error' : 'LH/SH split error';
-        }
-      });
-    } else if (lhshResult.isReminder && lhshResult.errorKeys && lhshResult.errorMessages) {
-      lhshResult.errorKeys.forEach((key, idx) => {
-        // Only set reminder if not already set (sequential errors take precedence)
-        if (!errors[key]) {
-          errors[key] = `[REMINDER] ${lhshResult.errorMessages ? lhshResult.errorMessages[idx] : 'LH/SH split reminder'}`;
-        }
-      });
     }
   }
   
@@ -929,7 +852,7 @@ export function validateChampionshipTab(input: ChampionshipValidationInput): { [
             let sectionLabel = '';
             switch (section.name) {
               case 'champions':
-                sectionLabel = 'Champions Final';
+                sectionLabel = 'Best AB CH Final';
                 break;
               case 'lhChampions':
                 sectionLabel = 'Best LH CH Final';
@@ -960,7 +883,7 @@ export function validateChampionshipTab(input: ChampionshipValidationInput): { [
             let sectionName = '';
             switch (section.name) {
               case 'champions':
-                sectionName = 'Champions Final';
+                sectionName = 'Best AB CH Final';
                 break;
               case 'lhChampions':
                 sectionName = 'Best LH CH Final';
@@ -979,46 +902,41 @@ export function validateChampionshipTab(input: ChampionshipValidationInput): { [
   
   // Validate column relationships
   for (let columnIndex = 0; columnIndex < columns.length; columnIndex++) {
-    // --- Custom precedence for Best AB CH: sequential error > other errors > LH/SH assignment warning ---
+    // --- Custom precedence for Best AB CH: duplicate > status > sequential > order > assignment reminder ---
     const columnErrors = validateColumnRelationships(input, columnIndex);
     Object.entries(columnErrors).forEach(([key, msg]) => {
-      // Only add the LH/SH assignment warning if there are no other errors for this row
-      if (msg.startsWith('[REMINDER]')) {
+      /**
+       * Strict error precedence enforcement:
+       * 1. If a duplicate error exists for a cell, it takes absolute precedence (suppress all others).
+       * 2. If no duplicate, but a status error exists, it takes precedence (suppress sequential/order/reminder).
+       * 3. If no duplicate or status, but a sequential entry error exists, it takes precedence (suppress order/reminder).
+       * 4. If no duplicate, status, or sequential, but an order error exists, it takes precedence (suppress reminder).
+       * 5. Only if none of the above, show assignment reminder.
+       */
+      const isDuplicate = msg.toLowerCase().includes('duplicate');
+      const isStatus = /is listed as a (gc|nov)/i.test(msg) || /missing a status/i.test(msg) || /invalid status/i.test(msg);
+      const isSequential = msg.startsWith('You must fill in previous empty award placements');
+      const isOrder = msg.startsWith('Must be ');
+      const isReminder = msg.startsWith('[REMINDER]');
+      if (isDuplicate) {
+        errors[key] = msg;
+      } else if (isStatus) {
+        if (!errors[key] || !errors[key].toLowerCase().includes('duplicate')) {
+          errors[key] = msg;
+        }
+      } else if (isSequential) {
+        if (!errors[key] || (!errors[key].toLowerCase().includes('duplicate') && !/is listed as a (gc|nov)/i.test(errors[key]) && !/missing a status/i.test(errors[key]) && !/invalid status/i.test(errors[key]))) {
+          errors[key] = msg;
+        }
+      } else if (isOrder) {
+        if (!errors[key] || (!errors[key].toLowerCase().includes('duplicate') && !/is listed as a (gc|nov)/i.test(errors[key]) && !/missing a status/i.test(errors[key]) && !/invalid status/i.test(errors[key]) && !errors[key].startsWith('You must fill in previous empty award placements'))) {
+          errors[key] = msg;
+        }
+      } else if (isReminder) {
         if (!errors[key]) {
-          // Only show the reminder if all previous Best AB CH positions are filled
-          const match = key.match(/^champions-(\d+)-(\d+)$/);
-          if (match) {
-            const colIdx = parseInt(match[1], 10);
-            const pos = parseInt(match[2], 10);
-            let allPrevFilled = true;
-            for (let p = 0; p < pos; p++) {
-              const prevKey = `${colIdx}-${p}`;
-              const prevValue = championsFinals[prevKey];
-              if (!prevValue || prevValue.trim() === '') {
-                allPrevFilled = false;
-                break;
-              }
-            }
-            // Only show the reminder if all previous are filled, this cell is empty, and there is no sequential error for any later position
-            let hasSequentialError = false;
-            for (let later = pos + 1; later < getFinalsPositionsForRingType(input, columns[colIdx].specialty); later++) {
-              const laterKey = `champions-${colIdx}-${later}`;
-              if (errors[laterKey] && errors[laterKey].includes('You must fill in previous empty award placements')) {
-                hasSequentialError = true;
-                break;
-              }
-            }
-            // Only set reminder if this cell is empty, all previous are filled, and no sequential error for later positions
-            const thisValue = championsFinals[`${colIdx}-${pos}`];
-            if (allPrevFilled && (!thisValue || thisValue.trim() === '') && !hasSequentialError) {
-              errors[key] = msg;
-            }
-          } else {
-            errors[key] = msg;
-          }
+          errors[key] = msg;
         }
       } else {
-        // All other errors/warnings take precedence
         if (!errors[key]) {
           errors[key] = msg;
         }

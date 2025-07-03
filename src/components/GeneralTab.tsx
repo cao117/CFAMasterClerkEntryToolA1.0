@@ -45,6 +45,7 @@ interface GeneralTabProps {
   showError: (title: string, message?: string, duration?: number) => void;
   showWarning: (title: string, message?: string, duration?: number) => void;
   showInfo: (title: string, message?: string, duration?: number) => void;
+  onJudgeRingTypeChange?: (id: number, oldType: string, newType: string) => void;
 }
 
 export default function GeneralTab({ 
@@ -55,7 +56,8 @@ export default function GeneralTab({
   showSuccess,
   showError,
   showWarning: _showWarning,
-  showInfo: _showInfo
+  showInfo: _showInfo,
+  onJudgeRingTypeChange
 }: GeneralTabProps) {
   // Local state for form validation
   const [errors, setErrors] = useState<{[key: string]: string}>({});
@@ -115,10 +117,18 @@ export default function GeneralTab({
   }, [showData.numberOfJudges]);
 
   const updateJudge = (id: number, field: keyof Judge, value: string) => {
+    let oldType = undefined;
+    if (field === 'ringType') {
+      const judge = judges.find(j => j.id === id);
+      if (judge) oldType = judge.ringType;
+    }
     const updatedJudges = judges.map(judge =>
       judge.id === id ? { ...judge, [field]: value } : judge
     );
     setJudges(updatedJudges);
+    if (field === 'ringType' && oldType && oldType !== value && typeof onJudgeRingTypeChange === 'function') {
+      onJudgeRingTypeChange(id, oldType, value);
+    }
   };
 
   // Function to re-index judges after deletion
