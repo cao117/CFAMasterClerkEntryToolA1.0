@@ -176,6 +176,123 @@ This changelog records all changes, additions, and deletions to validation rules
 - **Change:** UI now renders only the number of rows needed for each column/section, per ring type and championship count. No extra rows are shown for columns that do not need them (e.g., SH ring with <85 cats only shows 10 Show Awards rows and 3 Best SH CH rows). This fixes the bug where specialty rings could show too many rows.
 - **Rationale:** Ensures the UI always matches the correct CFA logic and prevents user confusion about available placements.
 
+### [2024-12-19] Premiership Tab: Input Clearing/Blocking Issue Fixed
+- **Tab:** Premiership
+- **Change:** Fixed critical bug where Best AB PR input fields were being cleared and blocked after entry
+- **Summary:** The issue was caused by incorrect key construction in the UI component. The `updateFinals` function used the key format `${colIdx}_${pos}` for state updates, but the render section was trying to read from state using the key format `abPremiersFinals_${colIdx}_${i}`. This mismatch caused the input values to appear empty and prevented further editing. Fixed by using consistent key formats across all Best PR sections (AB, LH, SH).
+- **Rationale:** This was a critical UI bug that prevented users from entering data in the Best AB PR section. The fix ensures that input values are properly stored and retrieved from state, allowing normal data entry functionality.
+
+### [2024-12-19] Premiership Tab: Error Key Format Parity Fix
+- **Tab:** Premiership
+- **Change:** Fixed error key format mismatches between validation logic and UI to ensure rigid parity with Championship tab
+- **Summary:** Updated all error key constructions and data storage formats to use consistent `{columnIndex}_{position}` format instead of mixed `{columnIndex}-{position}` and `{columnIndex}_{position}` formats. This ensures that validation errors are properly displayed in the UI, particularly for assignment reminders when Best AB Premier cats are not assigned to either LH or SH sections.
+- **Rationale:** The previous inconsistent error key formats caused validation errors (including dynamic assignment reminders) to not display properly in the UI, breaking the rigid parity requirement between Championship and Premiership tabs. This fix ensures all validation logic works identically between both tabs.
+
+### [2024-12-19] Premiership Tab: Status Validation Parity with Championship Tab
+- **Tab:** Premiership
+- **Change:** Confirmed that status validation logic now exactly matches Championship tab behavior
+- **Summary:** 
+  - **Best AB PR**: Only checks if cat is GP or NOV in Show Awards (does NOT check for missing statuses)
+  - **LH/SH PR**: Checks for all status errors (GP/NOV/MISSING/INVALID) in Show Awards
+  - This matches Championship tab behavior where Best AB CH only checks for GC/NOV but LH/SH CH check for all status errors
+- **Rationale:** Ensures complete validation parity with Championship tab. The previous confusion about status validation was resolved - both tabs have the same validation logic: Best AB sections only check for ineligible statuses (GC/GP), while LH/SH sections check for all status errors including missing statuses.
+
+### [2024-12-19] Premiership Tab: Duplicate Error Precedence and Key Format Fix
+- **Tab:** Premiership
+- **Change:** Fixed duplicate error precedence and error key format mismatches to ensure duplicate errors take precedence over status errors, matching Championship tab behavior
+- **Summary:** 
+  - **Fixed error key format**: Corrected blur handler to use `abPremiersFinals_${colIdx}_${pos}` format instead of `abPremiers_${colIdx}_${pos}` to match validation function expectations
+  - **Fixed duplicate error precedence**: Removed early return in blur handler on duplicate detection to allow full validation to handle duplicate errors properly
+  - **Removed alert() calls**: Replaced alert() calls with console.log() to prevent infinite alert loops caused by React re-renders
+  - **Enhanced error merging logic**: Ensured duplicate errors are never overwritten by status errors in the main validation function
+- **Rationale:** The previous implementation had inconsistent error key formats between the blur handler and validation function, causing duplicate errors to not display properly. Additionally, the blur handler was returning early on duplicate detection, preventing the full validation from setting the duplicate error. This fix ensures duplicate errors always take precedence over status errors, matching Championship tab behavior exactly.
+
+### [2024-06-19] Premiership Tab: Complete validation parity with Championship tab
+- **Tab:** Premiership
+- **Change:** Complete refactor to achieve full validation parity with Championship tab
+- **Summary:** Implemented all missing validation rules, helper functions, and relationship checks to match Championship tab exactly
+- **Rationale:** User requested exact validation parity between Championship and Premiership tabs. The refactor includes:
+  - All missing helper functions (duplicate checks, sequential entry, format validation)
+  - Complete column relationship validation with status checks, order validation, and assignment reminders
+  - Same validation order and error precedence as Championship tab
+  - Same error messages and short-circuiting logic
+  - All cross-section validation rules (LH/SH assignment, order validation, single specialty strictness)
+  - Reminder logic for assignment to LH/SH sections
+  - Complete error message consistency with Championship tab
+
+### [2024-12-19] Premiership Tab: Updated Best PR finals eligibility validation to match Championship tab logic
+- **Tab:** Premiership
+- **Change:** Updated Best PR finals eligibility validation to match Championship tab logic
+- **Summary:** Changed from "only PR cats allowed" to "cats listed as GP or NOV in Top 10/15 cannot be in Best PR sections"
+- **Rationale:** Consistency with Championship tab validation logic. The new rule checks if a cat appears in the Top 10/15 section as GP or NOV, and if so, rejects it from Best PR sections. Cats not found in Top 10/15 or listed as PR are assumed valid. Error messages now follow the format: "{catNumber} is listed as a {status} in Show Awards and cannot be awarded Premier final."
+
+### [2024-06-19] Premiership Tab: Initial validation rules implementation
+- **Tab:** Premiership
+- **Change:** Initial validation rules implementation
+- **Summary:** Implemented hair-specific breakpoints, eligibility rules, duplicate validation, sequential entry validation, and void logic
+- **Rationale:** Premiership tab needed comprehensive validation matching CFA rules with hair-specific breakpoints and proper eligibility enforcement.
+
+### [2024-06-19] Championship Tab: Initial validation rules implementation
+- **Tab:** Championship
+- **Change:** Initial validation rules implementation
+- **Summary:** Implemented breakpoint logic, eligibility rules, duplicate validation, sequential entry validation, and void logic
+- **Rationale:** Championship tab needed comprehensive validation matching CFA rules with proper eligibility enforcement.
+
+### [2024-06-19] General Tab: Initial validation rules implementation
+- **Tab:** General
+- **Change:** Initial validation rules implementation
+- **Summary:** Implemented basic validation for cat numbers, duplicates, and sequential entry
+- **Rationale:** General tab needed basic validation to ensure data integrity and proper entry flow.
+
+### [2024-06-19] Premiership Tab: Error Precedence Fix for Assignment Reminder
+- **Tab:** Premiership
+- **Change:** Fixed error precedence logic so that assignment reminders are only shown when there are no other errors for that cell. Hard errors (GP/NOV status) now take precedence over assignment reminders.
+- **Rationale:** Prevents confusing or misleading errors and ensures users always see the most relevant, actionable error for each cat.
+
+### [2024-06-19] Premiership Tab: Automatic Test Data Generation Implementation
+- **Tab:** Premiership
+- **Change:** Added automatic test data generation mechanism to PremiershipTab component that mirrors the Championship tab's behavior. The component now automatically populates test data when `shouldFillTestData` prop is true, creating realistic test data with proper status assignments (GP, PR, NOV) for Show Awards section.
+- **Summary:** The automatic test data generation creates unique cat numbers for each column, assigns random statuses to Show Awards positions, and populates Best PR finals sections with appropriate cats based on ring type and validation rules. This ensures that when users manually enter cat numbers, there are corresponding Show Awards entries with proper statuses for validation.
+- **Rationale:** Previously, the Premiership tab lacked automatic test data generation, causing validation issues when users manually entered cat numbers without corresponding Show Awards entries. This fix ensures proper validation testing and user experience parity with the Championship tab, where test data is automatically generated when needed.
+
+### [2024-06-19] Championship Tab: Initial validation rules implementation
+- **Tab:** Championship
+- **Change:** Initial validation rules implementation
+- **Summary:** Implemented breakpoint logic, eligibility rules, duplicate validation, sequential entry validation, and void logic
+- **Rationale:** Championship tab needed comprehensive validation matching CFA rules with proper eligibility enforcement.
+
+### [2024-06-19] General Tab: Initial validation rules implementation
+- **Tab:** General
+- **Change:** Initial validation rules implementation
+- **Summary:** Implemented basic validation for cat numbers, duplicates, and sequential entry
+- **Rationale:** General tab needed basic validation to ensure data integrity and proper entry flow.
+
+### [2024-06-19] Premiership Tab: Debug Logging for Validation
+- **Area:** validation/premiershipValidation.ts, docs/validation/VALIDATION_PREMIERSHIP.md
+- **Change:** Added Winston-style debug logging to all critical validation and error-merging points for Best AB PR in Premiership validation. Logs when a hard error is detected, when a reminder is considered/suppressed, and the final error object for each column.
+- **Rationale:** Improves traceability and makes it easier to debug and verify error precedence and merging logic, ensuring full parity with Championship tab validation behavior.
+
+### [2024-06-19] Premiership Tab: Validation Timing Fix for UI Consistency
+- **Tab:** Premiership
+- **Change:** Fixed validation timing to match Championship tab behavior - validation now runs on blur (when input loses focus) instead of on every keystroke, ensuring consistent user experience between tabs.
+- **Summary:** Previously, Premiership tab showed validation errors immediately while typing, while Championship tab only showed errors after clicking away from the input. This fix ensures both tabs behave identically and prevents premature error display.
+- **Rationale:** User experience consistency is critical for professional tools. The blur-based validation pattern provides better UX by allowing users to complete their input before seeing validation feedback.
+
+### [2024-06-19] Premiership Tab: Automatic Test Data Generation Implementation
+- **Tab:** Premiership
+- **Change:** Added automatic test data generation mechanism to PremiershipTab component that mirrors the Championship tab's behavior. The component now automatically populates test data when `shouldFillTestData` prop is true, creating realistic test data with proper status assignments (GP, PR, NOV) for Show Awards section.
+- **Summary:** The automatic test data generation creates unique cat numbers for each column, assigns random statuses to Show Awards positions, and populates Best PR finals sections with appropriate cats based on ring type and validation rules. This ensures that when users manually enter cat numbers, there are corresponding Show Awards entries with proper statuses for validation.
+- **Rationale:** Previously, the Premiership tab lacked automatic test data generation, causing validation issues when users manually entered cat numbers without corresponding Show Awards entries. This fix ensures proper validation testing and user experience parity with the Championship tab, where test data is automatically generated when needed.
+
+### 2024-06-09
+- PremiershipTab: Best AB PR validation now searches all columns' Show Awards for cat status (GP/NOV/invalid/missing) to determine hard errors, matching Championship logic. This fixes error precedence and reminder suppression.
+
+### 2024-06-09
+- [Championship Tab] Assignment reminders in Best AB CH are now suppressed if a sequential entry error exists for a later position in the same column. This ensures reminders do not show when a sequential error is present for any later position. Rationale: Prevents confusing UI/UX where reminders would appear alongside or before sequential errors, matching intended error precedence and user expectations.
+
+### 2024-06-09
+- [Championship Tab] Fixed infinite recursion in `validateColumnRelationships` that caused stack overflow. The function now only validates the current column, not all columns recursively.
+
 ---
 
 ## How to Use This Log

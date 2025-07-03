@@ -722,7 +722,10 @@ export function validateColumnRelationships(input: ChampionshipValidationInput, 
   const bestCHResult = validateBestCHWithTop15AndGetFirstError(input, columnIndex);
   if (!bestCHResult.isValid) {
     const key = `champions-${columnIndex}-${bestCHResult.firstErrorPosition}`;
-    errors[key] = bestCHResult.errorMessage;
+    // Only set error if not already set (sequential errors take precedence)
+    if (!errors[key]) {
+      errors[key] = bestCHResult.errorMessage;
+    }
     // If Best AB CH is not valid, do not proceed to LH/SH split validation
     return errors;
   }
@@ -732,11 +735,17 @@ export function validateColumnRelationships(input: ChampionshipValidationInput, 
     const lhshResult = validateLHSHWithBestCHAndGetFirstError(input, columnIndex);
     if (!lhshResult.isValid && lhshResult.errorKeys && lhshResult.errorMessages) {
       lhshResult.errorKeys.forEach((key, idx) => {
-        errors[key] = lhshResult.errorMessages ? lhshResult.errorMessages[idx] || 'LH/SH split error' : 'LH/SH split error';
+        // Only set error if not already set (sequential errors take precedence)
+        if (!errors[key]) {
+          errors[key] = lhshResult.errorMessages ? lhshResult.errorMessages[idx] || 'LH/SH split error' : 'LH/SH split error';
+        }
       });
     } else if (lhshResult.isReminder && lhshResult.errorKeys && lhshResult.errorMessages) {
       lhshResult.errorKeys.forEach((key, idx) => {
-        errors[key] = `[REMINDER] ${lhshResult.errorMessages ? lhshResult.errorMessages[idx] : 'LH/SH split reminder'}`;
+        // Only set reminder if not already set (sequential errors take precedence)
+        if (!errors[key]) {
+          errors[key] = `[REMINDER] ${lhshResult.errorMessages ? lhshResult.errorMessages[idx] : 'LH/SH split reminder'}`;
+        }
       });
     }
   }
@@ -745,26 +754,38 @@ export function validateColumnRelationships(input: ChampionshipValidationInput, 
   const bestLHErrors = validateBestHairCHWithFiller(input, columnIndex, 'LH');
   Object.entries(bestLHErrors).forEach(([pos, msg]) => {
     const key = `lhChampions-${columnIndex}-${pos}`;
-    errors[key] = msg;
+    // Only set error if not already set (sequential errors take precedence)
+    if (!errors[key]) {
+      errors[key] = msg;
+    }
   });
   
   // Validate Best SH CH with new logic (all errors)
   const bestSHErrors = validateBestHairCHWithFiller(input, columnIndex, 'SH');
   Object.entries(bestSHErrors).forEach(([pos, msg]) => {
     const key = `shChampions-${columnIndex}-${pos}`;
-    errors[key] = msg;
+    // Only set error if not already set (sequential errors take precedence)
+    if (!errors[key]) {
+      errors[key] = msg;
+    }
   });
   
   // Validate LH/SH CH order (new rule)
   const lhOrderErrors = validateBestHairCHOrder(input, columnIndex, 'LH');
   Object.entries(lhOrderErrors).forEach(([pos, msg]) => {
     const key = `lhChampions-${columnIndex}-${pos}`;
-    errors[key] = msg;
+    // Only set error if not already set (sequential errors take precedence)
+    if (!errors[key]) {
+      errors[key] = msg;
+    }
   });
   const shOrderErrors = validateBestHairCHOrder(input, columnIndex, 'SH');
   Object.entries(shOrderErrors).forEach(([pos, msg]) => {
     const key = `shChampions-${columnIndex}-${pos}`;
-    errors[key] = msg;
+    // Only set error if not already set (sequential errors take precedence)
+    if (!errors[key]) {
+      errors[key] = msg;
+    }
   });
   
   // Single Specialty LH strict validation
@@ -772,7 +793,10 @@ export function validateColumnRelationships(input: ChampionshipValidationInput, 
     const lhResult = validateSingleSpecialtyCHWithTop15AndGetFirstError(input, columnIndex, 'LH');
     if (!lhResult.isValid) {
       const key = `lhChampions-${columnIndex}-${lhResult.firstErrorPosition}`;
-      errors[key] = lhResult.errorMessage;
+      // Only set error if not already set (sequential errors take precedence)
+      if (!errors[key]) {
+        errors[key] = lhResult.errorMessage;
+      }
       return errors;
     }
   }
@@ -781,11 +805,17 @@ export function validateColumnRelationships(input: ChampionshipValidationInput, 
     const shResult = validateSingleSpecialtyCHWithTop15AndGetFirstError(input, columnIndex, 'SH');
     if (!shResult.isValid) {
       const key = `shChampions-${columnIndex}-${shResult.firstErrorPosition}`;
-      errors[key] = shResult.errorMessage;
+      // Only set error if not already set (sequential errors take precedence)
+      if (!errors[key]) {
+        errors[key] = shResult.errorMessage;
+      }
       return errors;
     }
   }
   
+  // No longer recursively validate all columns (removes infinite recursion bug)
+  // The function should only validate the current column, not all columns recursively.
+  // No suppression of reminders for earlier positions; only set reminders in empty cells if all previous are filled and no sequential error for later cells.
   return errors;
 }
 
@@ -896,11 +926,10 @@ export function validateChampionshipTab(input: ChampionshipValidationInput): { [
           }
           // Enhanced sequential entry error message
           if (!validateSequentialEntry(input, section.name, columnIndex, position, value)) {
-            // Section-specific error message
             let sectionLabel = '';
             switch (section.name) {
               case 'champions':
-                sectionLabel = 'Best AB CH Final';
+                sectionLabel = 'Champions Final';
                 break;
               case 'lhChampions':
                 sectionLabel = 'Best LH CH Final';
@@ -931,7 +960,7 @@ export function validateChampionshipTab(input: ChampionshipValidationInput): { [
             let sectionName = '';
             switch (section.name) {
               case 'champions':
-                sectionName = 'Best AB CH Final';
+                sectionName = 'Champions Final';
                 break;
               case 'lhChampions':
                 sectionName = 'Best LH CH Final';
@@ -970,10 +999,19 @@ export function validateChampionshipTab(input: ChampionshipValidationInput): { [
                 break;
               }
             }
-            // Only show the reminder if all previous are filled and there are no other errors for this row
-            const errorKey = `champions-${colIdx}-${pos}`;
-            if (allPrevFilled && !errors[errorKey]) {
-              errors[errorKey] = msg;
+            // Only show the reminder if all previous are filled, this cell is empty, and there is no sequential error for any later position
+            let hasSequentialError = false;
+            for (let later = pos + 1; later < getFinalsPositionsForRingType(input, columns[colIdx].specialty); later++) {
+              const laterKey = `champions-${colIdx}-${later}`;
+              if (errors[laterKey] && errors[laterKey].includes('You must fill in previous empty award placements')) {
+                hasSequentialError = true;
+                break;
+              }
+            }
+            // Only set reminder if this cell is empty, all previous are filled, and no sequential error for later positions
+            const thisValue = championsFinals[`${colIdx}-${pos}`];
+            if (allPrevFilled && (!thisValue || thisValue.trim() === '') && !hasSequentialError) {
+              errors[key] = msg;
             }
           } else {
             errors[key] = msg;
@@ -987,7 +1025,7 @@ export function validateChampionshipTab(input: ChampionshipValidationInput): { [
       }
     });
   }
-  
+
   return errors;
 }
 

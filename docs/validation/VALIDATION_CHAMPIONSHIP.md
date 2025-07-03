@@ -4,7 +4,7 @@ This document describes the **current validation rules** enforced in the Champio
 
 ## Hair-Specific Breakpoint Logic
 
-The championship tab now uses **hair-specific breakpoints** based on ring type:
+The Championship tab uses **hair-specific breakpoints** based on ring type:
 
 ### Allbreed Rings
 - **Breakpoint**: Championship cats only (LH GC + SH GC + LH CH + SH CH) ≥ 85
@@ -24,227 +24,144 @@ The championship tab now uses **hair-specific breakpoints** based on ring type:
 - **If < 85**: Top 10 positions, 3 Best SH CH
 - **Note**: Best AB CH and Best LH CH sections are disabled (not applicable)
 
-### Example Scenario
-- **LH GC**: 40, **LH CH**: 44 (LH Championship: 84 cats)
-- **SH GC**: 30, **SH CH**: 35 (SH Championship: 65 cats)
-- **NOV**: 20 (not included in championship count)
-- **Total Championship**: 149 cats (including novices)
-- **Championship cats only**: 129 cats (GC + CH only)
+## Validation Order and Structure
 
-**Column 1 (Allbreed Ring)**:
-- Championship count: 129 → **≥ 85** → Top 15 enabled, 5 Best AB CH enabled
-- LH CH count: 44 → **< 85** → 3 Best LH CH enabled (positions 4-5 disabled)
-- SH CH count: 65 → **< 85** → 3 Best SH CH enabled (positions 4-5 disabled)
+The Championship tab validation follows this order:
 
-**Column 2 (Longhair Ring)**:
-- LH Championship count: 84 → **< 85** → Top 10 enabled (positions 11-15 disabled)
-- Best LH CH: 3 positions enabled (positions 4-5 disabled)
-- Best AB CH and Best SH CH: Always disabled
+### 1. Show Awards Section (Top 10/15)
+- **Cat number format**: Must be between 1-450
+- **Sequential entry**: Must fill positions sequentially (no skipping)
+- **Duplicate check**: No duplicates within the same column
+- **Status validation**: All three statuses (GC, CH, NOV) are allowed
 
-**Column 3 (Shorthair Ring)**:
-- SH Championship count: 65 → **< 85** → Top 10 enabled (positions 11-15 disabled)
-- Best SH CH: 3 positions enabled (positions 4-5 disabled)
-- Best AB CH and Best LH CH: Always disabled
+### 2. Finals Sections (Best AB CH, Best LH CH, Best SH CH)
+- **Cat number format**: Must be between 1-450
+- **Sequential entry**: Must fill positions sequentially (no skipping)
+- **Duplicate check**: No duplicates within the same section/column
+- **Status validation**: Cats listed as GC or NOV in Top 10/15 cannot be in Best CH sections
 
-## Void Feature (Updated 2024-06-19)
-- **Purpose**: Allows marking placements as "voided" when a cat wins an award but is not present to receive it physically in the show hall.
-- **Visual Indication**: When a void checkbox is checked, the corresponding cat number input is struck through, grayed out, and becomes read-only (disabled).
-- **Column-Local Behavior**: When a cat number is voided in one section, ALL instances of that cat number within the SAME COLUMN (judge/ring) are voided simultaneously. Unvoiding any instance unvoids all instances in that column. It does NOT affect the same cat number in other columns.
-- **Conditional Visibility**: Void checkboxes are grayed out and disabled when the corresponding cat number input is empty.
-- **Validation Impact**: Voided inputs participate in validation normally - all validation rules continue to apply as if the placement is normal.
+### 3. Column Relationship Validation
+- **Status errors**: Cats listed as GC, NOV, MISSING, or INVALID in Top 10/15 trigger immediate errors
+- **Best AB CH order**: Must match CH cats from Top 10/15 in the same order (when CHs exist in Top 10/15)
+- **LH/SH assignment**: Each cat in Best AB CH must be assigned to either LH or SH section (reminder if not)
+- **Best LH/SH CH validation**: Cats must not be GC, NOV, MISSING, or INVALID
+- **Order validation**: Best LH/SH CH cats must appear in the same order as Best AB CH
+- **Single specialty strict validation**: For Longhair/Shorthair only rings, strict order validation with Top 10/15
 
-**Example:**
-- If you void cat #12 in Judge 1's column, all #12 placements in Judge 1's column are voided, but #12 in Judge 2's column is unaffected.
+## Eligibility Rules
 
-## Cat Number Validation
-- Must be a number between 1 and 450.
-- Empty values are allowed and skip further validation for that position.
+- **Championship Final (Top 10/15):**
+  - All three statuses are allowed: **GC** (Grand Champion), **CH** (Champion), **NOV** (Novice)
+- **Best AB CH, Best LH CH, Best SH CH:**
+  - **Only cats NOT listed as GC or NOV in the Top 10/15 section are eligible.**
+  - Cats listed as **GC** (Grand Champion) or **NOV** (Novice) in the Top 10/15 section are **not eligible** for Best CH finals.
+  - Cats not found in the Top 10/15 section or listed as **CH** (Champion) are assumed to be valid for Best CH finals.
+  - If a GC or NOV cat from the Top 10/15 section is entered in any Best CH final, it triggers a validation error with the message: `"{catNumber} is listed as a {status} in Show Awards and cannot be awarded CH final."`
+
+### CRITICAL: Best AB CH Validation Logic
+
+**Best AB CH validation ONLY checks if cats are listed as GC or NOV in Show Awards:**
+
+- **If a cat is listed as GC or NOV in Show Awards**: Error - cannot be in Best AB CH
+- **If a cat is listed as CH in Show Awards**: Allowed - can be in Best AB CH
+- **If a cat is NOT found in Show Awards**: Allowed - can be in Best AB CH
+- **If a cat has missing or invalid status in Show Awards**: Error - cannot be in Best AB CH
+
+**The validation does NOT require cats to be in the Top 10/15 CH cats list.** This is a common mistake that has been corrected. Cats can be used in Best AB CH as long as they are not explicitly listed as GC or NOV in Show Awards.
+
+### Example
+Suppose you have the following cats in the Championship Final (Top 10/15):
+
+| Cat # | Status |
+|-------|--------|
+| 401   | GC     |
+| 402   | CH     |
+| 403   | NOV    |
+| 404   | CH     |
+| 405   | GC     |
+
+- **Championship Final (Top 10/15):** All of these cats (GC, CH, NOV) are valid entries.
+- **Best AB CH, Best LH CH, Best SH CH:** 
+  - Only 402 and 404 (the CHs) are valid.
+  - 401, 403, and 405 (GC or NOV) are **not** valid and will trigger validation errors if entered.
+  - Error message for 401: "401 is listed as a GC in Show Awards and cannot be awarded CH final."
+  - Error message for 403: "403 is listed as a NOV in Show Awards and cannot be awarded CH final."
+  - **Cat 999 (not in Show Awards):** Allowed - can be used in Best AB CH
+
+## Cross-Section Validation Rules
+
+### Best AB CH Assignment Reminder
+- If a cat is entered in Best AB CH but not assigned to either LH or SH section, a reminder message appears: `"{catNumber} must be assigned to either Longhair or Shorthair section."`
+- This reminder only appears if all previous Best AB CH positions are filled and there are no other errors.
+
+### Order Validation
+- **Best AB CH**: Must contain CH cats from Top 10/15 in the same order (when CHs exist in Top 10/15)
+- **Best LH/SH CH**: Cats must appear in the same order as they appear in Best AB CH
+- **Single Specialty**: For Longhair/Shorthair only rings, strict order validation with Top 10/15
+
+### Error Precedence and Reminder Suppression (2024-06-09)
+
+- **Sequential entry errors** ("You must fill in previous empty award placements...") now take precedence over all other errors and reminders in Best AB CH.
+- **Assignment reminders** (e.g., "needs to be assigned to either LH or SH CH final") are **suppressed** for all positions at or before the highest sequential error position in a column.
+- This ensures that if a sequential error exists for a later position, no reminder will show for earlier empty positions.
+- This matches the intended UI/UX: reminders only appear if all previous positions are filled and there are no sequential errors for later positions.
+
+1. **Format errors** (cat number must be 1-450)
+2. **Sequential entry errors** (must fill positions sequentially)
+3. **Duplicate errors** (no duplicates within section)
+4. **Status errors** (GC/NOV/MISSING/INVALID cats cannot be in Best CH)
+5. **Order errors** (must match Top 10/15 order)
+6. **Assignment reminders** (must assign to LH/SH)
+
+## Void Feature
+- Works exactly as in Championship tab: voiding a cat number only affects all instances of that cat number within the same column (judge/ring), not across all columns.
+- Voided inputs participate in validation normally.
 
 ## Duplicate Validation
-- No duplicate cat numbers allowed within the same section:
-  - **Championship Final (Top 10/15)**: No duplicates within this section only
-  - **Best AB CH Final**: No duplicates within this section only
-  - **Best LH CH Final**: No duplicates within this section only
-  - **Best SH CH Final**: No duplicates within this section only
-- **Cross-section duplicates are allowed**: A cat number can appear in multiple sections (e.g., #1 in both Championship Final and Best AB CH Final) as long as it is not a duplicate within any single section.
-- **Note:** For finals sections (Best AB CH, Best LH CH, Best SH CH), duplicate validation is only within their own section. There is no duplicate check against Show Awards or other finals sections.
-- Empty values don't count as duplicates.
+- No duplicate cat numbers allowed within the same section (Championship Final, Best AB CH, Best LH CH, Best SH CH).
+- Cross-section duplicates are allowed.
 
 ## Sequential Entry Validation
 - Must fill positions sequentially (no skipping positions).
-- Empty values are allowed and don't break sequential entry.
-
-## Show Awards Validation
-- Cat numbers must be between 1-450.
-- Status must be one of: GC, CH, NOV.
-- No duplicates within the same column.
 
 ## Finals Validation
-- Cat numbers must be between 1-450.
+- Best AB CH, Best LH CH, Best SH CH: Only cats not listed as GC or NOV in Top 10/15 are allowed.
 - No duplicates within the same section.
 - Must fill positions sequentially.
+- Must match order from Top 10/15 (where applicable).
 
-## Best CH Validation (Allbreed Rings Only)
-- Best CH must contain CH cats from Show Awards in the same order.
-- If there are no CHs in Show Awards, Best CH can be filled with any CH cats entered in the show.
+## UI/UX Parity with Championship Tab
 
-## LH/SH Split Validation (Allbreed Rings Only)
-- The union of Best LH CH and Best SH CH must exactly match all Best CH cats (no missing, no extra, no duplicates).
-- Best LH CH and Best SH CH must contain exactly all Best CH cats without duplicates.
+- The Championship tab serves as the reference implementation for UI/UX features.
+- All UI/UX features are consistent:
+  - "Jump to Ring" dropdown for quick navigation between judges/rings
+  - Sticky headers for ring number, judge acronym, and ring type
+  - Horizontally scrollable table with frozen position column
+  - Paging/scrolling for large numbers of judges
+  - Ring glow effect for focused/jumped-to columns
+  - Voiding logic is column-local and visually identical
+  - Error highlighting, tooltips, and inline error messages match Championship tab
+  - All action buttons are placed and styled identically
+  - Keyboard navigation and accessibility features are present and consistent
 
-## Best LH CH Validation (Longhair Rings Only)
-- Best LH CH must contain CH cats from Show Awards in the same order.
-- If there are no CHs in Show Awards, Best LH CH can be filled with any CH cats entered in the show.
+## Validation Parity with Championship Tab
 
-## Best SH CH Validation (Shorthair Rings Only)
-- Best SH CH must contain CH cats from Show Awards in the same order.
-- If there are no CHs in Show Awards, Best SH CH can be filled with any CH cats entered in the show.
+The Championship tab serves as the reference implementation for validation logic:
 
-## Cross-Section Validation
-- A cat cannot be both LH CH and SH CH in the same column.
-- GC and NOV cats from Show Awards cannot be awarded CH finals.
+- **Same validation order**: Format → Sequential → Duplicate → Status/Eligibility → Cross-section/Assignment → Order → Reminders
+- **Same error messages**: All error messages follow the same format and structure
+- **Same relationship checks**: All cross-section and assignment validations are identical
+- **Same precedence rules**: Error priorities and short-circuiting logic match exactly
+- **Same helper functions**: All validation utilities have equivalent implementations
 
-## Order Validation
-- Best AB CH cats must appear in the same order in LH CH and SH CH sections.
-- Best AB CH cats must appear before any other cats in LH CH and SH CH sections.
-
-## Championship Final Section (Top 10/15)
-- **Cat Number**
-  - Must be a number between 1 and 450.
-  - No duplicate cat numbers within a column.
-  - Must fill positions sequentially (no skipping positions).
-  - Empty values are allowed and skip further validation for that position.
-- **Status**
-  - Must be one of: GC, CH, NOV.
-
-## Champions Finals (Best CH)
-- **Best AB CH (Allbreed only)**
-  - If there are CHs in the Championship Final (Top 10/15), those CHs (in order) must be at the top of Best AB CH, then fill with other CHs from Championship Final (in order, skipping any already used) up to the number of finals positions.
-  - If there are no CHs in the Championship Final, Best AB CH can be filled with any CH cats entered in the show (not in the final), in any order.
-  - **Important**: When there are no CHs in Championship Final, cats used in Best AB CH are assumed to be CHs entered in the show but not in the Championship Final. They do not need to be added to Championship Final first.
-  - GC and NOV are never eligible for Best AB CH.
-  - No duplicate cat numbers.
-  - Each cat must be a CH entered in the show at the time of validation.
-  - Filler positions (if fewer CH cats than finals positions) can be left blank or filled with unique CHs entered in the show.
-
-### Example: All Championship Final are GC or NOV
-If Championship Final (top 10) = [1: GC, 2: GC, 3: NOV, 4: GC, 5: GC, 6: GC, 7: GC, 8: GC, 9: GC, 10: GC], and there are other CHs entered in the show (e.g., [11: CH, 12: CH, 13: CH]), then Best AB CH = [11, 12, 13] is valid.
-
-> **Note:** "Any CH cats entered in the show" means any cat with status CH in the entry list, regardless of whether they appear in the Championship Final (top 10/15) or not.
-
-## Longhair/Short Hair Champions Finals (Best LH CH, Best SH CH)
-- **Best LH CH / Best SH CH (Allbreed only)**
-  - All Best CH cats must be assigned to either LH or SH (using odd/even split for test data, but user input is free-form).
-  - The union of Best LH CH and Best SH CH must exactly match all Best CH cats (no missing, no extra, no duplicates).
-  - No cat may appear in both LH and SH.
-  - Filler positions (beyond the number of split cats) can be any value, but must not be a non-CH from Championship Final, a duplicate, or in both LH and SH.
-- **Best LH CH (Longhair ring)**
-  - Must match CH cats from Championship Final in order (up to finals positions).
-- **Best SH CH (Shorthair ring)**
-  - Must match CH cats from Championship Final in order (up to finals positions).
-
-## Error Display
-- Errors are shown inline, next to the relevant field.
-- Only the first problematic position is highlighted for each rule.
-- **Error/Warning Precedence for Best AB CH:**
-  1. **Red Error:** Sequential entry violation (e.g., "You must fill Best AB CH and 2nd Best AB CH before entering 3rd Best AB CH.") takes precedence and is shown first.
-  2. **Red Error:** Other validation errors (e.g., duplicate, invalid cat number, GC/NOV status, etc.) are shown next.
-- The message "X needs to be assigned to either LH or SH CH final" is always shown as a regular error (red), regardless of whether LH/SH sections are fully filled or not. There is no warning/reminder distinction for this message.
-
-## Additional Rules
-- **Required Field Indicators**
-  - All required fields are marked with a red asterisk (*).
-- **Auto-Indexing**
-  - Ring numbers and positions are automatically managed.
+## Documentation Note
+- The CSV action buttons and their logic are shared across all tabs. See `docs/specs/FOLDER_STRUCTURE.md` for details.
 
 ## Last Updated
-- 2024-06-09 
+- 2024-06-19 (UI/UX parity with Championship tab)
+- 2024-12-19 (Complete validation parity with Championship tab - all rules, order, and error messages now match exactly)
 
-## Test Data Generation (Test Population)
-
-- When using the "Test Population" feature, the tool fills the Best CH (Allbreed) section with all CH cats from Championship Final, in order, up to the number of finals positions (3 or 5).
-- If there are fewer CH cats than finals positions, unique filler cat numbers are used to fill the remaining Best CH positions.
-- **Every cat number in Best CH (including fillers) is then split into Best LH CH and Best SH CH using the odd/even rule (odd = LH, even = SH).**
-- This guarantees that after test data fill, there are never any "missing from LH/SH split" validation errors, regardless of the number of real CH cats.
-- The split is performed on the entire Best CH array, not just the real CH cats.
-
-## Validation Rule: Best CH, LH/SH Split
-
-- The union of Best LH CH and Best SH CH must exactly match all Best CH cats, with no omissions or duplicates.
-- During test data fill, this is always satisfied by splitting the full Best CH array (including fillers) according to the odd/even rule.
-
-## Best LH/SH CH Validation (Allbreed)
-
-- For each position in Best LH CH and Best SH CH:
-  - If the value is in Best AB CH, strict validation applies ('is not in Best CH').
-  - Otherwise, it is treated as a filler and only checked for not being a non-CH from Championship Final and not being a duplicate.
-  - There is no 'first N' or index-based logic; validation is per-position based on intersection with Best AB CH.
-
-## Test Data Generation
-- Filler positions in LH/SH (when there are fewer Best CH cats than finals positions) are not required to match Best CH and will not trigger errors if not present in Best CH.
-- The 'is not in Best CH' error is only applied to the first N positions (N = number of Best CH cats) in Best LH/SH CH.
-- Filler positions (beyond N) will never trigger this error, regardless of their value.
-
-- For both Allbreed and specialty (Longhair/Shorthair) columns:
-  - Filler positions in Best LH/SH CH (positions beyond N) never trigger 'is not in Best CH' or 'must match CH cats from championship final in order' errors.
-  - For fillers, only check for not being a non-CH from Championship Final and not being a duplicate.
-
-- For Best LH CH and Best SH CH:
-  - Only positions in LH/SH CH that are also present in Best AB CH are strictly validated for 'is not in Best CH'.
-  - All other positions are treated as fillers and do not trigger this error.
-  - Fillers are only checked for not being a non-CH from Championship Final and not being a duplicate.
-
-## New Validation Rule: Order of Cats in Best LH CH and Best SH CH
-- The order of cats in Best LH CH and Best SH CH must preserve the order from Best CH.
-- **Validation Rule:** If a filler (not in Best AB CH) appears before a Best AB CH cat in LH/SH CH, an error is shown on both the filler and the out-of-order Best AB CH cat. All Best AB CH cats must appear at the top of LH/SH CH, in order, before any fillers.
-- Fillers (cats not in Best AB CH) may only appear after all Best AB CH cats are placed, if more positions are available than Best AB CH cats.
-- It is not possible for a Best AB CH cat to be 2nd or 3rd in either specialty final; by definition, Best AB CH is the best cat regardless of hair length.
-
-## Order Rule (Subsequence): All Best AB CH cats that appear in Best LH CH or Best SH CH must be at the top, in the same order as in Best AB CH. Not all Best AB CH cats are required to appear in LH/SH CH; only those that do must preserve the order. No filler (not in Best AB CH) may appear before any present Best AB CH cat. After all present Best AB CH cats, fillers may appear.
-
-**Example:**
-If Best AB CH = [A, B, C, D, E] and Best SH CH = [A, D, B, X, Y]:
-  - This is invalid because B appears after D, but in Best AB CH, B comes before D.
-  - The valid order for present Best AB CH cats in SH CH would be [A, B, D, ...].
-  - Any fillers (X, Y) must come after all present Best AB CH cats.
-
-## Error Precedence and Relationship Rules
-
-- If a cat is listed as GC or NOV in Championship Final, the error 'X is listed as a GC/NOV in Championship Final and cannot be awarded CH final.' always takes precedence over any other error (including 'Best CH is missing from LH/SH split').
-- The 'Best CH is missing from LH/SH split' error is never shown for a cat that is a GC or NOV in Championship Final; only the GC/NOV error is shown for that cat.
-- If a cat is not found in Championship Final, no error is shown for that specific check.
-- If a cat in Championship Final is missing a status (GC/CH/NOV), the error 'X in Championship Final is missing a status (GC/CH/NOV) and cannot be awarded CH final.' always takes precedence over any other error (including 'Best CH is missing from LH/SH split').
-- If a cat in Championship Final has an invalid status (not GC, CH, or NOV), the error 'X in Championship Final has an invalid status and cannot be awarded CH final.' always takes precedence over any other error (including 'Best CH is missing from LH/SH split').
-
-## Warning Messages
-- **LH/SH Assignment Reminder**: When a Best AB CH cat is not yet assigned to either LH or SH CH final, a warning message appears in orange
-- **Timing**: Warning only appears when both LH and SH sections are not fully filled, indicating the user is still in the process of assigning cats
-- **Purpose**: Provides helpful guidance without blocking validation, encouraging users to complete the assignment process 
-
-## Single Specialty Ring (LH/SH) Best CH Validation (2024-06)
-
-For **Longhair** or **Shorthair** rings (single specialty):
-- If there are CHs (Champions) in the Championship Final, those CHs (in order) must be at the top of the enabled section (LH or SH CH), in order.
-- If there are no CHs in the final, any CH entered in the show (for that column) can be used in the enabled section.
-- GC (Grand Champion) and NOV (Novice) cats are never eligible for Best LH/SH CH.
-- Duplicates are not allowed within the section.
-- The order of CHs in the enabled section must match the order in the final if present.
-- Error messages and display are consistent with Allbreed logic.
-
-This ensures strict per-section validation for single specialty rings, matching CFA rules and the Allbreed logic for Best CH.
-
-## UI/UX Visibility Rules (2024-06-19)
-
-- For each column (ring), only the rows/sections that are applicable to that ring type are visible. If a section or row is not applicable (e.g., Best SH CH in a Longhair ring), it is not rendered at all—not just disabled.
-- **Each column only renders the number of rows needed for its ring type and championship count.** For example, if a Shorthair ring has 84 SH championship cats, only 10 Show Awards rows and 3 Best SH CH rows are rendered for that column; extra rows are not present.
-- This applies to:
-  - Entire sections (e.g., Best AB CH and Best SH CH in a Longhair ring are not shown at all).
-  - Individual rows within a section, based on the hair-specific breakpoint (e.g., if only top 10 are awarded, rows 11-15 are not rendered at all).
-  - The same logic applies to the finals sections: if only 3 Best AB CH are awarded, rows 4-5 are not rendered at all, and so on for Best LH CH and Best SH CH.
-
-### Example
-- In a Shorthair ring with 50 SH GC and 34 SH CH (total 84 SH championship cats):
-  - Only 10 Show Awards rows and 3 Best SH CH rows are rendered for that column.
-  - Rows 11-15 and Best SH CH rows 4-5 are not present in the UI for that column.
-- In an Allbreed ring with 90 total championship cats:
-  - All sections are visible, but each only shows the number of rows matching the placements awarded (e.g., 15 for Show Awards, 5 for each Best CH section). 
+## 2024-06-09: Infinite Recursion Bug Fixed
+- Fixed a critical bug in `validateColumnRelationships` where the function would recursively call itself for all columns, causing a stack overflow (maximum call stack size exceeded).
+- The function now only validates the current column, as intended, and does not call itself recursively.
+- This prevents stack overflow errors and ensures stable validation logic. 
