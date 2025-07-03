@@ -364,6 +364,11 @@ This changelog records all changes, additions, and deletions to validation rules
   - **Mixed setup**: Table shows maximum rows needed, but each column only has inputs for its applicable rows
 - **Rationale:** Previously, if any column needed 15 rows, all columns would show 15 rows regardless of their individual breakpoints. This fix ensures each column respects its own hair-specific breakpoint calculation, matching CFA rules and user expectations.
 
+### [2024-06-22] Household Pet Tab: Full Implementation and Documentation
+- **Tab:** Household Pet
+- **Change:** Implemented Household Pet tab as a strict reduction of the Kitten tab. Only one section (Top 10/15 Household Pets), only HHP status, all UI/UX, voiding, error display, and keyboard navigation match Kitten tab. Validation includes duplicate, sequential, range, and voiding logic. Column reset on judge change is enforced. Documentation updated in VALIDATION_HOUSEHOLD.md.
+- **Rationale:** Ensures robust, user-friendly, and consistent data entry for household pets, with full parity to Kitten tab except for reduced features.
+
 ---
 
 ## How to Use This Log

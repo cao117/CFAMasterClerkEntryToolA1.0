@@ -7,6 +7,7 @@ import { useToast } from './hooks/useToast'
 import cfaLogo from './assets/cfa-logo.png'
 import PremiershipTab from './components/PremiershipTab'
 import KittenTab from './components/KittenTab'
+import HouseholdPetTab from './components/HouseholdPetTab'
 
 interface Judge {
   id: number;
@@ -413,7 +414,13 @@ function App() {
     { 
       id: 'household', 
       name: 'Household Pet',
-      component: <div className="p-6 bg-white rounded-lg shadow"><h2 className="text-2xl font-bold mb-6 text-gray-800">Household Pet</h2><p className="text-gray-600">Coming soon...</p></div>,
+      component: <HouseholdPetTab
+        judges={judges}
+        householdPetCount={showData.householdPetCount}
+        showSuccess={showSuccess}
+        showError={showError}
+        isActive={activeTab === 'household'}
+      />,
       disabled: showData.householdPetCount <= 0
     }
   ];

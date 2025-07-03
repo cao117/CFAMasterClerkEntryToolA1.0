@@ -13,7 +13,7 @@ Follow conventions for naming and organization. New features go in `src/` as com
 
 ## Shared CSV Action Buttons
 
-- The following action buttons are present on all tabs (General, Championship, Kittens, Premiership, Household Cats):
+- The following action buttons are present on all tabs (General, Championship, Kittens, Premiership, Household Pet):
   - Save to Temp CSV
   - Generate Final CSV
   - Restore from CSV
@@ -129,3 +129,6 @@ Contains all React UI components. Each component focuses on rendering and user i
 #### `/src/validation/` ⭐ **New**
 **Purpose**: Centralized validation logic for maintainability and reusability
 - **Kitten validation**: See `docs/validation/VALIDATION_KITTEN.md` for rules (matches PremiershipTab except for reduced features).
+
+#### `/src/components/HouseholdPetTab.tsx`
+**Purpose**: Household Pet data entry form
