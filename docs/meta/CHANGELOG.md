@@ -4,6 +4,11 @@ This changelog records major changes to the CFA Master Clerk Entry Tool, includi
 
 ## Validation Rule Change Log
 
+### [2024-12-19] KittenTab: Full State Management Lift to App Level
+- **Area:** KittenTab.tsx, App.tsx, docs/specs/FOLDER_STRUCTURE.md
+- **Change:** KittenTab now uses fully lifted state management, with all data (showAwards, voidedShowAwards, errors, focusedColumnIndex, isResetModalOpen) managed in App.tsx and passed as props. This provides consistency with Championship and Premiership tabs and ensures data persistence across tab switches. All local state has been removed from KittenTab, making it a pure presentation component.
+- **Rationale:** Ensures consistent state management across all tabular sections and prevents data loss when switching between tabs. Provides better synchronization, unified reset functionality, and easier testing and debugging.
+
 ### [2024-12-19] Championship Tab: Hair-Specific Breakpoint Implementation
 - **Area:** ChampionshipTab.tsx, GeneralTab.tsx, championshipValidation.ts
 - **Change:** Implemented hair-specific breakpoint logic for championship cats. The system now calculates breakpoints based on ring type:

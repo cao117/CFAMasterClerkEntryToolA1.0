@@ -100,7 +100,16 @@ function App() {
   });
 
   // Kitten tab state
-  const [kittenTabData, setKittenTabData] = useState({ showAwards: {}, voidedShowAwards: {} });
+  const [kittenTabData, setKittenTabData] = useState({ 
+    showAwards: {}, 
+    voidedShowAwards: {},
+    errors: {},
+    focusedColumnIndex: null as number | null,
+    isResetModalOpen: false
+  });
+
+  // Household Pet tab state (LIFTED)
+  const [householdPetTabData, setHouseholdPetTabData] = useState({ showAwards: {}, voidedShowAwards: {} });
 
   // Auto-calculate championship counts
   useEffect(() => {
@@ -309,6 +318,19 @@ function App() {
     resetColumns(kittenTabData, setKittenTabData, 'kitten');
   };
 
+  // Function to return the full show state for CSV export
+  const getShowState = () => ({
+    general: showData,
+    judges,
+    championship: championshipTabData,
+    premiership: premiershipTabData,
+    kitten: kittenTabData,
+    household: {
+      householdPetCount: showData.householdPetCount,
+      ...householdPetTabData,
+    },
+  });
+
   const tabs = [
     { 
       id: 'general', 
@@ -323,6 +345,7 @@ function App() {
         showWarning={showWarning}
         showInfo={showInfo}
         onJudgeRingTypeChange={handleJudgeRingTypeChange}
+        getShowState={getShowState}
       />,
       disabled: false
     },
@@ -357,6 +380,7 @@ function App() {
           voidedSHChampionsFinals: {},
           errors: {},
         })}
+        getShowState={getShowState}
       />,
       disabled: championshipTabDisabled
     },
@@ -371,7 +395,8 @@ function App() {
         isActive={activeTab === 'kitten'}
         kittenTabData={kittenTabData}
         setKittenTabData={setKittenTabData}
-        onTabReset={() => setKittenTabData({ showAwards: {}, voidedShowAwards: {} })}
+        onTabReset={() => setKittenTabData({ showAwards: {}, voidedShowAwards: {}, errors: {}, focusedColumnIndex: null, isResetModalOpen: false })}
+        getShowState={getShowState}
       />,
       disabled: kittenTabDisabled
     },
@@ -408,6 +433,7 @@ function App() {
           voidedSHPremiersFinals: {},
           errors: {},
         })}
+        getShowState={getShowState}
       />,
       disabled: premiershipTabDisabled
     },
@@ -420,6 +446,9 @@ function App() {
         showSuccess={showSuccess}
         showError={showError}
         isActive={activeTab === 'household'}
+        getShowState={getShowState}
+        householdPetTabData={householdPetTabData}
+        setHouseholdPetTabData={setHouseholdPetTabData}
       />,
       disabled: showData.householdPetCount <= 0
     }

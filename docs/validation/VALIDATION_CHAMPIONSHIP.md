@@ -208,7 +208,7 @@ The Championship tab serves as the reference implementation for validation logic
 - All error lookups in the UI now use the local `errors` state.
 - There is no user-facing behavior change; this is a technical/internal refactor for stability and maintainability.
 
-_Last Updated: 2024-06-21_
+_Last Updated: 2024-06-21_ 
 
 ## Column Reset on Ring Type Change
 

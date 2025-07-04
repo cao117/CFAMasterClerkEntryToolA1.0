@@ -47,6 +47,7 @@ interface ChampionshipTabProps {
    * Handler to reset only the Championship tab data
    */
   onTabReset: () => void;
+  getShowState: () => any;
 }
 
 interface Column {
@@ -84,7 +85,7 @@ type ChampionshipTabData = {
  */
 const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
   (props, ref) => {
-    const { judges, championshipTotal, championshipCounts, showSuccess, showError, showInfo: _showInfo, shouldFillTestData, onResetAllData, championshipTabData, setChampionshipTabData, onTabReset } = props;
+    const { judges, championshipTotal, championshipCounts, showSuccess, showError, showInfo: _showInfo, shouldFillTestData, onResetAllData, championshipTabData, setChampionshipTabData, onTabReset, getShowState } = props;
     // State for dynamic table structure
     const [columns, setColumns] = useState<Column[]>([]);
     const [numAwardRows, setNumAwardRows] = useState(10);
@@ -674,7 +675,8 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
         );
         return;
       }
-      handleSaveToTempCSV({ columns, showAwards: championshipTabData.showAwards, championsFinals: championshipTabData.championsFinals, lhChampionsFinals: championshipTabData.lhChampionsFinals, shChampionsFinals: championshipTabData.shChampionsFinals, championshipTotal }, showSuccess, showError);
+      // Export the full show state for CSV export
+      handleSaveToTempCSV(getShowState, showSuccess, showError);
     };
 
     const handleGenerateFinalCSVClick = () => {
@@ -696,7 +698,8 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
         );
         return;
       }
-      handleGenerateFinalCSV({ columns, showAwards: championshipTabData.showAwards, championsFinals: championshipTabData.championsFinals, lhChampionsFinals: championshipTabData.lhChampionsFinals, shChampionsFinals: championshipTabData.shChampionsFinals, championshipTotal }, showSuccess, showError);
+      // Export the full show state for CSV export
+      handleGenerateFinalCSV(getShowState, showSuccess, showError);
     };
 
     const handleRestoreFromCSVClick = () => {

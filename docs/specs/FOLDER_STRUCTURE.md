@@ -34,7 +34,7 @@ Follow conventions for naming and organization. New features go in `src/` as com
 
 ## Tab State Management (as of 1.0.10)
 
-- All state for Championship and Premiership tabs (cat numbers, statuses, voids, errors, etc.) is now managed in `App.tsx`.
+- All state for Championship, Premiership, and Kitten tabs (cat numbers, statuses, voids, errors, etc.) is now managed in `App.tsx`.
 - State is passed to each tab as props, ensuring that data is preserved when switching between tabs.
 - Each tab has its own reset handler, which only clears its own data, not the other tab or global state.
 - Data is only reset when the user clicks the reset button on that tab, not when switching tabs.
@@ -44,6 +44,11 @@ Follow conventions for naming and organization. New features go in `src/` as com
 - ChampionshipTab now uses fully lifted state, with all data managed in App.tsx and passed as props (like PremiershipTab).
 - There is no local state for championship data; all updates and resets are handled by the parent.
 - This ensures data is preserved across tab switches for both tabs.
+
+## 2024-12-19: KittenTab State Management Update
+- KittenTab now uses fully lifted state, with all data (showAwards, voidedShowAwards, errors, focusedColumnIndex, isResetModalOpen) managed in App.tsx and passed as props.
+- This provides consistency with Championship and Premiership tabs and ensures data persistence across tab switches.
+- All local state has been removed from KittenTab, making it a pure presentation component.
 
 ## 2024-06-21: UI Border Color Update
 - All colored border logic (orange/navy blue) removed from ChampionshipTab.

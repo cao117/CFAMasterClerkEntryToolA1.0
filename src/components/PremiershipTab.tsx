@@ -43,6 +43,7 @@ interface PremiershipTabProps {
    * Handler to reset only the Premiership tab data
    */
   onTabReset: () => void;
+  getShowState: () => any;
 }
 
 /**
@@ -69,7 +70,8 @@ export default function PremiershipTab({
   shouldFillTestData,
   premiershipTabData,
   setPremiershipTabData,
-  onTabReset
+  onTabReset,
+  getShowState
 }: PremiershipTabProps) {
   // Placeholder state for modal
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
@@ -448,12 +450,12 @@ export default function PremiershipTab({
 
   // Action button handlers (to be replaced with real logic)
   const handleSaveToTempCSVClick = () => {
-    // TODO: Implement Premiership validation and data export
-    handleSaveToTempCSV({}, showSuccess, showError);
+    // Export the full show state for CSV export
+    handleSaveToTempCSV(getShowState, showSuccess, showError);
   };
   const handleGenerateFinalCSVClick = () => {
-    // TODO: Implement Premiership validation and data export
-    handleGenerateFinalCSV({}, showSuccess, showError);
+    // Export the full show state for CSV export
+    handleGenerateFinalCSV(getShowState, showSuccess, showError);
   };
   const handleRestoreFromCSVClick = () => {
     // TODO: Implement Premiership data import

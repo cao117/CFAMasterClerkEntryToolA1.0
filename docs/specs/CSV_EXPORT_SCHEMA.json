@@ -1,0 +1,156 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CFA Show CSV Export Schema",
+  "type": "object",
+  "properties": {
+    "general": {
+      "type": "object",
+      "properties": {
+        "showDate": { "type": "string", "format": "date" },
+        "clubName": { "type": "string" },
+        "masterClerk": { "type": "string" },
+        "numberOfJudges": { "type": "integer", "minimum": 1, "maximum": 12 },
+        "championshipCounts": {
+          "type": "object",
+          "properties": {
+            "gcs": { "type": "integer", "minimum": 0 },
+            "lhGcs": { "type": "integer", "minimum": 0 },
+            "shGcs": { "type": "integer", "minimum": 0 },
+            "lhChs": { "type": "integer", "minimum": 0 },
+            "shChs": { "type": "integer", "minimum": 0 },
+            "novs": { "type": "integer", "minimum": 0 },
+            "chs": { "type": "integer", "minimum": 0 },
+            "total": { "type": "integer", "minimum": 0 }
+          },
+          "required": ["gcs", "lhGcs", "shGcs", "lhChs", "shChs", "novs", "chs", "total"]
+        },
+        "kittenCounts": {
+          "type": "object",
+          "properties": {
+            "lhKittens": { "type": "integer", "minimum": 0 },
+            "shKittens": { "type": "integer", "minimum": 0 },
+            "total": { "type": "integer", "minimum": 0 }
+          },
+          "required": ["lhKittens", "shKittens", "total"]
+        },
+        "premiershipCounts": {
+          "type": "object",
+          "properties": {
+            "gcs": { "type": "integer", "minimum": 0 },
+            "lhPrs": { "type": "integer", "minimum": 0 },
+            "shPrs": { "type": "integer", "minimum": 0 },
+            "novs": { "type": "integer", "minimum": 0 },
+            "prs": { "type": "integer", "minimum": 0 },
+            "total": { "type": "integer", "minimum": 0 }
+          },
+          "required": ["gcs", "lhPrs", "shPrs", "novs", "prs", "total"]
+        },
+        "householdPetCount": { "type": "integer", "minimum": 0 }
+      },
+      "required": [
+        "showDate", "clubName", "masterClerk", "numberOfJudges",
+        "championshipCounts", "kittenCounts", "premiershipCounts", "householdPetCount"
+      ]
+    },
+    "judges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "acronym": { "type": "string" },
+          "ringType": { "type": "string", "enum": ["Longhair", "Shorthair", "Allbreed", "Double Specialty"] }
+        },
+        "required": ["id", "name", "acronym", "ringType"]
+      }
+    },
+    "championship": { "$ref": "#/definitions/tabularSection" },
+    "premiership": { "$ref": "#/definitions/tabularSection" },
+    "kitten": { "$ref": "#/definitions/simpleTabularSection" },
+    "household": {
+      "type": "object",
+      "properties": {
+        "householdPetCount": { "type": "integer", "minimum": 0 },
+        "placements": { "$ref": "#/definitions/simpleTabularSection/properties/placements" }
+      },
+      "required": ["householdPetCount", "placements"]
+    }
+  },
+  "required": ["general", "judges", "championship", "premiership", "kitten", "household"],
+  "definitions": {
+    "placementCell": {
+      "type": "object",
+      "properties": {
+        "catNumber": { "type": "string" },
+        "status": { "type": "string" },
+        "voided": { "type": "boolean" }
+      },
+      "required": ["catNumber", "status"]
+    },
+    "tabularSection": {
+      "type": "object",
+      "properties": {
+        "rings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "number": { "type": "string" },
+              "acronym": { "type": "string" },
+              "type": { "type": "string" }
+            },
+            "required": ["number", "acronym", "type"]
+          }
+        },
+        "placements": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": { "type": "string" },
+              "columns": {
+                "type": "array",
+                "items": { "$ref": "#/definitions/placementCell" }
+              }
+            },
+            "required": ["label", "columns"]
+          }
+        }
+      },
+      "required": ["rings", "placements"]
+    },
+    "simpleTabularSection": {
+      "type": "object",
+      "properties": {
+        "rings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "number": { "type": "string" },
+              "acronym": { "type": "string" },
+              "type": { "type": "string" }
+            },
+            "required": ["number", "acronym", "type"]
+          }
+        },
+        "placements": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": { "type": "string" },
+              "columns": {
+                "type": "array",
+                "items": { "$ref": "#/definitions/placementCell" }
+              }
+            },
+            "required": ["label", "columns"]
+          }
+        }
+      },
+      "required": ["rings", "placements"]
+    }
+  }
+} 

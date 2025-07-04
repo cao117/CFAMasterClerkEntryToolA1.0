@@ -51,6 +51,7 @@ interface GeneralTabProps {
   showWarning: (title: string, message?: string, duration?: number) => void;
   showInfo: (title: string, message?: string, duration?: number) => void;
   onJudgeRingTypeChange?: (id: number, oldType: string, newType: string) => void;
+  getShowState: () => any;
 }
 
 export default function GeneralTab({ 
@@ -62,7 +63,8 @@ export default function GeneralTab({
   showError,
   showWarning: _showWarning,
   showInfo: _showInfo,
-  onJudgeRingTypeChange
+  onJudgeRingTypeChange,
+  getShowState
 }: GeneralTabProps) {
   // Local state for form validation
   const [errors, setErrors] = useState<{[key: string]: string}>({});
@@ -284,7 +286,8 @@ export default function GeneralTab({
       );
       return;
     }
-    handleSaveToTempCSV(showData, judges, showSuccess, showError);
+    // Export the full show state for CSV export
+    handleSaveToTempCSV(getShowState, showSuccess, showError);
   };
 
   const handleGenerateFinalCSVClick = () => {
@@ -298,7 +301,8 @@ export default function GeneralTab({
       );
       return;
     }
-    handleGenerateFinalCSV(showData, judges, showSuccess, showError);
+    // Export the full show state for CSV export
+    handleGenerateFinalCSV(getShowState, showSuccess, showError);
   };
 
   const handleRestoreFromCSVClick = () => {

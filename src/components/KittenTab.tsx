@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useMemo, useRef } from 'react';
 import * as kittenValidation from '../validation/kittenValidation';
 import { handleSaveToTempCSV, handleGenerateFinalCSV, handleRestoreFromCSV } from '../utils/formActions';
 import Modal from './Modal';
@@ -31,6 +31,7 @@ interface KittenTabProps {
   kittenTabData: any;
   setKittenTabData: React.Dispatch<React.SetStateAction<any>>;
   onTabReset: () => void;
+  getShowState: () => any;
 }
 
 export default function KittenTab({
@@ -43,7 +44,8 @@ export default function KittenTab({
   isActive,
   kittenTabData,
   setKittenTabData,
-  onTabReset
+  onTabReset,
+  getShowState
 }: KittenTabProps) {
   // --- Helper: Generate columns (one per judge, handle Double Specialty) ---
   const generateColumns = (): Column[] => {
@@ -73,12 +75,25 @@ export default function KittenTab({
     return 10; // Default fallback
   };
 
-  // --- State for focused column (for ring glow effect) ---
-  const [focusedColumnIndex, setFocusedColumnIndex] = useState<number | null>(null);
+  // --- State for focused column (for ring glow effect) - LIFTED TO APP STATE ---
+  const focusedColumnIndex = kittenTabData.focusedColumnIndex;
+  const setFocusedColumnIndex = (index: number | null) => {
+    setKittenTabData((prev: any) => ({
+      ...prev,
+      focusedColumnIndex: index
+    }));
+  };
+
   const tableContainerRef = useRef<HTMLDivElement>(null);
 
-  // --- Error state ---
-  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  // --- Error state - LIFTED TO APP STATE ---
+  const errors = kittenTabData.errors || {};
+  const setErrors = (newErrors: { [key: string]: string }) => {
+    setKittenTabData((prev: any) => ({
+      ...prev,
+      errors: newErrors
+    }));
+  };
 
   // --- Cat input refs for keyboard navigation ---
   const totalCatRows = Math.max(...columns.map(col => getAwardCount(col.specialty)));
@@ -151,7 +166,7 @@ export default function KittenTab({
 
   // --- Update kitten placement (cat number) ---
   const updateShowAward = (colIdx: number, pos: number, field: 'catNumber' | 'status', value: string) => {
-    const key = `${colIdx}_${pos}`;
+    const key = `${colIdx}-${pos}`;
     setKittenTabData((prev: any) => {
       if (field === 'catNumber') {
         const prevCell = prev.showAwards?.[key] || {};
@@ -162,7 +177,7 @@ export default function KittenTab({
         };
         // Voiding logic: if this cat number is voided elsewhere in the column, void this cell too
         if (value && value.trim() !== '') {
-          const isVoided = Object.keys(prev.voidedShowAwards || {}).some(k => k.startsWith(`${colIdx}_`) && prev.showAwards?.[k]?.catNumber === value && prev.voidedShowAwards?.[k]);
+          const isVoided = Object.keys(prev.voidedShowAwards || {}).some(k => k.startsWith(`${colIdx}-`) && prev.showAwards?.[k]?.catNumber === value && prev.voidedShowAwards?.[k]);
           setKittenTabDataVoidState(colIdx, pos, isVoided);
         } else {
           setKittenTabDataVoidState(colIdx, pos, false);
@@ -190,7 +205,7 @@ export default function KittenTab({
 
   // --- Voiding logic ---
   function setKittenTabDataVoidState(colIdx: number, pos: number, voided: boolean) {
-    const key = `${colIdx}_${pos}`;
+    const key = `${colIdx}-${pos}`;
     setKittenTabData((prev: any) => ({
       ...prev,
       voidedShowAwards: {
@@ -202,11 +217,11 @@ export default function KittenTab({
 
   // --- Getters ---
   const getShowAward = (colIdx: number, pos: number) => {
-    const key = `${colIdx}_${pos}`;
+    const key = `${colIdx}-${pos}`;
     return kittenTabData.showAwards?.[key] || { catNumber: '', status: 'KIT' };
   };
   const getVoidState = (colIdx: number, pos: number) => {
-    const key = `${colIdx}_${pos}`;
+    const key = `${colIdx}-${pos}`;
     return kittenTabData.voidedShowAwards?.[key] || false;
   };
 
@@ -229,8 +244,14 @@ export default function KittenTab({
   // --- Table Structure: Sticky headers, frozen position column, columns = judges ---
   const maxFinalRows = Math.max(...columns.map(col => getAwardCount(col.specialty)));
 
-  // Add state for reset modal
-  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  // Add state for reset modal - LIFTED TO APP STATE
+  const isResetModalOpen = kittenTabData.isResetModalOpen || false;
+  const setIsResetModalOpen = (open: boolean) => {
+    setKittenTabData((prev: any) => ({
+      ...prev,
+      isResetModalOpen: open
+    }));
+  };
 
   // Add hasFocusedOnActivation ref for autofocus logic (match PremiershipTab)
   const hasFocusedOnActivation = useRef(false);
@@ -351,10 +372,10 @@ export default function KittenTab({
                       {i + 1}{i >= 10 ? '*' : ''}
                     </td>
                     {columns.map((col, colIdx) => {
-                      const key = `${colIdx}_${i}`;
+                      const key = `${colIdx}-${i}`;
                       const cell = getShowAward(colIdx, i) || { catNumber: '', status: 'KIT' };
                       const voided = getVoidState(colIdx, i);
-                      const error = errors[`${colIdx}_${i}`];
+                      const error = errors[`${colIdx}-${i}`];
                       const maxRowsForThisColumn = getAwardCount(col.specialty);
                       
                       // Only show input if this row is within the breakpoint for this column
@@ -429,14 +450,20 @@ export default function KittenTab({
           <div className="flex gap-3">
             <button
               type="button"
-              onClick={() => handleSaveToTempCSV({}, showSuccess, showError)}
+              onClick={() => {
+                // Export the full show state for CSV export
+                handleSaveToTempCSV(getShowState, showSuccess, showError);
+              }}
               className="cfa-button"
             >
               Save to Temp CSV
             </button>
             <button
               type="button"
-              onClick={() => handleGenerateFinalCSV({}, showSuccess, showError)}
+              onClick={() => {
+                // Export the full show state for CSV export
+                handleGenerateFinalCSV(getShowState, showSuccess, showError);
+              }}
               className="cfa-button"
             >
               Generate Final CSV
