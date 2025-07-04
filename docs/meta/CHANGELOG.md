@@ -4,6 +4,12 @@ This changelog records major changes to the CFA Master Clerk Entry Tool, includi
 
 ## Validation Rule Change Log
 
+### [2024-12-19] KittenTab and HouseholdPetTab: Duplicate Error Display Consistency Fix
+- **Area:** src/components/KittenTab.tsx, src/components/HouseholdPetTab.tsx
+- **Change:** Fixed duplicate error display inconsistency between tabs. Kitten and Household Pet tabs now show error borders on ALL cells with duplicate cat numbers (matching Championship and Premiership behavior), instead of only showing errors on the current cell. Added getBorderStyle, getCleanMessage, and getErrorStyle helper functions to ensure consistent error display across all tabs.
+- **Rationale:** Previously, when entering duplicate cat numbers, only the cell being edited showed the error border in Kitten and Household Pet tabs, while Championship and Premiership tabs correctly showed error borders on all cells with the same duplicate cat number. This fix ensures consistent user experience and proper visual feedback for duplicate validation errors.
+- **Validation Precedence:** No changes to validation logic or precedence - only UI display consistency improvements.
+
 ### [2024-12-19] KittenTab and HouseholdPetTab: Validation Logic Fixes
 - **Area:** src/validation/kittenValidation.ts, src/validation/householdPetValidation.ts, src/components/HouseholdPetTab.tsx
 - **Change:** Fixed validation logic for both Kitten and Household Pet tabs. KittenTab had a key format mismatch (underscore vs hyphen separators) that prevented validation from working. HouseholdPetTab was missing the complete validation implementation. Both tabs now have proper validation for cat number format (1-450), sequential entry, duplicate checking, status validation, and voiding logic.

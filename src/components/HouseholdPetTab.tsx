@@ -196,6 +196,27 @@ export default function HouseholdPetTab({
   // Add state for reset modal
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
 
+  // Helper function to get appropriate border styling for errors (always red)
+  const getBorderStyle = (errorKey: string, _message: string) => {
+    if (errors[errorKey]) {
+      return 'border-red-500'; // Always red border for errors
+    }
+    return 'border-gray-300';
+  };
+
+  // Helper function to get the clean message (remove [REMINDER] or [WARNING] prefix)
+  const getCleanMessage = (message: string): string => {
+    // Remove [REMINDER] and [WARNING] prefixes for display, but always treat as error
+    if (message.startsWith('[REMINDER] ')) return message.replace('[REMINDER] ', '');
+    if (message.startsWith('[WARNING] ')) return message.replace('[WARNING] ', '');
+    return message;
+  };
+
+  // Helper function to get appropriate styling for errors (always red)
+  const getErrorStyle = (_message: string) => {
+    return { color: '#ef4444' }; // Always red for errors
+  };
+
   // Add hasFocusedOnActivation ref for autofocus logic
   const hasFocusedOnActivation = useRef(false);
   React.useEffect(() => {
@@ -331,7 +352,7 @@ export default function HouseholdPetTab({
                             <div className="flex gap-1 items-center">
                               <input
                                 type="text"
-                                className={`w-14 h-7 text-xs text-center border rounded px-0.5 ${error ? 'cfa-input-error' : ''} ${voided ? 'voided-input' : ''} focus:outline-none focus:border-cfa-gold`}
+                                className={`w-14 h-7 text-xs text-center border rounded px-0.5 ${getBorderStyle(`${colIdx}-${i}`, errors[`${colIdx}-${i}`] || '')} ${voided ? 'voided-input' : ''} focus:outline-none focus:border-cfa-gold`}
                                 placeholder="Cat #"
                                 value={cell.catNumber ?? ''}
                                 onChange={e => updateShowAward(colIdx, i, e.target.value)}
@@ -354,7 +375,7 @@ export default function HouseholdPetTab({
                                 }}
                               />
                               <select
-                                className={`w-14 h-7 text-xs text-center border rounded px-0.5 ${error ? 'cfa-input-error' : ''} ${voided ? 'voided-input' : ''} focus:outline-none focus:border-cfa-gold`}
+                                className={`w-14 h-7 text-xs text-center border rounded px-0.5 ${getBorderStyle(`${colIdx}-${i}`, errors[`${colIdx}-${i}`] || '')} ${voided ? 'voided-input' : ''} focus:outline-none focus:border-cfa-gold`}
                                 value="HHP"
                                 disabled
                               >
@@ -370,7 +391,9 @@ export default function HouseholdPetTab({
                                 />
                               )}
                             </div>
-                            {error && <div className="text-xs mt-1 text-red-600">{error}</div>}
+                            {errors[`${colIdx}-${i}`] && (
+                              <div className="text-xs mt-1" style={getErrorStyle(errors[`${colIdx}-${i}`])}>{getCleanMessage(errors[`${colIdx}-${i}`])}</div>
+                            )}
                           </div>
                         </td>
                       );
