@@ -196,10 +196,9 @@ export function getTop15CHCats(input: ChampionshipValidationInput, columnIndex: 
 }
 
 /**
- * Enhanced: Validates that Best CH finals match CH cats from championship final in order
- * For Allbreed rings: Best AB CH must contain CH cats from championship final in the same order
- * If there are no CHs in the championship final, Best AB CH can be filled with any CH cats entered in the show (not in the final)
- * Returns the first position with an error, or -1 if valid
+ * Validates Best AB CH finals against Top 15/10 Show Awards for the current column only.
+ * Ensures that a cat is not awarded Best AB CH if it is a GC or NOV in the same column's Show Awards.
+ * This check is column-specific and does not consider other columns' Show Awards.
  */
 export function validateBestCHWithTop15AndGetFirstError(input: ChampionshipValidationInput, columnIndex: number): { isValid: boolean; firstErrorPosition: number; errorMessage: string } {
   const { columns, championsFinals, championshipTotal, showAwards } = input;
@@ -208,7 +207,6 @@ export function validateBestCHWithTop15AndGetFirstError(input: ChampionshipValid
     return { isValid: true, firstErrorPosition: -1, errorMessage: '' };
   }
   const numPositions = championshipTotal >= 85 ? 5 : 3;
-  
   // Collect championship final cats (in order) - this is the "top 10/15" section
   const numAwardRows = championshipTotal >= 85 ? 15 : 10;
   const championshipFinalCats: {catNumber: string, status: string}[] = [];
@@ -220,13 +218,10 @@ export function validateBestCHWithTop15AndGetFirstError(input: ChampionshipValid
   }
   // Find CHs in championship final
   const chInChampionshipFinal = championshipFinalCats.filter(c => c.status === 'CH').map(c => c.catNumber);
-
   // Build required Best AB CH list
   let requiredBestCH: string[] = [];
   if (chInChampionshipFinal.length > 0) {
-    // If there are CHs in championship final, they must be at the top of Best AB CH in order
     requiredBestCH = [...chInChampionshipFinal];
-    // Fill remaining positions with other CHs from championship final (if any more exist)
     for (const c of championshipFinalCats) {
       if (c.status === 'CH' && !requiredBestCH.includes(c.catNumber)) {
         requiredBestCH.push(c.catNumber);
@@ -235,7 +230,6 @@ export function validateBestCHWithTop15AndGetFirstError(input: ChampionshipValid
     }
   } else {
     // No CHs in championship final - Best AB CH can be filled with any CH cats entered in the show (not in the final)
-    // Collect all unique CH cat numbers from the current column's show awards only
     const allCHs = new Set<string>();
     for (let i = 0; i < numAwardRows; i++) {
       const key = `${columnIndex}-${i}`;
@@ -246,7 +240,6 @@ export function validateBestCHWithTop15AndGetFirstError(input: ChampionshipValid
     }
     requiredBestCH = Array.from(allCHs).slice(0, numPositions);
   }
-
   // Validate Best AB CH
   for (let position = 0; position < numPositions; position++) {
     const key = `${columnIndex}-${position}`;
@@ -259,15 +252,14 @@ export function validateBestCHWithTop15AndGetFirstError(input: ChampionshipValid
           errorMessage: `Must be ${requiredBestCH[position]} (${position + 1}${getOrdinalSuffix(position + 1)} CH required by CFA rules)`
         };
       } else {
-        // Filler position, allow blank
         continue;
       }
     }
-    // Check if this cat is a CH in the eligible set
+    // Check if this cat is a GC or NOV in the current column's Show Awards only
     let isGC = false;
     let isNOV = false;
-    // Check all championship final entries for this cat
-    for (const key in showAwards) {
+    for (let i = 0; i < numAwardRows; i++) {
+      const key = `${columnIndex}-${i}`;
       const award = showAwards[key];
       if (award && award.catNumber.trim() === finalsValue.trim()) {
         if (award.status === 'GC') isGC = true;
@@ -291,7 +283,6 @@ export function validateBestCHWithTop15AndGetFirstError(input: ChampionshipValid
       };
     }
     // If no CHs in championship final, do NOT require the cat to be found as CH in show awards; accept any cat unless it is explicitly GC or NOV
-    // (No error for 'is not a CH entered in the show')
   }
   return { isValid: true, firstErrorPosition: -1, errorMessage: '' };
 }

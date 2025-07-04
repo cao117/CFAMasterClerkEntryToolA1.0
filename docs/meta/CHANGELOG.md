@@ -114,5 +114,10 @@ This changelog records major changes to the CFA Master Clerk Entry Tool, includi
 - Error handling is now consistent between Championship and Premiership tabs.
 - No user-facing behavior changed; this is a technical/internal refactor for stability and maintainability.
 
+### [2024-06-22] ChampionshipTab: Best AB CH Validation Now Column-Specific
+- **Area:** championshipValidation.ts
+- **Change:** Fixed a bug where the Best AB CH validation in the Championship tab incorrectly checked all columns' Show Awards for GC/NOV status. The validation is now column-specific: it only checks the current column's Show Awards for GC/NOV when determining eligibility for Best AB CH. This prevents errors from appearing when a cat is a GC/NOV in another ring but not in the current one.
+- **Rationale:** Ensures that validation logic matches CFA rules and user expectations. Prevents false errors and aligns with the correct behavior already present in the Premiership tab.
+
 ## Last Updated
 - 2024-06-20 
