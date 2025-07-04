@@ -1,6 +1,6 @@
 import React, { useMemo, useRef } from 'react';
 import * as kittenValidation from '../validation/kittenValidation';
-import { handleSaveToTempCSV, handleGenerateFinalCSV, handleRestoreFromCSV } from '../utils/formActions';
+import { handleSaveToCSV, handleRestoreFromCSV } from '../utils/formActions';
 import Modal from './Modal';
 
 interface Judge {
@@ -25,22 +25,26 @@ interface KittenTabProps {
   };
   showSuccess: (title: string, message?: string, duration?: number) => void;
   showError: (title: string, message?: string, duration?: number) => void;
-  showInfo?: (title: string, message?: string, duration?: number) => void;
-  onResetAllData?: () => void;
   isActive: boolean;
-  kittenTabData: any;
-  setKittenTabData: React.Dispatch<React.SetStateAction<any>>;
+  kittenTabData: KittenTabData;
+  setKittenTabData: React.Dispatch<React.SetStateAction<KittenTabData>>;
   onTabReset: () => void;
-  getShowState: () => any;
+  getShowState: () => Record<string, unknown>;
 }
+
+type KittenTabData = {
+  showAwards: { [key: string]: { catNumber: string; status: string } };
+  voidedShowAwards: { [key: string]: boolean };
+  errors: { [key: string]: string };
+  focusedColumnIndex: number | null;
+  isResetModalOpen: boolean;
+};
 
 export default function KittenTab({
   judges,
   kittenCounts,
   showSuccess,
   showError,
-  showInfo: _showInfo,
-  onResetAllData,
   isActive,
   kittenTabData,
   setKittenTabData,
@@ -78,7 +82,7 @@ export default function KittenTab({
   // --- State for focused column (for ring glow effect) - LIFTED TO APP STATE ---
   const focusedColumnIndex = kittenTabData.focusedColumnIndex;
   const setFocusedColumnIndex = (index: number | null) => {
-    setKittenTabData((prev: any) => ({
+    setKittenTabData((prev: KittenTabData) => ({
       ...prev,
       focusedColumnIndex: index
     }));
@@ -89,7 +93,7 @@ export default function KittenTab({
   // --- Error state - LIFTED TO APP STATE ---
   const errors = kittenTabData.errors || {};
   const setErrors = (newErrors: { [key: string]: string }) => {
-    setKittenTabData((prev: any) => ({
+    setKittenTabData((prev: KittenTabData) => ({
       ...prev,
       errors: newErrors
     }));
@@ -167,7 +171,7 @@ export default function KittenTab({
   // --- Update kitten placement (cat number) ---
   const updateShowAward = (colIdx: number, pos: number, field: 'catNumber' | 'status', value: string) => {
     const key = `${colIdx}-${pos}`;
-    setKittenTabData((prev: any) => {
+    setKittenTabData((prev: KittenTabData) => {
       if (field === 'catNumber') {
         const prevCell = prev.showAwards?.[key] || {};
         const newCell = {
@@ -206,7 +210,7 @@ export default function KittenTab({
   // --- Voiding logic ---
   function setKittenTabDataVoidState(colIdx: number, pos: number, voided: boolean) {
     const key = `${colIdx}-${pos}`;
-    setKittenTabData((prev: any) => ({
+    setKittenTabData((prev: KittenTabData) => ({
       ...prev,
       voidedShowAwards: {
         ...prev.voidedShowAwards,
@@ -247,14 +251,14 @@ export default function KittenTab({
   // Add state for reset modal - LIFTED TO APP STATE
   const isResetModalOpen = kittenTabData.isResetModalOpen || false;
   const setIsResetModalOpen = (open: boolean) => {
-    setKittenTabData((prev: any) => ({
+    setKittenTabData((prev: KittenTabData) => ({
       ...prev,
       isResetModalOpen: open
     }));
   };
 
   // Helper function to get appropriate border styling for errors (always red)
-  const getBorderStyle = (errorKey: string, _message: string) => {
+  const getBorderStyle = (errorKey: string) => {
     if (errors[errorKey]) {
       return 'border-red-500'; // Always red border for errors
     }
@@ -270,7 +274,7 @@ export default function KittenTab({
   };
 
   // Helper function to get appropriate styling for errors (always red)
-  const getErrorStyle = (_message: string) => {
+  const getErrorStyle = () => {
     return { color: '#ef4444' }; // Always red for errors
   };
 
@@ -289,14 +293,23 @@ export default function KittenTab({
       setFocusedColumnIndex(null);
       return;
     }
+    
     const ringId = parseInt(selectedRingId, 10);
+    
+    // Find the first column index with this ring id
     const colIdx = columns.findIndex(col => col.judge.id === ringId);
     if (colIdx === -1) return;
+    
+    // Set the focused column to this column index
     setFocusedColumnIndex(colIdx);
+    
+    // Find the corresponding <th> element in the table
     const th = document.getElementById(`ring-th-${colIdx}`);
     const container = tableContainerRef.current;
     if (th && container) {
+      // The width of the frozen column (Position) is 140px
       const frozenWidth = 140;
+      // Scroll so that the left of the <th> aligns with the left of the scroll area (after frozen column)
       const scrollLeft = th.offsetLeft - frozenWidth;
       container.scrollTo({ left: scrollLeft, behavior: 'smooth' });
     }
@@ -407,7 +420,7 @@ export default function KittenTab({
                               <div className="flex gap-1 items-center">
                                 <input
                                   type="text"
-                                  className={`w-14 h-7 text-xs text-center border rounded px-0.5 ${getBorderStyle(`${colIdx}-${i}`, errors[`${colIdx}-${i}`] || '')} ${voided ? 'voided-input' : ''} focus:outline-none focus:border-cfa-gold`}
+                                  className={`w-14 h-7 text-xs text-center border rounded px-0.5 ${getBorderStyle(`${colIdx}-${i}`)} ${voided ? 'voided-input' : ''} focus:outline-none focus:border-cfa-gold`}
                                   placeholder="Cat #"
                                   value={cell.catNumber ?? ''}
                                   onChange={e => updateShowAward(colIdx, i, 'catNumber', e.target.value)}
@@ -431,7 +444,7 @@ export default function KittenTab({
                                   }}
                                 />
                                 <select
-                                  className={`w-14 h-7 text-xs text-center border rounded px-0.5 ${getBorderStyle(`${colIdx}-${i}`, errors[`${colIdx}-${i}`] || '')} ${voided ? 'voided-input' : ''} focus:outline-none focus:border-cfa-gold`}
+                                  className={`w-14 h-7 text-xs text-center border rounded px-0.5 ${getBorderStyle(`${colIdx}-${i}`)} ${voided ? 'voided-input' : ''} focus:outline-none focus:border-cfa-gold`}
                                   value="KIT"
                                   disabled
                                 >
@@ -448,7 +461,7 @@ export default function KittenTab({
                                 )}
                               </div>
                               {errors[`${colIdx}-${i}`] && (
-                                <div className="text-xs mt-1" style={getErrorStyle(errors[`${colIdx}-${i}`])}>{getCleanMessage(errors[`${colIdx}-${i}`])}</div>
+                                <div className="text-xs mt-1" style={getErrorStyle()}>{getCleanMessage(errors[`${colIdx}-${i}`])}</div>
                               )}
                             </div>
                           </td>
@@ -475,28 +488,19 @@ export default function KittenTab({
               type="button"
               onClick={() => {
                 // Export the full show state for CSV export
-                handleSaveToTempCSV(getShowState, showSuccess, showError);
+                handleSaveToCSV(getShowState, showSuccess, showError);
               }}
               className="cfa-button"
             >
-              Save to Temp CSV
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                // Export the full show state for CSV export
-                handleGenerateFinalCSV(getShowState, showSuccess, showError);
-              }}
-              className="cfa-button"
-            >
-              Generate Final CSV
+              Save to CSV
             </button>
             <button
               type="button"
               onClick={() => handleRestoreFromCSV({}, showSuccess, showError)}
               className="cfa-button-secondary"
+              style={{ backgroundColor: '#1e3a8a', borderColor: '#1e3a8a', color: 'white' }}
             >
-              Restore from CSV
+              Load from CSV
             </button>
             <button
               type="button"

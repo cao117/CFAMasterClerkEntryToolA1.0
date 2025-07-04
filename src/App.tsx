@@ -241,67 +241,45 @@ function App() {
       return columns;
     }
 
-    // Helper to build a map from judgeId-specialty to column index for a given columns array
-    function buildColumnMap(columns: { judge: Judge; specialty: string }[]) {
-      const map: Record<string, number> = {};
+    // Helper to build a reverse map for old columns: columnIndex -> {judgeId, specialty}
+    function buildIdxToKey(columns: { judge: Judge; specialty: string }[]) {
+      const map: Record<number, string> = {};
       columns.forEach((col, idx) => {
-        map[`${col.judge.id}-${col.specialty}`] = idx;
+        map[idx] = `${col.judge.id}-${col.specialty}`;
       });
       return map;
     }
 
-    // Helper to reset tab data for the affected judge only, preserving all other data
+    // For each section, rebuild the data:
     function resetColumns(
-      tabData: any,
-      setTabData: React.Dispatch<React.SetStateAction<any>>,
+      setTabData: React.Dispatch<React.SetStateAction<unknown>>,
       tabType: 'championship' | 'premiership' | 'kitten'
     ) {
-      // Sections to update
       const sections = tabType === 'championship'
         ? ['showAwards', 'championsFinals', 'lhChampionsFinals', 'shChampionsFinals', 'voidedShowAwards', 'voidedChampionsFinals', 'voidedLHChampionsFinals', 'voidedSHChampionsFinals', 'errors']
         : ['showAwards', 'premiersFinals', 'abPremiersFinals', 'lhPremiersFinals', 'shPremiersFinals', 'voidedShowAwards', 'voidedPremiersFinals', 'voidedABPremiersFinals', 'voidedLHPremiersFinals', 'voidedSHPremiersFinals', 'errors'];
-      setTabData((prev: any) => {
-        // Generate columns for old and new config
+      setTabData((prev: unknown) => {
         const oldJudges = judges.map(j => j.id === judgeId ? { ...j, ringType: oldType } : j);
         const newJudges = judges.map(j => j.id === judgeId ? { ...j, ringType: newType } : j);
         const oldColumns = generateColumns(oldJudges);
         const newColumns = generateColumns(newJudges);
-        const oldColMap = buildColumnMap(oldColumns);
-        const newColMap = buildColumnMap(newColumns);
-        // Build a reverse map for old columns: columnIndex -> {judgeId, specialty}
-        const oldIdxToKey: Record<number, string> = {};
-        oldColumns.forEach((col, idx) => {
-          oldIdxToKey[idx] = `${col.judge.id}-${col.specialty}`;
-        });
-        // Build a map for new columns: columnIndex -> {judgeId, specialty}
-        const newIdxToKey: Record<number, string> = {};
-        newColumns.forEach((col, idx) => {
-          newIdxToKey[idx] = `${col.judge.id}-${col.specialty}`;
-        });
-        // For each section, rebuild the data:
-        const newData = { ...prev };
+        const oldIdxToKey = buildIdxToKey(oldColumns);
+        const newIdxToKey = buildIdxToKey(newColumns);
+        const newData = { ...(prev as Record<string, unknown>) };
         for (const section of sections) {
           if (!newData[section]) continue;
-          const rebuilt: Record<string, any> = {};
-          // For each key in the new config, try to copy from old config if not the affected judge
+          const rebuilt: Record<string, unknown> = {};
           Object.entries(newIdxToKey).forEach(([newIdxStr, key]) => {
-            const newIdx = parseInt(newIdxStr, 10);
             const [jIdStr] = key.split('-');
             if (parseInt(jIdStr, 10) === judgeId) {
               // Reset all data for affected judge's columns (do not copy old data)
-              // For each possible position, leave empty (do not set)
-              // (UI will show empty cells)
             } else {
-              // For all other judges, try to find the old column index for this judgeId-specialty
-              const oldIdx = Object.entries(oldIdxToKey).find(([_idx, k]) => k === key)?.[0];
+              const oldIdx = Object.entries(oldIdxToKey).find(([, k]) => k === key)?.[0];
               if (oldIdx !== undefined) {
-                // Copy all positions for this column from old to new
-                Object.entries(newData[section]).forEach(([dataKey, value]) => {
-                  // dataKey is like 'colIdx-pos' or 'colIdx_pos'
-                  const [colIdxStr, pos] = dataKey.split(/[-_]/);
+                Object.entries(newData[section] as Record<string, unknown>).forEach(([dataKey, value]) => {
+                  const [colIdxStr] = dataKey.split(/[-_]/);
                   if (parseInt(colIdxStr, 10) === parseInt(oldIdx, 10)) {
-                    // Re-key for new column index
-                    const newKey = dataKey.replace(/^\d+/, newIdxStr);
+                    const newKey = dataKey.replace(/^[0-9]+/, newIdxStr);
                     rebuilt[newKey] = value;
                   }
                 });
@@ -313,9 +291,9 @@ function App() {
         return newData;
       });
     }
-    resetColumns(championshipTabData, setChampionshipTabData, 'championship');
-    resetColumns(premiershipTabData, setPremiershipTabData, 'premiership');
-    resetColumns(kittenTabData, setKittenTabData, 'kitten');
+    resetColumns(setChampionshipTabData as React.Dispatch<React.SetStateAction<unknown>>, 'championship');
+    resetColumns(setPremiershipTabData as React.Dispatch<React.SetStateAction<unknown>>, 'premiership');
+    resetColumns(setKittenTabData as React.Dispatch<React.SetStateAction<unknown>>, 'kitten');
   };
 
   // Function to return the full show state for CSV export
@@ -414,25 +392,10 @@ function App() {
         }}
         showSuccess={showSuccess}
         showError={showError}
-        showInfo={showInfo}
-        onResetAllData={resetAllData}
         isActive={activeTab === 'premiership'}
         shouldFillTestData={shouldFillPremiershipData}
         premiershipTabData={premiershipTabData}
         setPremiershipTabData={setPremiershipTabData}
-        onTabReset={() => setPremiershipTabData({
-          showAwards: {},
-          premiersFinals: {},
-          abPremiersFinals: {},
-          lhPremiersFinals: {},
-          shPremiersFinals: {},
-          voidedShowAwards: {},
-          voidedPremiersFinals: {},
-          voidedABPremiersFinals: {},
-          voidedLHPremiersFinals: {},
-          voidedSHPremiersFinals: {},
-          errors: {},
-        })}
         getShowState={getShowState}
       />,
       disabled: premiershipTabDisabled
@@ -446,7 +409,7 @@ function App() {
         showSuccess={showSuccess}
         showError={showError}
         isActive={activeTab === 'household'}
-        getShowState={getShowState}
+        getShowState={getShowState} // Accepts full show state
         householdPetTabData={householdPetTabData}
         setHouseholdPetTabData={setHouseholdPetTabData}
       />,
@@ -460,7 +423,7 @@ function App() {
     if (currentTab?.disabled) {
       setActiveTab('general');
     }
-  }, [showData.championshipCounts.total, showData.kittenCounts.total, showData.premiershipCounts.total]);
+  }, [activeTab, tabs]);
 
   return (
     <div className="min-h-screen bg-white">

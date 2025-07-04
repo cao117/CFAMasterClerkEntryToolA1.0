@@ -66,7 +66,7 @@ This changelog records major changes to the CFA Master Clerk Entry Tool, includi
   - Hair-specific breakpoints for placements and finals based on ring type and count (≥50 or <50)
   - Duplicate and sequential entry validation per section
   - Void feature and UI/UX matches Championship tab
-  - All action buttons (Save to Temp CSV, Generate Final CSV, Restore from CSV, Reset) are present and use shared logic across all tabs
+  - All action buttons (Save to CSV, Load from CSV, Reset) are present and use shared logic across all tabs
 - **Rationale:** Ensures the Premiership tab enforces CFA rules for eligibility and placements, provides a consistent user experience, and maintains codebase modularity and maintainability.
 
 ### [2024-06-19] Premiership Tab: Full UI/UX Parity with Championship Tab

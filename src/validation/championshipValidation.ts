@@ -743,147 +743,170 @@ export function validateSequentialEntry(
   position: number, 
   newValue: string
 ): boolean {
-  const { showAwards, championsFinals, lhChampionsFinals, shChampionsFinals } = input;
-  
-  if (!newValue || newValue.trim() === '') return true; // Empty values are okay
-  
-  // Get the appropriate data source
-  let dataSource: { [key: string]: any };
+  // If the new value is empty, no sequential entry error
+  if (!newValue || newValue.trim() === '') {
+    return true;
+  }
+
+  // Get the section data based on the section type
+  let sectionData: Record<string, unknown>;
   switch (section) {
     case 'showAwards':
-      dataSource = showAwards;
+      sectionData = input.showAwards;
       break;
     case 'champions':
-      dataSource = championsFinals;
+      sectionData = input.championsFinals;
       break;
     case 'lhChampions':
-      dataSource = lhChampionsFinals;
+      sectionData = input.lhChampionsFinals;
       break;
     case 'shChampions':
-      dataSource = shChampionsFinals;
+      sectionData = input.shChampionsFinals;
       break;
+    default:
+      return true;
   }
-  
-  // Check if all previous positions are filled
+
+  // Check if there are any empty positions before the current position
   for (let i = 0; i < position; i++) {
     const key = `${columnIndex}-${i}`;
-    let value: string;
+    const value = sectionData[key];
     
+    // For showAwards, check the catNumber field
     if (section === 'showAwards') {
-      value = dataSource[key]?.catNumber || '';
+      const cellData = value as CellData;
+      if (!cellData || !cellData.catNumber || cellData.catNumber.trim() === '') {
+        return false; // Sequential entry error
+      }
     } else {
-      value = dataSource[key] || '';
-    }
-    
-    if (!value || value.trim() === '') {
-      return false; // Found an empty position before this one
+      // For finals sections, check the string value directly
+      if (!value || (typeof value === 'string' && value.trim() === '')) {
+        return false; // Sequential entry error
+      }
     }
   }
-  
-  return true;
+
+  return true; // No sequential entry error
 }
 
 /**
  * Main validation function for the Championship tab
  */
 export function validateChampionshipTab(input: ChampionshipValidationInput): { [key: string]: string } {
-  const { columns, showAwards, championsFinals, lhChampionsFinals, shChampionsFinals, championshipTotal } = input;
   const errors: { [key: string]: string } = {};
   
-  // Validate show awards
-  for (let columnIndex = 0; columnIndex < columns.length; columnIndex++) {
-    for (let position = 0; position < 15; position++) {
+  // Validate each column
+  for (let columnIndex = 0; columnIndex < input.columns.length; columnIndex++) {
+    const column = input.columns[columnIndex];
+    
+    // Get breakpoint for this ring type
+    const breakpoint = getBreakpointForRingType(input, column.specialty);
+    const numFinalsPositions = getFinalsPositionsForRingType(input, column.specialty);
+    
+    // Validate Show Awards section
+    for (let position = 0; position < breakpoint; position++) {
       const key = `${columnIndex}-${position}`;
-      const award = showAwards[key];
+      const cellData = input.showAwards[key];
       
-      if (award && award.catNumber && award.catNumber.trim() !== '') {
+      if (cellData && cellData.catNumber && cellData.catNumber.trim() !== '') {
         // Validate cat number format
-        if (!validateCatNumber(award.catNumber)) {
+        if (!validateCatNumber(cellData.catNumber)) {
           errors[key] = 'Cat number must be between 1-450';
           continue;
         }
-        // Section-specific sequential entry error for Championship Final
-        if (!validateSequentialEntry(input, 'showAwards', columnIndex, position, award.catNumber)) {
-          errors[key] = 'You must fill in previous empty award placements in Championship Final before entering this position.';
+        
+        // Check for duplicates within Show Awards section
+        if (checkDuplicateCatNumbersInShowAwards(input, columnIndex, cellData.catNumber, key)) {
+          errors[key] = 'Duplicate cat number within this section of the final';
           continue;
         }
-        // Validate no duplicates within column
-        if (checkDuplicateCatNumbersInShowAwards(input, columnIndex, award.catNumber, key)) {
-          errors[key] = 'Duplicate cat number within this column';
+        
+        // Check sequential entry
+        if (!validateSequentialEntry(input, 'showAwards', columnIndex, position, cellData.catNumber)) {
+          errors[key] = 'You must fill previous placements before entering this position.';
           continue;
         }
       }
     }
-  }
-  
-  // Validate finals sections
-  const sections = [
-    { name: 'champions', data: championsFinals, prefix: 'champions' },
-    { name: 'lhChampions', data: lhChampionsFinals, prefix: 'lhChampions' },
-    { name: 'shChampions', data: shChampionsFinals, prefix: 'shChampions' }
-  ] as const;
-  
-  const numPositions = championshipTotal >= 85 ? 5 : 3;
-  
-  for (const section of sections) {
-    for (let columnIndex = 0; columnIndex < columns.length; columnIndex++) {
-      for (let position = 0; position < numPositions; position++) {
-        const key = `${columnIndex}-${position}`;
-        const errorKey = `${section.prefix}-${columnIndex}-${position}`;
-        const value = section.data[key];
+    
+    // Validate Best AB CH Finals (only for Allbreed rings)
+    if (column.specialty === 'Allbreed') {
+      for (let position = 0; position < numFinalsPositions; position++) {
+        const key = `champions-${columnIndex}-${position}`;
+        const value = input.championsFinals[key];
         
         if (value && value.trim() !== '') {
           // Validate cat number format
           if (!validateCatNumber(value)) {
-            errors[errorKey] = 'Cat number must be between 1-450';
+            errors[key] = 'Cat number must be between 1-450';
             continue;
           }
-          // Enhanced sequential entry error message
-          if (!validateSequentialEntry(input, section.name, columnIndex, position, value)) {
-            let sectionLabel = '';
-            switch (section.name) {
-              case 'champions':
-                sectionLabel = 'Best AB CH Final';
-                break;
-              case 'lhChampions':
-                sectionLabel = 'Best LH CH Final';
-                break;
-              case 'shChampions':
-                sectionLabel = 'Best SH CH Final';
-                break;
-              default:
-                sectionLabel = 'Championship Final';
-            }
-            errors[errorKey] = `You must fill in previous empty award placements in ${sectionLabel} before entering this position.`;
+          
+          // Check for duplicates within Best AB CH section
+          if (checkDuplicateCatNumbersInChampionsFinals(input, columnIndex, value, key)) {
+            errors[key] = 'Duplicate cat number within this section of the final';
             continue;
           }
-          // Validate no duplicates within own section only
-          let hasDuplicate = false;
-          switch (section.name) {
-            case 'champions':
-              hasDuplicate = checkDuplicateCatNumbersInChampionsFinals(input, columnIndex, value, key);
-              break;
-            case 'lhChampions':
-              hasDuplicate = checkDuplicateCatNumbersInLHChampionsFinals(input, columnIndex, value, key);
-              break;
-            case 'shChampions':
-              hasDuplicate = checkDuplicateCatNumbersInSHChampionsFinals(input, columnIndex, value, key);
-              break;
+          
+          // Check sequential entry
+          if (!validateSequentialEntry(input, 'champions', columnIndex, position, value)) {
+            errors[key] = 'You must fill previous placements before entering this position.';
+            continue;
           }
-          if (hasDuplicate) {
-            let sectionName = '';
-            switch (section.name) {
-              case 'champions':
-                sectionName = 'Best AB CH Final';
-                break;
-              case 'lhChampions':
-                sectionName = 'Best LH CH Final';
-                break;
-              case 'shChampions':
-                sectionName = 'Best SH CH Final';
-                break;
-            }
-            errors[errorKey] = `Duplicate cat number within ${sectionName} section`;
+        }
+      }
+    }
+    
+    // Validate Best LH CH Finals (for Longhair and Allbreed rings)
+    if (column.specialty === 'Longhair' || column.specialty === 'Allbreed') {
+      for (let position = 0; position < numFinalsPositions; position++) {
+        const key = `lhChampions-${columnIndex}-${position}`;
+        const value = input.lhChampionsFinals[key];
+        
+        if (value && value.trim() !== '') {
+          // Validate cat number format
+          if (!validateCatNumber(value)) {
+            errors[key] = 'Cat number must be between 1-450';
+            continue;
+          }
+          
+          // Check for duplicates within Best LH CH section
+          if (checkDuplicateCatNumbersInLHChampionsFinals(input, columnIndex, value, key)) {
+            errors[key] = 'Duplicate cat number within this section of the final';
+            continue;
+          }
+          
+          // Check sequential entry
+          if (!validateSequentialEntry(input, 'lhChampions', columnIndex, position, value)) {
+            errors[key] = 'You must fill previous placements before entering this position.';
+            continue;
+          }
+        }
+      }
+    }
+    
+    // Validate Best SH CH Finals (for Shorthair and Allbreed rings)
+    if (column.specialty === 'Shorthair' || column.specialty === 'Allbreed') {
+      for (let position = 0; position < numFinalsPositions; position++) {
+        const key = `shChampions-${columnIndex}-${position}`;
+        const value = input.shChampionsFinals[key];
+        
+        if (value && value.trim() !== '') {
+          // Validate cat number format
+          if (!validateCatNumber(value)) {
+            errors[key] = 'Cat number must be between 1-450';
+            continue;
+          }
+          
+          // Check for duplicates within Best SH CH section
+          if (checkDuplicateCatNumbersInSHChampionsFinals(input, columnIndex, value, key)) {
+            errors[key] = 'Duplicate cat number within this section of the final';
+            continue;
+          }
+          
+          // Check sequential entry
+          if (!validateSequentialEntry(input, 'shChampions', columnIndex, position, value)) {
+            errors[key] = 'You must fill previous placements before entering this position.';
             continue;
           }
         }
@@ -891,50 +914,6 @@ export function validateChampionshipTab(input: ChampionshipValidationInput): { [
     }
   }
   
-  // Validate column relationships
-  for (let columnIndex = 0; columnIndex < columns.length; columnIndex++) {
-    // --- Custom precedence for Best AB CH: duplicate > status > sequential > order > assignment reminder ---
-    const columnErrors = validateColumnRelationships(input, columnIndex);
-    Object.entries(columnErrors).forEach(([key, msg]) => {
-      /**
-       * Strict error precedence enforcement:
-       * 1. If a duplicate error exists for a cell, it takes absolute precedence (suppress all others).
-       * 2. If no duplicate, but a status error exists, it takes precedence (suppress sequential/order/reminder).
-       * 3. If no duplicate or status, but a sequential entry error exists, it takes precedence (suppress order/reminder).
-       * 4. If no duplicate, status, or sequential, but an order error exists, it takes precedence (suppress reminder).
-       * 5. Only if none of the above, show assignment reminder.
-       */
-      const isDuplicate = msg.toLowerCase().includes('duplicate');
-      const isStatus = /is listed as a (gc|nov)/i.test(msg) || /missing a status/i.test(msg) || /invalid status/i.test(msg);
-      const isSequential = msg.startsWith('You must fill in previous empty award placements');
-      const isOrder = msg.startsWith('Must be ');
-      const isReminder = msg.startsWith('[REMINDER]');
-      if (isDuplicate) {
-        errors[key] = msg;
-      } else if (isStatus) {
-        if (!errors[key] || !errors[key].toLowerCase().includes('duplicate')) {
-          errors[key] = msg;
-        }
-      } else if (isSequential) {
-        if (!errors[key] || (!errors[key].toLowerCase().includes('duplicate') && !/is listed as a (gc|nov)/i.test(errors[key]) && !/missing a status/i.test(errors[key]) && !/invalid status/i.test(errors[key]))) {
-          errors[key] = msg;
-        }
-      } else if (isOrder) {
-        if (!errors[key] || (!errors[key].toLowerCase().includes('duplicate') && !/is listed as a (gc|nov)/i.test(errors[key]) && !/missing a status/i.test(errors[key]) && !/invalid status/i.test(errors[key]) && !errors[key].startsWith('You must fill in previous empty award placements'))) {
-          errors[key] = msg;
-        }
-      } else if (isReminder) {
-        if (!errors[key]) {
-          errors[key] = msg;
-        }
-      } else {
-        if (!errors[key]) {
-          errors[key] = msg;
-        }
-      }
-    });
-  }
-
   return errors;
 }
 

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Modal from './Modal';
 import { validateGeneralForm } from '../validation/generalValidation';
-import { handleSaveToTempCSV, handleGenerateFinalCSV, handleRestoreFromCSV, handleReset } from '../utils/formActions';
+import { handleSaveToCSV, handleRestoreFromCSV, handleReset } from '../utils/formActions';
 
 interface Judge {
   id: number;
@@ -51,7 +51,7 @@ interface GeneralTabProps {
   showWarning: (title: string, message?: string, duration?: number) => void;
   showInfo: (title: string, message?: string, duration?: number) => void;
   onJudgeRingTypeChange?: (id: number, oldType: string, newType: string) => void;
-  getShowState: () => any;
+  getShowState: () => Record<string, unknown>;
 }
 
 export default function GeneralTab({ 
@@ -61,8 +61,8 @@ export default function GeneralTab({
   setJudges,
   showSuccess,
   showError,
-  showWarning: _showWarning,
-  showInfo: _showInfo,
+  showWarning: _showWarning, // unused, prefix with _
+  showInfo: _showInfo, // unused, prefix with _
   onJudgeRingTypeChange,
   getShowState
 }: GeneralTabProps) {
@@ -146,7 +146,7 @@ export default function GeneralTab({
     }));
   };
 
-  const updateShowData = (field: keyof ShowData, value: any) => {
+  const updateShowData = (field: keyof ShowData, value: unknown) => {
     setShowData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -275,7 +275,7 @@ export default function GeneralTab({
     }));
   };
 
-  const handleSaveToTempCSVClick = () => {
+  const handleSaveToCSVClick = () => {
     const errors = validateGeneralForm(showData, judges);
     setErrors(errors);
     if (Object.keys(errors).length > 0) {
@@ -287,22 +287,7 @@ export default function GeneralTab({
       return;
     }
     // Export the full show state for CSV export
-    handleSaveToTempCSV(getShowState, showSuccess, showError);
-  };
-
-  const handleGenerateFinalCSVClick = () => {
-    const errors = validateGeneralForm(showData, judges);
-    setErrors(errors);
-    if (Object.keys(errors).length > 0) {
-      showError(
-        'Validation Errors',
-        'Please fix all validation errors before generating the final CSV. Check the form for highlighted fields with errors.',
-        8000
-      );
-      return;
-    }
-    // Export the full show state for CSV export
-    handleGenerateFinalCSV(getShowState, showSuccess, showError);
+    handleSaveToCSV(getShowState, showSuccess, showError);
   };
 
   const handleRestoreFromCSVClick = () => {
@@ -721,24 +706,18 @@ export default function GeneralTab({
           <div className="flex gap-3">
             <button
               type="button"
-              onClick={handleSaveToTempCSVClick}
+              onClick={handleSaveToCSVClick}
               className="cfa-button"
             >
-              Save to Temp CSV
-            </button>
-            <button
-              type="button"
-              onClick={handleGenerateFinalCSVClick}
-              className="cfa-button"
-            >
-              Generate Final CSV
+              Save to CSV
             </button>
             <button
               type="button"
               onClick={handleRestoreFromCSVClick}
               className="cfa-button-secondary"
+              style={{ backgroundColor: '#1e3a8a', borderColor: '#1e3a8a', color: 'white' }}
             >
-              Restore from CSV
+              Load from CSV
             </button>
             <button
               type="button"
@@ -751,7 +730,6 @@ export default function GeneralTab({
               type="button"
               onClick={handleFillTestData}
               className="cfa-button-secondary"
-              style={{ backgroundColor: '#dc2626', borderColor: '#dc2626' }}
             >
               Fill Test Data
             </button>

@@ -7,7 +7,7 @@ This document describes the **current validation rules** enforced in the Kitten 
   - Only one section: **Top 10/15 Kittens** (no finals or sub-sections)
   - Columns are dynamically generated from the General tab judges/ring types (AB=1, LH=1, SH=1, Double Specialty=2)
   - Only one status: **KIT** (all caps), always selected in the dropdown
-  - Four action buttons at the bottom: Save to Temp CSV, Generate Final CSV, Restore from CSV, Reset (shared logic)
+  - Three action buttons at the bottom: Save to CSV, Load from CSV, Reset (shared logic)
   - Voiding logic, error display, keyboard navigation, and all styling match the Premiership tab exactly
 
 ## Hair-Specific Breakpoint Logic
@@ -32,14 +32,14 @@ The Kitten tab uses **hair-specific breakpoints** based on ring type:
 ## Validation Rules
 - **Cat number format:** Must be between 1-450
 - **Sequential entry:** Must fill positions sequentially (no skipping)
-- **Duplicate check:** No duplicates within the same column
+- **Duplicate check:** No duplicates within the same section of the final. If a duplicate is found, the error is shown on all cells with the same value in that section (not just the last entered cell). The error message is: 'Duplicate cat number within this section of the final'.
 - **Status validation:** Only KIT is allowed (always selected)
 - **Voiding:** Voiding a cat number in any cell in a column voids all instances of that cat number in that column
 - **Error display:** Errors are shown inline, with the same styling and precedence as the Premiership tab
 
 ## Error Precedence
 For each cell, only the highest-precedence error is shown:
-1. Duplicate error (within column)
+1. Duplicate error (within section of the final; shown on all cells with the same value; message: 'Duplicate cat number within this section of the final')
 2. Range error (cat number not 1-450)
 3. Sequential entry error ("You must fill previous placements before entering this position.")
 4. Status error (should always be KIT)

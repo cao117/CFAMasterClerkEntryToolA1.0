@@ -1,3 +1,8 @@
+/**
+ * @file premiershipValidation.ts
+ * @description All key generation and lookups use hyphens (e.g., '0-1'), never underscores, per .cursor/rules/naming-conventions.mdc.
+ * This is CRITICAL for validation and CSV export compatibility.
+ */
 // Premiership validation logic for CFA Master Clerk Entry Tool
 // Closely mirrors championshipValidation.ts but for Premiership rules
 // Only PR are eligible for Best PR finals; GP and NOV are not eligible
@@ -85,7 +90,7 @@ export function checkDuplicateCatNumbersInShowAwards(
   
   // Collect all cat numbers from show awards in this column only
   for (let position = 0; position < 15; position++) {
-    const key = `${columnIndex}_${position}`;
+    const key = `${columnIndex}-${position}`;
     if (key !== excludeKey && showAwards[key]?.catNumber) {
       const catNum = showAwards[key].catNumber.trim();
       if (catNum && catNum !== '') {
@@ -119,7 +124,7 @@ export function checkDuplicateCatNumbersInPremiersFinals(
   
   // Collect all cat numbers from premiers finals in this column only
   for (let position = 0; position < numPositions; position++) {
-    const key = `${columnIndex}_${position}`;
+    const key = `${columnIndex}-${position}`;
     if (key !== excludeKey && premiersFinals[key]) {
       const catNum = premiersFinals[key].trim();
       if (catNum && catNum !== '') {
@@ -153,7 +158,7 @@ export function checkDuplicateCatNumbersInABPremiersFinals(
   
   // Collect all cat numbers from AB premiers finals in this column only
   for (let position = 0; position < numPositions; position++) {
-    const key = `${columnIndex}_${position}`;
+    const key = `${columnIndex}-${position}`;
     if (key !== excludeKey && abPremiersFinals[key]) {
       const catNum = abPremiersFinals[key].trim();
       if (catNum && catNum !== '') {
@@ -189,7 +194,7 @@ export function checkDuplicateCatNumbersInLHPremiersFinals(
   
   // Collect all cat numbers from LH premiers finals in this column only
   for (let position = 0; position < numPositions; position++) {
-    const key = `${columnIndex}_${position}`;
+    const key = `${columnIndex}-${position}`;
     if (key !== excludeKey && lhPremiersFinals[key]) {
       const catNum = lhPremiersFinals[key].trim();
       if (catNum && catNum !== '') {
@@ -223,7 +228,7 @@ export function checkDuplicateCatNumbersInSHPremiersFinals(
   
   // Collect all cat numbers from SH premiers finals in this column only
   for (let position = 0; position < numPositions; position++) {
-    const key = `${columnIndex}_${position}`;
+    const key = `${columnIndex}-${position}`;
     if (key !== excludeKey && shPremiersFinals[key]) {
       const catNum = shPremiersFinals[key].trim();
       if (catNum && catNum !== '') {
@@ -243,7 +248,7 @@ export function getTop15PRCats(input: PremiershipValidationInput, columnIndex: n
   const prCats: string[] = [];
   
   for (let position = 0; position < 15; position++) {
-    const key = `${columnIndex}_${position}`;
+    const key = `${columnIndex}-${position}`;
     const award = showAwards[key];
     if (award && award.status === 'PR' && award.catNumber && (award.catNumber ?? '').trim() !== '') {
       prCats.push(award.catNumber.trim());
@@ -298,8 +303,17 @@ export function validateSequentialEntry(
   
   if (!newValue || newValue.trim() === '') return true; // Empty values are okay
   
+  // DEBUG: Log the validation call
+  console.log(`[DEBUG] validateSequentialEntry called:`, {
+    section,
+    columnIndex,
+    position,
+    newValue,
+    hasValue: !!newValue && newValue.trim() !== ''
+  });
+  
   // Get the appropriate data source
-  let dataSource: { [key: string]: any };
+  let dataSource: Record<string, any>; // Section data can be CellData or string, so 'any' is required for compatibility
   switch (section) {
     case 'showAwards':
       dataSource = showAwards;
@@ -318,9 +332,12 @@ export function validateSequentialEntry(
       break;
   }
   
+  // DEBUG: Log the data source for this section
+  console.log(`[DEBUG] Data source for section ${section}:`, dataSource);
+  
   // Check if all previous positions are filled
   for (let i = 0; i < position; i++) {
-    const key = `${columnIndex}_${i}`;
+    const key = `${columnIndex}-${i}`;
     let hasValue = false;
     
     if (section === 'showAwards') {
@@ -329,11 +346,21 @@ export function validateSequentialEntry(
       hasValue = dataSource[key] && (dataSource[key] ?? '').trim() !== '';
     }
     
+    // DEBUG: Log each position check
+    console.log(`[DEBUG] Position ${i} check:`, {
+      key,
+      hasValue,
+      rawValue: section === 'showAwards' ? dataSource[key]?.catNumber : dataSource[key],
+      section
+    });
+    
     if (!hasValue) {
+      console.log(`[DEBUG] Sequential entry FAILED: Position ${i} is empty, but trying to fill position ${position}`);
       return false; // Found a gap, sequential entry violated
     }
   }
   
+  console.log(`[DEBUG] Sequential entry PASSED: All previous positions (0-${position-1}) are filled`);
   return true; // All previous positions are filled
 }
 
@@ -350,7 +377,7 @@ function getShowAwardStatus(input: PremiershipValidationInput, _columnIndex: num
   for (let colIdx = 0; colIdx < columns.length; colIdx++) {
     const numAwardRows = getBreakpointForRingType(input, columns[colIdx].specialty);
     for (let j = 0; j < numAwardRows; j++) {
-      const award = showAwards[`${colIdx}_${j}`];
+      const award = showAwards[`${colIdx}-${j}`];
       if (
         award &&
         typeof award.catNumber === 'string' &&
@@ -399,7 +426,7 @@ export function validateColumnRelationships(input: PremiershipValidationInput, c
     // 1. Collect all values and count occurrences
     const valueCounts: { [cat: string]: number } = {};
     for (let i = 0; i < numPositions; i++) {
-      const value = abPremiersFinals[`${columnIndex}_${i}`];
+      const value = abPremiersFinals[`${columnIndex}-${i}`];
       if (value && (value ?? '').trim() !== '') {
         const trimmed = (value ?? '').trim();
         valueCounts[trimmed] = (valueCounts[trimmed] || 0) + 1;
@@ -408,21 +435,21 @@ export function validateColumnRelationships(input: PremiershipValidationInput, c
     
     // 2. Set duplicate errors for all positions with duplicate values
     for (let i = 0; i < numPositions; i++) {
-      const value = abPremiersFinals[`${columnIndex}_${i}`];
+      const value = abPremiersFinals[`${columnIndex}-${i}`];
       if (value && (value ?? '').trim() !== '') {
         const trimmed = (value ?? '').trim();
         // Do NOT use alert() here; alerts in validation cause infinite loops due to React re-renders.
         // Errors should be set in the errors object and displayed in the UI, matching ChampionshipTab behavior.
         if (valueCounts[trimmed] > 1) {
-          const key = `abPremiersFinals_${columnIndex}_${i}`;
+          const key = `abPremiersFinals-${columnIndex}-${i}`;
           errors[key] = `Duplicate cat number within Best AB PR Final section`;
         }
       }
     }
     // 3. Only set status errors for positions that do NOT have a duplicate error
     for (let i = 0; i < numPositions; i++) {
-      const value = abPremiersFinals[`${columnIndex}_${i}`];
-      const key = `abPremiersFinals_${columnIndex}_${i}`;
+      const value = abPremiersFinals[`${columnIndex}-${i}`];
+      const key = `abPremiersFinals-${columnIndex}-${i}`;
       if (value && (value ?? '').trim() !== '' && !errors[key]) {
         const status = getShowAwardStatus(input, columnIndex, (value ?? '').trim());
         if (status === 'GP' || status === 'NOV') {
@@ -438,7 +465,7 @@ export function validateColumnRelationships(input: PremiershipValidationInput, c
     // 1. Collect all values and count occurrences
     const valueCounts: { [cat: string]: number } = {};
     for (let i = 0; i < numPositions; i++) {
-      const value = lhPremiersFinals[`${columnIndex}_${i}`];
+      const value = lhPremiersFinals[`${columnIndex}-${i}`];
       if (value && (value ?? '').trim() !== '') {
         const trimmed = (value ?? '').trim();
         valueCounts[trimmed] = (valueCounts[trimmed] || 0) + 1;
@@ -446,10 +473,10 @@ export function validateColumnRelationships(input: PremiershipValidationInput, c
     }
     // 2. Set duplicate errors for all positions with duplicate values
     for (let i = 0; i < numPositions; i++) {
-      const value = lhPremiersFinals[`${columnIndex}_${i}`];
+      const value = lhPremiersFinals[`${columnIndex}-${i}`];
       if (value && (value ?? '').trim() !== '') {
         const trimmed = (value ?? '').trim();
-        const key = `lhPremiersFinals_${columnIndex}_${i}`;
+        const key = `lhPremiersFinals-${columnIndex}-${i}`;
         if (valueCounts[trimmed] > 1) {
           errors[key] = `Duplicate cat number within Best LH PR Final section`;
         }
@@ -457,8 +484,8 @@ export function validateColumnRelationships(input: PremiershipValidationInput, c
     }
     // 3. Only set status errors for positions that do NOT have a duplicate error
     for (let i = 0; i < numPositions; i++) {
-      const value = lhPremiersFinals[`${columnIndex}_${i}`];
-      const key = `lhPremiersFinals_${columnIndex}_${i}`;
+      const value = lhPremiersFinals[`${columnIndex}-${i}`];
+      const key = `lhPremiersFinals-${columnIndex}-${i}`;
       if (value && (value ?? '').trim() !== '' && !errors[key]) {
         const status = getShowAwardStatus(input, columnIndex, (value ?? '').trim());
         if (status === 'GP' || status === 'NOV') {
@@ -476,7 +503,7 @@ export function validateColumnRelationships(input: PremiershipValidationInput, c
     // 1. Collect all values and count occurrences
     const valueCounts: { [cat: string]: number } = {};
     for (let i = 0; i < numPositions; i++) {
-      const value = shPremiersFinals[`${columnIndex}_${i}`];
+      const value = shPremiersFinals[`${columnIndex}-${i}`];
       if (value && (value ?? '').trim() !== '') {
         const trimmed = (value ?? '').trim();
         valueCounts[trimmed] = (valueCounts[trimmed] || 0) + 1;
@@ -484,10 +511,10 @@ export function validateColumnRelationships(input: PremiershipValidationInput, c
     }
     // 2. Set duplicate errors for all positions with duplicate values
     for (let i = 0; i < numPositions; i++) {
-      const value = shPremiersFinals[`${columnIndex}_${i}`];
+      const value = shPremiersFinals[`${columnIndex}-${i}`];
       if (value && (value ?? '').trim() !== '') {
         const trimmed = (value ?? '').trim();
-        const key = `shPremiersFinals_${columnIndex}_${i}`;
+        const key = `shPremiersFinals-${columnIndex}-${i}`;
         if (valueCounts[trimmed] > 1) {
           errors[key] = `Duplicate cat number within Best SH PR Final section`;
         }
@@ -495,8 +522,8 @@ export function validateColumnRelationships(input: PremiershipValidationInput, c
     }
     // 3. Only set status errors for positions that do NOT have a duplicate error
     for (let i = 0; i < numPositions; i++) {
-      const value = shPremiersFinals[`${columnIndex}_${i}`];
-      const key = `shPremiersFinals_${columnIndex}_${i}`;
+      const value = shPremiersFinals[`${columnIndex}-${i}`];
+      const key = `shPremiersFinals-${columnIndex}-${i}`;
       if (value && (value ?? '').trim() !== '' && !errors[key]) {
         const status = getShowAwardStatus(input, columnIndex, (value ?? '').trim());
         if (status === 'GP' || status === 'NOV') {
@@ -514,7 +541,7 @@ export function validateColumnRelationships(input: PremiershipValidationInput, c
   // Validate Best PR with top 15 PR (order, assignment, etc.)
   const bestPRResult = validateBestPRWithTop15AndGetFirstError(input, columnIndex, errors);
   if (!bestPRResult.isValid) {
-    const key = `abPremiersFinals_${columnIndex}_${bestPRResult.firstErrorPosition}`;
+    const key = `abPremiersFinals-${columnIndex}-${bestPRResult.firstErrorPosition}`;
     // Only set this error if not already set (i.e., duplicate error takes precedence)
     if (!errors[key]) {
       errors[key] = bestPRResult.errorMessage;
@@ -541,26 +568,26 @@ export function validateColumnRelationships(input: PremiershipValidationInput, c
   // Validate Best LH PR with new logic (all errors)
   const bestLHErrors = validateBestHairPRWithFiller(input, columnIndex, 'LH');
   Object.entries(bestLHErrors).forEach(([pos, msg]) => {
-    const key = `lhPremiersFinals_${pos}`;
+    const key = `lhPremiersFinals-${pos}`;
     errors[key] = msg;
   });
 
   // Validate Best SH PR with new logic (all errors)
   const bestSHErrors = validateBestHairPRWithFiller(input, columnIndex, 'SH');
   Object.entries(bestSHErrors).forEach(([pos, msg]) => {
-    const key = `shPremiersFinals_${pos}`;
+    const key = `shPremiersFinals-${pos}`;
     errors[key] = msg;
   });
 
   // Validate LH/SH PR order (new rule)
   const lhOrderErrors = validateBestHairPROrder(input, columnIndex, 'LH');
   Object.entries(lhOrderErrors).forEach(([pos, msg]) => {
-    const key = `lhPremiersFinals_${pos}`;
+    const key = `lhPremiersFinals-${pos}`;
     errors[key] = msg;
   });
   const shOrderErrors = validateBestHairPROrder(input, columnIndex, 'SH');
   Object.entries(shOrderErrors).forEach(([pos, msg]) => {
-    const key = `shPremiersFinals_${pos}`;
+    const key = `shPremiersFinals-${pos}`;
     errors[key] = msg;
   });
 
@@ -568,7 +595,7 @@ export function validateColumnRelationships(input: PremiershipValidationInput, c
   if (column.specialty === 'Longhair') {
     const lhResult = validateSingleSpecialtyPRWithTop15AndGetFirstError(input, columnIndex, 'LH');
     if (!lhResult.isValid) {
-      const key = `lhPremiersFinals_${lhResult.firstErrorPosition}`;
+      const key = `lhPremiersFinals-${lhResult.firstErrorPosition}`;
       errors[key] = lhResult.errorMessage;
       return errors;
     }
@@ -577,7 +604,7 @@ export function validateColumnRelationships(input: PremiershipValidationInput, c
   if (column.specialty === 'Shorthair') {
     const shResult = validateSingleSpecialtyPRWithTop15AndGetFirstError(input, columnIndex, 'SH');
     if (!shResult.isValid) {
-      const key = `shPremiersFinals_${shResult.firstErrorPosition}`;
+      const key = `shPremiersFinals-${shResult.firstErrorPosition}`;
       errors[key] = shResult.errorMessage;
       return errors;
     }
@@ -593,26 +620,45 @@ export function validatePremiershipTab(input: PremiershipValidationInput): { [ke
   const { columns, showAwards, premiersFinals, abPremiersFinals, lhPremiersFinals, shPremiersFinals } = input;
   const errors: { [key: string]: string } = {};
   
+  console.log(`[DEBUG] validatePremiershipTab called with:`, {
+    columnsCount: columns.length,
+    showAwardsKeys: Object.keys(showAwards),
+    premiersFinalsKeys: Object.keys(premiersFinals),
+    abPremiersFinalsKeys: Object.keys(abPremiersFinals),
+    lhPremiersFinalsKeys: Object.keys(lhPremiersFinals),
+    shPremiersFinalsKeys: Object.keys(shPremiersFinals)
+  });
+  
   // Validate show awards
   for (let columnIndex = 0; columnIndex < columns.length; columnIndex++) {
     for (let position = 0; position < 15; position++) {
-      const key = `${columnIndex}_${position}`;
+      const key = `${columnIndex}-${position}`;
       const award = showAwards[key];
       
-      if (award && award.catNumber && (award.catNumber ?? '').trim() !== '') {
+      console.log(`[DEBUG] Checking showAwards position ${key}:`, {
+        award,
+        hasCatNumber: award?.catNumber && award.catNumber.trim() !== '',
+        catNumber: award?.catNumber
+      });
+      
+      if (award && award.catNumber && award.catNumber.trim() !== '') {
         // Validate cat number format
         if (!validateCatNumber(award.catNumber)) {
+          console.log(`[DEBUG] Cat number format validation failed for ${key}: ${award.catNumber}`);
           errors[key] = 'Cat number must be between 1-450';
           continue;
         }
         // Section-specific sequential entry error for Premiership Final
+        console.log(`[DEBUG] Calling validateSequentialEntry for showAwards position ${key}`);
         if (!validateSequentialEntry(input, 'showAwards', columnIndex, position, award.catNumber)) {
-          errors[key] = 'You must fill in previous empty award placements in Premiership Final before entering this position.';
+          console.log(`[DEBUG] Sequential entry validation failed for ${key}, setting error`);
+          errors[key] = 'You must fill previous placements before entering this position.';
           continue;
         }
         // Validate no duplicates within column
         if (checkDuplicateCatNumbersInShowAwards(input, columnIndex, award.catNumber, key)) {
-          errors[key] = 'Duplicate cat number within this column';
+          console.log(`[DEBUG] Duplicate validation failed for ${key}`);
+          errors[key] = 'Duplicate cat number within this section of the final';
           continue;
         }
       }
@@ -628,41 +674,36 @@ export function validatePremiershipTab(input: PremiershipValidationInput): { [ke
   ] as const;
   
   for (const section of sections) {
+    console.log(`[DEBUG] Validating finals section: ${section.name}`);
     for (let columnIndex = 0; columnIndex < columns.length; columnIndex++) {
       const column = columns[columnIndex];
       const numPositions = getFinalsPositionsForRingType(input, column.specialty);
       
+      console.log(`[DEBUG] Column ${columnIndex} (${column.specialty}) has ${numPositions} positions`);
+      
       for (let position = 0; position < numPositions; position++) {
-        const key = `${columnIndex}_${position}`;
-        const errorKey = `${section.prefix}_${columnIndex}_${position}`;
+        const key = `${columnIndex}-${position}`;
+        const errorKey = `${section.prefix}-${columnIndex}-${position}`;
         const value = section.data[key];
         
-        if (value && (value ?? '').trim() !== '') {
+        console.log(`[DEBUG] Checking ${section.name} position ${key}:`, {
+          value,
+          hasValue: value && value.trim() !== '',
+          errorKey
+        });
+        
+        if (value && value.trim() !== '') {
           // Validate cat number format
           if (!validateCatNumber(value)) {
+            console.log(`[DEBUG] Cat number format validation failed for ${errorKey}: ${value}`);
             errors[errorKey] = 'Cat number must be between 1-450';
             continue;
           }
-          // Sequential entry error (must take precedence over assignment reminder)
+          // Enhanced sequential entry error message
+          console.log(`[DEBUG] Calling validateSequentialEntry for ${section.name} position ${key}`);
           if (!validateSequentialEntry(input, section.name, columnIndex, position, value)) {
-            let sectionLabel = '';
-            switch (section.name) {
-              case 'premiers':
-                sectionLabel = 'Premiers Final';
-                break;
-              case 'abPremiers':
-                sectionLabel = 'Best AB PR Final';
-                break;
-              case 'lhPremiers':
-                sectionLabel = 'Best LH PR Final';
-                break;
-              case 'shPremiers':
-                sectionLabel = 'Best SH PR Final';
-                break;
-              default:
-                sectionLabel = 'Premiership Final';
-            }
-            errors[errorKey] = `You must fill in previous empty award placements in ${sectionLabel} before entering this position.`;
+            console.log(`[DEBUG] Sequential entry validation failed for ${errorKey}, setting error`);
+            errors[errorKey] = 'You must fill previous placements before entering this position.';
             continue;
           }
           // Validate no duplicates within own section only
@@ -682,22 +723,8 @@ export function validatePremiershipTab(input: PremiershipValidationInput): { [ke
               break;
           }
           if (hasDuplicate) {
-            let sectionName = '';
-            switch (section.name) {
-              case 'premiers':
-                sectionName = 'Premiers Final';
-                break;
-              case 'abPremiers':
-                sectionName = 'Best AB PR Final';
-                break;
-              case 'lhPremiers':
-                sectionName = 'Best LH PR Final';
-                break;
-              case 'shPremiers':
-                sectionName = 'Best SH PR Final';
-          break;
-            }
-            errors[errorKey] = `Duplicate cat number within ${sectionName} section`;
+            console.log(`[DEBUG] Duplicate validation failed for ${errorKey}`);
+            errors[errorKey] = 'Duplicate cat number within this section of the final';
             continue;
           }
         }
@@ -713,7 +740,7 @@ export function validatePremiershipTab(input: PremiershipValidationInput): { [ke
       // Only show the highest-precedence error for each cell
       const isDuplicate = msg.toLowerCase().includes('duplicate');
       const isStatus = /is listed as a (gp|nov)/i.test(msg) || /missing a status/i.test(msg) || /invalid status/i.test(msg);
-      const isSequential = msg.startsWith('You must fill in previous empty award placements');
+      const isSequential = msg.startsWith('You must fill previous placements before entering this position');
       const isOrder = msg.startsWith('Must be ');
       const isReminder = msg.startsWith('[REMINDER]');
       if (isDuplicate) {
@@ -727,7 +754,7 @@ export function validatePremiershipTab(input: PremiershipValidationInput): { [ke
           errors[key] = msg;
         }
       } else if (isOrder) {
-        if (!errors[key] || (!errors[key].toLowerCase().includes('duplicate') && !/is listed as a (gp|nov)/i.test(errors[key]) && !/missing a status/i.test(errors[key]) && !/invalid status/i.test(errors[key]) && !errors[key].startsWith('You must fill in previous empty award placements'))) {
+        if (!errors[key] || (!errors[key].toLowerCase().includes('duplicate') && !/is listed as a (gp|nov)/i.test(errors[key]) && !/missing a status/i.test(errors[key]) && !/invalid status/i.test(errors[key]) && !errors[key].startsWith('You must fill previous placements before entering this position'))) {
           errors[key] = msg;
         }
       } else if (isReminder) {
@@ -742,6 +769,7 @@ export function validatePremiershipTab(input: PremiershipValidationInput): { [ke
       });
     }
 
+  console.log(`[DEBUG] Final validation errors:`, errors);
   return errors;
 }
 
@@ -762,7 +790,7 @@ export function validateBestPRWithTop15AndGetFirstError(input: PremiershipValida
   const numAwardRows = getBreakpointForRingType(input, column.specialty);
   const premiershipFinalCats: {catNumber: string, status: string}[] = [];
   for (let i = 0; i < numAwardRows; i++) {
-    const award = showAwards[`${columnIndex}_${i}`];
+    const award = showAwards[`${columnIndex}-${i}`];
     if (award && award.catNumber && (award.catNumber ?? '').trim() !== '') {
       premiershipFinalCats.push({catNumber: award.catNumber.trim(), status: award.status});
     }
@@ -784,7 +812,7 @@ export function validateBestPRWithTop15AndGetFirstError(input: PremiershipValida
     // No PRs in premiership final - Best AB PR can be filled with any PRs from Show Awards (not in the final)
     const allPRs = new Set<string>();
     for (let i = 0; i < numAwardRows; i++) {
-      const key = `${columnIndex}_${i}`;
+      const key = `${columnIndex}-${i}`;
       const award = showAwards[key];
       if (award && award.status === 'PR' && award.catNumber && (award.catNumber ?? '').trim() !== '') {
         allPRs.add(award.catNumber.trim());
@@ -794,9 +822,9 @@ export function validateBestPRWithTop15AndGetFirstError(input: PremiershipValida
   }
   // Validate Best AB PR
   for (let position = 0; position < numPositions; position++) {
-    const key = `abPremiersFinals_${columnIndex}_${position}`;
+    const key = `abPremiersFinals-${columnIndex}-${position}`;
     if (errorsObj && errorsObj[key]) continue; // Skip if duplicate error already set
-    const finalsValue = abPremiersFinals[`${columnIndex}_${position}`];
+    const finalsValue = abPremiersFinals[`${columnIndex}-${position}`];
     if (!finalsValue || (finalsValue ?? '').trim() === '') {
       if (position < requiredBestPR.length) {
         return {
@@ -873,7 +901,7 @@ export function validateLHSHWithBestPRAndGetFirstError(input: PremiershipValidat
   
   // Check each Best AB PR cat
   for (let i = 0; i < numPositions; i++) {
-    const abKey = `${columnIndex}_${i}`;
+    const abKey = `${columnIndex}-${i}`;
     const abValue = abPremiersFinals[abKey];
     
     if (abValue && (abValue ?? '').trim() !== '') {
@@ -883,7 +911,7 @@ export function validateLHSHWithBestPRAndGetFirstError(input: PremiershipValidat
       
       // Check if this cat appears in LH section
       for (let j = 0; j < numPositions; j++) {
-        const lhKey = `${columnIndex}_${j}`;
+        const lhKey = `${columnIndex}-${j}`;
         const lhValue = lhPremiersFinals[lhKey];
         if (lhValue && (lhValue ?? '').trim() === trimmedValue) {
           foundInLH = true;
@@ -893,7 +921,7 @@ export function validateLHSHWithBestPRAndGetFirstError(input: PremiershipValidat
       
       // Check if this cat appears in SH section
       for (let j = 0; j < numPositions; j++) {
-        const shKey = `${columnIndex}_${j}`;
+        const shKey = `${columnIndex}-${j}`;
         const shValue = shPremiersFinals[shKey];
         if (shValue && (shValue ?? '').trim() === trimmedValue) {
           foundInSH = true;
@@ -905,7 +933,7 @@ export function validateLHSHWithBestPRAndGetFirstError(input: PremiershipValidat
       // This was completely wrong and has been removed
       // If cat is not assigned to either LH or SH, it's a reminder
       if (!foundInLH && !foundInSH) {
-        errorKeys.push(`abPremiersFinals_${columnIndex}_${i}`);
+        errorKeys.push(`abPremiersFinals-${columnIndex}-${i}`);
         errorMessages.push(`${trimmedValue} must be assigned to either Longhair or Shorthair section.`);
       }
     }
@@ -941,7 +969,7 @@ export function validateBestLHPRWithTop15AndGetFirstError(input: PremiershipVali
   // For single specialty Longhair, validate strict order
   if (column.specialty === 'Longhair') {
     for (let i = 0; i < numPositions; i++) {
-          const key = `${columnIndex}_${i}`;
+          const key = `${columnIndex}-${i}`;
     const lhValue = lhPremiersFinals[key];
       
       if (lhValue && (lhValue ?? '').trim() !== '') {
@@ -988,7 +1016,7 @@ export function validateBestSHPRWithTop15AndGetFirstError(input: PremiershipVali
   // For single specialty Shorthair, validate strict order
   if (column.specialty === 'Shorthair') {
     for (let i = 0; i < numPositions; i++) {
-          const key = `${columnIndex}_${i}`;
+          const key = `${columnIndex}-${i}`;
     const shValue = shPremiersFinals[key];
       
       if (shValue && (shValue ?? '').trim() !== '') {
@@ -1036,7 +1064,7 @@ function validateBestHairPROrder(input: PremiershipValidationInput, columnIndex:
   // Get Best AB PR cats in order
   const bestABPRCats: string[] = [];
   for (let i = 0; i < numPositions; i++) {
-    const key = `${columnIndex}_${i}`;
+    const key = `${columnIndex}-${i}`;
     const value = abPremiersFinals[key];
     if (value && (value ?? '').trim() !== '') {
       bestABPRCats.push(value.trim());
@@ -1046,7 +1074,7 @@ function validateBestHairPROrder(input: PremiershipValidationInput, columnIndex:
   // Check if Best Hair PR cats appear in the same order as Best AB PR
   let currentABIndex = 0;
   for (let i = 0; i < numPositions; i++) {
-    const key = `${columnIndex}_${i}`;
+    const key = `${columnIndex}-${i}`;
     const hairValue = sectionFinals[key];
     
     if (hairValue && (hairValue ?? '').trim() !== '') {
@@ -1081,7 +1109,7 @@ function validateBestHairPRWithFiller(input: PremiershipValidationInput, columnI
   
   // Check for non-PR in fillers, duplicates, and cross-section conflicts
   for (let i = 0; i < numPositions; i++) {
-    const key = `${columnIndex}_${i}`;
+    const key = `${columnIndex}-${i}`;
     const value = sectionFinals[key];
     if (!value || (value ?? '').trim() === '') continue;
     
@@ -1120,7 +1148,7 @@ function validateSingleSpecialtyPRWithTop15AndGetFirstError(input: PremiershipVa
   
   // Validate strict order for single specialty
   for (let i = 0; i < numPositions; i++) {
-    const key = `${columnIndex}_${i}`;
+    const key = `${columnIndex}-${i}`;
     const value = sectionFinals[key];
     
     if (value && (value ?? '').trim() !== '') {

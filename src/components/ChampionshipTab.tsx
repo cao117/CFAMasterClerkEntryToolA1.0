@@ -3,16 +3,9 @@ import React from 'react';
 import Modal from './Modal';
 import { 
   validateChampionshipTab, 
-  validateCatNumber, 
-  checkDuplicateCatNumbersInShowAwards,
-  checkDuplicateCatNumbersInChampionsFinals,
-  checkDuplicateCatNumbersInLHChampionsFinals,
-  checkDuplicateCatNumbersInSHChampionsFinals,
-  validateSequentialEntry,
-  type ChampionshipValidationInput,
   type CellData
 } from '../validation/championshipValidation';
-import { handleSaveToTempCSV, handleGenerateFinalCSV, handleRestoreFromCSV } from '../utils/formActions';
+import { handleSaveToCSV, handleRestoreFromCSV } from '../utils/formActions';
 
 interface Judge {
   id: number;
@@ -38,16 +31,16 @@ interface ChampionshipTabProps {
   /**
    * Championship tab data state, lifted to App.tsx for persistence across tab switches
    */
-  championshipTabData: any;
+  championshipTabData: ChampionshipTabData;
   /**
    * Setter for championship tab data
    */
-  setChampionshipTabData: React.Dispatch<React.SetStateAction<any>>;
+  setChampionshipTabData: React.Dispatch<React.SetStateAction<ChampionshipTabData>>;
   /**
    * Handler to reset only the Championship tab data
    */
   onTabReset: () => void;
-  getShowState: () => any;
+  getShowState: () => Record<string, unknown>;
 }
 
 interface Column {
@@ -62,10 +55,10 @@ export interface ChampionshipTabRef {
 // Replace the previous type alias with an explicit type definition for ChampionshipTabData
 
 type ChampionshipTabData = {
-  showAwards: { [key: string]: any };
-  championsFinals: { [key: string]: any };
-  lhChampionsFinals: { [key: string]: any };
-  shChampionsFinals: { [key: string]: any };
+  showAwards: { [key: string]: CellData };
+  championsFinals: { [key: string]: string };
+  lhChampionsFinals: { [key: string]: string };
+  shChampionsFinals: { [key: string]: string };
       voidedShowAwards: { [key: string]: boolean };
       voidedChampionsFinals: { [key: string]: boolean };
       voidedLHChampionsFinals: { [key: string]: boolean };
@@ -85,7 +78,7 @@ type ChampionshipTabData = {
  */
 const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
   (props, ref) => {
-    const { judges, championshipTotal, championshipCounts, showSuccess, showError, showInfo: _showInfo, shouldFillTestData, onResetAllData, championshipTabData, setChampionshipTabData, onTabReset, getShowState } = props;
+    const { judges, championshipTotal, championshipCounts, showSuccess, showError, shouldFillTestData, onResetAllData, championshipTabData, setChampionshipTabData, getShowState } = props;
     // State for dynamic table structure
     const [columns, setColumns] = useState<Column[]>([]);
     const [numAwardRows, setNumAwardRows] = useState(10);
@@ -216,21 +209,6 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
       
       return columns;
     };
-
-    // Helper function to create validation input object
-    const createValidationInput = (): ChampionshipValidationInput => ({
-      columns,
-      showAwards: championshipTabData.showAwards,
-      championsFinals: championshipTabData.championsFinals,
-      lhChampionsFinals: championshipTabData.lhChampionsFinals,
-      shChampionsFinals: championshipTabData.shChampionsFinals,
-      championshipTotal,
-      championshipCounts,
-      voidedShowAwards: championshipTabData.voidedShowAwards,
-      voidedChampionsFinals: championshipTabData.voidedChampionsFinals,
-      voidedLHChampionsFinals: championshipTabData.voidedLHChampionsFinals,
-      voidedSHChampionsFinals: championshipTabData.voidedSHChampionsFinals
-    });
 
     /**
      * Updates a Show Award cell (cat number or status) and auto-syncs void state.
@@ -378,35 +356,6 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
         }
       }
       return chCats;
-    };
-
-    // Helper to get Best Allbreed Champion cat numbers for a column
-    const getBestAllbreedChampionCats = (columnIndex: number): string[] => {
-      const column = columns[columnIndex];
-      if (!column || column.specialty !== 'Allbreed') return [];
-      
-      const numFinalsPositions = getFinalsPositionsForRingType(column.specialty);
-      const bestCHCats: string[] = [];
-      for (let i = 0; i < numFinalsPositions; i++) {
-        const key = `${columnIndex}-${i}`;
-        const value = championshipTabData.championsFinals[key];
-        if (value && value.trim() !== '') {
-          bestCHCats.push(value.trim());
-        }
-      }
-      return bestCHCats;
-    };
-
-    // Helper to check if navy blue outline should be applied
-    const shouldApplyNavyBlueOutline = (columnIndex: number, value: string): boolean => {
-      const chCats = getCHCatNumbersFromShowAwards(columnIndex);
-      const bestCHCats = getBestAllbreedChampionCats(columnIndex);
-      
-      // Apply navy blue outline if:
-      // 1. No CH cats in Show Awards section
-      // 2. There are Best Allbreed Champion cats
-      // 3. This value matches one of the Best Allbreed Champion cats
-      return chCats.length === 0 && bestCHCats.length > 0 && bestCHCats.includes(value.trim());
     };
 
     // Update row labels for AB CH, LH CH, SH CH sections
@@ -604,7 +553,8 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
         voidedShowAwards: {},
         voidedChampionsFinals: {},
         voidedLHChampionsFinals: {},
-        voidedSHChampionsFinals: {}
+        voidedSHChampionsFinals: {},
+        errors: {}
       }));
       // After state is updated, trigger a full-form validation to clear any stale errors
       setTimeout(() => {
@@ -625,12 +575,12 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
         );
       }, 0);
       showSuccess('Test Data Filled', 'Championship tab has been filled with realistic test data that complies with all validation rules.');
-    }, [judges, championshipTotal, columns, numAwardRows, showSuccess]);
+    }, [columns, championshipTotal, championshipCounts, showSuccess]);
 
     // Expose fillTestData function through ref
     useImperativeHandle(ref, () => ({
       fillTestData
-    }), [judges, championshipTotal, columns, fillTestData]);
+    }), [fillTestData]);
 
     // Effect to automatically fill test data when shouldFillTestData is true
     useEffect(() => {
@@ -656,7 +606,7 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
     }, [columns, championshipTabData.showAwards, championshipTabData.championsFinals, championshipTabData.lhChampionsFinals, championshipTabData.shChampionsFinals, championshipTotal, championshipCounts]);
 
     // Action button handlers
-    const handleSaveToTempCSVClick = () => {
+    const handleSaveToCSVClick = () => {
       const errors = validateChampionshipTab({
         columns,
         showAwards: championshipTabData.showAwards,
@@ -676,30 +626,7 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
         return;
       }
       // Export the full show state for CSV export
-      handleSaveToTempCSV(getShowState, showSuccess, showError);
-    };
-
-    const handleGenerateFinalCSVClick = () => {
-      const errors = validateChampionshipTab({
-        columns,
-        showAwards: championshipTabData.showAwards,
-        championsFinals: championshipTabData.championsFinals,
-        lhChampionsFinals: championshipTabData.lhChampionsFinals,
-        shChampionsFinals: championshipTabData.shChampionsFinals,
-        championshipTotal,
-        championshipCounts
-      });
-      setErrors(errors);
-      if (Object.keys(errors).length > 0) {
-        showError(
-          'Championship Validation Errors',
-          'Please fix all validation errors before generating the final CSV. Check the form for highlighted fields with errors.',
-          8000
-        );
-        return;
-      }
-      // Export the full show state for CSV export
-      handleGenerateFinalCSV(getShowState, showSuccess, showError);
+      handleSaveToCSV(getShowState, showSuccess, showError);
     };
 
     const handleRestoreFromCSVClick = () => {
@@ -714,7 +641,7 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
       setIsTabResetModalOpen(false);
       
       // Reset only Championship tab data
-      setChampionshipTabData((prev: ChampionshipTabData) => ({
+      setChampionshipTabData(prev => ({
         showAwards: {},
         championsFinals: {},
         lhChampionsFinals: {},
@@ -722,7 +649,8 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
         voidedShowAwards: {},
         voidedChampionsFinals: {},
         voidedLHChampionsFinals: {},
-        voidedSHChampionsFinals: {}
+        voidedSHChampionsFinals: {},
+        errors: {},
       }));
       
       // Clear focused column
@@ -756,12 +684,12 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
     };
 
     // Helper function to get appropriate styling for errors (always red)
-    const getErrorStyle = (_message: string) => {
+    const getErrorStyle = () => {
       return { color: '#ef4444' }; // Always red for errors
     };
 
     // Helper function to get appropriate border styling for errors (always red)
-    const getBorderStyle = (errorKey: string, _message: string) => {
+    const getBorderStyle = (errorKey: string) => {
       if (errors[errorKey]) {
         return 'border-red-500'; // Always red border for errors
       }
@@ -1040,7 +968,7 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                                   <div className="flex gap-1 items-center">
                                     <input
                                       type="text"
-                                      className={`w-10 h-7 text-xs text-center border rounded px-0.5 ${getBorderStyle(errorKey, errors[errorKey] || '')} focus:border-cfa-gold focus:outline-none ${
+                                      className={`w-10 h-7 text-xs text-center border rounded px-0.5 ${getBorderStyle(errorKey)} focus:border-cfa-gold focus:outline-none ${
                                         getVoidState('showAwards', columnIndex, i) ? 'voided-input' : ''
                                       }`}
                                       placeholder="Cat #"
@@ -1089,7 +1017,7 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                                     )}
                                   </div>
                                   {errors[errorKey] && (
-                                    <div className="text-xs mt-1" style={getErrorStyle(errors[errorKey])}>{getCleanMessage(errors[errorKey])}</div>
+                                    <div className="text-xs mt-1" style={getErrorStyle()}>{getCleanMessage(errors[errorKey])}</div>
                                   )}
                                 </div>
                               </td>
@@ -1117,8 +1045,6 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                           if (enabled) {
                             const value = getFinalsValue('champions', columnIndex, i);
                             const errorKey = `champions-${columnIndex}-${i}`;
-                            const chCatNumbers = getCHCatNumbersFromShowAwards(columnIndex);
-                            const isCHFromShowAwards = chCatNumbers.includes(value.trim());
                             // Map Finals Cat # input to refs: rowIdx = numAwardRows + i
                             const finalsRowIdx = Math.max(...columns.map(col => getBreakpointForRingType(col.specialty))) + i;
                             return (
@@ -1131,7 +1057,7 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                                     <input
                                       type="text"
                                       className={`w-10 h-7 text-xs text-center border rounded px-0.5 font-medium ${
-                                        getBorderStyle(errorKey, errors[errorKey] || '')
+                                        getBorderStyle(errorKey)
                                       } focus:border-cfa-gold focus:outline-none ${
                                         getVoidState('championsFinals', columnIndex, i) ? 'voided-input' : ''
                                       }`}
@@ -1169,7 +1095,7 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                                     )}
                                   </div>
                                   {errors[errorKey] && (
-                                    <div className="text-xs mt-1" style={getErrorStyle(errors[errorKey])}>{getCleanMessage(errors[errorKey])}</div>
+                                    <div className="text-xs mt-1" style={getErrorStyle()}>{getCleanMessage(errors[errorKey])}</div>
                                   )}
                                 </div>
                               </td>
@@ -1198,7 +1124,6 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                             const value = getFinalsValue('lhChampions', columnIndex, i);
                             const errorKey = `lhChampions-${columnIndex}-${i}`;
                             const chCatNumbers = getCHCatNumbersFromShowAwards(columnIndex);
-                            const isCHFromShowAwards = chCatNumbers.includes(value.trim());
                             // Map Finals Cat # input to refs: rowIdx = numAwardRows + numBestCH + i
                             const finalsRowIdx = Math.max(...columns.map(col => getBreakpointForRingType(col.specialty))) + Math.max(...columns.map(col => col.specialty === 'Allbreed' ? getFinalsPositionsForRingType(col.specialty) : 0)) + i;
                             return (
@@ -1211,7 +1136,7 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                                     <input
                                       type="text"
                                       className={`w-10 h-7 text-xs text-center border rounded px-0.5 font-medium ${
-                                        getBorderStyle(errorKey, errors[errorKey] || '')
+                                        getBorderStyle(errorKey)
                                       } focus:border-cfa-gold focus:outline-none ${
                                         getVoidState('lhChampionsFinals', columnIndex, i) ? 'voided-input' : ''
                                       }`}
@@ -1249,7 +1174,7 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                                     )}
                                   </div>
                                   {errors[errorKey] && (
-                                    <div className="text-xs mt-1" style={getErrorStyle(errors[errorKey])}>{getCleanMessage(errors[errorKey])}</div>
+                                    <div className="text-xs mt-1" style={getErrorStyle()}>{getCleanMessage(errors[errorKey])}</div>
                                   )}
                                 </div>
                               </td>
@@ -1278,7 +1203,6 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                             const value = getFinalsValue('shChampions', columnIndex, i);
                             const errorKey = `shChampions-${columnIndex}-${i}`;
                             const chCatNumbers = getCHCatNumbersFromShowAwards(columnIndex);
-                            const isCHFromShowAwards = chCatNumbers.includes(value.trim());
                             // Map Finals Cat # input to refs: rowIdx = numAwardRows + numBestCH + numBestLHCH + i
                             const finalsRowIdx = Math.max(...columns.map(col => getBreakpointForRingType(col.specialty))) + Math.max(...columns.map(col => col.specialty === 'Allbreed' ? getFinalsPositionsForRingType(col.specialty) : 0)) + i;
                             return (
@@ -1291,7 +1215,7 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                                     <input
                                       type="text"
                                       className={`w-10 h-7 text-xs text-center border rounded px-0.5 font-medium ${
-                                        getBorderStyle(errorKey, errors[errorKey] || '')
+                                        getBorderStyle(errorKey)
                                       } focus:border-cfa-gold focus:outline-none ${
                                         getVoidState('shChampionsFinals', columnIndex, i) ? 'voided-input' : ''
                                       }`}
@@ -1329,7 +1253,7 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                                     )}
                                   </div>
                                   {errors[errorKey] && (
-                                    <div className="text-xs mt-1" style={getErrorStyle(errors[errorKey])}>{getCleanMessage(errors[errorKey])}</div>
+                                    <div className="text-xs mt-1" style={getErrorStyle()}>{getCleanMessage(errors[errorKey])}</div>
                                   )}
                                 </div>
                               </td>
@@ -1361,24 +1285,18 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
             <div className="flex gap-3">
               <button
                 type="button"
-                onClick={handleSaveToTempCSVClick}
+                onClick={handleSaveToCSVClick}
                 className="cfa-button"
               >
-                Save to Temp CSV
-              </button>
-              <button
-                type="button"
-                onClick={handleGenerateFinalCSVClick}
-                className="cfa-button"
-              >
-                Generate Final CSV
+                Save to CSV
               </button>
               <button
                 type="button"
                 onClick={handleRestoreFromCSVClick}
                 className="cfa-button-secondary"
+                style={{ backgroundColor: '#1e3a8a', borderColor: '#1e3a8a', color: 'white' }}
               >
-                Restore from CSV
+                Load from CSV
               </button>
               <button
                 type="button"

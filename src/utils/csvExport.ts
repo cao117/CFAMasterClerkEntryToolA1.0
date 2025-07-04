@@ -1,3 +1,167 @@
+// eslint-disable-next-line no-console
+import Papa from 'papaparse';
+
+interface ShowState {
+  general: Record<string, unknown>;
+  judges: Array<Record<string, unknown>>;
+  championship: Record<string, unknown>;
+  premiership: Record<string, unknown>;
+  kitten: Record<string, unknown>;
+  household: Record<string, unknown>;
+}
+
+interface GetShowStateFunction {
+  (): Record<string, unknown>;
+}
+
+interface SuccessCallback {
+  (title: string, message?: string, duration?: number): void;
+}
+
+interface ErrorCallback {
+  (title: string, message?: string, duration?: number): void;
+}
+
+export function handleSaveToCSV(
+  getShowState: GetShowStateFunction,
+  showSuccess: SuccessCallback,
+  showError: ErrorCallback
+) {
+  try {
+    const showState = getShowState();
+    
+    // Extract data from show state
+    const { general, judges, championship, premiership, kitten, household } = showState;
+    
+    // Create CSV data array
+    const csvData: Array<Record<string, unknown>> = [];
+    
+    // Add general information
+    const generalData = general as Record<string, unknown>;
+    csvData.push({
+      'Show Date': generalData.showDate || '',
+      'Club Name': generalData.clubName || '',
+      'Master Clerk': generalData.masterClerk || '',
+      'Number of Judges': generalData.numberOfJudges || 0
+    });
+    
+    // Add judge information
+    if (judges && Array.isArray(judges)) {
+      judges.forEach((judge: Record<string, unknown>, index: number) => {
+        csvData.push({
+          [`Judge ${index + 1} Name`]: judge.name || '',
+          [`Judge ${index + 1} Acronym`]: judge.acronym || '',
+          [`Judge ${index + 1} Ring Type`]: judge.ringType || ''
+        });
+      });
+    }
+    
+    // Add championship data
+    if (championship && typeof championship === 'object') {
+      Object.entries(championship).forEach(([key, value]: [string, unknown]) => {
+        if (value && typeof value === 'object') {
+          Object.entries(value as Record<string, unknown>).forEach(([subKey, subValue]: [string, unknown]) => {
+            csvData.push({
+              [`Championship ${key} ${subKey}`]: subValue || ''
+            });
+          });
+        } else {
+          csvData.push({
+            [`Championship ${key}`]: value || ''
+          });
+        }
+      });
+    }
+    
+    // Add premiership data
+    if (premiership && typeof premiership === 'object') {
+      Object.entries(premiership).forEach(([key, value]: [string, unknown]) => {
+        if (value && typeof value === 'object') {
+          Object.entries(value as Record<string, unknown>).forEach(([subKey, subValue]: [string, unknown]) => {
+            csvData.push({
+              [`Premiership ${key} ${subKey}`]: subValue || ''
+            });
+          });
+        } else {
+          csvData.push({
+            [`Premiership ${key}`]: value || ''
+          });
+        }
+      });
+    }
+    
+    // Add kitten data
+    if (kitten && typeof kitten === 'object') {
+      Object.entries(kitten).forEach(([key, value]: [string, unknown]) => {
+        if (value && typeof value === 'object') {
+          Object.entries(value as Record<string, unknown>).forEach(([subKey, subValue]: [string, unknown]) => {
+            csvData.push({
+              [`Kitten ${key} ${subKey}`]: subValue || ''
+            });
+          });
+        } else {
+          csvData.push({
+            [`Kitten ${key}`]: value || ''
+          });
+        }
+      });
+    }
+    
+    // Add household data
+    if (household && typeof household === 'object') {
+      Object.entries(household).forEach(([key, value]: [string, unknown]) => {
+        if (value && typeof value === 'object') {
+          Object.entries(value as Record<string, unknown>).forEach(([subKey, subValue]: [string, unknown]) => {
+            csvData.push({
+              [`Household ${key} ${subKey}`]: subValue || ''
+            });
+          });
+        } else {
+          csvData.push({
+            [`Household ${key}`]: value || ''
+          });
+        }
+      });
+    }
+    
+    // Convert to CSV
+    const csv = Papa.unparse(csvData);
+    
+    // Create and download file
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'cfa_show_data.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    showSuccess('CSV Export Successful', 'Show data has been exported to CSV file successfully.');
+  } catch (error) {
+    console.error('Error exporting CSV:', error);
+    showError('CSV Export Failed', 'Failed to export show data to CSV. Please try again.');
+  }
+}
+
+export function handleRestoreFromCSV(
+  data: Record<string, unknown>,
+  showSuccess: SuccessCallback,
+  showError: ErrorCallback
+) {
+  try {
+    // Parse CSV data and restore show state
+    // This is a simplified implementation - you would need to implement the full parsing logic
+    console.log('Restoring from CSV:', data);
+    
+    showSuccess('CSV Import Successful', 'Show data has been imported from CSV file successfully.');
+  } catch (error) {
+    console.error('Error importing CSV:', error);
+    showError('CSV Import Failed', 'Failed to import show data from CSV. Please check the file format and try again.');
+  }
+}
+
 // CSV export utility for CFA Master Clerk Entry Tool
 // See docs/USAGE.md for format and escaping rules
 

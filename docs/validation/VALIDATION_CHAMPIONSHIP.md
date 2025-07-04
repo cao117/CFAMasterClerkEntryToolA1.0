@@ -103,7 +103,7 @@ _Last Updated: 2024-06-20_
 - For each cell in Best AB CH, only the highest-precedence error is ever shown:
   1. Duplicate error (within section)
   2. Status error (GC/NOV from Show Awards)
-  3. Sequential entry error (e.g., "You must fill in previous empty award placements in Best AB CH Final before entering this position.")
+  3. Sequential entry error ("You must fill previous placements before entering this position.")
   4. Order error (e.g., "Must be X (Nth CH required by CFA rules)")
   5. Assignment reminder (e.g., "needs to be assigned to LH/SH")
 - The sequential entry error now appears immediately in the correct cell if required, and is suppressed by higher-precedence errors.

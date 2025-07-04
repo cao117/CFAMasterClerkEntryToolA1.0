@@ -30,7 +30,7 @@ The Premiership tab validation follows the **exact same order and structure** as
 
 ### 1. Show Awards Section (Top 10/15)
 - **Cat number format**: Must be between 1-450
-- **Sequential entry**: Must fill positions sequentially (no skipping)
+- **Sequential entry**: Must fill positions sequentially (no skipping). The error is only shown on the first empty cell after the last filled cell in each column, and never on filled cells.
 - **Duplicate check**: No duplicates within the same column
 - **Status validation**: All three statuses (GP, PR, NOV) are allowed
 
@@ -88,7 +88,7 @@ Suppose you have the following cats in the Premiership Final (Top 10/15):
 - For each cell in Best AB PR, only the highest-precedence error is ever shown:
   1. Duplicate error (within section)
   2. Status error (GP/NOV from Show Awards)
-  3. Sequential entry error (e.g., "You must fill in previous empty award placements in Best AB PR Final before entering this position.")
+  3. Sequential entry error ("You must fill previous placements before entering this position.", only on the first empty cell after the last filled cell, never on filled cells)
   4. Order error (e.g., "Must be X (Nth PR required by CFA rules)")
   5. Assignment reminder (e.g., "must be assigned to either Longhair or Shorthair section")
 - The assignment reminder is only shown if there is no duplicate, status, or sequential entry error for that cell.

@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react';
 import * as householdPetValidation from '../validation/householdPetValidation';
-import { handleSaveToTempCSV, handleGenerateFinalCSV, handleRestoreFromCSV } from '../utils/formActions';
+import { handleSaveToCSV, handleRestoreFromCSV } from '../utils/formActions';
 import Modal from './Modal';
 
 interface Judge {
@@ -16,20 +16,20 @@ interface Column {
 }
 
 interface HouseholdPetTabProps {
-  judges: any;
+  judges: Judge[];
   householdPetCount: number;
   showSuccess: (title: string, message?: string, duration?: number) => void;
   showError: (title: string, message?: string, duration?: number) => void;
   isActive: boolean;
-  getShowState: () => any;
+  getShowState: () => Record<string, unknown>; // Accept full show state object
   /**
    * Household Pet tab data, lifted to App.tsx for persistence and CSV export
    */
-  householdPetTabData: { showAwards: any; voidedShowAwards: any };
+  householdPetTabData: { showAwards: { [key: string]: { catNumber: string; status: string } }; voidedShowAwards: { [key: string]: boolean } };
   /**
    * Setter for household pet tab data
    */
-  setHouseholdPetTabData: React.Dispatch<React.SetStateAction<{ showAwards: any; voidedShowAwards: any }>>;
+  setHouseholdPetTabData: React.Dispatch<React.SetStateAction<{ showAwards: { [key: string]: { catNumber: string; status: string } }; voidedShowAwards: { [key: string]: boolean } }>>;
 }
 
 export default function HouseholdPetTab({
@@ -197,7 +197,7 @@ export default function HouseholdPetTab({
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
 
   // Helper function to get appropriate border styling for errors (always red)
-  const getBorderStyle = (errorKey: string, _message: string) => {
+  const getBorderStyle = (errorKey: string) => {
     if (errors[errorKey]) {
       return 'border-red-500'; // Always red border for errors
     }
@@ -213,7 +213,7 @@ export default function HouseholdPetTab({
   };
 
   // Helper function to get appropriate styling for errors (always red)
-  const getErrorStyle = (_message: string) => {
+  const getErrorStyle = () => {
     return { color: '#ef4444' }; // Always red for errors
   };
 
@@ -232,14 +232,23 @@ export default function HouseholdPetTab({
       setFocusedColumnIndex(null);
       return;
     }
+    
     const ringId = parseInt(selectedRingId, 10);
+    
+    // Find the first column index with this ring id
     const colIdx = columns.findIndex(col => col.judge.id === ringId);
     if (colIdx === -1) return;
+    
+    // Set the focused column to this column index
     setFocusedColumnIndex(colIdx);
+    
+    // Find the corresponding <th> element in the table
     const th = document.getElementById(`ring-th-${colIdx}`);
     const container = tableContainerRef.current;
     if (th && container) {
-      const frozenWidth = 80;
+      // The width of the frozen column (Position) is 140px
+      const frozenWidth = 140;
+      // Scroll so that the left of the <th> aligns with the left of the scroll area (after frozen column)
       const scrollLeft = th.offsetLeft - frozenWidth;
       container.scrollTo({ left: scrollLeft, behavior: 'smooth' });
     }
@@ -352,7 +361,7 @@ export default function HouseholdPetTab({
                             <div className="flex gap-1 items-center">
                               <input
                                 type="text"
-                                className={`w-14 h-7 text-xs text-center border rounded px-0.5 ${getBorderStyle(`${colIdx}-${i}`, errors[`${colIdx}-${i}`] || '')} ${voided ? 'voided-input' : ''} focus:outline-none focus:border-cfa-gold`}
+                                className={`w-14 h-7 text-xs text-center border rounded px-0.5 ${getBorderStyle(`${colIdx}-${i}`)} ${voided ? 'voided-input' : ''} focus:outline-none focus:border-cfa-gold`}
                                 placeholder="Cat #"
                                 value={cell.catNumber ?? ''}
                                 onChange={e => updateShowAward(colIdx, i, e.target.value)}
@@ -375,7 +384,7 @@ export default function HouseholdPetTab({
                                 }}
                               />
                               <select
-                                className={`w-14 h-7 text-xs text-center border rounded px-0.5 ${getBorderStyle(`${colIdx}-${i}`, errors[`${colIdx}-${i}`] || '')} ${voided ? 'voided-input' : ''} focus:outline-none focus:border-cfa-gold`}
+                                className={`w-14 h-7 text-xs text-center border rounded px-0.5 ${getBorderStyle(`${colIdx}-${i}`)} ${voided ? 'voided-input' : ''} focus:outline-none focus:border-cfa-gold`}
                                 value="HHP"
                                 disabled
                               >
@@ -392,7 +401,7 @@ export default function HouseholdPetTab({
                               )}
                             </div>
                             {errors[`${colIdx}-${i}`] && (
-                              <div className="text-xs mt-1" style={getErrorStyle(errors[`${colIdx}-${i}`])}>{getCleanMessage(errors[`${colIdx}-${i}`])}</div>
+                              <div className="text-xs mt-1" style={getErrorStyle()}>{getCleanMessage(errors[`${colIdx}-${i}`])}</div>
                             )}
                           </div>
                         </td>
@@ -411,32 +420,23 @@ export default function HouseholdPetTab({
               type="button"
               onClick={() => {
                 // Export the full show state for CSV export
-                handleSaveToTempCSV(getShowState, showSuccess, showError);
+                handleSaveToCSV(getShowState, showSuccess, showError);
               }}
               className="cfa-button"
             >
-              Save to Temp CSV
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                // Export the full show state for CSV export
-                handleGenerateFinalCSV(getShowState, showSuccess, showError);
-              }}
-              className="cfa-button"
-            >
-              Generate Final CSV
+              Save to CSV
             </button>
             <button
               type="button"
               onClick={() => handleRestoreFromCSV({}, showSuccess, showError)}
               className="cfa-button-secondary"
+              style={{ backgroundColor: '#1e3a8a', borderColor: '#1e3a8a', color: 'white' }}
             >
-              Restore from CSV
+              Load from CSV
             </button>
             <button
               type="button"
-              onClick={() => setIsResetModalOpen(true)}
+              onClick={handleTabReset}
               className="cfa-button-secondary"
             >
               Reset

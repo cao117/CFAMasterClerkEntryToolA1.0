@@ -1,57 +1,53 @@
 // Shared action button logic for General and Championship tabs
-import { exportShowToCSV } from './csvExport';
+import { handleSaveToCSV as csvExportSave, handleRestoreFromCSV as csvExportRestore } from './csvExport';
 
-/**
- * Save to Temp CSV handler
- * Gathers the full show state, generates the CSV, and triggers a download.
- * @param getShowState - Function to retrieve the full show state (all tabs)
- * @param showSuccess - Toast function for success
- * @param showError - Toast function for error
- */
-export function handleSaveToTempCSV(getShowState: () => any, showSuccess?: Function, showError?: Function) {
-  try {
-    // Get the full show state (all tabs)
-    const showState = getShowState();
-    // Generate CSV and filename
-    const { csv, filename } = exportShowToCSV(showState);
-    // Trigger file download in browser
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', filename);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    if (showSuccess) showSuccess('CSV Exported', `File ${filename} has been downloaded.`, 6000);
-  } catch (err) {
-    if (showError) showError('CSV Export Failed', String(err), 8000);
-  }
+interface ShowState {
+  general: Record<string, unknown>;
+  judges: Array<Record<string, unknown>>;
+  championship: Record<string, unknown>;
+  premiership: Record<string, unknown>;
+  kitten: Record<string, unknown>;
+  household: Record<string, unknown>;
+}
+
+interface GetShowStateFunction {
+  (): Record<string, unknown>;
+}
+
+interface SuccessCallback {
+  (title: string, message?: string, duration?: number): void;
+}
+
+interface ErrorCallback {
+  (title: string, message?: string, duration?: number): void;
 }
 
 /**
- * Generate Final CSV handler
- * Same as Save Temp CSV, but can be extended for finalization logic.
- * @param getShowState - Function to retrieve the full show state (all tabs)
- * @param showSuccess - Toast function for success
- * @param showError - Toast function for error
+ * Handles saving the current show state to a CSV file
+ * @param getShowState Function to get the current show state
+ * @param showSuccess Success callback function
+ * @param showError Error callback function
  */
-export function handleGenerateFinalCSV(getShowState: () => any, showSuccess?: Function, showError?: Function) {
-  // For now, identical to handleSaveToTempCSV
-  handleSaveToTempCSV(getShowState, showSuccess, showError);
+export function handleSaveToCSV(
+  getShowState: GetShowStateFunction,
+  showSuccess: SuccessCallback,
+  showError: ErrorCallback
+) {
+  csvExportSave(getShowState, showSuccess, showError);
 }
 
 /**
- * Restore from CSV handler (placeholder)
+ * Handles restoring show state from a CSV file
+ * @param data The data to restore from
+ * @param showSuccess Success callback function
+ * @param showError Error callback function
  */
-export function handleRestoreFromCSV(...args: any[]) {
-  // Get the toast functions from the arguments - they're usually the second to last parameter
-  const showSuccess = args[args.length - 2];
-  
-  if (showSuccess) {
-    showSuccess('Coming Soon', 'Restore from CSV functionality is currently in development and will be available in the next update.', 6000);
-  }
+export function handleRestoreFromCSV(
+  data: Record<string, unknown>,
+  showSuccess: SuccessCallback,
+  showError: ErrorCallback
+) {
+  csvExportRestore(data, showSuccess, showError);
 }
 
 /**

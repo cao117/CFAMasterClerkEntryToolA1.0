@@ -14,9 +14,8 @@ Follow conventions for naming and organization. New features go in `src/` as com
 ## Shared CSV Action Buttons
 
 - The following action buttons are present on all tabs (General, Championship, Kittens, Premiership, Household Pet):
-  - Save to Temp CSV
-  - Generate Final CSV
-  - Restore from CSV
+  - Save to CSV
+  - Load from CSV
   - Reset
 - These buttons always operate on the full dataset (all tabs), not just the current tab.
 - The logic for these buttons is shared and implemented in `src/utils/formActions.ts`.

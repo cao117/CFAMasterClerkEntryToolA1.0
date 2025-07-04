@@ -343,17 +343,12 @@ The following action buttons are present in the Championship and Premiership tab
 
 ### Championship & Premiership Tabs
 
-- **Save to Temp CSV**
-  - **Purpose:** Exports the current tab's data to a temporary CSV file for backup or review.
+- **Save to CSV**
+  - **Purpose:** Exports the current tab's data to a CSV file for backup, review, or official submission.
   - **Validation:** Runs full validation before export. If any errors are present, export is blocked and the user is notified to fix errors.
   - **Location:** Bottom of Championship and Premiership tabs.
 
-- **Generate Final CSV**
-  - **Purpose:** Exports fully validated data for official submission.
-  - **Validation:** Strict validation is enforced. All errors must be resolved before export. If errors exist, export is blocked and the user is notified.
-  - **Location:** Bottom of Championship and Premiership tabs.
-
-- **Restore from CSV**
+- **Load from CSV**
   - **Purpose:** Imports data from a previously saved CSV file, restoring all fields and voids for the current tab.
   - **Validation:** Imported data is validated upon load. Any errors are shown inline.
   - **Location:** Bottom of Championship and Premiership tabs.
@@ -365,10 +360,17 @@ The following action buttons are present in the Championship and Premiership tab
 
 ### General Tab
 
-- **Reset All Data**
-  - **Purpose:** Clears all application data, including show details, judge information, and all tab data. Returns the user to the General tab.
-  - **Confirmation:** User is prompted to confirm before all data is cleared.
-  - **Location:** General tab.
+- **Save to CSV**: Exports validated data for submission.
+- **Load from CSV**: Imports data from a previously saved CSV file.
+- **Reset**: Clears all form data and returns to default values.
+- **Fill Test Data**: Populates the form with realistic test data for development and testing purposes.
+
+### Workflow Notes
+
+- **Save to CSV**: Exports validated data for submission.
+- **Load from CSV**: Imports data from a previously saved CSV file.
+- **Reset**: Clears all form data and returns to default values.
+- **Fill Test Data**: Populates the form with realistic test data for development and testing purposes.
 
 ### Workflow Notes
 - All action buttons are placed together at the bottom of each tab for easy access.
@@ -379,9 +381,8 @@ The following action buttons are present in the Championship and Premiership tab
 ---
 
 ## CSV Export/Import
-- **Save to Temp CSV**: Exports current tab data to a temporary CSV file.
-- **Generate Final CSV**: Exports validated data for submission.
-- **Restore from CSV**: Imports data from a CSV file, restoring all fields and voids.
+- **Save to CSV**: Exports validated data for submission.
+- **Load from CSV**: Imports data from a CSV file, restoring all fields and voids.
 - CSV schema and voiding logic are documented in `docs/specs/CSV_SCHEMA.md` and `docs/specs/CSV_EXPORT_VOID_QUESTION.md`.
 
 ---

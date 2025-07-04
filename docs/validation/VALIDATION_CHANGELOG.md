@@ -194,7 +194,7 @@ This changelog records all changes, additions, and deletions to validation rules
 - **Summary:** 
   - **Best AB PR**: Only checks if cat is GP or NOV in Show Awards (does NOT check for missing statuses)
   - **LH/SH PR**: Checks for all status errors (GP/NOV/MISSING/INVALID) in Show Awards
-  - This matches Championship tab behavior where Best AB CH only checks for GC/NOV but LH/SH CH check for all status errors
+  - This matches Championship tab behavior where Best AB CH only checks for GC/NOV but LH/SH CH check for all status errors including missing statuses
 - **Rationale:** Ensures complete validation parity with Championship tab. The previous confusion about status validation was resolved - both tabs have the same validation logic: Best AB sections only check for ineligible statuses (GC/GP), while LH/SH sections check for all status errors including missing statuses.
 
 ### [2024-12-19] Premiership Tab: Duplicate Error Precedence and Key Format Fix
@@ -368,6 +368,68 @@ This changelog records all changes, additions, and deletions to validation rules
 - **Tab:** Household Pet
 - **Change:** Implemented Household Pet tab as a strict reduction of the Kitten tab. Only one section (Top 10/15 Household Pets), only HHP status, all UI/UX, voiding, error display, and keyboard navigation match Kitten tab. Validation includes duplicate, sequential, range, and voiding logic. Column reset on judge change is enforced. Documentation updated in VALIDATION_HOUSEHOLD.md.
 - **Rationale:** Ensures robust, user-friendly, and consistent data entry for household pets, with full parity to Kitten tab except for reduced features.
+
+### [2024-06-22] Kitten & Household Pet Tabs: Duplicate Error Display on All Duplicates
+- **Tab:** Kitten, Household Pet
+- **Change:** Duplicate errors are now shown on all cells with the same duplicate value in a column, not just the last entered cell.
+- **Rationale:** Improves clarity, matches user expectation, and brings Kitten and Household Pet tabs in line with Championship and Premiership tab behavior.
+
+### [2024-06-22] Standardized Duplicate Error Message Across All Tabs
+- **Tabs:** Championship, Premiership, Kitten, Household Pet
+- **Change:** The duplicate error message is now always 'Duplicate cat number within this section of the final' in all tabs and sections.
+- **Rationale:** Improves clarity and ensures consistency for users and documentation.
+
+### [2024-06-22] Standardized Sequential Error Messages Across All Tabs
+- **Tabs:** Championship, Premiership, Kitten, Household Pet
+- **Change:** All sequential entry error messages now use the consistent text "You must fill previous placements before entering this position." instead of section-specific messages.
+- **Rationale:** Improves consistency and reduces confusion for users across all tabs.
+
+### [2024-06-22] Fixed Premiership Tab Key Format and Error Message Consistency
+- **Tab:** Premiership
+- **Change:** Fixed key generation to use hyphens instead of underscores throughout the validation logic, and updated remaining old sequential error message to use consistent text "You must fill previous placements before entering this position."
+- **Rationale:** Ensures validation works properly and maintains consistency with naming convention rule and other tabs.
+
+### [2024-06-22] Premiership Tab Sequential Error Never on Filled Cells
+- **Tab:** Premiership
+- **Change:** Fixed bug where sequential entry error could appear under filled cells. Now, the error only appears on the first empty cell after the last filled cell, never on filled cells.
+- **Rationale:** Matches user expectation and Kitten/Championship tab behavior; prevents confusing errors under filled cells.
+
+### [2024-06-22] Premiership Tab Sequential Entry Validation Logic Fixed
+- **Tab:** Premiership
+- **Change:** Fixed sequential entry validation logic in Premiership tab to match Championship tab exactly. Replaced the incorrect approach that only showed sequential errors on empty cells with the correct `validateSequentialEntry` function that checks if there are any empty positions before the current filled position within the same section.
+- **Rationale:** Fixes bug where sequential errors were not appearing correctly. Now matches Championship tab behavior exactly - if a cell is filled but there are empty cells above it in the same section, the sequential error appears on the filled cell.
+- **Rationale:** The previous custom logic was causing sequential errors to appear under filled cells (e.g., entering 1 in position 1 and 2 in position 2 would show sequential error under position 2). This fix ensures consistent behavior with Championship tab and proper user experience.
+
+### [2024-06-22] Premiership Tab Debug Logging Added
+- **Tab:** Premiership
+- **Change:** Added comprehensive debug logging to `validateSequentialEntry` and `validatePremiershipTab` functions to help diagnose sequential entry validation issues.
+- **Rationale:** To identify why sequential entry errors are still appearing incorrectly when positions 1 and 2 are both filled.
+
+### [2024-06-22] Premiership Tab Key Format Bugfix: Hyphens Only
+- **Tab:** Premiership
+- **Change:** Fixed critical bug where underscore-based keys (e.g., '0_1') were used for placements, voids, and errors, causing sequential entry and duplicate validation to fail. All key generation, storage, and lookups now use hyphens (e.g., '0-1') throughout PremiershipTab and validation logic, per `.cursor/rules/naming-conventions.mdc`.
+- **Rationale:** Ensures validation and UI are in sync, fixes sequential entry and duplicate bugs, and maintains CSV export compatibility.
+
+### [2024-06-22] Comprehensive Key Format Audit and Fix
+- **Tab:** Premiership
+- **Change:** Conducted comprehensive line-by-line audit of all key generation and usage throughout the codebase. Found and fixed all remaining underscore-based keys in PremiershipTab.tsx:
+  - Fixed error key generation in `handleShowAwardBlur`: `showAwards_${colIdx}-${pos}` → `showAwards-${colIdx}-${pos}`
+  - Fixed error key generation in `handleFinalsBlur`: `${section}_${colIdx}-${pos}` → `${section}-${colIdx}-${pos}`
+  - Fixed UI error lookups in rendering sections: `showAwards_${colIdx}-${i}` → `showAwards-${colIdx}-${i}`, etc.
+- **Rationale:** Ensures complete consistency with naming convention rule. All object keys now use hyphens exclusively, preventing validation and CSV export bugs.
+
+### [2024-12-19] All Tabs: CSV Button Simplification and UI Updates
+- **Tab:** All (General, Championship, Premiership, Kitten, Household Pet)
+- **Change:** Simplified CSV action buttons across all tabs and updated UI styling
+- **Summary:** 
+  - **Removed**: "Save to Temp CSV" button from all tabs
+  - **Renamed**: "Generate Final CSV" → "Save to CSV" across all tabs
+  - **Renamed**: "Restore from CSV" → "Load from CSV" across all tabs
+  - **Updated**: Load from CSV button styling to navy blue color (#1e3a8a) to match CFA branding
+  - **Updated**: All component imports and function calls to use the new `handleSaveToCSV` function
+  - **Updated**: Documentation across all validation files and project overview to reflect the simplified button structure
+  - **Maintained**: All validation logic and error handling remains unchanged
+- **Rationale:** Simplifies the user interface by removing redundant functionality and improves visual consistency with CFA branding. The "Save to CSV" button now serves both temporary and final export purposes, while "Load from CSV" provides clear import functionality with distinctive navy blue styling.
 
 ---
 

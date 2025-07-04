@@ -41,14 +41,14 @@ export function validateKittenTab(input: KittenValidationInput): Record<string, 
 
   // For each column
   columns.forEach((col, colIdx) => {
-    const seen: Set<string> = new Set();
     let firstEmpty = -1;
     const maxRows = getBreakpointForRingType(col.specialty);
+    // Map from catNumber to all row indices where it appears (excluding voided and empty)
+    const catNumberToRows: Record<string, number[]> = {};
     for (let rowIdx = 0; rowIdx < maxRows; rowIdx++) {
-      const key = `${colIdx}-${rowIdx}`; // FIXED: Use hyphen separator to match component
+      const key = `${colIdx}-${rowIdx}`;
       const cell = showAwards[key] || { catNumber: '', status: 'KIT' };
       const voided = voidedShowAwards[key];
-      // Skip validation for voided cells
       if (voided) continue;
       // Range check
       if (cell.catNumber && (isNaN(Number(cell.catNumber)) || Number(cell.catNumber) < 1 || Number(cell.catNumber) > 450)) {
@@ -63,18 +63,26 @@ export function validateKittenTab(input: KittenValidationInput): Record<string, 
         errors[key] = 'You must fill previous placements before entering this position.';
         continue;
       }
-      // Duplicate check (within column)
-      if (cell.catNumber && seen.has(cell.catNumber)) {
-        errors[key] = 'Duplicate cat number within this column';
-        continue;
+      // Build map for duplicate detection
+      if (cell.catNumber) {
+        if (!catNumberToRows[cell.catNumber]) catNumberToRows[cell.catNumber] = [];
+        catNumberToRows[cell.catNumber].push(rowIdx);
       }
-      if (cell.catNumber) seen.add(cell.catNumber);
       // Status check (should always be KIT)
       if (cell.status !== 'KIT') {
         errors[key] = 'Status must be KIT';
         continue;
       }
     }
+    // After collecting, set duplicate error for all rows with duplicate cat numbers
+    Object.entries(catNumberToRows).forEach(([catNum, rows]) => {
+      if (catNum && rows.length > 1) {
+        rows.forEach(rowIdx => {
+          const key = `${colIdx}-${rowIdx}`;
+          errors[key] = 'Duplicate cat number within this section of the final';
+        });
+      }
+    });
   });
   return errors;
 } 

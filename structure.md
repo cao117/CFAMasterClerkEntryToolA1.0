@@ -22,7 +22,7 @@
    - How to use the multi-tab form, import/export CSV, generate test data, and reset functionality.
 
 7. **CSV_SCHEMA.md**  
-   - Definition of CSV columns, sample payloads, and parsing rules for `Restore from CSV` and `Generate Final CSV`.
+   - Definition of CSV columns, sample payloads, and parsing rules for `Load from CSV` and `Save to CSV`.
 
 8. **TEST_DATA.md**  
    - Faker.js-based seeding instructions or JSON fixtures for populating General and Championship tabs.
