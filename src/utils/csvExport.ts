@@ -30,109 +30,15 @@ export function handleSaveToCSV(
   try {
     const showState = getShowState();
     
-    // Extract data from show state
-    const { general, judges, championship, premiership, kitten, household } = showState;
-    
-    // Create CSV data array
-    const csvData: Array<Record<string, unknown>> = [];
-    
-    // Add general information
-    const generalData = general as Record<string, unknown>;
-    csvData.push({
-      'Show Date': generalData.showDate || '',
-      'Club Name': generalData.clubName || '',
-      'Master Clerk': generalData.masterClerk || '',
-      'Number of Judges': generalData.numberOfJudges || 0
-    });
-    
-    // Add judge information
-    if (judges && Array.isArray(judges)) {
-      judges.forEach((judge: Record<string, unknown>, index: number) => {
-        csvData.push({
-          [`Judge ${index + 1} Name`]: judge.name || '',
-          [`Judge ${index + 1} Acronym`]: judge.acronym || '',
-          [`Judge ${index + 1} Ring Type`]: judge.ringType || ''
-        });
-      });
-    }
-    
-    // Add championship data
-    if (championship && typeof championship === 'object') {
-      Object.entries(championship).forEach(([key, value]: [string, unknown]) => {
-        if (value && typeof value === 'object') {
-          Object.entries(value as Record<string, unknown>).forEach(([subKey, subValue]: [string, unknown]) => {
-            csvData.push({
-              [`Championship ${key} ${subKey}`]: subValue || ''
-            });
-          });
-        } else {
-          csvData.push({
-            [`Championship ${key}`]: value || ''
-          });
-        }
-      });
-    }
-    
-    // Add premiership data
-    if (premiership && typeof premiership === 'object') {
-      Object.entries(premiership).forEach(([key, value]: [string, unknown]) => {
-        if (value && typeof value === 'object') {
-          Object.entries(value as Record<string, unknown>).forEach(([subKey, subValue]: [string, unknown]) => {
-            csvData.push({
-              [`Premiership ${key} ${subKey}`]: subValue || ''
-            });
-          });
-        } else {
-          csvData.push({
-            [`Premiership ${key}`]: value || ''
-          });
-        }
-      });
-    }
-    
-    // Add kitten data
-    if (kitten && typeof kitten === 'object') {
-      Object.entries(kitten).forEach(([key, value]: [string, unknown]) => {
-        if (value && typeof value === 'object') {
-          Object.entries(value as Record<string, unknown>).forEach(([subKey, subValue]: [string, unknown]) => {
-            csvData.push({
-              [`Kitten ${key} ${subKey}`]: subValue || ''
-            });
-          });
-        } else {
-          csvData.push({
-            [`Kitten ${key}`]: value || ''
-          });
-        }
-      });
-    }
-    
-    // Add household data
-    if (household && typeof household === 'object') {
-      Object.entries(household).forEach(([key, value]: [string, unknown]) => {
-        if (value && typeof value === 'object') {
-          Object.entries(value as Record<string, unknown>).forEach(([subKey, subValue]: [string, unknown]) => {
-            csvData.push({
-              [`Household ${key} ${subKey}`]: subValue || ''
-            });
-          });
-        } else {
-          csvData.push({
-            [`Household ${key}`]: value || ''
-          });
-        }
-      });
-    }
-    
-    // Convert to CSV
-    const csv = Papa.unparse(csvData);
+    // Use the comprehensive exportShowToCSV function instead of simplified approach
+    const { csv, filename } = exportShowToCSV(showState);
     
     // Create and download file
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    link.setAttribute('download', 'cfa_show_data.csv');
+    link.setAttribute('download', filename);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -393,12 +299,6 @@ export function exportShowToCSV(showState: any): { csv: string, filename: string
       // Finals sections
       const finalsSections = [
         { 
-          key: 'premiersFinals', 
-          voidKey: 'voidedPremiersFinals',
-          labels: ['Best AB PR', '2nd Best AB PR', '3rd Best AB PR', '4th Best AB PR', '5th Best AB PR'],
-          enabledFor: (col: any) => col.specialty === 'Allbreed'
-        },
-        { 
           key: 'abPremiersFinals', 
           voidKey: 'voidedABPremiersFinals',
           labels: ['Best AB PR', '2nd Best AB PR', '3rd Best AB PR', '4th Best AB PR', '5th Best AB PR'],
@@ -511,13 +411,6 @@ export function exportShowToCSV(showState: any): { csv: string, filename: string
 
   // --- Main Export Logic ---
   const rows: string[] = [];
-  // Debug: Log championship finals data before export
-  // TODO: Remove this log after debugging
-  if (typeof window !== 'undefined' && window.console) {
-    console.log('DEBUG: championshipTabData.championsFinals', showState.championship?.championsFinals);
-    console.log('DEBUG: championshipTabData.lhChampionsFinals', showState.championship?.lhChampionsFinals);
-    console.log('DEBUG: championshipTabData.shChampionsFinals', showState.championship?.shChampionsFinals);
-  }
   // General Info + Judges
   rows.push(...buildGeneralSection(showState.general, showState.judges));
   // Championship
@@ -535,7 +428,7 @@ export function exportShowToCSV(showState: any): { csv: string, filename: string
   // Filename: YYYYMMDD_HHMM_showname.csv
   function pad(n: number) { return n < 10 ? '0' + n : n; }
   const now = new Date();
-  const showName = (showState.general?.['Show Name'] || 'show').replace(/\s+/g, '');
+  const showName = (showState.general?.clubName || 'show').replace(/\s+/g, '');
   const filename = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}_${showName}.csv`;
 
   logger.info('CSV export complete', { filename });
