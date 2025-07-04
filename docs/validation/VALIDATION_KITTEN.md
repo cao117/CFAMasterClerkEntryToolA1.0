@@ -62,3 +62,8 @@ Suppose you have 6 judges: 5 Shorthair rings and 1 Allbreed ring:
 
 ## Last Updated
 - 2024-06-22 
+
+## Voiding Logic
+- If a cat number is voided anywhere in a column, all instances of that cat number in that column are voided (including new ones).
+- Unchecking void in any cell unvoids all instances in that column for that cat number.
+- This logic applies across the full column, matching Championship, Premiership, and Household Pet tabs. 

@@ -1,6 +1,12 @@
 # Premiership Tab Validation Rules
 
-This document describes the **current validation rules** enforced in the Premiership tab of the CFA Master Clerk Entry Tool.
+**[2024-06-22] Validation logic fully refactored for strict error precedence and code parity with Championship tab.**
+- All validation logic is now implemented in `validatePremiershipTab` in `premiershipValidation.ts`.
+- Strict error precedence is enforced: **duplicate > status (GP/NOV/MISSING/INVALID) > sequential > assignment reminder**.
+- All error keys and data keys use section prefixes and hyphens (e.g., `abPremiers-0-1`).
+- There are exactly four duplicate check functions, one per section.
+- Debug logging is present at all critical validation and error-merging points.
+- Documentation and code are now in full parity with the Championship tab, except for PR/GP/NOV domain differences and 50/15/10/3/2 breakpoints.
 
 ## Hair-Specific Breakpoint Logic
 
@@ -84,16 +90,23 @@ Suppose you have the following cats in the Premiership Final (Top 10/15):
 - If a cat is entered in Best AB PR but not assigned to either LH or SH section, a reminder message appears: `"{catNumber} must be assigned to either Longhair or Shorthair section."`
 - **This reminder only appears if all previous Best AB PR positions are filled and there are no other errors for that cell (e.g., status errors for GP/NOV take precedence and block the reminder).**
 
-### Order Validation & Error Precedence (2024-06-21, strictly enforced)
-- For each cell in Best AB PR, only the highest-precedence error is ever shown:
-  1. Duplicate error (within section)
-  2. Status error (GP/NOV from Show Awards)
-  3. Sequential entry error ("You must fill previous placements before entering this position.", only on the first empty cell after the last filled cell, never on filled cells)
-  4. Order error (e.g., "Must be X (Nth PR required by CFA rules)")
-  5. Assignment reminder (e.g., "must be assigned to either Longhair or Shorthair section")
+### Duplicate Checks
+- There are exactly **four** duplicate check functions, one for each section:
+  - `checkDuplicateCatNumbersInShowAwards` (Top 15)
+  - `checkDuplicateCatNumbersInABPremiersFinals` (Best AB PR)
+  - `checkDuplicateCatNumbersInLHPremiersFinals` (Best LH PR)
+  - `checkDuplicateCatNumbersInSHPremiersFinals` (Best SH PR)
+- **No redundant or legacy duplicate check functions remain.**
+
+### Error Precedence (Finals Sections)
+- For each cell in Best AB PR, Best LH PR, and Best SH PR, only the highest-precedence error is ever shown:
+  1. **Duplicate error** (within section, highest priority)
+  2. **Status error** (GP/NOV/MISSING/INVALID from Show Awards)
+  3. **Sequential entry error** ("You must fill previous placements before entering this position.")
+  4. **Assignment reminder** (e.g., "must be assigned to either Longhair or Shorthair section")
 - The assignment reminder is only shown if there is no duplicate, status, or sequential entry error for that cell.
 - This logic is now strictly enforced in code (see `validatePremiershipTab` in `premiershipValidation.ts`).
-- This matches the Championship tab logic and ensures full UI/UX parity.
+- Debug logging is present in the validation code to trace error assignment and precedence.
 
 ### Error Precedence (2024-06-20, strictly enforced)
 - For each cell in **Best AB PR**, **Best LH PR**, and **Best SH PR**, only the highest-precedence error is ever shown:

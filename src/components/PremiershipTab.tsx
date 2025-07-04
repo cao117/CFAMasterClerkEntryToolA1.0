@@ -2,6 +2,9 @@ import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { handleSaveToCSV, handleRestoreFromCSV } from '../utils/formActions';
 import Modal from './Modal';
 import * as premiershipValidation from '../validation/premiershipValidation';
+import { getBreakpointForRingType, getFinalsPositionsForRingType } from '../validation/premiershipValidation';
+
+
 
 interface Judge {
   id: number;
@@ -104,7 +107,7 @@ export default function PremiershipTab({
 
   // Accessibility: refs for ALL Cat # input fields (Show Awards + Finals)
   // We'll build a 2D array: catInputRefs[columnIndex][verticalRowIndex]
-  const totalCatRows = numAwardRows + (premiershipTotal >= 85 ? 5 : 3) + (premiershipTotal >= 85 ? 5 : 3) + (premiershipTotal >= 85 ? 5 : 3); // Show Awards + Best PR + LH PR + SH PR
+  const totalCatRows = numAwardRows; // Only Show Awards section is rendered for now
   const catInputRefs = useRef<(HTMLInputElement | null)[][]>([]);
   useEffect(() => {
     // Initialize refs 2D array to match columns and totalCatRows
@@ -122,6 +125,7 @@ export default function PremiershipTab({
     }
   }, [columns.length, totalCatRows]);
 
+
   /**
    * Handles focus events for Cat # input fields.
    * Selects all text in the input and sets the focused column.
@@ -135,12 +139,12 @@ export default function PremiershipTab({
   };
 
   // Handler for custom tab/shift+tab navigation for ALL Cat # fields, skipping disabled inputs
-  const handleCatInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, colIdx: number) => {
+  const handleCatInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, colIdx: number, rowIdx: number) => {
     if (e.key === 'Tab') {
       e.preventDefault();
       const lastRow = totalCatRows - 1;
       let nextCol = colIdx;
-      let nextRow = 0;
+      let nextRow = rowIdx;
       let found = false;
       // Helper to check if input is enabled
       const isEnabled = (col: number, row: number) => {
@@ -202,7 +206,7 @@ export default function PremiershipTab({
 
   // --- Helper: Get finals/Best PR counts for a ring type ---
   const getFinalsCount = (ringType: string) =>
-    premiershipValidation.getBreakpointForRingType({
+    getBreakpointForRingType({
       columns,
       showAwards: premiershipTabData.showAwards,
       premiersFinals: premiershipTabData.premiersFinals,
@@ -212,8 +216,8 @@ export default function PremiershipTab({
       premiershipTotal,
       premiershipCounts
     }, ringType);
-  const getFinalsPositionsForRingType = (ringType: string) =>
-    premiershipValidation.getFinalsPositionsForRingType({
+  const getFinalsPositionsForRingTypeLocal = (ringType: string) =>
+    getFinalsPositionsForRingType({
       columns,
       showAwards: premiershipTabData.showAwards,
       premiersFinals: premiershipTabData.premiersFinals,
@@ -287,7 +291,7 @@ export default function PremiershipTab({
       
       // Finals Test Data:
       // For Allbreed columns, Best PR gets ALL PR cats, then split between LH and SH maintaining order
-      const numFinalsPositions = getFinalsPositionsForRingType(column.specialty);
+      const numFinalsPositions = getFinalsPositionsForRingTypeLocal(column.specialty);
       
       if (column.specialty === 'Allbreed') {
         // For Allbreed rings:
@@ -402,11 +406,26 @@ export default function PremiershipTab({
     }));
     
     showSuccess('Test Data Filled', 'Premiership tab has been filled with realistic test data.');
-  }, [columns, getFinalsCount, getFinalsPositionsForRingType, showSuccess, setPremiershipTabData]);
+  }, [columns, getFinalsCount, getFinalsPositionsForRingTypeLocal, showSuccess, setPremiershipTabData]);
+
+  // --- Helper: Check if a cat number is voided anywhere in the column (all sections) ---
+  const isCatNumberVoidedInColumn = (colIdx: number, catNumber: string): boolean => {
+    if (!catNumber || !catNumber.trim()) return false;
+    return (
+      Object.keys(premiershipTabData.voidedShowAwards).some(k => k.startsWith(`${colIdx}-`) && premiershipTabData.showAwards[k]?.catNumber === catNumber && premiershipTabData.voidedShowAwards[k]) ||
+      Object.keys(premiershipTabData.voidedABPremiersFinals).some(k => k.startsWith(`${colIdx}-`) && premiershipTabData.abPremiersFinals[k] === catNumber && premiershipTabData.voidedABPremiersFinals[k]) ||
+      Object.keys(premiershipTabData.voidedLHPremiersFinals).some(k => k.startsWith(`${colIdx}-`) && premiershipTabData.lhPremiersFinals[k] === catNumber && premiershipTabData.voidedLHPremiersFinals[k]) ||
+      Object.keys(premiershipTabData.voidedSHPremiersFinals).some(k => k.startsWith(`${colIdx}-`) && premiershipTabData.shPremiersFinals[k] === catNumber && premiershipTabData.voidedSHPremiersFinals[k])
+    );
+  };
 
   // --- Handler: Update show awards (Premiership Final) ---
   const updateShowAward = (colIdx: number, pos: number, field: 'catNumber' | 'status', value: string) => {
     const key = `${colIdx}-${pos}`;
+    let shouldBeVoided = false;
+    if (value && value.trim() !== '') {
+      shouldBeVoided = isCatNumberVoidedInColumn(colIdx, value);
+    }
     setPremiershipTabData((prev: any) => ({
       ...prev,
       showAwards: {
@@ -415,6 +434,10 @@ export default function PremiershipTab({
           ...prev.showAwards[key] || {},
           [field]: value
         }
+      },
+      voidedShowAwards: {
+        ...prev.voidedShowAwards,
+        [key]: shouldBeVoided ? true : false
       }
     }));
   };
@@ -422,28 +445,23 @@ export default function PremiershipTab({
   // --- Handler: Update finals sections ---
   const updateFinals = (section: 'premiers' | 'ab' | 'lh' | 'sh', colIdx: number, pos: number, value: string) => {
     const key = `${colIdx}-${pos}`;
-    // --- Auto-void logic: if this cat number is already voided elsewhere in the column, void this cell too ---
+    let shouldBeVoided = false;
     if (value && value.trim() !== '') {
-      // Check if this cat number is voided in any other cell in this column (across all sections)
-      const isVoided = (
-        Object.keys(premiershipTabData.voidedShowAwards).some(k => k.startsWith(`${colIdx}-`) && premiershipTabData.showAwards[k]?.catNumber === value && premiershipTabData.voidedShowAwards[k]) ||
-        Object.keys(premiershipTabData.voidedABPremiersFinals).some(k => k.startsWith(`${colIdx}-`) && premiershipTabData.abPremiersFinals[k] === value && premiershipTabData.voidedABPremiersFinals[k]) ||
-        Object.keys(premiershipTabData.voidedLHPremiersFinals).some(k => k.startsWith(`${colIdx}-`) && premiershipTabData.lhPremiersFinals[k] === value && premiershipTabData.voidedLHPremiersFinals[k]) ||
-        Object.keys(premiershipTabData.voidedSHPremiersFinals).some(k => k.startsWith(`${colIdx}-`) && premiershipTabData.shPremiersFinals[k] === value && premiershipTabData.voidedSHPremiersFinals[k])
-      );
-      if (isVoided) {
-        setPremiershipTabData((prev: any) => ({ ...prev, voidedShowAwards: { ...prev.voidedShowAwards, [key]: true }, showAwards: { ...prev.showAwards, [key]: { ...prev.showAwards[key] || {}, status: 'GP' } } }));
-      } else {
-        setPremiershipTabData((prev: any) => ({ ...prev, showAwards: { ...prev.showAwards, [key]: { ...prev.showAwards[key] || {}, status: 'GP' } } }));
-      }
-    } else {
-      // If cat number is cleared, clear void state for this cell
-      setPremiershipTabData((prev: any) => ({ ...prev, voidedShowAwards: { ...prev.voidedShowAwards, [key]: false }, showAwards: { ...prev.showAwards, [key]: { ...prev.showAwards[key] || {}, status: 'GP' } } }));
+      shouldBeVoided = isCatNumberVoidedInColumn(colIdx, value);
     }
-    if (section === 'premiers') setPremiershipTabData((prev: any) => ({ ...prev, premiersFinals: { ...prev.premiersFinals, [key]: value } }));
-    if (section === 'ab') setPremiershipTabData((prev: any) => ({ ...prev, abPremiersFinals: { ...prev.abPremiersFinals, [key]: value } }));
-    if (section === 'lh') setPremiershipTabData((prev: any) => ({ ...prev, lhPremiersFinals: { ...prev.lhPremiersFinals, [key]: value } }));
-    if (section === 'sh') setPremiershipTabData((prev: any) => ({ ...prev, shPremiersFinals: { ...prev.shPremiersFinals, [key]: value } }));
+    // Set voided state for the correct section
+    let voidedKey = '';
+    if (section === 'ab') voidedKey = 'voidedABPremiersFinals';
+    if (section === 'lh') voidedKey = 'voidedLHPremiersFinals';
+    if (section === 'sh') voidedKey = 'voidedSHPremiersFinals';
+    setPremiershipTabData((prev: any) => ({
+      ...prev,
+      ...(section === 'premiers' ? { premiersFinals: { ...prev.premiersFinals, [key]: value } } : {}),
+      ...(section === 'ab' ? { abPremiersFinals: { ...prev.abPremiersFinals, [key]: value } } : {}),
+      ...(section === 'lh' ? { lhPremiersFinals: { ...prev.lhPremiersFinals, [key]: value } } : {}),
+      ...(section === 'sh' ? { shPremiersFinals: { ...prev.shPremiersFinals, [key]: value } } : {}),
+      ...(voidedKey ? { [voidedKey]: { ...prev[voidedKey], [key]: shouldBeVoided ? true : false } } : {}),
+    }));
   };
 
   // --- Handler: Blur events for show awards - run validation here (like ChampionshipTab) ---
@@ -464,11 +482,7 @@ export default function PremiershipTab({
         setErrors((prev: any) => ({ ...prev, [errorKey]: 'You must fill previous placements before entering this position.' }));
         return;
       }
-      // Duplicate validation
-      if (premiershipValidation.checkDuplicateCatNumbersInShowAwards(input, colIdx, value, key)) {
-        setErrors((prev: any) => ({ ...prev, [errorKey]: 'Duplicate cat number within this column' }));
-        return;
-      }
+      // Duplicate validation REMOVED: always rely on main validation function for duplicate errors
     }
     
     // Always trigger full validation after any blur to ensure all relationship-based errors are applied
@@ -476,8 +490,8 @@ export default function PremiershipTab({
   };
 
   // --- Handler: Blur events for finals - run validation here (like ChampionshipTab) ---
-  const handleFinalsBlur = (section: 'premiers' | 'ab' | 'lh' | 'sh', colIdx: number, pos: number, value: string) => {
-    const errorKey = `${section === 'premiers' ? 'premiers' : section === 'ab' ? 'abPremiersFinals' : section === 'lh' ? 'lhPremiersFinals' : 'shPremiersFinals'}-${colIdx}-${pos}`;
+  const handleFinalsBlur = (section: 'ab' | 'lh' | 'sh', colIdx: number, pos: number, value: string) => {
+    const errorKey = `${section === 'ab' ? 'abPremiersFinals' : section === 'lh' ? 'lhPremiersFinals' : 'shPremiersFinals'}-${colIdx}-${pos}`;
     const key = `${colIdx}-${pos}`;
     const input = createValidationInput();
     
@@ -489,16 +503,13 @@ export default function PremiershipTab({
         return;
       }
       // Sequential entry validation
-      if (!premiershipValidation.validateSequentialEntry(input, section === 'premiers' ? 'premiers' : section === 'ab' ? 'abPremiers' : section === 'lh' ? 'lhPremiers' : 'shPremiers', colIdx, pos, value)) {
+      if (!premiershipValidation.validateSequentialEntry(input, section === 'ab' ? 'abPremiers' : section === 'lh' ? 'lhPremiers' : 'shPremiers', colIdx, pos, value)) {
         setErrors((prev: any) => ({ ...prev, [errorKey]: 'You must fill previous placements before entering this position.' }));
         return;
       }
       // Duplicate validation
       let hasDuplicate = false;
       switch (section) {
-        case 'premiers':
-          hasDuplicate = premiershipValidation.checkDuplicateCatNumbersInPremiersFinals(input, colIdx, value, key);
-          break;
         case 'ab':
           hasDuplicate = premiershipValidation.checkDuplicateCatNumbersInABPremiersFinals(input, colIdx, value, key);
           break;
@@ -768,7 +779,7 @@ export default function PremiershipTab({
                           const key = `${colIdx}-${i}`;
                           const cell = premiershipTabData.showAwards[key] || { catNumber: '', status: 'GP' };
                           const voided = getVoidState('showAwards', colIdx, i);
-                          const error = errors[`showAwards-${colIdx}-${i}`];
+                          const error = errors[`${colIdx}-${i}`];
                           return (
                             <td key={`final-${i}-${colIdx}`} className={`py-2 px-2 border-r border-gray-300 align-top${shouldApplyRingGlow(colIdx) ? ' ring-glow' : ''}`}>
                               <div className="flex flex-col items-start">
@@ -782,18 +793,10 @@ export default function PremiershipTab({
                                     onChange={e => updateShowAward(colIdx, i, 'catNumber', e.target.value)}
                                     onBlur={e => handleShowAwardBlur(colIdx, i, 'catNumber', e.target.value)}
                                     onFocus={e => handleCatInputFocus(e, colIdx)}
+                                    onKeyDown={e => handleCatInputKeyDown(e, colIdx, i)}
                                     ref={el => {
                                       if (!catInputRefs.current[colIdx]) catInputRefs.current[colIdx] = [];
                                       catInputRefs.current[colIdx][i] = el;
-                                      if (colIdx === 0 && i === 0) {
-                                        // Focus immediately when the ref is set (if tab is active and we haven't focused yet)
-                                        if (el && isActive) {
-                                          setTimeout(() => {
-                                            el.focus();
-                                            setFocusedColumnIndex(0);
-                                          }, 0);
-                                        }
-                                      }
                                     }}
                                     maxLength={6}
                                     disabled={voided}
@@ -836,14 +839,14 @@ export default function PremiershipTab({
                   ) : null
                 ))}
                 {/* Best AB PR Section (Allbreed only) */}
-                {Array.from({ length: Math.max(...columns.map(col => col.specialty === 'Allbreed' ? getFinalsPositionsForRingType(col.specialty) : 0)) }, (_, i) => (
-                  columns.some(col => col.specialty === 'Allbreed' && i < getFinalsPositionsForRingType(col.specialty)) ? (
+                        {Array.from({ length: Math.max(...columns.map(col => col.specialty === 'Allbreed' ? getFinalsPositionsForRingTypeLocal(col.specialty) : 0)) }, (_, i) => (
+          columns.some(col => col.specialty === 'Allbreed' && i < getFinalsPositionsForRingTypeLocal(col.specialty)) ? (
                     <tr key={`abpr-${i}`} className="cfa-table-row">
                       <td className="py-2 pl-4 font-medium text-sm border-r border-gray-300 bg-white frozen-column" style={{ width: '140px', minWidth: '140px' }}>
                         {getOrdinalLabel(i, 'AB')}
                       </td>
                       {columns.map((col, colIdx) => {
-                        if (col.specialty === 'Allbreed' && i < getFinalsPositionsForRingType(col.specialty)) {
+                        if (col.specialty === 'Allbreed' && i < getFinalsPositionsForRingTypeLocal(col.specialty)) {
                           const key = `${colIdx}-${i}`;
                           const value = premiershipTabData.abPremiersFinals[key] || '';
                           const voided = getVoidState('ab', colIdx, i);
@@ -861,7 +864,11 @@ export default function PremiershipTab({
                                     onBlur={e => handleFinalsBlur('ab', colIdx, i, e.target.value)}
                                     disabled={voided}
                                     onFocus={e => handleCatInputFocus(e, colIdx)}
-                                    onKeyDown={e => handleCatInputKeyDown(e, colIdx)}
+                                    onKeyDown={e => handleCatInputKeyDown(e, colIdx, i)}
+                                    ref={el => {
+                                      if (!catInputRefs.current[colIdx]) catInputRefs.current[colIdx] = [];
+                                      catInputRefs.current[colIdx][i] = el;
+                                    }}
                                   />
                                   {value && (
                                     <input
@@ -888,14 +895,14 @@ export default function PremiershipTab({
                   ) : null
                 ))}
                 {/* Best LH PR Section (Allbreed and Longhair) */}
-                {Array.from({ length: Math.max(...columns.map(col => (col.specialty === 'Allbreed' || col.specialty === 'Longhair') ? getFinalsPositionsForRingType(col.specialty) : 0)) }, (_, i) => (
-                  columns.some(col => (col.specialty === 'Allbreed' || col.specialty === 'Longhair') && i < getFinalsPositionsForRingType(col.specialty)) ? (
+                        {Array.from({ length: Math.max(...columns.map(col => (col.specialty === 'Allbreed' || col.specialty === 'Longhair') ? getFinalsPositionsForRingTypeLocal(col.specialty) : 0)) }, (_, i) => (
+          columns.some(col => (col.specialty === 'Allbreed' || col.specialty === 'Longhair') && i < getFinalsPositionsForRingTypeLocal(col.specialty)) ? (
                     <tr key={`lhpr-${i}`} className="cfa-table-row">
                       <td className="py-2 pl-4 font-medium text-sm border-r border-gray-300 bg-white frozen-column" style={{ width: '140px', minWidth: '140px' }}>
                         {getOrdinalLabel(i, 'LH')}
                       </td>
                       {columns.map((col, colIdx) => {
-                        if ((col.specialty === 'Allbreed' || col.specialty === 'Longhair') && i < getFinalsPositionsForRingType(col.specialty)) {
+                        if ((col.specialty === 'Allbreed' || col.specialty === 'Longhair') && i < getFinalsPositionsForRingTypeLocal(col.specialty)) {
                           const key = `${colIdx}-${i}`;
                           const value = premiershipTabData.lhPremiersFinals[key] || '';
                           const voided = getVoidState('lh', colIdx, i);
@@ -913,7 +920,11 @@ export default function PremiershipTab({
                                     onBlur={e => handleFinalsBlur('lh', colIdx, i, e.target.value)}
                                     disabled={voided}
                                     onFocus={e => handleCatInputFocus(e, colIdx)}
-                                    onKeyDown={e => handleCatInputKeyDown(e, colIdx)}
+                                    onKeyDown={e => handleCatInputKeyDown(e, colIdx, i)}
+                                    ref={el => {
+                                      if (!catInputRefs.current[colIdx]) catInputRefs.current[colIdx] = [];
+                                      catInputRefs.current[colIdx][i] = el;
+                                    }}
                                   />
                                   {value && (
                                     <input
@@ -940,14 +951,14 @@ export default function PremiershipTab({
                   ) : null
                 ))}
                 {/* Best SH PR Section (Allbreed and Shorthair) */}
-                {Array.from({ length: Math.max(...columns.map(col => (col.specialty === 'Allbreed' || col.specialty === 'Shorthair') ? getFinalsPositionsForRingType(col.specialty) : 0)) }, (_, i) => (
-                  columns.some(col => (col.specialty === 'Allbreed' || col.specialty === 'Shorthair') && i < getFinalsPositionsForRingType(col.specialty)) ? (
+                        {Array.from({ length: Math.max(...columns.map(col => (col.specialty === 'Allbreed' || col.specialty === 'Shorthair') ? getFinalsPositionsForRingTypeLocal(col.specialty) : 0)) }, (_, i) => (
+          columns.some(col => (col.specialty === 'Allbreed' || col.specialty === 'Shorthair') && i < getFinalsPositionsForRingTypeLocal(col.specialty)) ? (
                     <tr key={`shpr-${i}`} className="cfa-table-row">
                       <td className="py-2 pl-4 font-medium text-sm border-r border-gray-300 bg-white frozen-column" style={{ width: '140px', minWidth: '140px' }}>
                         {getOrdinalLabel(i, 'SH')}
                       </td>
                       {columns.map((col, colIdx) => {
-                        if ((col.specialty === 'Allbreed' || col.specialty === 'Shorthair') && i < getFinalsPositionsForRingType(col.specialty)) {
+                        if ((col.specialty === 'Allbreed' || col.specialty === 'Shorthair') && i < getFinalsPositionsForRingTypeLocal(col.specialty)) {
                           const key = `${colIdx}-${i}`;
                           const value = premiershipTabData.shPremiersFinals[key] || '';
                           const voided = getVoidState('sh', colIdx, i);
@@ -965,7 +976,11 @@ export default function PremiershipTab({
                                     onBlur={e => handleFinalsBlur('sh', colIdx, i, e.target.value)}
                                     disabled={voided}
                                     onFocus={e => handleCatInputFocus(e, colIdx)}
-                                    onKeyDown={e => handleCatInputKeyDown(e, colIdx)}
+                                    onKeyDown={e => handleCatInputKeyDown(e, colIdx, i)}
+                                    ref={el => {
+                                      if (!catInputRefs.current[colIdx]) catInputRefs.current[colIdx] = [];
+                                      catInputRefs.current[colIdx][i] = el;
+                                    }}
                                   />
                                   {value && (
                                     <input

@@ -412,6 +412,7 @@ function App() {
         getShowState={getShowState} // Accepts full show state
         householdPetTabData={householdPetTabData}
         setHouseholdPetTabData={setHouseholdPetTabData}
+        onTabReset={() => setHouseholdPetTabData({ showAwards: {}, voidedShowAwards: {} })}
       />,
       disabled: showData.householdPetCount <= 0
     }

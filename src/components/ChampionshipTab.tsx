@@ -3,6 +3,11 @@ import React from 'react';
 import Modal from './Modal';
 import { 
   validateChampionshipTab, 
+  validateCatNumber,
+  validateSequentialEntry,
+  checkDuplicateCatNumbersInChampionsFinals,
+  checkDuplicateCatNumbersInLHChampionsFinals,
+  checkDuplicateCatNumbersInSHChampionsFinals,
   type CellData
 } from '../validation/championshipValidation';
 import { handleSaveToCSV, handleRestoreFromCSV } from '../utils/formActions';
@@ -691,7 +696,7 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
     // Helper function to get appropriate border styling for errors (always red)
     const getBorderStyle = (errorKey: string) => {
       if (errors[errorKey]) {
-        return 'border-red-500'; // Always red border for errors
+        return 'cfa-input-error'; // Use CFA input error styling with red background fill
       }
       return 'border-gray-300';
     };
@@ -830,6 +835,56 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
       const count = getChampionshipCountForRingType(ringType);
       return count >= 85 ? 5 : 3;
     };
+
+    // --- Handler: Blur events for finals - run validation here (like PremiershipTab) ---
+    const handleFinalsBlur = (section: 'champions' | 'lhChampions' | 'shChampions', columnIndex: number, position: number, value: string) => {
+      const errorKey = `${section === 'champions' ? 'champions' : section === 'lhChampions' ? 'lhChampions' : 'shChampions'}-${columnIndex}-${position}`;
+      const key = `${columnIndex}-${position}`;
+      const input = {
+        columns,
+        showAwards: championshipTabData.showAwards,
+        championsFinals: championshipTabData.championsFinals,
+        lhChampionsFinals: championshipTabData.lhChampionsFinals,
+        shChampionsFinals: championshipTabData.shChampionsFinals,
+        championshipTotal,
+        championshipCounts,
+        voidedShowAwards: championshipTabData.voidedShowAwards,
+        voidedChampionsFinals: championshipTabData.voidedChampionsFinals,
+        voidedLHChampionsFinals: championshipTabData.voidedLHChampionsFinals,
+        voidedSHChampionsFinals: championshipTabData.voidedSHChampionsFinals
+      };
+      
+      // Run basic validation for this input
+      if (value.trim() !== '') {
+        // Validate cat number format
+        if (!validateCatNumber(value)) {
+          setErrors((prev: any) => ({ ...prev, [errorKey]: 'Cat number must be between 1-450' }));
+          return;
+        }
+        // Sequential entry validation
+        if (!validateSequentialEntry(input, section, columnIndex, position, value)) {
+          setErrors((prev: any) => ({ ...prev, [errorKey]: 'You must fill previous placements before entering this position.' }));
+          return;
+        }
+        // Duplicate validation
+        let hasDuplicate = false;
+        switch (section) {
+          case 'champions':
+            hasDuplicate = checkDuplicateCatNumbersInChampionsFinals(input, columnIndex, value, key);
+            break;
+          case 'lhChampions':
+            hasDuplicate = checkDuplicateCatNumbersInLHChampionsFinals(input, columnIndex, value, key);
+            break;
+          case 'shChampions':
+            hasDuplicate = checkDuplicateCatNumbersInSHChampionsFinals(input, columnIndex, value, key);
+            break;
+        }
+        // Don't return early for duplicate; let full validation handle it
+        setErrors(validateChampionshipTab(input));
+      }
+    };
+
+    // --- Handler: Update finals sections ---
 
     if (judges.length === 0) {
       return (
@@ -1068,6 +1123,7 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                                       onBlur={(e) => {
                                         updateFinals('champions', columnIndex, i, e.target.value);
                                         setLocalInputState(prev => { const copy = { ...prev }; delete copy[errorKey]; return copy; });
+                                        handleFinalsBlur('champions', columnIndex, i, e.target.value);
                                       }}
                                       ref={el => {
                                         if (!catInputRefs.current[columnIndex]) {
@@ -1095,7 +1151,10 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                                     )}
                                   </div>
                                   {errors[errorKey] && (
-                                    <div className="text-xs mt-1" style={getErrorStyle()}>{getCleanMessage(errors[errorKey])}</div>
+                                    <>
+                                      {console.log('[ChampionshipTab] Render error for', errorKey, errors[errorKey])}
+                                      <div className="text-xs mt-1" style={getErrorStyle()}>{getCleanMessage(errors[errorKey])}</div>
+                                    </>
                                   )}
                                 </div>
                               </td>
@@ -1147,6 +1206,7 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                                       onBlur={(e) => {
                                         updateFinals('lhChampions', columnIndex, i, e.target.value);
                                         setLocalInputState(prev => { const copy = { ...prev }; delete copy[errorKey]; return copy; });
+                                        handleFinalsBlur('lhChampions', columnIndex, i, e.target.value);
                                       }}
                                       ref={el => {
                                         if (!catInputRefs.current[columnIndex]) {
@@ -1226,6 +1286,7 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                                       onBlur={(e) => {
                                         updateFinals('shChampions', columnIndex, i, e.target.value);
                                         setLocalInputState(prev => { const copy = { ...prev }; delete copy[errorKey]; return copy; });
+                                        handleFinalsBlur('shChampions', columnIndex, i, e.target.value);
                                       }}
                                       ref={el => {
                                         if (!catInputRefs.current[columnIndex]) {

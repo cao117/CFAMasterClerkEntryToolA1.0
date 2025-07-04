@@ -40,6 +40,9 @@ type KittenTabData = {
   isResetModalOpen: boolean;
 };
 
+/**
+ * Voiding logic: If a cat number is voided anywhere in a column, all instances of that cat number in that column are voided (including new ones). Unchecking void in any cell unvoids all. This logic applies across the full column, matching Championship and Premiership tabs.
+ */
 export default function KittenTab({
   judges,
   kittenCounts,
@@ -106,7 +109,11 @@ export default function KittenTab({
     catInputRefs.current = Array.from({ length: columns.length }, () => Array(totalCatRows).fill(null));
   }, [columns.length, totalCatRows]);
 
-
+  // --- Helper: Check if a cat number is voided anywhere in the column (all sections) ---
+  const isCatNumberVoidedInColumn = (colIdx: number, catNumber: string): boolean => {
+    if (!catNumber || !catNumber.trim()) return false;
+    return Object.keys(kittenTabData.voidedShowAwards).some(k => k.startsWith(`${colIdx}-`) && kittenTabData.showAwards[k]?.catNumber === catNumber && kittenTabData.voidedShowAwards[k]);
+  };
 
   // --- Handlers for focus and keyboard navigation ---
   const handleCatInputFocus = (e: React.FocusEvent<HTMLInputElement>, columnIndex: number) => {
@@ -171,6 +178,13 @@ export default function KittenTab({
   // --- Update kitten placement (cat number) ---
   const updateShowAward = (colIdx: number, pos: number, field: 'catNumber' | 'status', value: string) => {
     const key = `${colIdx}-${pos}`;
+    
+    // --- Auto-void logic: if this cat number is already voided elsewhere in the column, void this cell too ---
+    let shouldBeVoided = false;
+    if (field === 'catNumber' && value && value.trim() !== '') {
+      shouldBeVoided = isCatNumberVoidedInColumn(colIdx, value);
+    }
+    
     setKittenTabData((prev: KittenTabData) => {
       if (field === 'catNumber') {
         const prevCell = prev.showAwards?.[key] || {};
@@ -179,13 +193,6 @@ export default function KittenTab({
           catNumber: value,
           status: 'KIT',
         };
-        // Voiding logic: if this cat number is voided elsewhere in the column, void this cell too
-        if (value && value.trim() !== '') {
-          const isVoided = Object.keys(prev.voidedShowAwards || {}).some(k => k.startsWith(`${colIdx}-`) && prev.showAwards?.[k]?.catNumber === value && prev.voidedShowAwards?.[k]);
-          setKittenTabDataVoidState(colIdx, pos, isVoided);
-        } else {
-          setKittenTabDataVoidState(colIdx, pos, false);
-        }
         return {
           ...prev,
           showAwards: {
@@ -205,6 +212,11 @@ export default function KittenTab({
         }
       };
     });
+    
+    // Set void state after updating the data (outside the callback for proper timing)
+    if (field === 'catNumber') {
+      setKittenTabDataVoidState(colIdx, pos, shouldBeVoided);
+    }
   };
 
   // --- Voiding logic ---
@@ -260,7 +272,7 @@ export default function KittenTab({
   // Helper function to get appropriate border styling for errors (always red)
   const getBorderStyle = (errorKey: string) => {
     if (errors[errorKey]) {
-      return 'border-red-500'; // Always red border for errors
+      return 'cfa-input-error'; // Use CFA input error styling with red background fill
     }
     return 'border-gray-300';
   };
@@ -455,7 +467,20 @@ export default function KittenTab({
                                     type="checkbox"
                                     className="void-checkbox"
                                     checked={voided}
-                                    onChange={e => setKittenTabDataVoidState(colIdx, i, e.target.checked)}
+                                    onChange={e => {
+                                      const newVoided = !voided;
+                                      const catNumber = cell.catNumber;
+                                      
+                                      if (catNumber) {
+                                        // Iterate through all positions in the same column (colIdx)
+                                        for (let pos = 0; pos < maxFinalRows; pos++) {
+                                          const otherCell = getShowAward(colIdx, pos);
+                                          if (otherCell.catNumber === catNumber) {
+                                            setKittenTabDataVoidState(colIdx, pos, newVoided);
+                                          }
+                                        }
+                                      }
+                                    }}
                                     disabled={!cell.catNumber}
                                   />
                                 )}

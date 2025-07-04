@@ -4,6 +4,93 @@ This changelog records all changes, additions, and deletions to validation rules
 
 ---
 
+### [2024-12-19] Championship Tab: Error Precedence Order Fix - Status Before Sequential
+- **Tab:** Championship
+- **Change:** Fixed error precedence order in Championship tab to match correct validation hierarchy
+- **Summary:** 
+  - Reordered validation logic in `validateColumnRelationships` function to check status errors BEFORE sequential errors
+  - Correct precedence order is now: duplicate > status (GC/NOV/MISSING/INVALID) > sequential > order > assignment reminder
+  - Status errors (GC/NOV/MISSING/INVALID) are now checked first, then sequential errors, then assignment reminders
+  - This ensures users see the most critical errors first (status issues) before less critical ones (sequential entry)
+- **Rationale:** The previous order was incorrect - status errors should take precedence over sequential errors since a cat being GC/NOV is more critical than filling positions in order
+- **Impact:** Users now see proper error precedence: status errors appear before sequential errors, providing clearer validation feedback
+
+### [2024-12-19] Premiership Tab: Error Precedence Order Fix - Status Before Sequential
+- **Tab:** Premiership
+- **Change:** Fixed error precedence order in Premiership tab to match Championship tab and correct validation hierarchy
+- **Summary:** 
+  - Reordered validation logic in `validateColumnRelationships` function to check status errors BEFORE sequential errors
+  - **Top 15 (Show Awards)**: duplicate > sequential
+  - **Best AB PR, Best LH PR, Best SH PR**: duplicate > status (GP/NOV/MISSING/INVALID) > sequential > order > assignment reminder
+  - Status errors (GP/NOV/MISSING/INVALID) are now checked first, then sequential errors, then assignment reminders
+  - This ensures users see the most critical errors first (status issues) before less critical ones (sequential entry)
+- **Rationale:** The previous order was incorrect - status errors should take precedence over sequential errors since a cat being GP/NOV is more critical than filling positions in order. This matches the Championship tab logic.
+- **Impact:** Users now see proper error precedence: status errors appear before sequential errors, providing clearer validation feedback and full parity with Championship tab
+
+### [2024-12-19] Championship Tab: Key Format Fix - Duplicate Error Detection Now Working
+- **Tab:** Championship
+- **Change:** Fixed critical bug where duplicate errors were not being detected due to key format mismatch
+- **Summary:** 
+  - Updated `validateChampionshipTab` and `validateColumnRelationships` functions to use correct key format
+  - Changed from `"champions-${columnIndex}-${position}"` to `"${columnIndex}-${position}"` to match data storage format
+  - Duplicate error detection now works correctly and takes precedence over assignment reminders
+  - Error precedence order is now properly enforced: duplicate > status > sequential > order > reminder
+- **Rationale:** The validation functions were looking for data with keys that didn't match how the data was actually stored, causing duplicate detection to fail silently
+- **Impact:** Users can now see proper duplicate errors when entering the same cat number in multiple positions
+
+### [2024-12-19] Championship Tab: Error Precedence Fix - Duplicate Errors Now Take Precedence
+- **Tab:** Championship
+- **Change:** Fixed critical bug where status errors (GC/NOV) were overriding duplicate errors in the Championship tab
+- **Summary:** 
+  - Added proper error precedence logic to `validateChampionshipTab` function in `championshipValidation.ts`
+  - Implemented the same precedence order as Premiership tab: duplicate > status > sequential > order > reminder
+  - Now when a cat number appears in multiple positions (e.g., "1" in both "Best AB CH" and "3rd Best AB CH"), both cells correctly show "Duplicate cat number within this section of the final" instead of status errors
+  - This ensures duplicate errors are never overwritten by lower-priority errors
+- **Rationale:** The Championship tab was missing proper error precedence logic, causing confusing validation behavior where users would see status errors instead of the more critical duplicate errors. This fix ensures consistent behavior with the Premiership tab and provides clear, actionable error messages.
+
+### [2024-12-19] Premiership Tab: Input Focus and Navigation Fix
+- **Tab:** Premiership
+- **Change:** Fixed critical bug where users could not click into position 2 (and subsequent positions) in the Show Awards section
+- **Summary:** The issue was caused by missing `onKeyDown` handler in the Show Awards input fields. The keyboard navigation system (`handleCatInputKeyDown`) was not properly connected to the Show Awards inputs, preventing proper focus management and navigation between positions. Added the missing `onKeyDown={e => handleCatInputKeyDown(e, colIdx)}` handler to the Show Awards input fields to match the other sections (AB PR, LH PR, SH PR).
+- **Rationale:** This was a critical UI bug that prevented users from clicking into and navigating between input fields in the Show Awards section. The fix ensures consistent keyboard navigation behavior across all sections and allows normal mouse clicking and focus management.
+
+### [2024-12-19] Premiership Tab: Keyboard Navigation Parameter Fix
+- **Tab:** Premiership
+- **Change:** Fixed keyboard navigation bug where clicking anywhere would jump back to the first input field
+- **Summary:** The `handleCatInputKeyDown` function was missing the `rowIdx` parameter that the Championship tab uses, causing the navigation system to always jump to the first position instead of properly navigating between fields.
+- **Solution:** Updated the `handleCatInputKeyDown` function signature to accept `(e, colIdx, rowIdx)` and updated all calls to include the row index parameter.
+- **Rationale:** The keyboard navigation system was broken, making it impossible to properly navigate between input fields. This fix aligns the Premiership tab's navigation with the working Championship tab implementation.
+
+### [2024-12-19] Championship Tab: Finals Section Validation Fix
+- **Tab:** Championship
+- **Change:** Fixed critical bug where validation was not working for AB CH, LH CH, and SH CH sections
+- **Summary:** 
+  - Added missing `handleFinalsBlur` function that triggers validation immediately on blur for all finals sections
+  - Added proper blur handlers to all finals input fields (Best AB CH, Best LH CH, Best SH CH)
+  - Imported missing validation functions (`validateCatNumber`, `validateSequentialEntry`, duplicate check functions)
+  - This ensures validation errors (GC/NOV status, duplicates, sequential entry, assignment reminders) appear immediately when users click away from inputs
+- **Rationale:** The Championship tab was missing immediate validation triggers for finals sections, causing validation errors to not appear until the next state change. This fix ensures real-time validation feedback matching the working Premiership tab behavior.
+
+### [2024-12-19] Premiership Tab: Auto-Focus Logic Removal
+- **Tab:** Premiership
+- **Change:** Removed problematic auto-focus logic that was forcing focus back to the first input field
+- **Summary:** 
+  - Removed the `useEffect` that automatically focused the first input whenever columns or rows changed
+  - Removed the auto-focus logic in the ref assignment that was forcing focus to the first input when the component re-rendered
+  - This allows normal mouse clicking and focus management without interference
+- **Rationale:** The auto-focus logic was causing the focus to jump back to the first input whenever the component re-rendered or when users tried to click on other inputs. This prevented normal interaction with the form and made it impossible to navigate between fields using the mouse.
+
+### [2024-12-19] Premiership Tab: Keyboard Navigation Refs and Row Count Fix
+- **Tab:** Premiership
+- **Change:** Fixed keyboard navigation issues by adding missing refs to all input sections and correcting row count calculation
+- **Summary:** 
+  - Added missing `ref` assignments to AB PR, LH PR, and SH PR input sections so keyboard navigation can properly focus these elements
+  - Corrected `totalCatRows` calculation to only include the Show Awards section (which is currently the only section rendered), instead of including all sections as one continuous table
+  - This prevents the navigation system from trying to access non-existent rows in other sections
+- **Rationale:** The keyboard navigation was failing because it couldn't properly reference input elements in some sections and was trying to navigate through rows that don't exist in the current UI structure. This fix ensures proper focus management and navigation within the actual rendered sections.
+
+---
+
 ### [2024-12-19] Championship Tab: Hair-Specific Breakpoint Implementation
 - **Tab:** Championship
 - **Change:** Implemented hair-specific breakpoint logic for championship cats. The system now calculates breakpoints based on ring type:
@@ -333,6 +420,28 @@ This changelog records all changes, additions, and deletions to validation rules
 ## 2024-06-21
 - [Championship Tab] Strict error precedence for Best AB CH now enforced: duplicate > status > sequential entry > order > assignment reminder. Assignment reminder only shown if all previous errors are absent. See championshipValidation.ts for details.
 
+### [2024-06-21] Premiership Tab: Error Precedence Order Fix - Duplicate Before Status
+- **Tab:** Premiership
+- **Change:** Fixed error precedence order in AB/LH/SH PR finals to strictly enforce: duplicate > status (GP/NOV/MISSING/INVALID) > sequential > assignment reminder
+- **Summary:**
+  - Refactored `validatePremiershipTab` to check and assign duplicate errors first for all finals sections
+  - Status errors are now only set if no duplicate error is present
+  - Sequential errors are only set if no duplicate or status error is present
+  - Assignment reminders are only set if no other error is present
+  - This matches the Championship tab logic and ensures duplicate errors are never overwritten
+- **Rationale:** Users expect duplicate errors to always take precedence and be visible in all involved cells. Previous logic could allow status errors to overwrite duplicate errors, causing confusion.
+- **Impact:** Users will see duplicate errors in all involved cells, and status/sequential/assignment errors only if no duplicate.
+
+### [2024-06-21] Premiership Tab: Redundant Duplicate Check Function Removed
+- **Tab:** Premiership
+- **Change:** Removed redundant `checkDuplicateCatNumbersInPremiersFinals` function that was duplicating the same logic as `checkDuplicateCatNumbersInABPremiersFinals`
+- **Summary:**
+  - Both functions were checking duplicates in the same section (Best AB PR)
+  - Marked the redundant function as deprecated and made it delegate to the correct function
+  - This eliminates confusion and potential bugs from having multiple functions for the same validation
+- **Rationale:** Having multiple functions for the same validation logic creates confusion and potential bugs. The Premiership tab should have exactly 4 duplicate check functions (one per section), matching the Championship tab structure.
+- **Impact:** Cleaner codebase with no redundant validation functions. All duplicate checks now use the correct, non-redundant functions.
+
 ### [2024-06-22] Household Cats Tab: Placeholder Tab and Documentation Created
 - **Tab:** Household Cats
 - **Change:** Added a new Household Cats tab to the UI (after Premiership tab). For now, the tab is a placeholder with 'Coming soon...' and no logic. Created docs/validation/VALIDATION_HOUSEHOLD.md as a placeholder for future validation rules.
@@ -431,7 +540,36 @@ This changelog records all changes, additions, and deletions to validation rules
   - **Maintained**: All validation logic and error handling remains unchanged
 - **Rationale:** Simplifies the user interface by removing redundant functionality and improves visual consistency with CFA branding. The "Save to CSV" button now serves both temporary and final export purposes, while "Load from CSV" provides clear import functionality with distinctive navy blue styling.
 
+### [2024-06-22] ChampionshipTab Finals Error Keying & Section Separation Fix
+- **Area:** src/validation/championshipValidation.ts
+- **Change:** All finals errors are now assigned to section-prefixed keys (e.g., `champions-0-0`). Top 15 errors use only plain keys (e.g., `0-0`). This prevents finals errors from leaking into the Top 15 section and vice versa.
+- **Rationale:** Previously, finals errors could appear in the Top 15 section due to non-prefixed keys. Now, error assignment is strictly separated by section, ensuring robust, user-friendly validation and correct error display.
+- **User Impact:** Users will no longer see finals errors in the Top 15 section or vice versa. Error display is now accurate and matches user expectations.
+
+### [2024-06-22] ChampionshipTab Finals Duplicate/Status Error Precedence Fix
+- **Area:** src/validation/championshipValidation.ts
+- **Change:** All finals errors now use section-prefixed keys (e.g., `champions-0-0`). When a duplicate is found, all involved cells receive the duplicate error. If a duplicate error is present for a cell, no other error (status, sequential, etc.) is assigned to that cell. When merging errors, duplicate errors are never overwritten. This matches PremiershipTab and resolves the bug where only one cell showed the duplicate error or status errors took precedence.
+- **User Impact:** Both “1 AB CH” and “3 AB CH” now always show the duplicate error if the same cat number is entered, regardless of status, matching PremiershipTab behavior.
+
+### [2024-06-22] ChampionshipTab Finals Duplicate Error Precedence Bugfix
+- **Area:** src/validation/championshipValidation.ts
+- **Change:** Fixed a bug where only one cell in the finals (Best AB CH, etc.) would show a duplicate error if the same cat number was entered in multiple positions, and other cells could show sequential or status errors instead. Now, duplicate errors are always assigned to all involved cells, and no other error (status, sequential, etc.) can overwrite a duplicate error in finals.
+- **Rationale:** Ensures robust, user-friendly error display and matches the intended behavior and the Premiership tab. Prevents confusion from seeing a sequential or status error when a duplicate exists.
+- **User Impact:** Both (or all) cells with the same cat number in finals will always show the duplicate error, and never a lower-precedence error. This makes error feedback clear and consistent.
+
 ---
+
+### [2024-06-22] Premiership Tab: Full Validation Logic Refactor for Strict Error Precedence and Parity
+- **Tab:** Premiership
+- **Change:** Complete refactor of validation logic in `premiershipValidation.ts`.
+- **Summary:**
+  - All validation logic is now implemented in `validatePremiershipTab`.
+  - Strict error precedence is enforced: duplicate > status (GP/NOV/MISSING/INVALID) > sequential > assignment reminder.
+  - All error keys and data keys use section prefixes and hyphens (e.g., `abPremiers-0-1`).
+  - There are exactly four duplicate check functions, one per section.
+  - Debug logging is present at all critical validation and error-merging points.
+  - Documentation and code are now in full parity with the Championship tab, except for PR/GP/NOV domain differences and 50/15/10/3/2 breakpoints.
+- **Rationale:** Ensures robust, user-friendly, and maintainable error handling, strict adherence to project rules, and complete documentation parity.
 
 ## How to Use This Log
 - For every change to validation logic, add a new entry here with the date, tab, summary, and rationale/context.
@@ -439,3 +577,75 @@ This changelog records all changes, additions, and deletions to validation rules
 
 ## Last Updated
 - 2024-06-09 
+
+### [2024-12-19] Kitten and Household Pet Tabs: Column-Wide Voiding Logic Fix
+- **Tabs:** Kitten, Household Pet
+- **Change:** Fixed critical bug where voiding and unvoiding a cat number did not affect all instances of that cat number in the same column
+- **Summary:** 
+  - **KittenTab**: The void checkbox logic was incomplete - it only handled unvoiding but not voiding. Fixed to handle both cases: when voiding a cat number, all instances of that cat number in the same column are voided; when unvoiding, all instances are unvoided.
+  - **HouseholdPetTab**: Same issue as KittenTab - incomplete void checkbox logic. Fixed to handle both voiding and unvoiding cases for all instances of the same cat number in the column.
+  - Both tabs now correctly implement column-wide voiding behavior that matches Championship and Premiership tabs.
+- **Rationale:** The previous logic was broken and only handled unvoiding, causing inconsistent behavior where voiding one instance of a cat number would not void other instances in the same column. This fix ensures consistent voiding behavior across all tabs.
+- **Impact:** Users can now expect that when they void or unvoid a cat number, all instances of that cat number in the same column will be affected, providing consistent behavior across all tabs.
+
+### [2024-12-19] Household Pet Tab: Void Checkbox Logic Fix
+- **Tab:** Household Pet
+- **Change:** Fixed critical bug where void checkbox was not clickable after entering a cat number
+- **Summary:** 
+  - **HouseholdPetTab**: The void checkbox `onChange` handler was incorrectly using `!e.target.checked` instead of `!voided`. This created a logic error where clicking the checkbox would set the wrong void state, making it appear unclickable.
+  - Fixed to use `!voided` (the current voided state) instead of `!e.target.checked` (the checkbox's checked state), matching the correct logic in KittenTab.
+- **Rationale:** The previous logic was broken and prevented users from voiding cat numbers in the Household Pet tab. This fix ensures consistent voiding behavior across all tabs.
+- **Impact:** Users can now properly click and use the void checkbox in the Household Pet tab after entering cat numbers, providing consistent behavior with other tabs.
+
+### [2024-12-19] Kitten and Household Pet Tabs: Auto-Voiding Logic Fix
+- **Tabs:** Kitten, Household Pet
+- **Change:** Fixed critical bug where entering a cat number that was already voided elsewhere in the same column did not automatically void the new cell
+- **Summary:** 
+  - **KittenTab**: Fixed timing issue where `setKittenTabDataVoidState` was called inside the `setKittenTabData` callback, causing auto-voiding to not work properly. Moved the void state setting outside the callback for proper timing.
+  - **HouseholdPetTab**: Removed duplicate and inconsistent voiding logic inside the `setHouseholdPetTabData` callback. Simplified to use the same pattern as other tabs.
+  - Both tabs now correctly auto-void any new input of a cat number that is voided anywhere in the same column, matching the behavior in Championship and Premiership tabs.
+- **Rationale:** The previous logic was broken and did not provide the expected auto-voiding behavior when entering cat numbers that were already voided elsewhere in the column. This fix ensures consistent voiding behavior across all tabs.
+- **Impact:** Users can now expect that when they enter a cat number that is already voided elsewhere in the same column, the new cell will be automatically voided, providing consistent behavior across all tabs. 
+
+### [2024-12-19] Household Pet Tab: Reset Button Modal and Error Clearing Fix
+- **Tab:** Household Pet
+- **Change:** Fixed reset button behavior to match Kitten tab exactly
+- **Summary:** 
+  - **Added missing onTabReset prop**: Added onTabReset prop to HouseholdPetTabProps interface and function parameters
+  - **Fixed reset button**: Changed reset button to call `setIsResetModalOpen(true)` instead of `handleTabReset()` directly, ensuring modal appears
+  - **Fixed modal behavior**: Updated modal onConfirm to call `onTabReset()` and show success message, matching Kitten tab behavior
+  - **Added error clearing**: Reset now immediately clears all validation errors with `setErrors({})`
+  - **Updated App.tsx**: Added onTabReset prop to HouseholdPetTab component in App.tsx
+- **Rationale:** The previous implementation was missing the confirmation modal and proper error clearing, causing errors to persist until user interaction. This fix ensures consistent behavior with Kitten tab and proper user experience.
+- **Impact:** Users now see a confirmation modal when clicking reset, errors are cleared immediately, and the reset behavior matches the Kitten tab exactly. 
+
+### [2024-12-19] Household Pet Tab: Dynamic Validation Fix
+- **Tab:** Household Pet
+- **Change:** Fixed critical bug where validation errors only appeared after manual interaction (clicking into another field) instead of appearing immediately when data changes
+- **Summary:** 
+  - **Added missing useEffect hook**: Added `React.useEffect(() => { validate(); }, [columns, householdPetTabData.showAwards, householdPetTabData.voidedShowAwards, householdPetCount])` to automatically run validation whenever data changes
+  - **Matches Championship tab behavior**: The Household Pet tab now has the same automatic validation trigger as the Championship tab, ensuring consistent user experience across all tabs
+  - **Immediate error feedback**: Validation errors now appear immediately when users enter invalid data, without requiring manual interaction to trigger validation
+- **Rationale:** The previous implementation was missing the crucial useEffect hook that automatically triggers validation when data changes. This caused a poor user experience where errors only appeared after clicking into another field, unlike the other tabs which show errors immediately.
+- **Impact:** Users now see validation errors immediately when entering invalid data, providing consistent and responsive feedback across all tabs. 
+
+### [2024-12-19] Premiership Tab: Auto-Focus on Tab Activation Fix
+- **Tab:** Premiership
+- **Change:** Fixed critical bug where the first input field was not automatically focused when switching to the Premiership tab
+- **Summary:** 
+  - **Added missing auto-focus logic**: Added `useEffect` hook that automatically focuses the first input field when the component mounts or when columns/rows change
+  - **Matches Championship tab behavior**: The Premiership tab now has the same auto-focus behavior as the Championship tab, ensuring consistent user experience across all tabs
+  - **Immediate cursor placement**: When users switch to the Premiership tab, the cursor is now automatically placed in the first input field, making it ready for data entry
+- **Rationale:** The previous implementation was missing the crucial auto-focus logic that other tabs have. This caused a poor user experience where users had to manually click into the first field to start entering data, unlike the other tabs which automatically focus the first input.
+- **Impact:** Users now have immediate cursor placement when switching to the Premiership tab, providing consistent and efficient data entry experience across all tabs. 
+
+### [2024-12-19] All Tabs: Error Styling Consistency Fix
+- **Tabs:** Championship, Kitten, Household Pet
+- **Change:** Updated error styling to match Premiership tab by using `cfa-input-error` class instead of `border-red-500`
+- **Summary:** 
+  - **Championship Tab**: Updated `getBorderStyle` function to return `cfa-input-error` class for error styling
+  - **Kitten Tab**: Updated `getBorderStyle` function to return `cfa-input-error` class for error styling  
+  - **Household Pet Tab**: Updated `getBorderStyle` function to return `cfa-input-error` class for error styling
+  - **Consistent visual feedback**: All tabs now use the same red background fill styling for error inputs, matching the Premiership tab behavior
+- **Rationale:** The Premiership tab was using `cfa-input-error` class which provides a red background fill effect for error inputs, while other tabs were using `border-red-500` which only provides a red border. This fix ensures consistent visual feedback across all tabs when validation errors are present.
+- **Impact:** Users now see consistent error styling across all tabs - inputs with errors will have a red background fill instead of just a red border, providing clearer visual feedback for validation errors. 

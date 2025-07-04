@@ -30,8 +30,15 @@ interface HouseholdPetTabProps {
    * Setter for household pet tab data
    */
   setHouseholdPetTabData: React.Dispatch<React.SetStateAction<{ showAwards: { [key: string]: { catNumber: string; status: string } }; voidedShowAwards: { [key: string]: boolean } }>>;
+  /**
+   * Callback to reset the tab data (called from App.tsx)
+   */
+  onTabReset: () => void;
 }
 
+/**
+ * Voiding logic: If a cat number is voided anywhere in a column, all instances of that cat number in that column are voided (including new ones). Unchecking void in any cell unvoids all. This logic applies across the full column, matching Championship, Premiership, and Kitten tabs.
+ */
 export default function HouseholdPetTab({
   judges,
   householdPetCount,
@@ -40,7 +47,8 @@ export default function HouseholdPetTab({
   isActive,
   getShowState,
   householdPetTabData,
-  setHouseholdPetTabData
+  setHouseholdPetTabData,
+  onTabReset
 }: HouseholdPetTabProps) {
   // --- Generate columns (one per judge, regardless of ring type) ---
   const generateColumns = (): Column[] => {
@@ -131,6 +139,13 @@ export default function HouseholdPetTab({
   // --- Update placement (cat number) ---
   const updateShowAward = (colIdx: number, pos: number, value: string) => {
     const key = `${colIdx}-${pos}`;
+    
+    // --- Auto-void logic: if this cat number is already voided elsewhere in the column, void this cell too ---
+    let shouldBeVoided = false;
+    if (value && value.trim() !== '') {
+      shouldBeVoided = isCatNumberVoidedInColumn(colIdx, value);
+    }
+    
     setHouseholdPetTabData(prev => {
       const prevCell = prev.showAwards?.[key] || {};
       const newCell = {
@@ -138,13 +153,6 @@ export default function HouseholdPetTab({
         catNumber: value,
         status: 'HHP',
       };
-      // Voiding logic: if this cat number is voided elsewhere in the column, void this cell too
-      if (value && value.trim() !== '') {
-        const isVoided = Object.keys(prev.voidedShowAwards || {}).some(k => k.startsWith(`${colIdx}-`) && prev.showAwards?.[k]?.catNumber === value && prev.voidedShowAwards?.[k]);
-        setTabDataVoidState(colIdx, pos, isVoided);
-      } else {
-        setTabDataVoidState(colIdx, pos, false);
-      }
       return {
         ...prev,
         showAwards: {
@@ -153,6 +161,9 @@ export default function HouseholdPetTab({
         }
       };
     });
+    
+    // Set void state after updating the data (outside the callback for proper timing)
+    setTabDataVoidState(colIdx, pos, shouldBeVoided);
   };
 
   // --- Voiding logic ---
@@ -188,6 +199,11 @@ export default function HouseholdPetTab({
     setErrors(householdPetValidation.validateHouseholdPetTab(validationInput));
   };
 
+  // --- Auto-validate when data changes (matches Championship tab behavior) ---
+  React.useEffect(() => {
+    validate();
+  }, [columns, householdPetTabData.showAwards, householdPetTabData.voidedShowAwards, householdPetCount]);
+
   // --- Validate on blur ---
   const handleBlur = () => {
     validate();
@@ -199,7 +215,7 @@ export default function HouseholdPetTab({
   // Helper function to get appropriate border styling for errors (always red)
   const getBorderStyle = (errorKey: string) => {
     if (errors[errorKey]) {
-      return 'border-red-500'; // Always red border for errors
+      return 'cfa-input-error'; // Use CFA input error styling with red background fill
     }
     return 'border-gray-300';
   };
@@ -257,7 +273,14 @@ export default function HouseholdPetTab({
   // --- Reset handler ---
   const handleTabReset = () => {
     setHouseholdPetTabData({ showAwards: {}, voidedShowAwards: {} });
-    showSuccess('Household Pet Tab Reset', 'Household Pet tab data has been reset successfully.');
+    setErrors({}); // Clear errors on reset
+    onTabReset(); // Call the prop callback
+  };
+
+  // --- Helper: Check if a cat number is voided anywhere in the column (all sections) ---
+  const isCatNumberVoidedInColumn = (colIdx: number, catNumber: string): boolean => {
+    if (!catNumber || !catNumber.trim()) return false;
+    return Object.keys(householdPetTabData.voidedShowAwards).some(k => k.startsWith(`${colIdx}-`) && householdPetTabData.showAwards[k]?.catNumber === catNumber && householdPetTabData.voidedShowAwards[k]);
   };
 
   return (
@@ -273,7 +296,8 @@ export default function HouseholdPetTab({
         cancelText="Cancel"
         onConfirm={() => {
           setIsResetModalOpen(false);
-          handleTabReset();
+          onTabReset();
+          showSuccess('Household Pet Tab Reset', 'Household Pet tab data has been reset successfully.');
         }}
         onCancel={() => setIsResetModalOpen(false)}
       />
@@ -395,7 +419,20 @@ export default function HouseholdPetTab({
                                   type="checkbox"
                                   className="void-checkbox"
                                   checked={voided}
-                                  onChange={e => setTabDataVoidState(colIdx, i, e.target.checked)}
+                                  onChange={e => {
+                                    const newVoided = !voided;
+                                    const catNumber = cell.catNumber;
+                                    
+                                    if (catNumber) {
+                                      // Iterate through all positions in the same column (colIdx)
+                                      for (let pos = 0; pos < totalCatRows; pos++) {
+                                        const otherCell = getShowAward(colIdx, pos);
+                                        if (otherCell.catNumber === catNumber) {
+                                          setTabDataVoidState(colIdx, pos, newVoided);
+                                        }
+                                      }
+                                    }
+                                  }}
                                   disabled={!cell.catNumber}
                                 />
                               )}
@@ -436,7 +473,7 @@ export default function HouseholdPetTab({
             </button>
             <button
               type="button"
-              onClick={handleTabReset}
+              onClick={() => setIsResetModalOpen(true)}
               className="cfa-button-secondary"
             >
               Reset
