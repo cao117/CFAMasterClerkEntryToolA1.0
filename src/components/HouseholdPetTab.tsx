@@ -179,18 +179,13 @@ export default function HouseholdPetTab({
 
   // --- Validation ---
   const validate = () => {
-    const validationInput = {
+    const validationInput: householdPetValidation.HouseholdPetValidationInput = {
       columns,
       showAwards: householdPetTabData.showAwards || {},
       voidedShowAwards: householdPetTabData.voidedShowAwards || {},
       householdPetCount
     };
-    // TODO: Implement validateHouseholdPetTab in householdPetValidation and add proper typing
-    if (typeof (householdPetValidation as any).validateHouseholdPetTab === 'function') {
-      setErrors((householdPetValidation as any).validateHouseholdPetTab(validationInput));
-    } else {
-      setErrors({});
-    }
+    setErrors(householdPetValidation.validateHouseholdPetTab(validationInput));
   };
 
   // --- Validate on blur ---

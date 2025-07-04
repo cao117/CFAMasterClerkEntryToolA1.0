@@ -4,10 +4,15 @@ This changelog records major changes to the CFA Master Clerk Entry Tool, includi
 
 ## Validation Rule Change Log
 
+### [2024-12-19] KittenTab and HouseholdPetTab: Validation Logic Fixes
+- **Area:** src/validation/kittenValidation.ts, src/validation/householdPetValidation.ts, src/components/HouseholdPetTab.tsx
+- **Change:** Fixed validation logic for both Kitten and Household Pet tabs. KittenTab had a key format mismatch (underscore vs hyphen separators) that prevented validation from working. HouseholdPetTab was missing the complete validation implementation. Both tabs now have proper validation for cat number format (1-450), sequential entry, duplicate checking, status validation, and voiding logic.
+- **Rationale:** Validation was not working due to key format mismatches and missing implementations, causing users to not receive proper error feedback when entering invalid data.
+
 ### [2024-12-19] KittenTab: Full State Management Lift to App Level
 - **Area:** KittenTab.tsx, App.tsx, docs/specs/FOLDER_STRUCTURE.md
 - **Change:** KittenTab now uses fully lifted state management, with all data (showAwards, voidedShowAwards, errors, focusedColumnIndex, isResetModalOpen) managed in App.tsx and passed as props. This provides consistency with Championship and Premiership tabs and ensures data persistence across tab switches. All local state has been removed from KittenTab, making it a pure presentation component.
-- **Rationale:** Ensures consistent state management across all tabular sections and prevents data loss when switching between tabs. Provides better synchronization, unified reset functionality, and easier testing and debugging.
+- **Rationale:** Ensures consistent state management across all tabular sections and prevents data loss when switching between tabs.
 
 ### [2024-12-19] Championship Tab: Hair-Specific Breakpoint Implementation
 - **Area:** ChampionshipTab.tsx, GeneralTab.tsx, championshipValidation.ts

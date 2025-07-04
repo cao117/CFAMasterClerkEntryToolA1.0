@@ -1,0 +1,176 @@
+# Naming Conventions Rule
+
+## Key Principle: Consistency Over Preference
+
+### 1. Key Format Standardization
+**ALWAYS use hyphens (-) for object keys and data structures, NEVER underscores (_)**
+
+#### ✅ CORRECT (Use Hyphens):
+```typescript
+// Object keys
+const data = {
+  '0-1': { catNumber: '101', status: 'GC' },
+  '1-15': { catNumber: '202', status: 'CH' }
+};
+
+// Function parameters and variables
+const key = `${colIdx}-${pos}`;
+const validationKey = `${columnIndex}-${position}`;
+
+// State management
+showAwards: { [key: string]: any };
+voidedShowAwards: { [key: string]: boolean };
+```
+
+#### ❌ INCORRECT (Avoid Underscores):
+```typescript
+// Object keys
+const data = {
+  '0_1': { catNumber: '101', status: 'GC' },  // WRONG
+  '1_15': { catNumber: '202', status: 'CH' }  // WRONG
+};
+
+// Function parameters
+const key = `${colIdx}_${pos}`;  // WRONG
+```
+
+### 2. CSV Export Compatibility
+**All key generation MUST use hyphens because CSV export logic expects hyphen-separated keys**
+
+#### Critical Areas:
+- `src/utils/csvExport.ts` - All key generation uses hyphens
+- `src/validation/*.ts` - All validation functions must use hyphens
+- `src/components/*Tab.tsx` - All component key generation must use hyphens
+
+### 3. Validation Function Requirements
+**When writing or modifying validation functions:**
+
+1. **Input keys must use hyphens**: `${colIdx}-${pos}`
+2. **Output error keys must use hyphens**: `${colIdx}-${pos}`
+3. **All internal key generation must use hyphens**
+
+#### Example Validation Function:
+```typescript
+export function validateTab(input: ValidationInput): Record<string, string> {
+  const errors: Record<string, string> = {};
+  
+  // ✅ CORRECT: Use hyphens for all keys
+  for (let colIdx = 0; colIdx < input.columns.length; colIdx++) {
+    for (let pos = 0; pos < 15; pos++) {
+      const key = `${colIdx}-${pos}`;  // ✅ HYPHEN
+      const cellData = input.showAwards[key];
+      
+      if (cellData && !validateCatNumber(cellData.catNumber)) {
+        errors[key] = 'Invalid cat number format';  // ✅ HYPHEN
+      }
+    }
+  }
+  
+  return errors;
+}
+```
+
+### 4. Component State Management
+**All tab components must use consistent hyphen-based keys:**
+
+#### ✅ CORRECT Component Pattern:
+```typescript
+// Key generation
+const key = `${colIdx}-${pos}`;
+
+// State updates
+setTabData(prev => ({
+  ...prev,
+  showAwards: {
+    ...prev.showAwards,
+    [key]: { catNumber: value, status: 'GC' }
+  }
+}));
+
+// Validation calls
+const errors = validateTab({
+  columns,
+  showAwards: tabData.showAwards,  // Uses hyphen keys
+  voidedShowAwards: tabData.voidedShowAwards
+});
+```
+
+### 5. File Naming Conventions
+**Use hyphens for file names and kebab-case for variables:**
+
+#### ✅ CORRECT:
+- `csv-export.ts`
+- `form-actions.ts`
+- `championship-validation.ts`
+- `kitten-validation.ts`
+
+#### ❌ INCORRECT:
+- `csv_export.ts`
+- `form_actions.ts`
+- `championship_validation.ts`
+
+### 6. Function and Variable Naming
+**Use camelCase for functions and variables, hyphens only for object keys:**
+
+#### ✅ CORRECT:
+```typescript
+// Functions
+function validateKittenTab() { }
+function transformTabData() { }
+function formatPlacementCell() { }
+
+// Variables
+const showAwards = {};
+const voidedShowAwards = {};
+const columnIndex = 0;
+
+// Object keys (hyphens)
+const key = `${colIdx}-${pos}`;
+```
+
+### 7. Pre-Implementation Checklist
+**Before implementing any new feature or fixing existing code:**
+
+1. ✅ Check if the feature involves object keys or data structures
+2. ✅ Verify that all key generation uses hyphens (`${colIdx}-${pos}`)
+3. ✅ Ensure validation functions use hyphens for input/output keys
+4. ✅ Confirm CSV export compatibility (all keys must use hyphens)
+5. ✅ Test that data flows correctly between components and validation
+
+### 8. Common Pitfalls to Avoid
+
+#### ❌ DON'T:
+- Mix hyphens and underscores in the same codebase
+- Use underscores for object keys in validation functions
+- Assume key format doesn't matter for internal functions
+- Copy patterns from other languages that use underscores
+
+#### ✅ DO:
+- Always use hyphens for object keys
+- Be consistent across all files and functions
+- Test key format compatibility with CSV export
+- Document key format requirements in comments
+
+### 9. Validation Rule
+**When reviewing or writing code, ask:**
+- Does this code generate or use object keys?
+- Are those keys using hyphens consistently?
+- Will this work with the existing CSV export logic?
+- Are validation functions expecting the correct key format?
+
+### 10. Emergency Fix Pattern
+**If you find underscore/hyphen inconsistencies:**
+
+1. **Identify the scope**: Which files are affected?
+2. **Check CSV export**: Will the change break CSV export?
+3. **Update validation**: Ensure validation functions use correct format
+4. **Test thoroughly**: Verify data flows correctly
+5. **Document the fix**: Update changelog and comments
+
+---
+
+**Remember**: The hyphen vs underscore issue has caused multiple bugs in validation and CSV export. Always default to hyphens for object keys to maintain consistency with the existing codebase and CSV export logic.
+description:
+globs:
+alwaysApply: false
+---

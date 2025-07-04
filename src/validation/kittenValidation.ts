@@ -45,7 +45,7 @@ export function validateKittenTab(input: KittenValidationInput): Record<string, 
     let firstEmpty = -1;
     const maxRows = getBreakpointForRingType(col.specialty);
     for (let rowIdx = 0; rowIdx < maxRows; rowIdx++) {
-      const key = `${colIdx}_${rowIdx}`;
+      const key = `${colIdx}-${rowIdx}`; // FIXED: Use hyphen separator to match component
       const cell = showAwards[key] || { catNumber: '', status: 'KIT' };
       const voided = voidedShowAwards[key];
       // Skip validation for voided cells
