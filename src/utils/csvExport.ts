@@ -1,15 +1,6 @@
 // eslint-disable-next-line no-console
 import Papa from 'papaparse';
 
-interface ShowState {
-  general: Record<string, unknown>;
-  judges: Array<Record<string, unknown>>;
-  championship: Record<string, unknown>;
-  premiership: Record<string, unknown>;
-  kitten: Record<string, unknown>;
-  household: Record<string, unknown>;
-}
-
 interface GetShowStateFunction {
   (): Record<string, unknown>;
 }
@@ -291,7 +282,7 @@ export function exportShowToCSV(showState: any): { csv: string, filename: string
     });
 
     // Create rings array for the tabular section
-    const rings = columns.map((col, idx) => ({
+    const rings = columns.map((col) => ({
       number: col.judge.id.toString(),
       acronym: col.judge.acronym,
       type: col.specialty
@@ -353,7 +344,6 @@ export function exportShowToCSV(showState: any): { csv: string, filename: string
           };
           
           for (let colIdx = 0; colIdx < columns.length; colIdx++) {
-            const col = columns[colIdx];
             const key = `${colIdx}-${pos}`;
             const catNumber = tabData[section.key]?.[key] || '';
             const voided = tabData[section.voidKey]?.[key] || false;
@@ -426,7 +416,6 @@ export function exportShowToCSV(showState: any): { csv: string, filename: string
           };
           
           for (let colIdx = 0; colIdx < columns.length; colIdx++) {
-            const col = columns[colIdx];
             const key = `${colIdx}-${pos}`;
             const catNumber = tabData[section.key]?.[key] || '';
             const voided = tabData[section.voidKey]?.[key] || false;
@@ -494,20 +483,6 @@ export function exportShowToCSV(showState: any): { csv: string, filename: string
       placements
     };
   }
-
-  // Helper: Capitalize first letter
-  function capitalize(str: string) {
-    return str.charAt(0).toUpperCase() + str.slice(1);
-  }
-
-  // Section order and labels
-  const sections: { key: string, label: string }[] = [
-    { key: 'general', label: 'General Information' },
-    { key: 'championship', label: 'Championship Awards' },
-    { key: 'premiership', label: 'Premiership Awards' },
-    { key: 'kitten', label: 'Kitten Awards' },
-    { key: 'household', label: 'Household Pet Awards' },
-  ];
 
   // --- Main Export Logic ---
   const rows: string[] = [];

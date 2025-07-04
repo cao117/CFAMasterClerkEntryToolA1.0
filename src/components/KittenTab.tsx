@@ -177,7 +177,6 @@ export default function KittenTab({
 
   // --- Update kitten placement (cat number) ---
   const updateShowAward = (colIdx: number, pos: number, field: 'catNumber' | 'status', value: string) => {
-    const key = `${colIdx}-${pos}`;
     
     // --- Auto-void logic: if this cat number is already voided elsewhere in the column, void this cell too ---
     let shouldBeVoided = false;
@@ -187,7 +186,7 @@ export default function KittenTab({
     
     setKittenTabData((prev: KittenTabData) => {
       if (field === 'catNumber') {
-        const prevCell = prev.showAwards?.[key] || {};
+        const prevCell = prev.showAwards?.[`${colIdx}-${pos}`] || {};
         const newCell = {
           ...prevCell,
           catNumber: value,
@@ -197,7 +196,7 @@ export default function KittenTab({
           ...prev,
           showAwards: {
             ...prev.showAwards,
-            [key]: newCell
+            [`${colIdx}-${pos}`]: newCell
           }
         };
       }
@@ -205,8 +204,8 @@ export default function KittenTab({
         ...prev,
         showAwards: {
           ...prev.showAwards,
-          [key]: {
-            ...prev.showAwards?.[key],
+          [`${colIdx}-${pos}`]: {
+            ...prev.showAwards?.[`${colIdx}-${pos}`],
             [field]: value
           }
         }
@@ -418,10 +417,8 @@ export default function KittenTab({
                       {i + 1}{i >= 10 ? '*' : ''}
                     </td>
                     {columns.map((col, colIdx) => {
-                      const key = `${colIdx}-${i}`;
                       const cell = getShowAward(colIdx, i) || { catNumber: '', status: 'KIT' };
                       const voided = getVoidState(colIdx, i);
-                      const error = errors[`${colIdx}-${i}`];
                       const maxRowsForThisColumn = getAwardCount(col.specialty);
                       
                       // Only show input if this row is within the breakpoint for this column
@@ -467,7 +464,7 @@ export default function KittenTab({
                                     type="checkbox"
                                     className="void-checkbox"
                                     checked={voided}
-                                    onChange={e => {
+                                    onChange={() => {
                                       const newVoided = !voided;
                                       const catNumber = cell.catNumber;
                                       

@@ -5,11 +5,8 @@ import {
   validateChampionshipTab, 
   validateCatNumber,
   validateSequentialEntry,
-  checkDuplicateCatNumbersInChampionsFinals,
-  checkDuplicateCatNumbersInLHChampionsFinals,
-  checkDuplicateCatNumbersInSHChampionsFinals,
-  type CellData
 } from '../validation/championshipValidation';
+import type { CellData } from '../validation/championshipValidation';
 import { handleSaveToCSV, handleRestoreFromCSV } from '../utils/formActions';
 
 interface Judge {
@@ -348,21 +345,6 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
       }
     };
 
-    // Helper to get all CH cat numbers from Show Awards for a column
-    const getCHCatNumbersFromShowAwards = (columnIndex: number): string[] => {
-      const column = columns[columnIndex];
-      const numAwardRows = column ? getBreakpointForRingType(column.specialty) : 10;
-      const chCats: string[] = [];
-      for (let i = 0; i < numAwardRows; i++) {
-        const key = `${columnIndex}-${i}`;
-        const award = championshipTabData.showAwards[key];
-        if (award && award.status === 'CH' && award.catNumber && award.catNumber.trim() !== '') {
-          chCats.push(award.catNumber.trim());
-        }
-      }
-      return chCats;
-    };
-
     // Update row labels for AB CH, LH CH, SH CH sections
     const getOrdinalLabel = (idx: number, type: 'AB' | 'LH' | 'SH') => {
       const ordinals = ['Best', '2nd Best', '3rd Best', '4th Best', '5th Best'];
@@ -420,7 +402,7 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
         // For each column, randomly assign statuses (GC, CH, NOV) to each position, ensuring the correct total counts for each status (if possible).
         // Cat numbers remain unique within each section.
         const statuses = ['GC', 'CH', 'NOV'];
-        const numAwardRowsForColumn = getBreakpointForRingType(column.specialty);
+        const numAwardRowsForColumn = numAwardRows;
         for (let position = 0; position < numAwardRowsForColumn; position++) {
           const key = `${columnIndex}-${position}`;
           const catNumber = generateCatNumber();
@@ -445,7 +427,7 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
         // Finals Test Data:
         // For Allbreed columns, Best CH gets ALL CH cats, then split between LH and SH maintaining order
         // All other Championship tab validation rules must be enforced in the generated test data.
-        const numFinalsPositions = getFinalsPositionsForRingType(column.specialty);
+        const numFinalsPositions = numAwardRowsForColumn;
         
         if (column.specialty === 'Allbreed') {
           // For Allbreed rings:
@@ -550,7 +532,7 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
       });
       
       // Update state
-      setChampionshipTabData((prev: ChampionshipTabData) => ({
+      setChampionshipTabData(() => ({
         showAwards: newShowAwards,
         championsFinals: newChampionsFinals,
         lhChampionsFinals: newLhChampionsFinals,
@@ -646,7 +628,7 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
       setIsTabResetModalOpen(false);
       
       // Reset only Championship tab data
-      setChampionshipTabData(prev => ({
+      setChampionshipTabData(() => ({
         showAwards: {},
         championsFinals: {},
         lhChampionsFinals: {},
@@ -693,8 +675,14 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
       return { color: '#ef4444' }; // Always red for errors
     };
 
-    // Helper function to get appropriate border styling for errors (always red)
+    /**
+     * Returns the border style class for an input based on error presence.
+     * Defensive: Handles undefined errors object and undefined/null errorKey.
+     * @param {string} errorKey - The key for the error lookup
+     * @returns {string} - The border style class
+     */
     const getBorderStyle = (errorKey: string) => {
+      if (!errors || !errorKey) return 'border-gray-300';
       if (errors[errorKey]) {
         return 'cfa-input-error'; // Use CFA input error styling with red background fill
       }
@@ -839,7 +827,6 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
     // --- Handler: Blur events for finals - run validation here (like PremiershipTab) ---
     const handleFinalsBlur = (section: 'champions' | 'lhChampions' | 'shChampions', columnIndex: number, position: number, value: string) => {
       const errorKey = `${section === 'champions' ? 'champions' : section === 'lhChampions' ? 'lhChampions' : 'shChampions'}-${columnIndex}-${position}`;
-      const key = `${columnIndex}-${position}`;
       const input = {
         columns,
         showAwards: championshipTabData.showAwards,
@@ -866,20 +853,7 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
           setErrors((prev: any) => ({ ...prev, [errorKey]: 'You must fill previous placements before entering this position.' }));
           return;
         }
-        // Duplicate validation
-        let hasDuplicate = false;
-        switch (section) {
-          case 'champions':
-            hasDuplicate = checkDuplicateCatNumbersInChampionsFinals(input, columnIndex, value, key);
-            break;
-          case 'lhChampions':
-            hasDuplicate = checkDuplicateCatNumbersInLHChampionsFinals(input, columnIndex, value, key);
-            break;
-          case 'shChampions':
-            hasDuplicate = checkDuplicateCatNumbersInSHChampionsFinals(input, columnIndex, value, key);
-            break;
-        }
-        // Don't return early for duplicate; let full validation handle it
+        // Full validation handles all checks including duplicates
         setErrors(validateChampionshipTab(input));
       }
     };
@@ -1182,7 +1156,6 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                           if (enabled) {
                             const value = getFinalsValue('lhChampions', columnIndex, i);
                             const errorKey = `lhChampions-${columnIndex}-${i}`;
-                            const chCatNumbers = getCHCatNumbersFromShowAwards(columnIndex);
                             // Map Finals Cat # input to refs: rowIdx = numAwardRows + numBestCH + i
                             const finalsRowIdx = Math.max(...columns.map(col => getBreakpointForRingType(col.specialty))) + Math.max(...columns.map(col => col.specialty === 'Allbreed' ? getFinalsPositionsForRingType(col.specialty) : 0)) + i;
                             return (
@@ -1262,7 +1235,6 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                           if (enabled) {
                             const value = getFinalsValue('shChampions', columnIndex, i);
                             const errorKey = `shChampions-${columnIndex}-${i}`;
-                            const chCatNumbers = getCHCatNumbersFromShowAwards(columnIndex);
                             // Map Finals Cat # input to refs: rowIdx = numAwardRows + numBestCH + numBestLHCH + i
                             const finalsRowIdx = Math.max(...columns.map(col => getBreakpointForRingType(col.specialty))) + Math.max(...columns.map(col => col.specialty === 'Allbreed' ? getFinalsPositionsForRingType(col.specialty) : 0)) + i;
                             return (

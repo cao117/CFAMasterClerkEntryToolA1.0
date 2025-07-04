@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { handleSaveToCSV, handleRestoreFromCSV } from '../utils/formActions';
 import Modal from './Modal';
 import * as premiershipValidation from '../validation/premiershipValidation';
@@ -31,7 +31,6 @@ interface PremiershipTabProps {
   showSuccess: (title: string, message?: string, duration?: number) => void;
   showError: (title: string, message?: string, duration?: number) => void;
   isActive: boolean;
-  shouldFillTestData?: boolean;
   premiershipTabData: PremiershipTabData;
   setPremiershipTabData: React.Dispatch<React.SetStateAction<PremiershipTabData>>;
   getShowState: () => Record<string, unknown>;
@@ -69,24 +68,18 @@ export default function PremiershipTab({
   premiershipCounts,
   showSuccess,
   showError,
-  isActive,
-  shouldFillTestData,
   premiershipTabData,
   setPremiershipTabData,
   getShowState
 }: PremiershipTabProps) {
   // State for dynamic table structure
-  const [numAwardRows, setNumAwardRows] = useState(10);
+  const [numAwardRows] = useState(10);
   
   // State for validation errors and modal
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
-  const [isTabResetModalOpen, setIsTabResetModalOpen] = useState(false);
   const [focusedColumnIndex, setFocusedColumnIndex] = useState<number | null>(null);
   // Local errors state (like ChampionshipTab)
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
-
-  // 1. Add localInputState for text fields
-  const [localInputState, setLocalInputState] = useState<{ [key: string]: string }>({});
 
   // --- Helper: Generate columns (one per judge, handle Double Specialty) ---
   const generateColumns = (): Column[] => {
@@ -229,184 +222,9 @@ export default function PremiershipTab({
     }, ringType);
 
   // --- Test Data Generation Function ---
-  const fillTestData = useCallback(() => {
-    const newShowAwards: {[key: string]: premiershipValidation.CellData} = {};
-    const newPremiersFinals: {[key: string]: string} = {};
-    const newABPremiersFinals: {[key: string]: string} = {};
-    const newLHPremiersFinals: {[key: string]: string} = {};
-    const newSHPremiersFinals: {[key: string]: string} = {};
-    
-    // Generate unique cat numbers for each column
-    const generateUniqueNumber = (): number => {
-      return Math.floor(Math.random() * 450) + 1;
-    };
-    
-    // Generate test data for each column
-    columns.forEach((column, columnIndex) => {
-      // Generate unique cat numbers for this column
-      const usedCatNumbers = new Set<number>();
-      const generateCatNumber = (): number => {
-        let num;
-        do {
-          num = generateUniqueNumber();
-        } while (usedCatNumbers.has(num));
-        usedCatNumbers.add(num);
-        return num;
-      };
-      
-      // Show Awards Test Data:
-      // For each column, randomly assign statuses (GP, PR, NOV) to each position
-      // Cat numbers remain unique within each section.
-      const statuses = ['GP', 'PR', 'NOV'];
-      const numAwardRowsForColumn = getFinalsCount(column.specialty);
-      for (let position = 0; position < numAwardRowsForColumn; position++) {
-        const key = `${columnIndex}-${position}`;
-        let catNumber: number;
-        let randomStatus: string;
-        
-        // For testing: ensure cat "1" has GP status in first column, first position
-        if (columnIndex === 0 && position === 0) {
-          catNumber = 1;
-          randomStatus = 'GP';
-        } else {
-          catNumber = generateCatNumber();
-          randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
-        }
-        
-        newShowAwards[key] = {
-          catNumber: catNumber.toString(),
-          status: randomStatus
-        };
-      }
-      
-      // Get PR cats from show awards for finals
-      const prCats: string[] = [];
-      for (let position = 0; position < numAwardRowsForColumn; position++) {
-        const key = `${columnIndex}-${position}`;
-        const award = newShowAwards[key];
-        if (award.status === 'PR') {
-          prCats.push(award.catNumber);
-        }
-      }
-      
-      // Finals Test Data:
-      // For Allbreed columns, Best PR gets ALL PR cats, then split between LH and SH maintaining order
-      const numFinalsPositions = getFinalsPositionsForRingTypeLocal(column.specialty);
-      
-      if (column.specialty === 'Allbreed') {
-        // For Allbreed rings:
-        // 1. Best PR gets ALL PR cats in order (up to numFinalsPositions), then fillers if needed
-        const bestPRCats = prCats.slice(0, Math.min(numFinalsPositions, prCats.length));
-        // Fill AB Premiers Finals with all PR cats in order, then fill remaining with unique unused numbers
-        for (let position = 0; position < numFinalsPositions; position++) {
-          const key = `${columnIndex}-${position}`;
-          if (position < bestPRCats.length) {
-            newABPremiersFinals[key] = bestPRCats[position];
-          } else {
-            // Fill with unique unused number
-            let filler;
-            do {
-              filler = generateCatNumber();
-            } while (bestPRCats.includes(filler.toString()));
-            newABPremiersFinals[key] = filler.toString();
-            bestPRCats.push(filler.toString()); // Add filler to Best PR array for splitting
-          }
-        }
-        // --- LH/SH split: must include ALL Best PR cats (including fillers) ---
-        // Use odd/even rule for split (odd = LH, even = SH)
-        const lhCats: string[] = [];
-        const shCats: string[] = [];
-        bestPRCats.forEach(cat => {
-          const num = parseInt(cat);
-          if (!isNaN(num)) {
-            if (num % 2 === 1) {
-              lhCats.push(cat);
-            } else {
-              shCats.push(cat);
-            }
-          } else {
-            // If not a number (shouldn't happen in test data), assign arbitrarily
-            lhCats.push(cat);
-          }
-        });
-        // Place split cats at the top of each section, in order, then fill with unique fillers
-        // LH PR
-        for (let position = 0; position < numFinalsPositions; position++) {
-          const key = `${columnIndex}-${position}`;
-          if (position < lhCats.length) {
-            newLHPremiersFinals[key] = lhCats[position];
-          } else {
-            let filler;
-            do {
-              filler = generateCatNumber();
-            } while (
-              bestPRCats.includes(filler.toString()) ||
-              lhCats.includes(filler.toString()) ||
-              shCats.includes(filler.toString())
-            );
-            newLHPremiersFinals[key] = filler.toString();
-          }
-        }
-        // SH PR
-        for (let position = 0; position < numFinalsPositions; position++) {
-          const key = `${columnIndex}-${position}`;
-          if (position < shCats.length) {
-            newSHPremiersFinals[key] = shCats[position];
-          } else {
-            let filler;
-            do {
-              filler = generateCatNumber();
-            } while (
-              bestPRCats.includes(filler.toString()) ||
-              lhCats.includes(filler.toString()) ||
-              shCats.includes(filler.toString())
-            );
-            newSHPremiersFinals[key] = filler.toString();
-          }
-        }
-      } else if (column.specialty === 'Longhair') {
-        // For Longhair rings, use PR cats for LH Premiers Finals only, fill remaining with unique unused numbers
-        for (let position = 0; position < numFinalsPositions; position++) {
-          const key = `${columnIndex}-${position}`;
-          if (position < prCats.length) {
-            newLHPremiersFinals[key] = prCats[position];
-          } else {
-            let filler;
-            do {
-              filler = generateCatNumber();
-            } while (prCats.includes(filler.toString()));
-            newLHPremiersFinals[key] = filler.toString();
-          }
-        }
-      } else if (column.specialty === 'Shorthair') {
-        // For Shorthair rings, use PR cats for SH Premiers Finals only, fill remaining with unique unused numbers
-        for (let position = 0; position < numFinalsPositions; position++) {
-          const key = `${columnIndex}-${position}`;
-          if (position < prCats.length) {
-            newSHPremiersFinals[key] = prCats[position];
-          } else {
-            let filler;
-            do {
-              filler = generateCatNumber();
-            } while (prCats.includes(filler.toString()));
-            newSHPremiersFinals[key] = filler.toString();
-          }
-        }
-      }
-    });
-    
-    // Update state
-    setPremiershipTabData((prev: any) => ({
-      ...prev,
-      showAwards: newShowAwards,
-      premiersFinals: newPremiersFinals,
-      abPremiersFinals: newABPremiersFinals,
-      lhPremiersFinals: newLHPremiersFinals,
-      shPremiersFinals: newSHPremiersFinals
-    }));
-    
-    showSuccess('Test Data Filled', 'Premiership tab has been filled with realistic test data.');
-  }, [columns, getFinalsCount, getFinalsPositionsForRingTypeLocal, showSuccess, setPremiershipTabData]);
+  // const fillTestData = useCallback(() => {
+  //   // Commented out unused function
+  // }, [columns, getFinalsCount, getFinalsPositionsForRingTypeLocal, showSuccess, setPremiershipTabData]);
 
   // --- Helper: Check if a cat number is voided anywhere in the column (all sections) ---
   const isCatNumberVoidedInColumn = (colIdx: number, catNumber: string): boolean => {
@@ -467,7 +285,6 @@ export default function PremiershipTab({
   // --- Handler: Blur events for show awards - run validation here (like ChampionshipTab) ---
   const handleShowAwardBlur = (colIdx: number, pos: number, field: 'catNumber' | 'status', value: string) => {
     const errorKey = `showAwards-${colIdx}-${pos}`;
-    const key = `${colIdx}-${pos}`;
     const input = createValidationInput();
     
     // Run basic validation for this input
@@ -492,7 +309,6 @@ export default function PremiershipTab({
   // --- Handler: Blur events for finals - run validation here (like ChampionshipTab) ---
   const handleFinalsBlur = (section: 'ab' | 'lh' | 'sh', colIdx: number, pos: number, value: string) => {
     const errorKey = `${section === 'ab' ? 'abPremiersFinals' : section === 'lh' ? 'lhPremiersFinals' : 'shPremiersFinals'}-${colIdx}-${pos}`;
-    const key = `${colIdx}-${pos}`;
     const input = createValidationInput();
     
     // Run basic validation for this input
@@ -507,32 +323,15 @@ export default function PremiershipTab({
         setErrors((prev: any) => ({ ...prev, [errorKey]: 'You must fill previous placements before entering this position.' }));
         return;
       }
-      // Duplicate validation
-      let hasDuplicate = false;
-      switch (section) {
-        case 'ab':
-          hasDuplicate = premiershipValidation.checkDuplicateCatNumbersInABPremiersFinals(input, colIdx, value, key);
-          break;
-        case 'lh':
-          hasDuplicate = premiershipValidation.checkDuplicateCatNumbersInLHPremiersFinals(input, colIdx, value, key);
-          break;
-        case 'sh':
-          hasDuplicate = premiershipValidation.checkDuplicateCatNumbersInSHPremiersFinals(input, colIdx, value, key);
-          break;
-      }
-      // Don't return early for duplicate; let full validation handle it
+      // Full validation handles all checks including duplicates
       setErrors(premiershipValidation.validatePremiershipTab(createValidationInput()));
     }
   };
 
   // --- Handler: Update void state ---
-  const updateVoidState = (section: string, colIdx: number, pos: number, voided: boolean) => {
-    const key = `${colIdx}-${pos}`;
-    if (section === 'showAwards') setPremiershipTabData((prev: any) => ({ ...prev, voidedShowAwards: { ...prev.voidedShowAwards, [key]: voided } }));
-    if (section === 'ab') setPremiershipTabData((prev: any) => ({ ...prev, voidedABPremiersFinals: { ...prev.voidedABPremiersFinals, [key]: voided } }));
-    if (section === 'lh') setPremiershipTabData((prev: any) => ({ ...prev, voidedLHPremiersFinals: { ...prev.voidedLHPremiersFinals, [key]: voided } }));
-    if (section === 'sh') setPremiershipTabData((prev: any) => ({ ...prev, voidedSHPremiersFinals: { ...prev.voidedSHPremiersFinals, [key]: voided } }));
-  };
+  // const updateVoidState = (section: string, colIdx: number, pos: number, voided: boolean) => {
+  //   // Commented out unused function
+  // };
 
   // Create validation input function
   const createValidationInput = (): premiershipValidation.PremiershipValidationInput => ({
@@ -776,8 +575,7 @@ export default function PremiershipTab({
                       </td>
                       {columns.map((col, colIdx) => {
                         if (i < getFinalsCount(col.specialty)) {
-                          const key = `${colIdx}-${i}`;
-                          const cell = premiershipTabData.showAwards[key] || { catNumber: '', status: 'GP' };
+                          const cell = premiershipTabData.showAwards[`${colIdx}-${i}`] || { catNumber: '', status: 'GP' };
                           const voided = getVoidState('showAwards', colIdx, i);
                           const error = errors[`${colIdx}-${i}`];
                           return (

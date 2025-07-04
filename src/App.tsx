@@ -69,8 +69,6 @@ function App() {
 
   // State to track when Championship test data should be filled
   const [shouldFillChampionshipData] = useState(false);
-  // State to track when Premiership test data should be filled
-  const [shouldFillPremiershipData] = useState(false);
 
   // --- ChampionshipTab State ---
   const [championshipTabData, setChampionshipTabData] = useState({
@@ -393,7 +391,6 @@ function App() {
         showSuccess={showSuccess}
         showError={showError}
         isActive={activeTab === 'premiership'}
-        shouldFillTestData={shouldFillPremiershipData}
         premiershipTabData={premiershipTabData}
         setPremiershipTabData={setPremiershipTabData}
         getShowState={getShowState}

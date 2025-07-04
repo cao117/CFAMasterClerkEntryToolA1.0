@@ -271,11 +271,11 @@ export default function HouseholdPetTab({
   };
 
   // --- Reset handler ---
-  const handleTabReset = () => {
-    setHouseholdPetTabData({ showAwards: {}, voidedShowAwards: {} });
-    setErrors({}); // Clear errors on reset
-    onTabReset(); // Call the prop callback
-  };
+  // Remove 'const handleTabReset = () => {' at line 274
+  // Remove 'col' in columns.map at 376
+  // Remove 'const key = ...' at 377
+  // Remove 'const error = ...' at 380
+  // Remove 'e' in onChange at 422
 
   // --- Helper: Check if a cat number is voided anywhere in the column (all sections) ---
   const isCatNumberVoidedInColumn = (colIdx: number, catNumber: string): boolean => {
@@ -373,12 +373,9 @@ export default function HouseholdPetTab({
                     <td className="py-2 pl-4 font-medium text-sm border-r border-gray-300 bg-white frozen-column" style={{ width: '80px', minWidth: '80px' }}>
                       {i + 1}{i >= 10 ? '*' : ''}
                     </td>
-                    {columns.map((col, colIdx) => {
-                      const key = `${colIdx}-${i}`;
+                    {columns.map((_, colIdx) => {
                       const cell = getShowAward(colIdx, i) || { catNumber: '', status: 'HHP' };
                       const voided = getVoidState(colIdx, i);
-                      const error = errors[`${colIdx}-${i}`];
-                      // All columns use the same row count
                       return (
                         <td key={`hhp-final-${i}-${colIdx}`} className={`py-2 px-2 border-r border-gray-300 align-top${focusedColumnIndex === colIdx ? ' ring-glow' : ''}`}> 
                           <div className="flex flex-col items-start">
@@ -419,7 +416,7 @@ export default function HouseholdPetTab({
                                   type="checkbox"
                                   className="void-checkbox"
                                   checked={voided}
-                                  onChange={e => {
+                                  onChange={() => {
                                     const newVoided = !voided;
                                     const catNumber = cell.catNumber;
                                     

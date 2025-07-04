@@ -27,7 +27,7 @@ export function validateHouseholdPetTab(input: HouseholdPetValidationInput): Rec
   const maxRows = householdPetCount >= 50 ? 15 : 10;
 
   // For each column
-  columns.forEach((col, colIdx) => {
+  columns.forEach((_, colIdx) => {
     let firstEmpty = -1;
     // Map from catNumber to all row indices where it appears (excluding voided and empty)
     const catNumberToRows: Record<string, number[]> = {};

@@ -276,7 +276,7 @@ export function validatePremiershipTab(input: PremiershipValidationInput): { [ke
         if (!seen[cat]) seen[cat] = [];
         seen[cat].push(Number(pos));
       });
-      Object.entries(seen).forEach(([cat, positions]) => {
+      Object.entries(seen).forEach(([, positions]) => {
         if (positions.length > 1) {
           positions.forEach(pos => {
             const errorKey = `${section.prefix}-${colIdx}-${pos}`;
@@ -368,7 +368,7 @@ export function validatePremiershipTab(input: PremiershipValidationInput): { [ke
         catNumToPositions[cat].push(pos);
       }
     }
-    Object.entries(catNumToPositions).forEach(([cat, positions]) => {
+    Object.entries(catNumToPositions).forEach(([, positions]) => {
       if (positions.length > 1) {
         positions.forEach(pos => {
           const key = `${colIdx}-${pos}`;

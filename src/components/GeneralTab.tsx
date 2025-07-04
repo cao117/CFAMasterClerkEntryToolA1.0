@@ -291,7 +291,7 @@ export default function GeneralTab({
   };
 
   const handleRestoreFromCSVClick = () => {
-    handleRestoreFromCSV(showData, showSuccess, showError);
+    handleRestoreFromCSV(showData as unknown as Record<string, unknown>, showSuccess, showError);
   };
 
   const handleResetClick = () => {

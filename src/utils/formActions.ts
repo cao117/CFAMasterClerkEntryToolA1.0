@@ -1,15 +1,6 @@
 // Shared action button logic for General and Championship tabs
 import { handleSaveToCSV as csvExportSave, handleRestoreFromCSV as csvExportRestore } from './csvExport';
 
-interface ShowState {
-  general: Record<string, unknown>;
-  judges: Array<Record<string, unknown>>;
-  championship: Record<string, unknown>;
-  premiership: Record<string, unknown>;
-  kitten: Record<string, unknown>;
-  household: Record<string, unknown>;
-}
-
 interface GetShowStateFunction {
   (): Record<string, unknown>;
 }
