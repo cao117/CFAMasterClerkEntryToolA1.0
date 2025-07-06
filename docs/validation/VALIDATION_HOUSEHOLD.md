@@ -42,3 +42,9 @@ For each cell, only the highest-precedence error is shown:
 - If a cat number is voided anywhere in a column, all instances of that cat number in that column are voided (including new ones).
 - Unchecking void in any cell unvoids all instances in that column for that cat number.
 - This logic applies across the full column, matching Championship, Premiership, and Kitten tabs. 
+
+## Household Pet Tab Validation Rules
+
+- Only filled rows require status 'HHP'.
+- Empty rows (no cat number) are allowed and do not trigger errors.
+- When importing from CSV, a blank Household Pet section does not cause validation errors. 

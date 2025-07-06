@@ -20,6 +20,10 @@ export type KittenValidationInput = {
 
 /**
  * Validate the Kitten tab: sequential entry, duplicate, range, voiding. Only KIT status allowed.
+ *
+ * - If catNumber is empty, do not require or check status (no error).
+ * - Only filled rows require status === 'KIT'.
+ *
  * @param {KittenValidationInput} input
  * @returns {Record<string, string>} errors keyed by cell
  */
@@ -68,11 +72,12 @@ export function validateKittenTab(input: KittenValidationInput): Record<string, 
         if (!catNumberToRows[cell.catNumber]) catNumberToRows[cell.catNumber] = [];
         catNumberToRows[cell.catNumber].push(rowIdx);
       }
-      // Status check (should always be KIT)
-      if (cell.status !== 'KIT') {
+      // Status check: Only require status === 'KIT' if catNumber is present
+      if (cell.catNumber && cell.status !== 'KIT') {
         errors[key] = 'Status must be KIT';
         continue;
       }
+      // If catNumber is empty, do not check or require status (no error)
     }
     // After collecting, set duplicate error for all rows with duplicate cat numbers
     Object.entries(catNumberToRows).forEach(([catNum, rows]) => {

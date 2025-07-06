@@ -1,5 +1,22 @@
 // eslint-disable-next-line no-console
-import Papa from 'papaparse';
+
+// Type definitions for File System Access API
+interface FileSystemFileHandle {
+  createWritable(): Promise<FileSystemWritableFileStream>;
+}
+
+interface FileSystemWritableFileStream extends WritableStream {
+  write(data: string | BufferSource | Blob): Promise<void>;
+  close(): Promise<void>;
+}
+
+interface ShowSaveFilePickerOptions {
+  suggestedName?: string;
+  types?: Array<{
+    description: string;
+    accept: Record<string, string[]>;
+  }>;
+}
 
 interface GetShowStateFunction {
   (): Record<string, unknown>;
@@ -24,55 +41,62 @@ export function handleSaveToCSV(
     // Use the comprehensive exportShowToCSV function instead of simplified approach
     const { csv, filename } = exportShowToCSV(showState);
     
-    // Create and download file
+    // Create blob with CSV data
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', filename);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
     
-    showSuccess('CSV Export Successful', 'Show data has been exported to CSV file successfully.');
+    // Use the File System Access API if available (modern browsers)
+    if ('showSaveFilePicker' in window) {
+      // Modern approach: Use File System Access API for better user experience
+      (window as any).showSaveFilePicker({
+        suggestedName: filename,
+        types: [{
+          description: 'CSV Files',
+          accept: {
+            'text/csv': ['.csv']
+          }
+        }]
+      } as ShowSaveFilePickerOptions).then(async (fileHandle: FileSystemFileHandle) => {
+        const writable = await fileHandle.createWritable();
+        await writable.write(csv);
+        await writable.close();
+        showSuccess('CSV Export Successful', 'Show data has been exported to CSV file successfully.');
+      }).catch((error: any) => {
+        // User cancelled or error occurred
+        if (error.name === 'AbortError') {
+          // User cancelled the file picker
+          return;
+        }
+        // Fall back to automatic download for other errors
+        fallbackToAutomaticDownload(blob, filename, showSuccess);
+      });
+    } else {
+      // Fallback for older browsers: automatic download
+      fallbackToAutomaticDownload(blob, filename, showSuccess);
+    }
   } catch (error) {
-    console.error('Error exporting CSV:', error);
-    showError('CSV Export Failed', 'Failed to export show data to CSV. Please try again.');
+    showError('Export Error', 'An error occurred while exporting the CSV file.');
   }
 }
 
-export function handleRestoreFromCSV(
-  data: Record<string, unknown>,
-  showSuccess: SuccessCallback,
-  showError: ErrorCallback
-) {
-  try {
-    // Parse CSV data and restore show state
-    // This is a simplified implementation - you would need to implement the full parsing logic
-    console.log('Restoring from CSV:', data);
-    
-    showSuccess('CSV Import Successful', 'Show data has been imported from CSV file successfully.');
-  } catch (error) {
-    console.error('Error importing CSV:', error);
-    showError('CSV Import Failed', 'Failed to import show data from CSV. Please check the file format and try again.');
-  }
+/**
+ * Fallback function for automatic download (older browsers)
+ */
+function fallbackToAutomaticDownload(blob: Blob, filename: string, showSuccess: SuccessCallback) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+  showSuccess('CSV Export Successful', 'Show data has been exported to CSV file successfully.');
 }
 
 // CSV export utility for CFA Master Clerk Entry Tool
 // See docs/USAGE.md for format and escaping rules
 
-/**
- * Local logger stub for workflow tracing. Replace with Winston in backend or main app if needed.
- */
-const logger = {
-  info: (...args: any[]) => {
-    if (process.env.NODE_ENV !== 'production') {
-      // eslint-disable-next-line no-console
-      console.log('[csvExport]', ...args);
-    }
-  },
-};
+
 
 /**
  * Utility to export the full show state to a CSV string and filename.
@@ -81,7 +105,6 @@ const logger = {
  * @returns {{ csv: string, filename: string }}
  */
 export function exportShowToCSV(showState: any): { csv: string, filename: string } {
-  logger.info('Starting CSV export');
 
   // Helper: Escape a field for CSV (commas, quotes, newlines)
   function escapeCSVField(field: unknown): string {
@@ -95,17 +118,19 @@ export function exportShowToCSV(showState: any): { csv: string, filename: string
     return escaped;
   }
 
-  // Helper: Format a placement cell
-  function formatPlacementCell(cell: any): string {
-    if (!cell || (!cell.catNumber && !cell.status)) return '-';
-    
-    // If no cat number, just return '-' regardless of status
-    if (!cell.catNumber || cell.catNumber.trim() === '') return '-';
-    
-    let value = cell.catNumber;
-    if (cell.status && cell.status.trim() !== '') value += ` - ${cell.status}`;
-    if (cell.voided) value += ' - V';
-    return escapeCSVField(value);
+  // PATCH: Helper to format a placement cell for CSV export with strict trimming and no spaces
+  function formatPlacementCell(cell: any, voided: boolean): string {
+    // Only for non-general sections
+    const catNumber = (cell?.catNumber ?? '').toString().trim();
+    const status = (cell?.status ?? '').toString().trim();
+    // If voided, append '-v' (no spaces)
+    if (catNumber && status) {
+      return voided ? `${catNumber}-${status}-v` : `${catNumber}-${status}`;
+    } else if (catNumber) {
+      return catNumber; // fallback, should not happen
+    } else {
+      return '';
+    }
   }
 
   // Helper: Section label row
@@ -161,7 +186,7 @@ export function exportShowToCSV(showState: any): { csv: string, filename: string
       // Each placement row: label, then one cell per column
       const row = [escapeCSVField(placement.label)];
       for (const cell of placement.columns) {
-        row.push(formatPlacementCell(cell));
+        row.push(formatPlacementCell(cell, cell.voided));
       }
       rows.push(row.join(','));
     }
@@ -174,8 +199,9 @@ export function exportShowToCSV(showState: any): { csv: string, filename: string
    * @param tabData - The tab data from App state (e.g., championshipTabData)
    * @param judges - The judges array
    * @param tabType - 'championship' | 'premiership' | 'kitten' | 'household'
+   * @param showState - The full show state to access counts for determining row limits
    */
-  function transformTabData(tabData: any, judges: any[], tabType: string): any {
+  function transformTabData(tabData: any, judges: any[], tabType: string, showState: any): any {
     // Build columns: for Double Specialty, split into LH/SH; otherwise, use ringType
     const columns: { judge: any; specialty: string }[] = [];
     judges.forEach(judge => {
@@ -198,46 +224,52 @@ export function exportShowToCSV(showState: any): { csv: string, filename: string
     const placements: any[] = [];
 
     if (tabType === 'championship') {
-      // Show Awards section (Top 10/15)
-      const maxAwardRows = 15; // Championship can have up to 15 rows
-             for (let pos = 0; pos < maxAwardRows; pos++) {
-         const row: any = {
-           label: `Show Awards ${pos + 1}${pos >= 10 ? '*' : ''}`,
-           columns: []
-         };
+      // Calculate actual Show Awards row count based on championship total
+      const championshipTotal = showState.general?.championshipCounts?.total || 0;
+      const maxAwardRows = championshipTotal >= 85 ? 15 : 10;
+      
+      // Show Awards section (Top 10/15 based on actual count)
+      for (let pos = 0; pos < maxAwardRows; pos++) {
+        const row: any = {
+          label: `Show Awards ${pos + 1}${pos >= 10 ? '*' : ''}`,
+          columns: []
+        };
         
-                 for (let colIdx = 0; colIdx < columns.length; colIdx++) {
-           const key = `${colIdx}-${pos}`;
-           const cellData = tabData.showAwards?.[key] || { catNumber: '', status: 'GC' };
-           const voided = tabData.voidedShowAwards?.[key] || false;
-           
-           row.columns.push({
-             catNumber: cellData.catNumber || '',
-             status: cellData.status || 'GC',
-             voided: !!voided
-           } as any);
-         }
+        for (let colIdx = 0; colIdx < columns.length; colIdx++) {
+          const key = `${colIdx}-${pos}`;
+          const cellData = tabData.showAwards?.[key] || { catNumber: '', status: 'GC' };
+          const voided = tabData.voidedShowAwards?.[key] || false;
+          
+          row.columns.push({
+            catNumber: cellData.catNumber || '',
+            status: cellData.status || 'GC',
+            voided: !!voided
+          } as any);
+        }
         placements.push(row);
       }
 
-      // Finals sections
+      // Calculate finals row count based on championship total
+      const finalsRowCount = championshipTotal >= 85 ? 5 : 3;
+      
+      // Finals sections with dynamic labels based on actual count
       const finalsSections = [
         { 
           key: 'championsFinals', 
           voidKey: 'voidedChampionsFinals',
-          labels: ['Best AB CH', '2nd Best AB CH', '3rd Best AB CH', '4th Best AB CH', '5th Best AB CH'],
+          labels: ['Best AB CH', '2nd Best AB CH', '3rd Best AB CH', '4th Best AB CH', '5th Best AB CH'].slice(0, finalsRowCount),
           enabledFor: (col: any) => col.specialty === 'Allbreed'
         },
         { 
           key: 'lhChampionsFinals', 
           voidKey: 'voidedLHChampionsFinals',
-          labels: ['Best LH CH', '2nd Best LH CH', '3rd Best LH CH', '4th Best LH CH', '5th Best LH CH'],
+          labels: ['Best LH CH', '2nd Best LH CH', '3rd Best LH CH', '4th Best LH CH', '5th Best LH CH'].slice(0, finalsRowCount),
           enabledFor: (col: any) => col.specialty === 'Longhair' || col.specialty === 'Allbreed'
         },
         { 
           key: 'shChampionsFinals', 
           voidKey: 'voidedSHChampionsFinals',
-          labels: ['Best SH CH', '2nd Best SH CH', '3rd Best SH CH', '4th Best SH CH', '5th Best SH CH'],
+          labels: ['Best SH CH', '2nd Best SH CH', '3rd Best SH CH', '4th Best SH CH', '5th Best SH CH'].slice(0, finalsRowCount),
           enabledFor: (col: any) => col.specialty === 'Shorthair' || col.specialty === 'Allbreed'
         }
       ];
@@ -265,12 +297,16 @@ export function exportShowToCSV(showState: any): { csv: string, filename: string
       }
 
     } else if (tabType === 'premiership') {
-             // Show Awards section (Top 15)
-       for (let pos = 0; pos < 15; pos++) {
-         const row: any = {
-           label: `Show Awards ${pos + 1}`,
-           columns: []
-         };
+      // Calculate actual Show Awards row count based on premiership total
+      const premiershipTotal = showState.general?.premiershipCounts?.total || 0;
+      const maxAwardRows = premiershipTotal >= 50 ? 15 : 10;
+      
+      // Show Awards section (Top 10/15 based on actual count)
+      for (let pos = 0; pos < maxAwardRows; pos++) {
+        const row: any = {
+          label: `Show Awards ${pos + 1}`,
+          columns: []
+        };
         
         for (let colIdx = 0; colIdx < columns.length; colIdx++) {
           const key = `${colIdx}-${pos}`;
@@ -286,24 +322,27 @@ export function exportShowToCSV(showState: any): { csv: string, filename: string
         placements.push(row);
       }
 
-      // Finals sections
+      // Calculate finals row count based on premiership total
+      const finalsRowCount = premiershipTotal >= 50 ? 3 : 2;
+      
+      // Finals sections with dynamic labels based on actual count
       const finalsSections = [
         { 
           key: 'abPremiersFinals', 
           voidKey: 'voidedABPremiersFinals',
-          labels: ['Best AB PR', '2nd Best AB PR', '3rd Best AB PR', '4th Best AB PR', '5th Best AB PR'],
+          labels: ['Best AB PR', '2nd Best AB PR', '3rd Best AB PR'].slice(0, finalsRowCount),
           enabledFor: (col: any) => col.specialty === 'Allbreed'
         },
         { 
           key: 'lhPremiersFinals', 
           voidKey: 'voidedLHPremiersFinals',
-          labels: ['Best LH PR', '2nd Best LH PR', '3rd Best LH PR', '4th Best LH PR', '5th Best LH PR'],
+          labels: ['Best LH PR', '2nd Best LH PR', '3rd Best LH PR'].slice(0, finalsRowCount),
           enabledFor: (col: any) => col.specialty === 'Longhair' || col.specialty === 'Allbreed'
         },
         { 
           key: 'shPremiersFinals', 
           voidKey: 'voidedSHPremiersFinals',
-          labels: ['Best SH PR', '2nd Best SH PR', '3rd Best SH PR', '4th Best SH PR', '5th Best SH PR'],
+          labels: ['Best SH PR', '2nd Best SH PR', '3rd Best SH PR'].slice(0, finalsRowCount),
           enabledFor: (col: any) => col.specialty === 'Shorthair' || col.specialty === 'Allbreed'
         }
       ];
@@ -331,8 +370,11 @@ export function exportShowToCSV(showState: any): { csv: string, filename: string
       }
 
     } else if (tabType === 'kitten') {
-      // Show Awards section (Top 10/15 based on count)
-      const maxAwardRows = 15; // Kitten can have up to 15 rows
+      // Calculate actual Show Awards row count based on kitten total
+      const kittenTotal = showState.general?.kittenCounts?.total || 0;
+      const maxAwardRows = kittenTotal >= 50 ? 15 : 10;
+      
+      // Show Awards section (Top 10/15 based on actual count)
       for (let pos = 0; pos < maxAwardRows; pos++) {
         const row: any = {
           label: `Show Awards ${pos + 1}`,
@@ -354,8 +396,11 @@ export function exportShowToCSV(showState: any): { csv: string, filename: string
       }
 
     } else if (tabType === 'household') {
-      // Show Awards section (Top 10/15 based on count)
-      const maxAwardRows = 15; // Household Pet can have up to 15 rows
+      // Calculate actual Show Awards row count based on household pet count
+      const householdPetCount = showState.general?.householdPetCount || 0;
+      const maxAwardRows = householdPetCount >= 50 ? 15 : 10;
+      
+      // Show Awards section (Top 10/15 based on actual count)
       for (let pos = 0; pos < maxAwardRows; pos++) {
         const row: any = {
           label: `Show Awards ${pos + 1}`,
@@ -389,24 +434,23 @@ export function exportShowToCSV(showState: any): { csv: string, filename: string
   // General Info + Judges
   rows.push(...buildGeneralSection(showState.general, showState.judges));
   // Championship
-  rows.push(...buildTabularSection(transformTabData(showState.championship, showState.judges, 'championship'), 'Championship Awards'));
+  rows.push(...buildTabularSection(transformTabData(showState.championship, showState.judges, 'championship', showState), 'Championship Awards'));
   // Premiership
-  rows.push(...buildTabularSection(transformTabData(showState.premiership, showState.judges, 'premiership'), 'Premiership Awards'));
+  rows.push(...buildTabularSection(transformTabData(showState.premiership, showState.judges, 'premiership', showState), 'Premiership Awards'));
   // Kitten
-  rows.push(...buildTabularSection(transformTabData(showState.kitten, showState.judges, 'kitten'), 'Kitten Awards'));
+  rows.push(...buildTabularSection(transformTabData(showState.kitten, showState.judges, 'kitten', showState), 'Kitten Awards'));
   // Always export the household section, even if empty, for schema consistency
-  rows.push(...buildTabularSection(transformTabData(showState.household, showState.judges, 'household'), 'Household Pet Awards'));
+  rows.push(...buildTabularSection(transformTabData(showState.household, showState.judges, 'household', showState), 'Household Pet Awards'));
 
   // Join rows with newlines
   const csv = rows.join('\r\n');
 
-  // Filename: YYYYMMDD_HHMM_showname.csv
+  // Filename: YYYYMMDD_HHMMSS_showname.csv
   function pad(n: number) { return n < 10 ? '0' + n : n; }
   const now = new Date();
   const showName = (showState.general?.clubName || 'show').replace(/\s+/g, '');
-  const filename = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}_${showName}.csv`;
+  const filename = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}_${showName}.csv`;
 
-  logger.info('CSV export complete', { filename });
   return { csv, filename };
 }
 

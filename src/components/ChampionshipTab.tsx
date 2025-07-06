@@ -7,7 +7,7 @@ import {
   validateSequentialEntry,
 } from '../validation/championshipValidation';
 import type { CellData } from '../validation/championshipValidation';
-import { handleSaveToCSV, handleRestoreFromCSV } from '../utils/formActions';
+import { handleSaveToCSV } from '../utils/formActions';
 
 interface Judge {
   id: number;
@@ -47,6 +47,10 @@ interface ChampionshipTabProps {
    * Whether this tab is currently active
    */
   isActive?: boolean;
+  /**
+   * Handler for CSV import functionality
+   */
+  onCSVImport: () => Promise<void>;
 }
 
 interface Column {
@@ -84,7 +88,7 @@ type ChampionshipTabData = {
  */
 const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
   (props, ref) => {
-    const { judges, championshipTotal, championshipCounts, showSuccess, showError, shouldFillTestData, onResetAllData, championshipTabData, setChampionshipTabData, getShowState, isActive } = props;
+    const { judges, championshipTotal, championshipCounts, showSuccess, showError, shouldFillTestData, onResetAllData, championshipTabData, setChampionshipTabData, getShowState, isActive, onCSVImport } = props;
     // State for dynamic table structure
     const [columns, setColumns] = useState<Column[]>([]);
     const [numAwardRows, setNumAwardRows] = useState(10);
@@ -92,6 +96,7 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
     // State for validation errors and modal
     const [isResetModalOpen, setIsResetModalOpen] = useState(false);
     const [isTabResetModalOpen, setIsTabResetModalOpen] = useState(false);
+    const [isCSVErrorModalOpen, setIsCSVErrorModalOpen] = useState(false); // NEW: Modal for CSV error
     const [focusedColumnIndex, setFocusedColumnIndex] = useState<number | null>(null);
     // Local errors state (like PremiershipTab)
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
@@ -600,22 +605,9 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
 
     // Action button handlers
     const handleSaveToCSVClick = () => {
-      const errors = validateChampionshipTab({
-        columns,
-        showAwards: championshipTabData.showAwards,
-        championsFinals: championshipTabData.championsFinals,
-        lhChampionsFinals: championshipTabData.lhChampionsFinals,
-        shChampionsFinals: championshipTabData.shChampionsFinals,
-        championshipTotal,
-        championshipCounts
-      });
-      setErrors(errors);
+      // Check for validation errors before CSV export
       if (Object.keys(errors).length > 0) {
-        showError(
-          'Championship Validation Errors',
-          'Please fix all validation errors before saving to CSV. Check the form for highlighted fields with errors.',
-          8000
-        );
+        setIsCSVErrorModalOpen(true);
         return;
       }
       // Export the full show state for CSV export
@@ -623,7 +615,7 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
     };
 
     const handleRestoreFromCSVClick = () => {
-      handleRestoreFromCSV({ columns, showAwards: championshipTabData.showAwards, championsFinals: championshipTabData.championsFinals, lhChampionsFinals: championshipTabData.lhChampionsFinals, shChampionsFinals: championshipTabData.shChampionsFinals, championshipTotal }, showSuccess, showError);
+      onCSVImport();
     };
 
     const handleResetClick = () => {
@@ -820,14 +812,43 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
       }
     };
 
-    const getBreakpointForRingType = (ringType: string): number => {
-      const count = getChampionshipCountForRingType(ringType);
-      return count >= 85 ? 15 : 10;
+    // --- PATCH: Robust row count for CSV import/restore ---
+    /**
+     * Returns the number of Show Awards rows to render for a given column, based on:
+     *  - The calculated breakpoint (10/15)
+     *  - The number of rows present in the imported showAwards for this column
+     * This ensures that after CSV import, if 15 rows are present, all are shown, even if the show count is not set before render.
+     */
+    const getShowAwardsRowCount = (colIdx: number, specialty: string): number => {
+      // Default: calculated breakpoint
+      const calculated = getChampionshipCountForRingType(specialty) >= 85 ? 15 : 10;
+      // Find max row index present in imported showAwards for this column
+      let maxIdx = -1;
+      Object.keys(championshipTabData.showAwards).forEach(key => {
+        const [col, row] = key.split('-').map(Number);
+        if (col === colIdx && row > maxIdx) maxIdx = row;
+      });
+      // If imported data has more rows, use that
+      return Math.max(calculated, maxIdx + 1);
     };
-
-    const getFinalsPositionsForRingType = (ringType: string): number => {
-      const count = getChampionshipCountForRingType(ringType);
-      return count >= 85 ? 5 : 3;
+    /**
+     * Returns the number of Finals rows to render for a given column/section, based on:
+     *  - The calculated finals count (3/5)
+     *  - The number of rows present in the imported finals for this column/section
+     * This ensures that after CSV import, if 5 rows are present, all are shown, even if the show count is not set before render.
+     */
+    const getFinalsRowCount = (colIdx: number, specialty: string, section: 'champions' | 'lhChampions' | 'shChampions'): number => {
+      const calculated = getChampionshipCountForRingType(specialty) >= 85 ? 5 : 3;
+      let finalsObj: Record<string, string> = {};
+      if (section === 'champions') finalsObj = championshipTabData.championsFinals;
+      if (section === 'lhChampions') finalsObj = championshipTabData.lhChampionsFinals;
+      if (section === 'shChampions') finalsObj = championshipTabData.shChampionsFinals;
+      let maxIdx = -1;
+      Object.keys(finalsObj).forEach(key => {
+        const [col, row] = key.split('-').map(Number);
+        if (col === colIdx && row > maxIdx) maxIdx = row;
+      });
+      return Math.max(calculated, maxIdx + 1);
     };
 
     // --- Handler: Blur events for finals - run validation here (like PremiershipTab) ---
@@ -909,6 +930,16 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
           onConfirm={handleTabResetClick}
           onCancel={() => setIsTabResetModalOpen(false)}
         />
+        {/* CSV Error Modal */}
+        <Modal
+          isOpen={isCSVErrorModalOpen}
+          onClose={() => setIsCSVErrorModalOpen(false)}
+          title="Cannot Save to CSV"
+          message="CSV cannot be generated until all errors on this tab have been resolved. Please fix all highlighted errors before saving."
+          type="alert"
+          confirmText="OK"
+          showCancel={false}
+        />
 
         <div className="cfa-section">
           <h2 className="cfa-section-header flex items-center justify-between">
@@ -980,23 +1011,22 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                 </thead>
                 <tbody>
                   {/* Show Awards Section (Rows 4-18) */}
-                  {/*
-                    Render up to 15 rows, but for each cell, only render the input if that row is within the enabled range for that column.
-                    For columns with <85 cats, only render up to 10 rows; for >=85, up to 15 rows.
-                  */}
                   {Array.from({ length: 15 }, (_, i) => (
-                    // Only render the row if at least one column needs it
-                    columns.some(col => i < getBreakpointForRingType(col.specialty)) ? (
+                    columns.some(col => i < getShowAwardsRowCount(columns.indexOf(col), col.specialty)) ? (
                       <tr key={`award-${i}`} className="cfa-table-row">
                         <td className="py-2 pl-4 font-medium text-sm border-r border-gray-300 bg-white frozen-column" style={{ width: '140px', minWidth: '140px' }}>
                           {i + 1}{i >= 10 ? '*' : ''}
                         </td>
                         {columns.map((_, columnIndex) => {
                           const col = columns[columnIndex];
-                          // Only render input if this row is enabled for this column
-                          if (i < getBreakpointForRingType(col.specialty)) {
+                          // Only render input if this row is enabled for this column (now using robust row count)
+                          if (i < getShowAwardsRowCount(columnIndex, col.specialty)) {
                             const award = getShowAward(columnIndex, i);
                             const errorKey = `${columnIndex}-${i}`;
+                            // Debug: Log status for voided cells after import (outside JSX)
+                            if (getVoidState('showAwards', columnIndex, i)) {
+                              // Voided cell detected
+                            }
                             return (
                               <td key={`award-${i}-${columnIndex}`} className={`py-2 px-2 border-r border-gray-300 align-top${shouldApplyRingGlow(columnIndex) ? ' ring-glow' : ''}`}> 
                                 <div className="flex flex-col items-start">
@@ -1070,18 +1100,18 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
 
                   {/* Champions Finals Section (Rows 19-23) - Only for Allbreed rings */}
                   {Array.from({ length: 5 }, (_, i) => (
-                    columns.some(col => col.specialty === 'Allbreed' && i < getFinalsPositionsForRingType(col.specialty)) ? (
+                    columns.some(col => col.specialty === 'Allbreed' && i < getFinalsRowCount(columns.indexOf(col), col.specialty, 'champions')) ? (
                       <tr key={`ch-final-${i}`} className="cfa-table-row">
                         <td className="py-2 pl-4 font-medium text-sm text-black border-r border-gray-300 frozen-column" style={{ width: '140px', minWidth: '140px' }}>
                           {getOrdinalLabel(i, 'AB')}
                         </td>
                         {columns.map((col, columnIndex) => {
-                          const enabled = col.specialty === 'Allbreed' && i < getFinalsPositionsForRingType(col.specialty);
+                          const enabled = col.specialty === 'Allbreed' && i < getFinalsRowCount(columnIndex, col.specialty, 'champions');
                           if (enabled) {
                             const value = getFinalsValue('champions', columnIndex, i);
                             const errorKey = `champions-${columnIndex}-${i}`;
                             // Map Finals Cat # input to refs: rowIdx = numAwardRows + i
-                            const finalsRowIdx = Math.max(...columns.map(col => getBreakpointForRingType(col.specialty))) + i;
+                            const finalsRowIdx = getShowAwardsRowCount(columnIndex, col.specialty) + i;
                             return (
                               <td 
                                 key={`ch-final-${i}-${columnIndex}`} 
@@ -1132,7 +1162,6 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                                   </div>
                                   {errors[errorKey] && (
                                     <>
-                                      {console.log('[ChampionshipTab] Render error for', errorKey, errors[errorKey])}
                                       <div className="text-xs mt-1" style={getErrorStyle()}>{getCleanMessage(errors[errorKey])}</div>
                                     </>
                                   )}
@@ -1152,18 +1181,18 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
 
                   {/* Longhair Champions Finals Section (Rows 24-28) - Only for Longhair and Allbreed rings */}
                   {Array.from({ length: 5 }, (_, i) => (
-                    columns.some(col => (col.specialty === 'Longhair' || col.specialty === 'Allbreed') && i < getFinalsPositionsForRingType(col.specialty)) ? (
+                    columns.some(col => (col.specialty === 'Longhair' || col.specialty === 'Allbreed') && i < getFinalsRowCount(columns.indexOf(col), col.specialty, 'lhChampions')) ? (
                       <tr key={`lh-final-${i}`} className="cfa-table-row">
                         <td className="py-2 pl-4 font-medium text-sm text-black border-r border-gray-300 frozen-column" style={{ width: '140px', minWidth: '140px' }}>
                           {getOrdinalLabel(i, 'LH')}
                         </td>
                         {columns.map((col, columnIndex) => {
-                          const enabled = (col.specialty === 'Longhair' || col.specialty === 'Allbreed') && i < getFinalsPositionsForRingType(col.specialty);
+                          const enabled = (col.specialty === 'Longhair' || col.specialty === 'Allbreed') && i < getFinalsRowCount(columnIndex, col.specialty, 'lhChampions');
                           if (enabled) {
                             const value = getFinalsValue('lhChampions', columnIndex, i);
                             const errorKey = `lhChampions-${columnIndex}-${i}`;
                             // Map Finals Cat # input to refs: rowIdx = numAwardRows + numBestCH + i
-                            const finalsRowIdx = Math.max(...columns.map(col => getBreakpointForRingType(col.specialty))) + Math.max(...columns.map(col => col.specialty === 'Allbreed' ? getFinalsPositionsForRingType(col.specialty) : 0)) + i;
+                            const finalsRowIdx = getShowAwardsRowCount(columnIndex, col.specialty) + (col.specialty === 'Allbreed' ? getFinalsRowCount(columnIndex, col.specialty, 'champions') : 0) + i;
                             return (
                               <td 
                                 key={`lh-final-${i}-${columnIndex}`} 
@@ -1231,18 +1260,18 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
 
                   {/* Shorthair Champions Finals Section (Rows 29-33) - Only for Shorthair and Allbreed rings */}
                   {Array.from({ length: 5 }, (_, i) => (
-                    columns.some(col => (col.specialty === 'Shorthair' || col.specialty === 'Allbreed') && i < getFinalsPositionsForRingType(col.specialty)) ? (
+                    columns.some(col => (col.specialty === 'Shorthair' || col.specialty === 'Allbreed') && i < getFinalsRowCount(columns.indexOf(col), col.specialty, 'shChampions')) ? (
                       <tr key={`sh-final-${i}`} className="cfa-table-row">
                         <td className="py-2 pl-4 font-medium text-sm text-black border-r border-gray-300 frozen-column" style={{ width: '140px', minWidth: '140px' }}>
                           {getOrdinalLabel(i, 'SH')}
                         </td>
                         {columns.map((col, columnIndex) => {
-                          const enabled = (col.specialty === 'Shorthair' || col.specialty === 'Allbreed') && i < getFinalsPositionsForRingType(col.specialty);
+                          const enabled = (col.specialty === 'Shorthair' || col.specialty === 'Allbreed') && i < getFinalsRowCount(columnIndex, col.specialty, 'shChampions');
                           if (enabled) {
                             const value = getFinalsValue('shChampions', columnIndex, i);
                             const errorKey = `shChampions-${columnIndex}-${i}`;
                             // Map Finals Cat # input to refs: rowIdx = numAwardRows + numBestCH + numBestLHCH + i
-                            const finalsRowIdx = Math.max(...columns.map(col => getBreakpointForRingType(col.specialty))) + Math.max(...columns.map(col => col.specialty === 'Allbreed' ? getFinalsPositionsForRingType(col.specialty) : 0)) + i;
+                            const finalsRowIdx = getShowAwardsRowCount(columnIndex, col.specialty) + (col.specialty === 'Allbreed' ? getFinalsRowCount(columnIndex, col.specialty, 'champions') : 0) + (col.specialty === 'Allbreed' || col.specialty === 'Longhair' ? getFinalsRowCount(columnIndex, col.specialty, 'lhChampions') : 0) + i;
                             return (
                               <td 
                                 key={`sh-final-${i}-${columnIndex}`} 

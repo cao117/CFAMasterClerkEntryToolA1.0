@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { handleSaveToCSV, handleRestoreFromCSV } from '../utils/formActions';
+import { handleSaveToCSV } from '../utils/formActions';
 import Modal from './Modal';
 import * as premiershipValidation from '../validation/premiershipValidation';
 import { getBreakpointForRingType, getFinalsPositionsForRingType } from '../validation/premiershipValidation';
@@ -34,6 +34,10 @@ interface PremiershipTabProps {
   premiershipTabData: PremiershipTabData;
   setPremiershipTabData: React.Dispatch<React.SetStateAction<PremiershipTabData>>;
   getShowState: () => Record<string, unknown>;
+  /**
+   * Handler for CSV import functionality
+   */
+  onCSVImport: () => Promise<void>;
 }
 
 type PremiershipTabData = {
@@ -71,13 +75,15 @@ export default function PremiershipTab({
   premiershipTabData,
   setPremiershipTabData,
   getShowState,
-  isActive
+  isActive,
+  onCSVImport
 }: PremiershipTabProps) {
   // State for dynamic table structure
   const [numAwardRows] = useState(10);
   
   // State for validation errors and modal
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [isCSVErrorModalOpen, setIsCSVErrorModalOpen] = useState(false); // NEW: Modal for CSV error
   const [focusedColumnIndex, setFocusedColumnIndex] = useState<number | null>(null);
   // Local errors state (like ChampionshipTab)
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
@@ -365,13 +371,20 @@ export default function PremiershipTab({
 
   // Action button handlers (to be replaced with real logic)
   const handleSaveToCSVClick = () => {
+    // Check for validation errors before CSV export
+    if (Object.keys(errors).length > 0) {
+      // Show error modal or toast
+      showError('CSV Export Error', 'Cannot export CSV while there are validation errors. Please fix all errors first.');
+      return;
+    }
     // Export the full show state for CSV export
     handleSaveToCSV(getShowState, showSuccess, showError);
   };
+
   const handleRestoreFromCSVClick = () => {
-    // TODO: Implement Premiership data import
-    handleRestoreFromCSV({}, showSuccess, showError);
+    onCSVImport();
   };
+
   const handleResetClick = () => {
     setIsResetModalOpen(true);
   };
@@ -510,6 +523,17 @@ export default function PremiershipTab({
         onConfirm={confirmReset}
         onCancel={() => setIsResetModalOpen(false)}
       />
+             {/* CSV Error Modal */}
+       <Modal
+         isOpen={isCSVErrorModalOpen}
+         onClose={() => setIsCSVErrorModalOpen(false)}
+         title="CSV Export Error"
+         message="CSV cannot be generated until all errors on this tab have been resolved. Please fix all highlighted errors before saving."
+         type="alert"
+         confirmText="OK"
+         showCancel={false}
+         onConfirm={() => setIsCSVErrorModalOpen(false)}
+       />
       <div className="cfa-section">
         <h2 className="cfa-section-header flex items-center justify-between">
           Premiership Finals
@@ -657,7 +681,6 @@ export default function PremiershipTab({
                           const voided = getVoidState('ab', colIdx, i);
                           const errorKey = `abPremiersFinals-${colIdx}-${i}`;
                           const error = errors[errorKey];
-                          console.log('Finals error:', errorKey, error);
                           return (
                             <td key={`abpr-${i}-${colIdx}-${error || ''}`} className={`py-2 px-2 border-r border-gray-300 align-top${shouldApplyRingGlow(colIdx) ? ' ring-glow' : ''}`}>
                               <div className="flex flex-col items-start">
@@ -712,7 +735,6 @@ export default function PremiershipTab({
                           const voided = getVoidState('lh', colIdx, i);
                           const errorKey = `lhPremiersFinals-${colIdx}-${i}`;
                           const error = errors[errorKey];
-                          console.log('Finals error:', errorKey, error);
                           return (
                             <td key={`lhpr-${i}-${colIdx}`} className={`py-2 px-2 border-r border-gray-300 align-top${shouldApplyRingGlow(colIdx) ? ' ring-glow' : ''}`}>
                               <div className="flex flex-col items-start">
@@ -767,7 +789,6 @@ export default function PremiershipTab({
                           const voided = getVoidState('sh', colIdx, i);
                           const errorKey = `shPremiersFinals-${colIdx}-${i}`;
                           const error = errors[errorKey];
-                          console.log('Finals error:', errorKey, error);
                           return (
                             <td key={`shpr-${i}-${colIdx}`} className={`py-2 px-2 border-r border-gray-300 align-top${shouldApplyRingGlow(colIdx) ? ' ring-glow' : ''}`}>
                               <div className="flex flex-col items-start">
@@ -812,33 +833,33 @@ export default function PremiershipTab({
             </table>
           </div>
         </div>
-        {/* Action Buttons */}
-        <div className="flex flex-wrap gap-4 justify-center mt-8">
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={handleSaveToCSVClick}
-              className="cfa-button"
-            >
-              Save to CSV
-            </button>
-            <button
-              type="button"
-              onClick={handleRestoreFromCSVClick}
-              className="cfa-button-secondary"
-              style={{ backgroundColor: '#1e3a8a', borderColor: '#1e3a8a', color: 'white' }}
-            >
-              Load from CSV
-            </button>
-            <button
-              type="button"
-              onClick={handleResetClick}
-              className="cfa-button-secondary"
-            >
-              Reset
-            </button>
+                  {/* Action Buttons */}
+          <div className="flex flex-wrap gap-4 justify-center mt-8">
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={handleSaveToCSVClick}
+                className="cfa-button"
+              >
+                Save to CSV
+              </button>
+              <button
+                type="button"
+                onClick={handleRestoreFromCSVClick}
+                className="cfa-button-secondary"
+                style={{ backgroundColor: '#1e3a8a', borderColor: '#1e3a8a', color: 'white' }}
+              >
+                Load from CSV
+              </button>
+              <button
+                type="button"
+                onClick={handleResetClick}
+                className="cfa-button-secondary"
+              >
+                Reset
+              </button>
+            </div>
           </div>
-        </div>
       </div>
     </div>
   );

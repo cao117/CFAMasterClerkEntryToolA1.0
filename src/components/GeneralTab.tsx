@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Modal from './Modal';
 import { validateGeneralForm } from '../validation/generalValidation';
-import { handleSaveToCSV, handleRestoreFromCSV, handleReset } from '../utils/formActions';
+import { handleSaveToCSV, handleReset } from '../utils/formActions';
 
 interface Judge {
   id: number;
@@ -52,6 +52,7 @@ interface GeneralTabProps {
   showInfo: (title: string, message?: string, duration?: number) => void;
   onJudgeRingTypeChange?: (id: number, oldType: string, newType: string) => void;
   getShowState: () => Record<string, unknown>;
+  onCSVImport: () => Promise<void>;
 }
 
 export default function GeneralTab({ 
@@ -64,7 +65,8 @@ export default function GeneralTab({
   showWarning: _showWarning, // unused, prefix with _
   showInfo: _showInfo, // unused, prefix with _
   onJudgeRingTypeChange,
-  getShowState
+  getShowState,
+  onCSVImport
 }: GeneralTabProps) {
   // Local state for form validation
   const [errors, setErrors] = useState<{[key: string]: string}>({});
@@ -72,6 +74,7 @@ export default function GeneralTab({
   
   // Modal state
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [isCSVErrorModalOpen, setIsCSVErrorModalOpen] = useState(false); // NEW: Modal for CSV error
   
   // Refs for focus management
   const numberOfJudgesRef = useRef<HTMLInputElement>(null);
@@ -99,13 +102,21 @@ export default function GeneralTab({
     // Enforce maximum limit of 12 judges
     if (targetCount > 12) {
       targetCount = 12;
-      setShowData(prev => ({ ...prev, numberOfJudges: 12 }));
+      // Only update if the current value is different to prevent infinite loop
+      if (showData.numberOfJudges !== 12) {
+        setShowData(prev => ({ ...prev, numberOfJudges: 12 }));
+        return; // Exit early to prevent further processing
+      }
     }
     
     // Allow 0 judges (no minimum enforcement)
     if (targetCount < 0) {
       targetCount = 0;
-      setShowData(prev => ({ ...prev, numberOfJudges: 0 }));
+      // Only update if the current value is different to prevent infinite loop
+      if (showData.numberOfJudges !== 0) {
+        setShowData(prev => ({ ...prev, numberOfJudges: 0 }));
+        return; // Exit early to prevent further processing
+      }
     }
     
     if (targetCount > currentCount) {
@@ -121,7 +132,7 @@ export default function GeneralTab({
       // Remove excess judges
       setJudges(judges.slice(0, targetCount));
     }
-  }, [showData.numberOfJudges]);
+  }, [showData.numberOfJudges, judges.length]);
 
   const updateJudge = (id: number, field: keyof Judge, value: string) => {
     let oldType = undefined;
@@ -279,11 +290,7 @@ export default function GeneralTab({
     const errors = validateGeneralForm(showData, judges);
     setErrors(errors);
     if (Object.keys(errors).length > 0) {
-      showError(
-        'Validation Errors',
-        'Please fix all validation errors before saving to CSV. Check the form for highlighted fields with errors.',
-        8000
-      );
+      setIsCSVErrorModalOpen(true);
       return;
     }
     // Export the full show state for CSV export
@@ -291,7 +298,7 @@ export default function GeneralTab({
   };
 
   const handleRestoreFromCSVClick = () => {
-    handleRestoreFromCSV(showData as unknown as Record<string, unknown>, showSuccess, showError);
+    onCSVImport();
   };
 
   const handleResetClick = () => {
@@ -327,73 +334,120 @@ export default function GeneralTab({
 
   // Test data generation function
   const handleFillTestData = () => {
-    console.log('=== GeneralTab handleFillTestData called ===');
-    
-    // Set today's date
-    const today = new Date().toISOString().split('T')[0];
-    
-    // Set number of judges to 6 if not already set
-    const numberOfJudges = showData.numberOfJudges === 0 ? 6 : showData.numberOfJudges;
-    
-    // Fill basic show information
-    const updatedShowData = {
-      ...showData,
-      showDate: today,
-      clubName: 'Cat Fanciers Club',
-      masterClerk: 'John Smith',
-      numberOfJudges: numberOfJudges,
-      championshipCounts: {
-        gcs: Math.floor(Math.random() * 50) + 20,
-        lhGcs: Math.floor(Math.random() * 30) + 15,
-        shGcs: Math.floor(Math.random() * 30) + 15,
-        lhChs: Math.floor(Math.random() * 30) + 15,
-        shChs: Math.floor(Math.random() * 30) + 15,
-        novs: Math.floor(Math.random() * 20) + 10,
-        chs: 0, // Will be auto-calculated
-        total: 0 // Will be auto-calculated
-      },
-      kittenCounts: {
-        lhKittens: Math.floor(Math.random() * 15) + 5,
-        shKittens: Math.floor(Math.random() * 15) + 5,
-        total: 0 // Will be auto-calculated
-      },
-      premiershipCounts: {
-        gcs: Math.floor(Math.random() * 40) + 15,
-        lhPrs: Math.floor(Math.random() * 25) + 10,
-        shPrs: Math.floor(Math.random() * 25) + 10,
-        novs: Math.floor(Math.random() * 15) + 5,
-        prs: 0, // Will be auto-calculated
-        total: 0 // Will be auto-calculated
-      },
-      householdPetCount: Math.floor(Math.random() * 10) + 5
+    // Helper function to generate acronym from judge name (first letter of each word)
+    const generateAcronym = (name: string): string => {
+      return name.split(' ')
+        .map(word => word.charAt(0).toUpperCase())
+        .join('');
     };
 
-    setShowData(updatedShowData);
+    // Helper function to generate random number between 1-100
+    const getRandomCount = (): number => {
+      return Math.floor(Math.random() * 100) + 1;
+    };
 
-    // Fill judge information
-    const judgeNames = ['James Wilson', 'Robert Johnson', 'Mary Davis', 'Patricia Miller', 'Jennifer Garcia', 'Michael Brown', 'Elizabeth Jones', 'David Martinez', 'Richard Taylor', 'Susan Anderson', 'Thomas White', 'Nancy Thomas'];
-    const judgeAcronyms = ['JW', 'RJ', 'MD', 'PM', 'JG', 'MB', 'EJ', 'DM', 'RT', 'SA', 'TW', 'NT'];
-    // Force all judges to Allbreed for Allbreed testing
+    // Helper function to generate random judge names
+    const generateRandomJudgeName = (): string => {
+      const firstNames = ['John', 'Jane', 'Michael', 'Sarah', 'David', 'Emily', 'Robert', 'Lisa', 'James', 'Mary', 'William', 'Jennifer', 'Richard', 'Linda', 'Thomas', 'Patricia', 'Christopher', 'Barbara', 'Daniel', 'Elizabeth'];
+      const lastNames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez', 'Hernandez', 'Lopez', 'Gonzalez', 'Wilson', 'Anderson', 'Thomas', 'Taylor', 'Moore', 'Jackson', 'Martin'];
+      
+      const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+      const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+      return `${firstName} ${lastName}`;
+    };
+
+    // Determine number of judges
+    const numJudges = showData.numberOfJudges > 0 ? showData.numberOfJudges : 6;
+
+    // Generate random show counts ensuring total ≤ 450
+    let totalCats = 0;
+    let attempts = 0;
+    const maxAttempts = 100;
+
+    let championshipTotal, kittenTotal, premiershipTotal, householdPetCount;
+
+    do {
+      // Generate random counts between 1-100
+      const lhGcs = getRandomCount();
+      const shGcs = getRandomCount();
+      const lhChs = getRandomCount();
+      const shChs = getRandomCount();
+      const novs = getRandomCount();
+      const lhKittens = getRandomCount();
+      const shKittens = getRandomCount();
+      const lhPrs = getRandomCount();
+      const shPrs = getRandomCount();
+      const prNovs = getRandomCount();
+      const hhp = getRandomCount();
+
+      // Calculate totals
+      championshipTotal = lhGcs + shGcs + lhChs + shChs + novs;
+      kittenTotal = lhKittens + shKittens;
+      premiershipTotal = lhPrs + shPrs + prNovs;
+      householdPetCount = hhp;
+
+      totalCats = championshipTotal + kittenTotal + premiershipTotal + householdPetCount;
+      attempts++;
+    } while (totalCats > 450 && attempts < maxAttempts);
+
+    // If we couldn't get under 450, scale down proportionally
+    if (totalCats > 450) {
+      const scaleFactor = 450 / totalCats;
+      championshipTotal = Math.floor(championshipTotal * scaleFactor);
+      kittenTotal = Math.floor(kittenTotal * scaleFactor);
+      premiershipTotal = Math.floor(premiershipTotal * scaleFactor);
+      householdPetCount = Math.floor(householdPetCount * scaleFactor);
+    }
+
+    // Generate test data for General tab
+    const testShowData: ShowData = {
+      showDate: '2025-01-15',
+      clubName: 'Test Cat Fanciers Club',
+      masterClerk: 'Test Master Clerk',
+      numberOfJudges: numJudges,
+      championshipCounts: {
+        gcs: Math.floor(championshipTotal * 0.6), // 60% of total
+        lhGcs: Math.floor(championshipTotal * 0.35), // 35% of total
+        shGcs: Math.floor(championshipTotal * 0.25), // 25% of total
+        lhChs: Math.floor(championshipTotal * 0.15), // 15% of total
+        shChs: Math.floor(championshipTotal * 0.10), // 10% of total
+        novs: Math.floor(championshipTotal * 0.15), // 15% of total
+        chs: Math.floor(championshipTotal * 0.25), // 25% of total
+        total: championshipTotal
+      },
+      kittenCounts: {
+        lhKittens: Math.floor(kittenTotal * 0.6), // 60% of total
+        shKittens: Math.floor(kittenTotal * 0.4), // 40% of total
+        total: kittenTotal
+      },
+      premiershipCounts: {
+        gcs: Math.floor(premiershipTotal * 0.4), // 40% of total
+        lhPrs: Math.floor(premiershipTotal * 0.35), // 35% of total
+        shPrs: Math.floor(premiershipTotal * 0.25), // 25% of total
+        novs: Math.floor(premiershipTotal * 0.25), // 25% of total
+        prs: Math.floor(premiershipTotal * 0.6), // 60% of total
+        total: premiershipTotal
+      },
+      householdPetCount: householdPetCount
+    };
+
+    // Generate random judges with "Allbreed" ring type and acronyms from names
     const testJudges: Judge[] = [];
-    for (let i = 0; i < numberOfJudges; i++) {
-      const nameIndex = i % judgeNames.length;
-      let judgeName = judgeNames[nameIndex];
-      let judgeAcronym = judgeAcronyms[nameIndex];
-      if (i >= judgeNames.length) {
-        const suffix = Math.floor(i / judgeNames.length) + 1;
-        judgeName += " " + suffix;
-        judgeAcronym += suffix;
-      }
+    for (let i = 1; i <= numJudges; i++) {
+      const judgeName = generateRandomJudgeName();
+      const acronym = generateAcronym(judgeName);
+      
       testJudges.push({
-        id: i + 1,
+        id: i,
         name: judgeName,
-        acronym: judgeAcronym,
-        ringType: 'Allbreed' // Force Allbreed for all judges
+        acronym: acronym,
+        ringType: 'Allbreed'
       });
     }
-    console.log('Setting judges:', testJudges);
+
+    setShowData(testShowData);
     setJudges(testJudges);
-    showSuccess('Test Data Filled', 'General tab has been filled with realistic test data. Championship tab will now be available with test data.');
+    showSuccess('Test Data Filled', 'General tab has been filled with randomized test data.');
   };
 
   return (
@@ -409,6 +463,18 @@ export default function GeneralTab({
         cancelText="Cancel"
         onConfirm={confirmReset}
         onCancel={() => setIsResetModalOpen(false)}
+      />
+
+      {/* CSV Error Modal */}
+      <Modal
+        isOpen={isCSVErrorModalOpen}
+        onClose={() => setIsCSVErrorModalOpen(false)}
+        title="CSV Export Error"
+        message="CSV cannot be generated until all errors on this tab have been resolved. Please fix all highlighted errors before saving."
+        type="alert"
+        confirmText="OK"
+        showCancel={false}
+        onConfirm={() => setIsCSVErrorModalOpen(false)}
       />
 
       {/* Required Field Legend - Form Level */}
@@ -730,6 +796,7 @@ export default function GeneralTab({
               type="button"
               onClick={handleFillTestData}
               className="cfa-button-secondary"
+              style={{ backgroundColor: '#ea580c', borderColor: '#ea580c', color: 'white' }}
             >
               Fill Test Data
             </button>

@@ -67,3 +67,7 @@ Suppose you have 6 judges: 5 Shorthair rings and 1 Allbreed ring:
 - If a cat number is voided anywhere in a column, all instances of that cat number in that column are voided (including new ones).
 - Unchecking void in any cell unvoids all instances in that column for that cat number.
 - This logic applies across the full column, matching Championship, Premiership, and Household Pet tabs. 
+
+- Only filled rows require status 'KIT'.
+- Empty rows (no cat number) are allowed and do not trigger errors.
+- When importing from CSV, a blank Kitten section does not cause validation errors. 

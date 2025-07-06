@@ -4,12 +4,7 @@
  * This is CRITICAL for validation and CSV export compatibility.
  *
  * Logic mirrors championshipValidation.ts, but for PR/GP/NOV, with strict error precedence and all rules as clarified by user and docs.
- *
- * NOTE: All debug logging should use the project's Winston logger module (see src/utils/logger.ts or equivalent).
- * Add `logger.debug(...)` calls at all critical validation and error-merging points.
  */
-
-// Remove logger import, use only console.log for debug output
 
 export interface Judge {
   id: number;
@@ -286,7 +281,7 @@ function validateBestABPROrder(input: PremiershipValidationInput, colIdx: number
  * @param cat string
  * @returns string | undefined
  */
-function validateBestHairPROrder(input: PremiershipValidationInput, sectionKey: 'lhPremiersFinals' | 'shPremiersFinals', colIdx: number, pos: number, cat: string): string | undefined {
+function validateBestHairPROrder(input: PremiershipValidationInput, sectionKey: 'lhPremiersFinals' | 'shPremiersFinals', colIdx: number, pos: number, _cat: string): string | undefined {
   const abFinals = (input as any)['abPremiersFinals'] as { [key: string]: string };
   const numPositions = input.columns[colIdx] ? getFinalsPositionsForRingType(input, input.columns[colIdx].specialty) : 3;
   
@@ -381,7 +376,6 @@ export function validatePremiershipTab(input: PremiershipValidationInput): { [ke
         const value = finals ? finals[`${colIdx}-${pos}`] : '';
         if (value && value.trim() && !validateCatNumber(value)) {
           errors[errorKey] = 'Cat number must be between 1-450.';
-          // logger.debug(`[VALIDATION] Finals range error for ${errorKey}`);
         }
       }
       // 2. Duplicate error: merge with range if both
@@ -396,10 +390,8 @@ export function validatePremiershipTab(input: PremiershipValidationInput): { [ke
             const errorKey = `${section.prefix}-${colIdx}-${pos}`;
             if (errors[errorKey]) {
               errors[errorKey] = 'Cat number must be between 1-450. Duplicate: This cat is already placed in another finals position.';
-              // logger.debug(`[VALIDATION] Finals range+duplicate error for ${errorKey}`);
             } else {
               errors[errorKey] = 'Duplicate: This cat is already placed in another finals position.';
-              // logger.debug(`[VALIDATION] Finals duplicate error for ${errorKey}`);
             }
           });
         }
@@ -420,7 +412,6 @@ export function validatePremiershipTab(input: PremiershipValidationInput): { [ke
             const otherValue = otherFinals ? otherFinals[otherKey] : '';
             if (otherValue && otherValue.trim() === cat) {
               errors[errorKey] = 'Duplicate: a cat cannot be both longhair and shorthair';
-              console.debug('[validatePremiershipTab] Finals cross-section duplicate error', errorKey, errors[errorKey]);
               break;
             }
           }
@@ -431,24 +422,18 @@ export function validatePremiershipTab(input: PremiershipValidationInput): { [ke
         const errorKey = `${section.prefix}-${colIdx}-${pos}`;
         if (errors[errorKey]) return; // skip if range, duplicate, or cross-section duplicate error present
         // Status error: Only PR eligible for finals (no GP/NOV)
-        // CFA rule: Must search ALL columns' Show Awards for this cat number, not just current column
+        // CFA rule: Must search ONLY the current column's Show Awards for this cat number
         let status: string | undefined = undefined;
-        // Deep debug log: show all Show Awards data
-        console.log(`[VALIDATION][STATUS] Checking status for errorKey=${errorKey}, cat=${cat}`);
-        console.log(`[VALIDATION][STATUS] Show Awards data:`, input.showAwards);
-        outer: for (let c = 0; c < input.columns.length; c++) {
-          for (let i = 0; i < 15; i++) {
-            const showAward = input.showAwards[`${c}-${i}`];
-            if (showAward && showAward.catNumber && showAward.catNumber.trim() === cat) {
-              status = showAward.status;
-              console.log(`[VALIDATION][STATUS] Found status for cat=${cat} at showAwards[${c}-${i}]: ${status}`);
-              break outer;
-            }
+        // Only check the current column's Show Awards, not all columns
+        for (let i = 0; i < 15; i++) {
+          const showAward = input.showAwards[`${colIdx}-${i}`];
+          if (showAward && showAward.catNumber && showAward.catNumber.trim() === cat) {
+            status = showAward.status;
+            break;
           }
         }
         if (status === 'GP' || status === 'NOV') {
           errors[errorKey] = `${cat} is listed as a ${status} in Show Awards and cannot be awarded PR final.`;
-          console.log(`[VALIDATION][STATUS] Assigned status error for errorKey=${errorKey}: ${errors[errorKey]}`);
         }
       });
       Object.entries(catNumbers).forEach(([pos, cat]) => {
@@ -466,7 +451,6 @@ export function validatePremiershipTab(input: PremiershipValidationInput): { [ke
         }
         if (sequentialError) {
           errors[errorKey] = 'You must fill previous placements before entering this position.';
-          // logger.debug(`[VALIDATION] Finals sequential error for ${errorKey}`);
           return;
         }
         // 5. Order error: only for Best AB PR, LH PR, SH PR, and only if no higher error
@@ -479,7 +463,6 @@ export function validatePremiershipTab(input: PremiershipValidationInput): { [ke
           }
           if (orderError) {
             errors[errorKey] = orderError;
-            // logger.debug(`[VALIDATION] Finals order error for ${errorKey}: ${orderError}`);
           }
         }
         // 6. Assignment reminder handled after all other errors
@@ -503,7 +486,6 @@ export function validatePremiershipTab(input: PremiershipValidationInput): { [ke
           }
           if (!foundInLH && !foundInSH) {
             errors[errorKey] = `${cat} needs to be assigned to either LH or SH PR final.`;
-            // logger.debug(`[VALIDATION] Finals assignment reminder for ${errorKey}`);
           }
         }
       });
@@ -529,7 +511,6 @@ export function validatePremiershipTab(input: PremiershipValidationInput): { [ke
       const award = input.showAwards[key];
       if (award && award.catNumber && award.catNumber.trim() !== '' && !validateCatNumber(award.catNumber)) {
         errors[key] = 'Cat number must be between 1-450.';
-        // logger.debug(`[VALIDATION] ShowAwards range error for ${key}`);
       }
     }
     // 2. Duplicate error: merge with range if both
@@ -539,10 +520,8 @@ export function validatePremiershipTab(input: PremiershipValidationInput): { [ke
           const key = `${colIdx}-${pos}`;
           if (errors[key]) {
             errors[key] = 'Cat number must be between 1-450. Duplicate: This cat is already placed in another position.';
-            // logger.debug(`[VALIDATION] ShowAwards range+duplicate error for ${key}`);
           } else {
             errors[key] = 'Duplicate: This cat is already placed in another position.';
-            // logger.debug(`[VALIDATION] ShowAwards duplicate error for ${key}`);
           }
         });
       }
@@ -555,12 +534,10 @@ export function validatePremiershipTab(input: PremiershipValidationInput): { [ke
         if (errors[key]) continue; // skip if range or duplicate error present
         if (!validateSequentialEntry(input, 'showAwards', colIdx, pos, award.catNumber)) {
           errors[key] = 'You must fill previous placements before entering this position.';
-          // logger.debug(`[VALIDATION] ShowAwards sequential error for ${key}`);
         }
       }
     }
   }
-  // logger.debug('[VALIDATION] PremiershipTab errors:', errors);
   return errors;
 }
 

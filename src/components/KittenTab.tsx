@@ -1,6 +1,6 @@
 import React, { useMemo, useRef } from 'react';
 import * as kittenValidation from '../validation/kittenValidation';
-import { handleSaveToCSV, handleRestoreFromCSV } from '../utils/formActions';
+import { handleSaveToCSV } from '../utils/formActions';
 import Modal from './Modal';
 
 interface Judge {
@@ -30,6 +30,10 @@ interface KittenTabProps {
   setKittenTabData: React.Dispatch<React.SetStateAction<KittenTabData>>;
   onTabReset: () => void;
   getShowState: () => Record<string, unknown>;
+  /**
+   * Handler for CSV import functionality
+   */
+  onCSVImport: () => Promise<void>;
 }
 
 type KittenTabData = {
@@ -38,6 +42,7 @@ type KittenTabData = {
   errors: { [key: string]: string };
   focusedColumnIndex: number | null;
   isResetModalOpen: boolean;
+  isCSVErrorModalOpen: boolean; // NEW: Modal for CSV error
 };
 
 /**
@@ -52,7 +57,8 @@ export default function KittenTab({
   kittenTabData,
   setKittenTabData,
   onTabReset,
-  getShowState
+  getShowState,
+  onCSVImport
 }: KittenTabProps) {
   // --- Helper: Generate columns (one per judge, handle Double Specialty) ---
   const generateColumns = (): Column[] => {
@@ -101,6 +107,10 @@ export default function KittenTab({
       errors: newErrors
     }));
   };
+
+  // --- Modal state - LIFTED TO APP STATE ---
+  const isResetModalOpen = kittenTabData.isResetModalOpen || false;
+  const isCSVErrorModalOpen = kittenTabData.isCSVErrorModalOpen || false;
 
   // --- Cat input refs for keyboard navigation ---
   const totalCatRows = Math.max(...columns.map(col => getAwardCount(col.specialty)));
@@ -248,23 +258,30 @@ export default function KittenTab({
       voidedShowAwards: kittenTabData.voidedShowAwards || {},
       kittenCounts
     };
-    setErrors(kittenValidation.validateKittenTab(validationInput));
+    return kittenValidation.validateKittenTab(validationInput);
   };
 
   // --- Validate on blur ---
   const handleBlur = () => {
-    validate();
+    const errors = validate();
+    setErrors(errors);
   };
 
   // --- Table Structure: Sticky headers, frozen position column, columns = judges ---
   const maxFinalRows = Math.max(...columns.map(col => getAwardCount(col.specialty)));
 
   // Add state for reset modal - LIFTED TO APP STATE
-  const isResetModalOpen = kittenTabData.isResetModalOpen || false;
   const setIsResetModalOpen = (open: boolean) => {
     setKittenTabData((prev: KittenTabData) => ({
       ...prev,
       isResetModalOpen: open
+    }));
+  };
+
+  const setIsCSVErrorModalOpen = (open: boolean) => {
+    setKittenTabData((prev: KittenTabData) => ({
+      ...prev,
+      isCSVErrorModalOpen: open
     }));
   };
 
@@ -324,6 +341,24 @@ export default function KittenTab({
       const scrollLeft = th.offsetLeft - frozenWidth;
       container.scrollTo({ left: scrollLeft, behavior: 'smooth' });
     }
+  };
+
+  const handleSaveToCSVClick = () => {
+    // Check for validation errors before CSV export
+    if (Object.keys(kittenTabData.errors).length > 0) {
+      setIsCSVErrorModalOpen(true);
+      return;
+    }
+    // Export the full show state for CSV export
+    handleSaveToCSV(getShowState, showSuccess, showError);
+  };
+
+  const handleRestoreFromCSVClick = () => {
+    onCSVImport();
+  };
+
+  const handleResetClick = () => {
+    setIsResetModalOpen(true);
   };
 
   return (
@@ -503,37 +538,46 @@ export default function KittenTab({
             </table>
           </div>
         </div>
-        {/* Action buttons (Save, Generate, Restore, Reset) - match PremiershipTab */}
-        <div className="flex flex-wrap gap-4 justify-center mt-8">
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={() => {
-                // Export the full show state for CSV export
-                handleSaveToCSV(getShowState, showSuccess, showError);
-              }}
-              className="cfa-button"
-            >
-              Save to CSV
-            </button>
-            <button
-              type="button"
-              onClick={() => handleRestoreFromCSV({}, showSuccess, showError)}
-              className="cfa-button-secondary"
-              style={{ backgroundColor: '#1e3a8a', borderColor: '#1e3a8a', color: 'white' }}
-            >
-              Load from CSV
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsResetModalOpen(true)}
-              className="cfa-button-secondary"
-            >
-              Reset
-            </button>
+                  {/* Action buttons (Save, Generate, Restore, Reset) - match PremiershipTab */}
+          <div className="flex flex-wrap gap-4 justify-center mt-8">
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={handleSaveToCSVClick}
+                className="cfa-button"
+              >
+                Save to CSV
+              </button>
+              <button
+                type="button"
+                onClick={handleRestoreFromCSVClick}
+                className="cfa-button-secondary"
+                style={{ backgroundColor: '#1e3a8a', borderColor: '#1e3a8a', color: 'white' }}
+              >
+                Load from CSV
+              </button>
+              <button
+                type="button"
+                onClick={handleResetClick}
+                className="cfa-button-secondary"
+              >
+                Reset
+              </button>
+            </div>
           </div>
-        </div>
       </div>
+
+      {/* CSV Error Modal */}
+      <Modal
+        isOpen={isCSVErrorModalOpen}
+        onClose={() => setIsCSVErrorModalOpen(false)}
+        title="CSV Export Error"
+        message="CSV cannot be generated until all errors on this tab have been resolved. Please fix all highlighted errors before saving."
+        type="alert"
+        confirmText="OK"
+        showCancel={false}
+        onConfirm={() => setIsCSVErrorModalOpen(false)}
+      />
     </div>
   );
 } 

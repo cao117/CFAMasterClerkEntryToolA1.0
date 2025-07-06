@@ -117,6 +117,14 @@ Suppose the General tab has the following judges:
 - **Best SH PR**: Cat # for Best Shorthair Premiers (3 or 5).
 - **Voided**: Checkbox to mark an award as voided.
 
+### Kitten Tab Fields
+- **Show Awards (Top 10/15)**: Cat # and status (KIT) for each placement per judge/ring.
+  - **Note:** Empty rows are allowed and do not trigger errors. Only filled rows require status 'KIT'.
+
+### Household Pet Tab Fields
+- **Show Awards (Top 10/15)**: Cat # and status (HHP) for each placement per judge/ring.
+  - **Note:** Empty rows are allowed and do not trigger errors. Only filled rows require status 'HHP'.
+
 ---
 
 ## Award Assignment & Validation Rules
@@ -384,6 +392,22 @@ The following action buttons are present in the Championship and Premiership tab
 - **Save to CSV**: Exports validated data for submission.
 - **Load from CSV**: Imports data from a CSV file, restoring all fields and voids.
 - CSV schema and voiding logic are documented in `docs/specs/CSV_SCHEMA.md` and `docs/specs/CSV_EXPORT_VOID_QUESTION.md`.
+
+---
+
+## CSV Import/Restore and UI Row Rendering (v1.26+)
+
+- **Robust Row Mapping for All Tabs (v1.27+)**: The CSV import logic for ALL tabs (Championship, Premiership, Kitten, and Household Pet) now parses the row label (e.g., "Show Awards 3", "2nd Best AB CH") to determine the correct UI row position. This ensures that all Show Awards and Finals rows are mapped to their intended positions, even if the CSV has missing, extra, or out-of-order rows. This prevents partial or misaligned data after import.
+- **CSV Import Fix (v1.28+)**: Fixed dynamic import issue in formActions.ts that was causing "parseCSVAndRestoreState is not a function" error. Now uses regular import for reliable CSV import functionality.
+- **Clarification:** In the CSV, 'Show Awards 1', 'Show Awards 2', etc. are row labels for placements 1, 2, ... in the single Show Awards section. They are not separate sections—there is only one Show Awards section, followed by the finals sections (Best AB CH, Best LH CH, Best SH CH). This avoids confusion for users and developers.
+- **Fixed Row Indexing Issue**: The CSV import now uses static counters to ensure that Show Awards and Finals rows are mapped to sequential UI positions (0, 1, 2, ...) regardless of CSV row gaps or order.
+- **Robust Row Rendering**: All tabs (Championship, Premiership, Kitten, Household Pet) now dynamically render all Show Awards and Finals rows present in imported CSV data, regardless of the calculated breakpoint or show totals.
+- **Consistent Positioning**: The number of rows shown for each column/section is the maximum of the calculated breakpoint (10/15 for Show Awards, 3/5 for Finals) and the number of rows present in the imported data for that column/section.
+- **Empty Cell Handling**: Even empty cells ("-") in the CSV are now properly mapped to UI positions, ensuring all rows are rendered for visual consistency.
+- **Enhanced Debug Logging**: Added comprehensive logging for CSV import operations to aid in debugging and troubleshooting.
+- **Void State Parsing**: Fixed void state parsing to handle both "-v" and "- V" formats for voided cells in CSV import.
+- **Kitten Tab Empty Row Handling (v1.28+)**: When importing a CSV, empty rows in the Kitten tab are allowed and do not trigger errors. Only filled rows require status 'KIT'. This ensures that a blank Kitten section in the CSV does not cause validation errors in the UI.
+- **Household Pet Tab Empty Row Handling (v1.28+)**: When importing a CSV, empty rows in the Household Pet tab are allowed and do not trigger errors. Only filled rows require status 'HHP'. This ensures that a blank Household Pet section in the CSV does not cause validation errors in the UI.
 
 ---
 

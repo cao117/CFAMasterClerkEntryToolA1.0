@@ -103,7 +103,8 @@ function App() {
     voidedShowAwards: {},
     errors: {},
     focusedColumnIndex: null as number | null,
-    isResetModalOpen: false
+    isResetModalOpen: false,
+    isCSVErrorModalOpen: false // NEW: Modal for CSV error
   });
 
   // Household Pet tab state (LIFTED)
@@ -307,6 +308,25 @@ function App() {
     },
   });
 
+  // Function to handle CSV import and restore application state
+  const handleCSVImport = async () => {
+    try {
+      const { handleRestoreFromCSV } = await import('./utils/formActions');
+      const restoredState = await handleRestoreFromCSV(showSuccess, showError);
+      if (!restoredState) return;
+
+      // Update all state with restored data
+      setShowData(restoredState.general);
+      setJudges(restoredState.judges);
+      setChampionshipTabData(restoredState.championship);
+      setPremiershipTabData(restoredState.premiership);
+      setKittenTabData(restoredState.kitten);
+      setHouseholdPetTabData(restoredState.household);
+    } catch (error) {
+      showError('Import Error', 'An error occurred while importing the CSV file.');
+    }
+  };
+
   const tabs = [
     { 
       id: 'general', 
@@ -322,6 +342,7 @@ function App() {
         showInfo={showInfo}
         onJudgeRingTypeChange={handleJudgeRingTypeChange}
         getShowState={getShowState}
+        onCSVImport={handleCSVImport}
       />,
       disabled: false
     },
@@ -358,6 +379,7 @@ function App() {
         })}
         getShowState={getShowState}
         isActive={activeTab === 'championship'}
+        onCSVImport={handleCSVImport}
       />,
       disabled: championshipTabDisabled
     },
@@ -372,8 +394,9 @@ function App() {
         isActive={activeTab === 'kitten'}
         kittenTabData={kittenTabData}
         setKittenTabData={setKittenTabData}
-        onTabReset={() => setKittenTabData({ showAwards: {}, voidedShowAwards: {}, errors: {}, focusedColumnIndex: null, isResetModalOpen: false })}
+        onTabReset={() => setKittenTabData({ showAwards: {}, voidedShowAwards: {}, errors: {}, focusedColumnIndex: null, isResetModalOpen: false, isCSVErrorModalOpen: false })}
         getShowState={getShowState}
+        onCSVImport={handleCSVImport}
       />,
       disabled: kittenTabDisabled
     },
@@ -395,6 +418,7 @@ function App() {
         premiershipTabData={premiershipTabData}
         setPremiershipTabData={setPremiershipTabData}
         getShowState={getShowState}
+        onCSVImport={handleCSVImport}
       />,
       disabled: premiershipTabDisabled
     },
@@ -411,6 +435,7 @@ function App() {
         householdPetTabData={householdPetTabData}
         setHouseholdPetTabData={setHouseholdPetTabData}
         onTabReset={() => setHouseholdPetTabData({ showAwards: {}, voidedShowAwards: {} })}
+        onCSVImport={handleCSVImport}
       />,
       disabled: showData.householdPetCount <= 0
     }

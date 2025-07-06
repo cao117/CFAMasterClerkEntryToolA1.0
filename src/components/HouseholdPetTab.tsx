@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react';
 import * as householdPetValidation from '../validation/householdPetValidation';
-import { handleSaveToCSV, handleRestoreFromCSV } from '../utils/formActions';
+import { handleSaveToCSV } from '../utils/formActions';
 import Modal from './Modal';
 
 interface Judge {
@@ -34,6 +34,10 @@ interface HouseholdPetTabProps {
    * Callback to reset the tab data (called from App.tsx)
    */
   onTabReset: () => void;
+  /**
+   * Handler for CSV import functionality
+   */
+  onCSVImport: () => Promise<void>;
 }
 
 /**
@@ -48,7 +52,8 @@ export default function HouseholdPetTab({
   getShowState,
   householdPetTabData,
   setHouseholdPetTabData,
-  onTabReset
+  onTabReset,
+  onCSVImport
 }: HouseholdPetTabProps) {
   // --- Generate columns (one per judge, regardless of ring type) ---
   const generateColumns = (): Column[] => {
@@ -212,6 +217,9 @@ export default function HouseholdPetTab({
   // Add state for reset modal
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
 
+  // Add state for CSV error modal
+  const [isCSVErrorModalOpen, setIsCSVErrorModalOpen] = useState(false);
+
   // Helper function to get appropriate border styling for errors (always red)
   const getBorderStyle = (errorKey: string) => {
     if (errors[errorKey]) {
@@ -283,6 +291,19 @@ export default function HouseholdPetTab({
     return Object.keys(householdPetTabData.voidedShowAwards).some(k => k.startsWith(`${colIdx}-`) && householdPetTabData.showAwards[k]?.catNumber === catNumber && householdPetTabData.voidedShowAwards[k]);
   };
 
+  const handleSaveToCSVClick = () => {
+    // Export the full show state for CSV export
+    handleSaveToCSV(getShowState, showSuccess, showError);
+  };
+
+  const handleRestoreFromCSVClick = () => {
+    onCSVImport();
+  };
+
+  const handleResetClick = () => {
+    onTabReset();
+  };
+
   return (
     <div className="p-8 space-y-8">
       {/* Reset Confirmation Modal */}
@@ -300,6 +321,18 @@ export default function HouseholdPetTab({
           showSuccess('Household Pet Tab Reset', 'Household Pet tab data has been reset successfully.');
         }}
         onCancel={() => setIsResetModalOpen(false)}
+      />
+
+      {/* CSV Error Modal */}
+      <Modal
+        isOpen={isCSVErrorModalOpen}
+        onClose={() => setIsCSVErrorModalOpen(false)}
+        title="Validation Errors"
+        message="CSV cannot be generated until all errors on this tab have been resolved. Please fix all highlighted errors before saving."
+        type="alert"
+        confirmText="OK"
+        showCancel={false}
+        onConfirm={() => setIsCSVErrorModalOpen(false)}
       />
       <div className="cfa-section">
         <h2 className="cfa-section-header flex items-center justify-between">
@@ -447,14 +480,18 @@ export default function HouseholdPetTab({
             </table>
           </div>
         </div>
-        {/* Action buttons (Save, Generate, Restore, Reset) - match KittenTab */}
+        {/* Action Buttons */}
         <div className="flex flex-wrap gap-4 justify-center mt-8">
           <div className="flex gap-3">
             <button
               type="button"
               onClick={() => {
-                // Export the full show state for CSV export
-                handleSaveToCSV(getShowState, showSuccess, showError);
+                // Check for validation errors before CSV export
+                if (Object.keys(errors).length > 0) {
+                  showError('CSV Export Error', 'Cannot export CSV while there are validation errors. Please fix all errors first.');
+                  return;
+                }
+                handleSaveToCSVClick();
               }}
               className="cfa-button"
             >
@@ -462,7 +499,7 @@ export default function HouseholdPetTab({
             </button>
             <button
               type="button"
-              onClick={() => handleRestoreFromCSV({}, showSuccess, showError)}
+              onClick={handleRestoreFromCSVClick}
               className="cfa-button-secondary"
               style={{ backgroundColor: '#1e3a8a', borderColor: '#1e3a8a', color: 'white' }}
             >
@@ -470,10 +507,10 @@ export default function HouseholdPetTab({
             </button>
             <button
               type="button"
-              onClick={() => setIsResetModalOpen(true)}
+              onClick={handleResetClick}
               className="cfa-button-secondary"
             >
-              Reset
+              Reset Tab
             </button>
           </div>
         </div>

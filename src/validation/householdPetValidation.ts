@@ -16,16 +16,18 @@ export type HouseholdPetValidationInput = {
 
 /**
  * Validate the Household Pet tab: sequential entry, duplicate, range, voiding. Only HHP status allowed.
+ *
+ * - If catNumber is empty, do not require or check status (no error).
+ * - Only filled rows require status === 'HHP'.
+ *
  * @param {HouseholdPetValidationInput} input
  * @returns {Record<string, string>} errors keyed by cell
  */
 export function validateHouseholdPetTab(input: HouseholdPetValidationInput): Record<string, string> {
   const errors: Record<string, string> = {};
   const { columns, showAwards, voidedShowAwards, householdPetCount } = input;
-  
   // Breakpoint logic: 50 household pets for 15 positions
   const maxRows = householdPetCount >= 50 ? 15 : 10;
-
   // For each column
   columns.forEach((_, colIdx) => {
     let firstEmpty = -1;
@@ -54,11 +56,12 @@ export function validateHouseholdPetTab(input: HouseholdPetValidationInput): Rec
         if (!catNumberToRows[cell.catNumber]) catNumberToRows[cell.catNumber] = [];
         catNumberToRows[cell.catNumber].push(rowIdx);
       }
-      // Status check (should always be HHP)
-      if (cell.status !== 'HHP') {
+      // Status check: Only require status === 'HHP' if catNumber is present
+      if (cell.catNumber && cell.status !== 'HHP') {
         errors[key] = 'Status must be HHP';
         continue;
       }
+      // If catNumber is empty, do not check or require status (no error)
     }
     // After collecting, set duplicate error for all rows with duplicate cat numbers
     Object.entries(catNumberToRows).forEach(([catNum, rows]) => {

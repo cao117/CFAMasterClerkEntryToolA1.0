@@ -4,6 +4,21 @@ This changelog records all changes, additions, and deletions to validation rules
 
 ---
 
+### [2024-12-19] All Tabs: CSV Export File Save Dialog Enhancement
+- **Tab:** All (General, Championship, Premiership, Kitten, Household Pet)
+- **Change:** Enhanced CSV export functionality to use file save dialog instead of automatic download
+- **Summary:** 
+  - **Modern browsers**: When "Save to CSV" is clicked and validation passes, a file save dialog opens allowing users to choose where to save the CSV file
+  - **Older browsers**: Falls back to automatic download to the default downloads folder
+  - **Auto-generated filename**: Filename is still auto-generated in format `YYYYMMDD_HHMMSS_showName.csv` but users can change location and filename if desired
+  - **File System Access API**: Uses modern browser File System Access API when available for better user experience
+  - **Graceful fallback**: Maintains compatibility with older browsers that don't support the File System Access API
+  - **User cancellation handling**: Properly handles when users cancel the save dialog (no error shown)
+- **Rationale:** Provides users with more control over where their CSV files are saved, improving the user experience by allowing them to organize their files in their preferred directory structure rather than always downloading to the default downloads folder.
+- **Impact:** Users can now choose where to save their CSV export files, making file management more convenient and organized.
+
+---
+
 ### [2024-12-19] Championship Tab: Critical Bug Fix - validateBestHairCHWithFiller Not Being Called
 - **Tab:** Championship
 - **Change:** Fixed critical bug where `validateBestHairCHWithFiller` function was not being called, causing order validation errors to not appear
@@ -776,3 +791,13 @@ This changelog records all changes, additions, and deletions to validation rules
 - **Change:** Enforced that all AB CH/PR cats assigned to a specialty section (LH/SH CH/PR) must be at the top, in the same order as Best AB CH/PR. Fillers (non-AB CH/PR) can only appear after all AB CH/PR cats. If any filler appears before an AB CH/PR cat, an order error is shown on the first offending cell.
 - **Docs:** Updated VALIDATION_CHAMPIONSHIP.md and VALIDATION_PREMIERSHIP.md with new rule and examples.
 - **Rationale:** Matches CFA rules and user expectation for top-aligned order. Prevents fillers from appearing above AB CH/PR cats in any specialty section.
+
+### 2024-06-21
+- **Kitten Tab**: Validation now allows empty rows (no cat number) without error; only filled rows require status 'KIT'.
+- **CSV Import**: Importing a blank Kitten section does not cause validation errors.
+- **Rationale**: Prevents false errors when no kittens are entered or imported.
+
+### 2024-06-21
+- **Household Pet Tab**: Validation now allows empty rows (no cat number) without error; only filled rows require status 'HHP'.
+- **CSV Import**: Importing a blank Household Pet section does not cause validation errors.
+- **Rationale**: Prevents false errors when no household pets are entered or imported.

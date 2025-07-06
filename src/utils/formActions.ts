@@ -1,5 +1,6 @@
 // Shared action button logic for General and Championship tabs
-import { handleSaveToCSV as csvExportSave, handleRestoreFromCSV as csvExportRestore } from './csvExport';
+import { handleSaveToCSV as csvExportHandleSaveToCSV } from './csvExport';
+import { parseCSVAndRestoreState } from './csvImport';
 
 interface GetShowStateFunction {
   (): Record<string, unknown>;
@@ -14,35 +15,58 @@ interface ErrorCallback {
 }
 
 /**
- * Handles saving the current show state to a CSV file
- * @param getShowState Function to get the current show state
- * @param showSuccess Success callback function
- * @param showError Error callback function
+ * Handles CSV export with file save dialog
+ * @param getShowState - Function to get current show state
+ * @param showSuccess - Success callback function
+ * @param showError - Error callback function
  */
 export function handleSaveToCSV(
   getShowState: GetShowStateFunction,
   showSuccess: SuccessCallback,
   showError: ErrorCallback
 ) {
-  csvExportSave(getShowState, showSuccess, showError);
+  csvExportHandleSaveToCSV(getShowState, showSuccess, showError);
 }
 
 /**
- * Handles restoring show state from a CSV file
- * @param data The data to restore from
- * @param showSuccess Success callback function
- * @param showError Error callback function
+ * Handles CSV import with file selection dialog
+ * @param showSuccess - Success callback function
+ * @param showError - Error callback function
+ * @returns Promise that resolves to the restored state or null
  */
-export function handleRestoreFromCSV(
-  data: Record<string, unknown>,
+export async function handleRestoreFromCSV(
   showSuccess: SuccessCallback,
   showError: ErrorCallback
-) {
-  csvExportRestore(data, showSuccess, showError);
+): Promise<any> {
+  try {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.csv';
+    
+    return new Promise((resolve) => {
+      input.onchange = async (event) => {
+        const file = (event.target as HTMLInputElement).files?.[0];
+        if (!file) {
+          resolve(null);
+          return;
+        }
+        
+        const text = await file.text();
+        const restoredState = parseCSVAndRestoreState(text, showSuccess, showError);
+        resolve(restoredState);
+      };
+      
+      input.click();
+    });
+  } catch (error) {
+    showError('Import Error', 'An error occurred while importing the CSV file.');
+    return null;
+  }
 }
 
 /**
- * Reset handler (opens modal)
+ * Handles reset confirmation modal
+ * @param setIsResetModalOpen - Function to control reset modal visibility
  */
 export function handleReset(setIsResetModalOpen: (open: boolean) => void) {
   setIsResetModalOpen(true);

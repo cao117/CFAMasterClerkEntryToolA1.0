@@ -124,3 +124,51 @@ The extractCell logic in csvExport.ts handles string, object, or undefined cell 
 
 #### Developer Note
 The mapping logic uses the finals row index modulo 5 to select the correct key for each section, ensuring the correct cat number is written for each position and judge. 
+
+## CSV Export Error Handling
+
+### CSV Export File Save Dialog
+
+When you click the 'Save to CSV' button and validation passes (no errors), the application will:
+
+- **Modern Browsers**: Open a file save dialog allowing you to choose where to save the CSV file. The filename will be auto-generated in the format `YYYYMMDD_HHMMSS_showName.csv` but you can change the location and filename if desired.
+
+- **Older Browsers**: Automatically download the file to your default downloads folder with the auto-generated filename.
+
+The auto-generated filename format is: `YYYYMMDD_HHMMSS_showName.csv`
+- Example: `20241215_143022_ExampleCatShow.csv`
+
+### General Tab: Save to CSV Error Handling
+
+- If you click the 'Save to CSV' button while there are validation errors on the General tab, a modal dialog will appear with the message:
+  > CSV cannot be generated until all errors on this tab have been resolved. Please fix all highlighted errors before saving.
+- You must resolve all highlighted errors before you can export the CSV.
+- The previous error toast for this scenario has been replaced by this modal for improved clarity.
+
+### Championship Tab: Save to CSV Error Handling
+
+- If you click the 'Save to CSV' button while there are validation errors on the Championship tab, a modal dialog will appear with the message:
+  > CSV cannot be generated until all errors on this tab have been resolved. Please fix all highlighted errors before saving.
+- You must resolve all highlighted errors before you can export the CSV.
+- The previous error toast for this scenario has been replaced by this modal for improved clarity.
+
+### Premiership Tab: Save to CSV Error Handling
+
+- If you click the 'Save to CSV' button while there are validation errors on the Premiership tab, a modal dialog will appear with the message:
+  > CSV cannot be generated until all errors on this tab have been resolved. Please fix all highlighted errors before saving.
+- You must resolve all highlighted errors before you can export the CSV.
+- The previous error toast for this scenario has been replaced by this modal for improved clarity.
+
+### Kitten Tab: Save to CSV Error Handling
+
+- If you click the 'Save to CSV' button while there are validation errors on the Kitten tab, a modal dialog will appear with the message:
+  > CSV cannot be generated until all errors on this tab have been resolved. Please fix all highlighted errors before saving.
+- You must resolve all highlighted errors before you can export the CSV.
+- The previous error toast for this scenario has been replaced by this modal for improved clarity.
+
+### Household Pet Tab: Save to CSV Error Handling
+
+- If you click the 'Save to CSV' button while there are validation errors on the Household Pet tab, a modal dialog will appear with the message:
+  > CSV cannot be generated until all errors on this tab have been resolved. Please fix all highlighted errors before saving.
+- You must resolve all highlighted errors before you can export the CSV.
+- The previous error toast for this scenario has been replaced by this modal for improved clarity. 
