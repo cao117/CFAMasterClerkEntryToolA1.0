@@ -70,7 +70,8 @@ export default function PremiershipTab({
   showError,
   premiershipTabData,
   setPremiershipTabData,
-  getShowState
+  getShowState,
+  isActive
 }: PremiershipTabProps) {
   // State for dynamic table structure
   const [numAwardRows] = useState(10);
@@ -98,9 +99,35 @@ export default function PremiershipTab({
   // Memoize columns for consistent reference
   const columns: Column[] = useMemo(() => generateColumns(), [judges]);
 
+  // --- Helper: Get finals/Best PR counts for a ring type ---
+  const getFinalsCount = (ringType: string) =>
+    getBreakpointForRingType({
+      columns,
+      showAwards: premiershipTabData.showAwards,
+      premiersFinals: premiershipTabData.premiersFinals,
+      abPremiersFinals: premiershipTabData.abPremiersFinals,
+      lhPremiersFinals: premiershipTabData.lhPremiersFinals,
+      shPremiersFinals: premiershipTabData.shPremiersFinals,
+      premiershipTotal,
+      premiershipCounts
+    }, ringType);
+  const getFinalsPositionsForRingTypeLocal = (ringType: string) =>
+    getFinalsPositionsForRingType({
+      columns,
+      showAwards: premiershipTabData.showAwards,
+      premiersFinals: premiershipTabData.premiersFinals,
+      abPremiersFinals: premiershipTabData.abPremiersFinals,
+      lhPremiersFinals: premiershipTabData.lhPremiersFinals,
+      shPremiersFinals: premiershipTabData.shPremiersFinals,
+      premiershipTotal,
+      premiershipCounts
+    }, ringType);
+
   // Accessibility: refs for ALL Cat # input fields (Show Awards + Finals)
   // We'll build a 2D array: catInputRefs[columnIndex][verticalRowIndex]
-  const totalCatRows = numAwardRows; // Only Show Awards section is rendered for now
+  // Calculate total rows: Show Awards + Best AB PR + Best LH PR + Best SH PR
+  const maxFinalsRows = Math.max(...columns.map(col => getFinalsPositionsForRingTypeLocal(col.specialty)));
+  const totalCatRows = numAwardRows + maxFinalsRows + maxFinalsRows + maxFinalsRows; // Show Awards + AB + LH + SH
   const catInputRefs = useRef<(HTMLInputElement | null)[][]>([]);
   useEffect(() => {
     // Initialize refs 2D array to match columns and totalCatRows
@@ -109,14 +136,16 @@ export default function PremiershipTab({
 
   // Focus first Cat # input on mount or when columns/rows change, after refs are populated
   useEffect(() => {
-    if (columns.length > 0 && totalCatRows > 0) {
+    if (isActive && columns.length > 0 && totalCatRows > 0) {
+      // Use a longer timeout to ensure DOM is fully rendered
       setTimeout(() => {
         if (catInputRefs.current[0] && catInputRefs.current[0][0]) {
           catInputRefs.current[0][0].focus();
+          catInputRefs.current[0][0].scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
-      }, 0);
+      }, 100);
     }
-  }, [columns.length, totalCatRows]);
+  }, [isActive, columns.length, totalCatRows]);
 
 
   /**
@@ -197,30 +226,6 @@ export default function PremiershipTab({
   // Add refs and state for parity with ChampionshipTab
   const tableContainerRef = useRef<HTMLDivElement>(null);
 
-  // --- Helper: Get finals/Best PR counts for a ring type ---
-  const getFinalsCount = (ringType: string) =>
-    getBreakpointForRingType({
-      columns,
-      showAwards: premiershipTabData.showAwards,
-      premiersFinals: premiershipTabData.premiersFinals,
-      abPremiersFinals: premiershipTabData.abPremiersFinals,
-      lhPremiersFinals: premiershipTabData.lhPremiersFinals,
-      shPremiersFinals: premiershipTabData.shPremiersFinals,
-      premiershipTotal,
-      premiershipCounts
-    }, ringType);
-  const getFinalsPositionsForRingTypeLocal = (ringType: string) =>
-    getFinalsPositionsForRingType({
-      columns,
-      showAwards: premiershipTabData.showAwards,
-      premiersFinals: premiershipTabData.premiersFinals,
-      abPremiersFinals: premiershipTabData.abPremiersFinals,
-      lhPremiersFinals: premiershipTabData.lhPremiersFinals,
-      shPremiersFinals: premiershipTabData.shPremiersFinals,
-      premiershipTotal,
-      premiershipCounts
-    }, ringType);
-
   // --- Test Data Generation Function ---
   // const fillTestData = useCallback(() => {
   //   // Commented out unused function
@@ -244,20 +249,25 @@ export default function PremiershipTab({
     if (value && value.trim() !== '') {
       shouldBeVoided = isCatNumberVoidedInColumn(colIdx, value);
     }
-    setPremiershipTabData((prev: any) => ({
+    setPremiershipTabData((prev: any) => {
+      const prevCell = prev.showAwards[key] || {};
+      let newCell = { ...prevCell, [field]: value };
+      // If setting catNumber and status is missing, default to 'GP'
+      if (field === 'catNumber' && value && (!prevCell.status || prevCell.status === '')) {
+        newCell.status = 'GP';
+      }
+      return {
       ...prev,
       showAwards: {
         ...prev.showAwards,
-        [key]: {
-          ...prev.showAwards[key] || {},
-          [field]: value
-        }
+          [key]: newCell
       },
       voidedShowAwards: {
         ...prev.voidedShowAwards,
         [key]: shouldBeVoided ? true : false
       }
-    }));
+      };
+    });
   };
 
   // --- Handler: Update finals sections ---
@@ -622,10 +632,7 @@ export default function PremiershipTab({
                                     />
                                   )}
                                 </div>
-                                {error && <div className="text-xs mt-1 text-red-600">{error.startsWith('[REMINDER]') ? null : error}</div>}
-                                {error && error.startsWith('[REMINDER]') && (
-                                  <div className="text-xs mt-1 text-orange-500 font-medium italic">{error.replace('[REMINDER] ', '')}</div>
-                                )}
+                                {error && <div className="text-xs mt-1 text-red-600">{error}</div>}
                               </div>
                             </td>
                           );
@@ -648,7 +655,9 @@ export default function PremiershipTab({
                           const key = `${colIdx}-${i}`;
                           const value = premiershipTabData.abPremiersFinals[key] || '';
                           const voided = getVoidState('ab', colIdx, i);
-                          const error = errors[`abPremiersFinals-${colIdx}-${i}`];
+                          const errorKey = `abPremiersFinals-${colIdx}-${i}`;
+                          const error = errors[errorKey];
+                          console.log('Finals error:', errorKey, error);
                           return (
                             <td key={`abpr-${i}-${colIdx}-${error || ''}`} className={`py-2 px-2 border-r border-gray-300 align-top${shouldApplyRingGlow(colIdx) ? ' ring-glow' : ''}`}>
                               <div className="flex flex-col items-start">
@@ -662,10 +671,10 @@ export default function PremiershipTab({
                                     onBlur={e => handleFinalsBlur('ab', colIdx, i, e.target.value)}
                                     disabled={voided}
                                     onFocus={e => handleCatInputFocus(e, colIdx)}
-                                    onKeyDown={e => handleCatInputKeyDown(e, colIdx, i)}
+                                    onKeyDown={e => handleCatInputKeyDown(e, colIdx, numAwardRows + i)}
                                     ref={el => {
                                       if (!catInputRefs.current[colIdx]) catInputRefs.current[colIdx] = [];
-                                      catInputRefs.current[colIdx][i] = el;
+                                      catInputRefs.current[colIdx][numAwardRows + i] = el;
                                     }}
                                   />
                                   {value && (
@@ -678,10 +687,7 @@ export default function PremiershipTab({
                                     />
                                   )}
                                 </div>
-                                {error && <div className="text-xs mt-1 text-red-600">{error.startsWith('[REMINDER]') ? null : error}</div>}
-                                {error && error.startsWith('[REMINDER]') && (
-                                  <div className="text-xs mt-1 text-orange-500 font-medium italic">{error.replace('[REMINDER] ', '')}</div>
-                                )}
+                                {error && <div className="text-xs mt-1 text-red-600">{error}</div>}
                               </div>
                             </td>
                           );
@@ -704,7 +710,9 @@ export default function PremiershipTab({
                           const key = `${colIdx}-${i}`;
                           const value = premiershipTabData.lhPremiersFinals[key] || '';
                           const voided = getVoidState('lh', colIdx, i);
-                          const error = errors[`lhPremiersFinals-${colIdx}-${i}`];
+                          const errorKey = `lhPremiersFinals-${colIdx}-${i}`;
+                          const error = errors[errorKey];
+                          console.log('Finals error:', errorKey, error);
                           return (
                             <td key={`lhpr-${i}-${colIdx}`} className={`py-2 px-2 border-r border-gray-300 align-top${shouldApplyRingGlow(colIdx) ? ' ring-glow' : ''}`}>
                               <div className="flex flex-col items-start">
@@ -718,10 +726,10 @@ export default function PremiershipTab({
                                     onBlur={e => handleFinalsBlur('lh', colIdx, i, e.target.value)}
                                     disabled={voided}
                                     onFocus={e => handleCatInputFocus(e, colIdx)}
-                                    onKeyDown={e => handleCatInputKeyDown(e, colIdx, i)}
+                                    onKeyDown={e => handleCatInputKeyDown(e, colIdx, numAwardRows + maxFinalsRows + i)}
                                     ref={el => {
                                       if (!catInputRefs.current[colIdx]) catInputRefs.current[colIdx] = [];
-                                      catInputRefs.current[colIdx][i] = el;
+                                      catInputRefs.current[colIdx][numAwardRows + maxFinalsRows + i] = el;
                                     }}
                                   />
                                   {value && (
@@ -734,10 +742,7 @@ export default function PremiershipTab({
                                     />
                                   )}
                                 </div>
-                                {error && <div className="text-xs mt-1 text-red-600">{error.startsWith('[REMINDER]') ? null : error}</div>}
-                                {error && error.startsWith('[REMINDER]') && (
-                                  <div className="text-xs mt-1 text-orange-500 font-medium italic">{error.replace('[REMINDER] ', '')}</div>
-                                )}
+                                {error && <div className="text-xs mt-1 text-red-600">{error}</div>}
                               </div>
                             </td>
                           );
@@ -760,7 +765,9 @@ export default function PremiershipTab({
                           const key = `${colIdx}-${i}`;
                           const value = premiershipTabData.shPremiersFinals[key] || '';
                           const voided = getVoidState('sh', colIdx, i);
-                          const error = errors[`shPremiersFinals-${colIdx}-${i}`];
+                          const errorKey = `shPremiersFinals-${colIdx}-${i}`;
+                          const error = errors[errorKey];
+                          console.log('Finals error:', errorKey, error);
                           return (
                             <td key={`shpr-${i}-${colIdx}`} className={`py-2 px-2 border-r border-gray-300 align-top${shouldApplyRingGlow(colIdx) ? ' ring-glow' : ''}`}>
                               <div className="flex flex-col items-start">
@@ -774,10 +781,10 @@ export default function PremiershipTab({
                                     onBlur={e => handleFinalsBlur('sh', colIdx, i, e.target.value)}
                                     disabled={voided}
                                     onFocus={e => handleCatInputFocus(e, colIdx)}
-                                    onKeyDown={e => handleCatInputKeyDown(e, colIdx, i)}
+                                    onKeyDown={e => handleCatInputKeyDown(e, colIdx, numAwardRows + maxFinalsRows + maxFinalsRows + i)}
                                     ref={el => {
                                       if (!catInputRefs.current[colIdx]) catInputRefs.current[colIdx] = [];
-                                      catInputRefs.current[colIdx][i] = el;
+                                      catInputRefs.current[colIdx][numAwardRows + maxFinalsRows + maxFinalsRows + i] = el;
                                     }}
                                   />
                                   {value && (
@@ -790,10 +797,7 @@ export default function PremiershipTab({
                                     />
                                   )}
                                 </div>
-                                {error && <div className="text-xs mt-1 text-red-600">{error.startsWith('[REMINDER]') ? null : error}</div>}
-                                {error && error.startsWith('[REMINDER]') && (
-                                  <div className="text-xs mt-1 text-orange-500 font-medium italic">{error.replace('[REMINDER] ', '')}</div>
-                                )}
+                                {error && <div className="text-xs mt-1 text-red-600">{error}</div>}
                               </div>
                             </td>
                           );

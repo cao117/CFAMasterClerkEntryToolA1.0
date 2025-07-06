@@ -38,6 +38,7 @@ The Championship tab validation follows this order:
 - **Cat number format**: Must be between 1-450
 - **Sequential entry**: Must fill positions sequentially (no skipping)
 - **Duplicate check**: No duplicates within the same section/column
+- **Cross-section duplicate check**: Same cat number cannot appear in both LH CH and SH CH sections
 - **Status validation**: Cats listed as GC or NOV in Top 10/15 cannot be in Best CH sections
 
 ### 3. Column Relationship Validation
@@ -45,8 +46,17 @@ The Championship tab validation follows this order:
 - **Best AB CH order**: Must match CH cats from Top 10/15 in the same order (when CHs exist in Top 10/15)
 - **LH/SH assignment**: Each cat in Best AB CH must be assigned to either LH or SH section (reminder if not)
 - **Best LH/SH CH validation**: Cats must not be GC, NOV, MISSING, or INVALID
-- **Order validation**: Best LH/SH CH cats must appear in the same order as Best AB CH
-- **Single specialty strict validation**: For Longhair/Shorthair only rings, strict order validation with Top 10/15
+- **Order validation (stricter rule as of 2024-06-22):**
+  - All AB CH cats assigned to a specialty section (LH/SH CH) must be at the top, in the same order as Best AB CH.
+  - Fillers (cats not in Best AB CH) can only appear after all AB CH cats.
+  - If any filler appears before an AB CH cat, this is an error and will be flagged on the first offending cell.
+
+#### Example: LH/SH CH Order (Top-Aligned)
+Suppose Best AB CH is [3, 2].
+- **Valid LH CH:** [3, 2, 5, 4] (3 and 2 are at the top, fillers 5 and 4 after)
+- **Invalid LH CH:** [5, 3, 2] (5 is a filler above AB CH cats; error on 5)
+- **Valid SH CH:** [2, 4] (2 is at the top, filler 4 after)
+- **Invalid SH CH:** [4, 2] (4 is a filler above AB CH cat 2; error on 4)
 
 ## Eligibility Rules
 
@@ -90,6 +100,13 @@ Suppose you have the following cats in the Championship Final (Top 10/15):
 
 ## Cross-Section Validation Rules
 
+### Cross-Section Duplicate Validation (LH CH vs SH CH)
+- **Rule**: The same cat number cannot appear in both the Longhair Champions Finals (LH CH) and Shorthair Champions Finals (SH CH) sections
+- **Error Message**: "Duplicate: a cat cannot be both longhair and shorthair"
+- **Validation Order**: This check occurs after within-section duplicate checks but before status validation
+- **Scope**: Only applies to LH CH and SH CH sections (does not affect Best AB CH)
+- **Example**: If cat #123 is entered in "Best LH CH" and also in "Best SH CH", both cells will show the error "Duplicate: a cat cannot be both longhair and shorthair"
+
 ### Best AB CH Assignment Reminder
 - If a cat is entered in Best AB CH but not assigned to either LH or SH section, a reminder message appears: `"{catNumber} needs to be assigned to either LH or SH CH final."`
 - **This reminder is now shown in every filled Best AB CH cell where the cat is not assigned to LH or SH CH final, regardless of other cells.**
@@ -104,7 +121,7 @@ _Last Updated: 2024-06-20_
   1. **Duplicate error** (within section) - HIGHEST PRIORITY
   2. **Status error** (GC/NOV/MISSING/INVALID from Show Awards) - SECOND PRIORITY
   3. **Sequential entry error** ("You must fill previous placements before entering this position.") - THIRD PRIORITY
-  4. **Order error** (e.g., "Must be X (Nth CH required by CFA rules)") - FOURTH PRIORITY
+  4. **Order error** (e.g., "Must be X (Nth CH required by CFA rules)" or "Order violation: X is out of order in LH/SH CH. Must preserve the order from Best AB CH (subsequence required).") - FOURTH PRIORITY
   5. **Assignment reminder** (e.g., "needs to be assigned to LH/SH") - LOWEST PRIORITY
 - Status errors (GC/NOV/MISSING/INVALID) are checked BEFORE sequential errors to ensure proper precedence.
 - Sequential entry errors are checked AFTER status errors but BEFORE assignment reminders.
@@ -212,80 +229,3 @@ This mismatch prevented duplicate error detection from working.
 ### Fix Applied
 Updated `validateChampionshipTab` and `validateColumnRelationships` functions to use the correct key format:
 - **Before**: `const key = \`champions-${columnIndex}-${position}\`;`
-- **After**: `const key = \`${columnIndex}-${position}\`;`
-
-### Error Precedence Order (Now Working Correctly)
-1. **Duplicate errors** (highest priority) - "Duplicate cat number within this section of the final"
-2. **Status errors** - "X is listed as a GC/NOV in Show Awards and cannot be awarded CH final"
-3. **Sequential entry errors** - "You must fill previous placements before entering this position"
-4. **Order errors** - "Must be X (Nth CH required by CFA rules)"
-5. **Assignment reminders** (lowest priority) - "[REMINDER] X needs to be assigned to either LH or SH CH final"
-
-### Testing
-- Enter the same cat number in multiple "Best AB CH" positions
-- The system now correctly shows "Duplicate cat number within this section of the final" instead of assignment reminders
-- Error precedence is properly enforced across all validation types
-
----
-
-## 2024-06-21: Error Precedence Fix - Duplicate Errors Now Take Precedence
-
-**CRITICAL FIX**: The Championship tab now properly enforces error precedence, ensuring that duplicate errors take precedence over status errors.
-
-### Error Precedence Order (Strictly Enforced)
-1. **Duplicate errors** (highest priority) - "Duplicate cat number within this section of the final"
-2. **Status errors** - "X is listed as a GC/NOV in Show Awards and cannot be awarded CH final"
-3. **Sequential entry errors** - "You must fill previous placements before entering this position"
-4. **Order errors** - "Must be X (Nth CH required by CFA rules)"
-5. **Assignment reminders** (lowest priority) - "[REMINDER] X needs to be assigned to either LH or SH CH final"
-
-### Example Scenario
-If you enter cat number "1" in both "Best AB CH" and "3rd Best AB CH" positions, and cat "1" has status "GP" in Show Awards:
-- **Before fix**: Both cells would show "1 is listed as a GP in Show Awards and cannot be awarded CH final"
-- **After fix**: Both cells now correctly show "Duplicate cat number within this section of the final"
-
-### Technical Implementation
-- Added proper precedence logic to `validateChampionshipTab` function in `championshipValidation.ts`
-- The logic now matches the Premiership tab implementation
-- Duplicate errors are never overwritten by lower-priority errors
-- This ensures consistent behavior across both Championship and Premiership tabs
-
-### Validation Parity
-- Championship tab now has the same error precedence logic as Premiership tab
-- Both tabs respect duplicate errors as the highest priority
-- This provides consistent user experience across all validation scenarios
-
-## 2024-06-21: State Persistence Update
-- As of this date, all ChampionshipTab data (showAwards, finals, voids, errors) is now managed in App.tsx and passed as props, matching PremiershipTab.
-- This ensures that all data is preserved across tab switches and that UI/UX parity is maintained between tabs.
-- There is no longer any local state for championship data in the component; all updates go through the parent.
-
-## 2024-06-21: UI Border Color Update
-- Removed all logic and documentation for orange and navy blue borders in ChampionshipTab.
-- Only red border is used for validation errors; default border otherwise.
-- This matches PremiershipTab, which never used these borders.
-
-## Bug Fixes & Technical Notes
-
-### 2024-06-21: Error State Refactor & Infinite Loop Fix
-- Error state is now managed locally in `ChampionshipTab` (not inside `championshipTabData`), matching the approach used in `PremiershipTab`.
-- This change fixes a critical bug: "Maximum update depth exceeded" (infinite update loop) caused by updating errors inside the main tab data state.
-- All error lookups in the UI now use the local `errors` state.
-- There is no user-facing behavior change; this is a technical/internal refactor for stability and maintainability.
-
-_Last Updated: 2024-06-21_ 
-
-## Column Reset on Ring Type Change
-
-- If a judge's ring type is changed to any other type (regardless of the old or new type), the affected columns in the Championship tab are reset: all data for those columns is cleared and the columns start empty.
-- This ensures that data from the previous configuration does not persist when the number or type of columns changes for a judge.
-- Other judges' columns and data are not affected.
-
-_Last Updated: 2024-06-22_ 
-
-## [2024-06-22] Finals Duplicate/Status Error Precedence Fix
-- All finals errors now use section-prefixed keys (e.g., `champions-0-0`).
-- When a duplicate is found, all involved cells receive the duplicate error.
-- If a duplicate error is present for a cell, no other error (status, sequential, etc.) is assigned to that cell.
-- When merging errors, duplicate errors are never overwritten.
-- This matches the robust logic in PremiershipTab and resolves the bug where only one cell showed the duplicate error or status errors took precedence. 

@@ -4,6 +4,91 @@ This changelog records all changes, additions, and deletions to validation rules
 
 ---
 
+### [2024-12-19] Championship Tab: Critical Bug Fix - validateBestHairCHWithFiller Not Being Called
+- **Tab:** Championship
+- **Change:** Fixed critical bug where `validateBestHairCHWithFiller` function was not being called, causing order validation errors to not appear
+- **Summary:** 
+  - **Root cause**: The `validateBestHairCHWithFiller` function was correctly implemented but was only called inside `validateColumnRelationships`, which was never called from the main `validateChampionshipTab` function
+  - **Fix**: Added call to `validateColumnRelationships` in the main validation function to ensure all validation logic is executed
+  - **Impact**: Order validation errors (e.g., "Order violation: 1 (AB CH) must be above all fillers in LH CH") now properly appear when AB CH cats are placed after fillers in LH/SH sections
+  - **Validation restored**: The strict top-aligned rule (all AB CH cats must be at the top, in order, with fillers only after) is now properly enforced
+- **Rationale:** The validation logic was implemented but not connected to the main validation flow, causing a silent failure where order violations were not detected or displayed to users
+- **Impact:** Users will now see proper order validation errors when they violate the strict top-aligned rule for LH/SH CH sections
+
+---
+
+### [2024-12-19] Premiership Tab: Cross-Section Duplicate Validation (LH PR vs SH PR)
+- **Tab:** Premiership
+- **Change:** Added cross-section duplicate validation to prevent the same cat number from appearing in both LH PR and SH PR sections
+- **Summary:** 
+  - **New validation rule**: Same cat number cannot appear in both Longhair Premier Finals (LH PR) and Shorthair Premier Finals (SH PR) sections
+  - **Error message**: "Duplicate: a cat cannot be both longhair and shorthair"
+  - **Validation order**: This check occurs after within-section duplicate checks but before status validation (3rd priority)
+  - **Scope**: Only applies to LH PR and SH PR sections (does not affect Best AB PR)
+  - **Error precedence**: Range > Duplicate (within section) > Cross-section duplicate > Status > Sequential > Order > Assignment reminder
+  - **Implementation**: Added cross-section duplicate check in `validatePremiershipTab` function between existing duplicate and status validation
+- **Rationale:** A cat cannot logically be both long-haired and short-haired, so the same cat number should not appear in both LH PR and SH PR sections. This prevents data entry errors and ensures logical consistency, matching the Championship tab behavior.
+- **Impact:** Users will now see clear validation errors when attempting to enter the same cat number in both LH PR and SH PR sections, preventing invalid data entry and maintaining consistency with Championship tab validation rules
+
+### [2024-12-19] Championship Tab: Cross-Section Duplicate Validation (LH CH vs SH CH)
+- **Tab:** Championship
+- **Change:** Added cross-section duplicate validation to prevent the same cat number from appearing in both LH CH and SH CH sections
+- **Summary:** 
+  - **New validation rule**: Same cat number cannot appear in both Longhair Champions Finals (LH CH) and Shorthair Champions Finals (SH CH) sections
+  - **Error message**: "Duplicate: a cat cannot be both longhair and shorthair"
+  - **Validation order**: This check occurs after within-section duplicate checks but before status validation (3rd priority)
+  - **Scope**: Only applies to LH CH and SH CH sections (does not affect Best AB CH)
+  - **Error precedence**: Range > Duplicate (within section) > Cross-section duplicate > Status > Sequential > Order > Assignment reminder
+  - **Implementation**: Added cross-section duplicate check in `validateChampionshipTab` function between existing duplicate and status validation
+- **Rationale:** A cat cannot logically be both long-haired and short-haired, so the same cat number should not appear in both LH CH and SH CH sections. This prevents data entry errors and ensures logical consistency.
+- **Impact:** Users will now see clear validation errors when attempting to enter the same cat number in both LH CH and SH CH sections, preventing invalid data entry
+
+### [2024-12-19] Championship Tab: Dynamic Status Error Clearing Fix
+- **Tab:** Championship
+- **Change:** Fixed critical bug where status errors (GC/NOV) were not clearing when Show Awards data changed
+- **Summary:** 
+  - **Comprehensive status search**: Updated status validation to search ALL columns' Show Awards for cat numbers, not just the current column
+  - **Dynamic error clearing**: Status errors now properly clear when a cat's status changes from GC/NOV to CH in any Show Awards column
+  - **Matches Premiership tab behavior**: Championship tab now uses the same comprehensive search logic as Premiership tab
+  - **Debug logging**: Added detailed console logging to track status validation and error assignment
+  - **CFA rule compliance**: Ensures that cats listed as GC/NOV in ANY Show Awards column cannot be awarded CH finals
+- **Rationale:** The previous implementation only checked the current column for status, causing stale errors when cats were changed in other columns. This fix ensures real-time validation across all columns.
+- **Impact:** Users no longer experience persistent status errors when they change cat statuses in Show Awards, providing a much more responsive and accurate validation experience
+
+### [2024-12-19] Championship Tab: Order Validation for LH/SH CH Finals
+- **Tab:** Championship
+- **Change:** Added order validation for LH/SH CH finals to ensure they preserve AB CH order as subsequences
+- **Summary:** 
+  - **Implemented subsequence validation**: Added `validateBestHairCHOrder` function that ensures LH/SH CH order is a valid subsequence of AB CH order
+  - **Proper error precedence**: Order validation runs after range, duplicate, status, and sequential errors, but before assignment reminders
+  - **Clear error messages**: Shows "Order violation: {cat} is out of order in {LH/SH} CH. Must preserve AB CH order." when order is violated
+  - **Matches Premiership logic**: Uses the same subsequence algorithm as Premiership tab for consistent behavior across tabs
+  - **Debug logging**: Added console logging for order validation errors to aid in troubleshooting
+- **Rationale:** LH/SH CH finals must preserve the order established in AB CH finals. This ensures that cats maintain their relative ranking when split between longhair and shorthair sections, which is a fundamental CFA rule.
+- **Impact:** Users will now see clear order violation errors when LH/SH CH finals don't preserve AB CH order, preventing invalid data entry
+
+### [2024-12-19] Premiership Tab: Assignment Reminder Styling Fix
+- **Tab:** Premiership
+- **Change:** Fixed assignment reminder styling to use standard red error styling instead of orange reminder styling
+- **Summary:** 
+  - **Removed [REMINDER] prefix**: Assignment reminders no longer use the `[REMINDER]` prefix in validation messages
+  - **Standardized error styling**: All assignment reminders now use the same red text styling as other validation errors
+  - **Consistent user experience**: Assignment reminders are now treated as regular validation errors, not special reminders
+  - **Matches other tabs**: Premiership tab now has consistent error styling with Championship, Kitten, and Household Pet tabs
+- **Rationale:** Assignment reminders should be treated as validation errors that need user attention, not as optional reminders. The orange styling was confusing and inconsistent with other validation errors.
+- **Impact:** Users now see assignment reminders as standard red validation errors, making it clear that action is required to resolve the issue.
+
+### [2024-12-19] Premiership Tab: JavaScript Hoisting Error Fix
+- **Tab:** Premiership
+- **Change:** Fixed critical JavaScript runtime error that prevented the Premiership tab from loading
+- **Summary:** 
+  - Fixed "Cannot access 'getFinalsPositionsForRingTypeLocal' before initialization" error
+  - Moved function definitions (`getFinalsCount` and `getFinalsPositionsForRingTypeLocal`) before their usage in the component
+  - Removed duplicate function definitions that were causing redeclaration errors
+  - This ensures the Premiership tab loads properly without JavaScript runtime errors
+- **Rationale:** The function was being called before it was defined due to JavaScript hoisting rules, causing a runtime error that prevented the entire tab from rendering
+- **Impact:** Users can now access the Premiership tab without encountering JavaScript errors
+
 ### [2024-12-19] Championship Tab: Error Precedence Order Fix - Status Before Sequential
 - **Tab:** Championship
 - **Change:** Fixed error precedence order in Championship tab to match correct validation hierarchy
@@ -549,7 +634,7 @@ This changelog records all changes, additions, and deletions to validation rules
 ### [2024-06-22] ChampionshipTab Finals Duplicate/Status Error Precedence Fix
 - **Area:** src/validation/championshipValidation.ts
 - **Change:** All finals errors now use section-prefixed keys (e.g., `champions-0-0`). When a duplicate is found, all involved cells receive the duplicate error. If a duplicate error is present for a cell, no other error (status, sequential, etc.) is assigned to that cell. When merging errors, duplicate errors are never overwritten. This matches PremiershipTab and resolves the bug where only one cell showed the duplicate error or status errors took precedence.
-- **User Impact:** Both “1 AB CH” and “3 AB CH” now always show the duplicate error if the same cat number is entered, regardless of status, matching PremiershipTab behavior.
+- **User Impact:** Both "1 AB CH" and "3 AB CH" now always show the duplicate error if the same cat number is entered, regardless of status, matching PremiershipTab behavior.
 
 ### [2024-06-22] ChampionshipTab Finals Duplicate Error Precedence Bugfix
 - **Area:** src/validation/championshipValidation.ts
@@ -633,11 +718,23 @@ This changelog records all changes, additions, and deletions to validation rules
 - **Tab:** Premiership
 - **Change:** Fixed critical bug where the first input field was not automatically focused when switching to the Premiership tab
 - **Summary:** 
-  - **Added missing auto-focus logic**: Added `useEffect` hook that automatically focuses the first input field when the component mounts or when columns/rows change
-  - **Matches Championship tab behavior**: The Premiership tab now has the same auto-focus behavior as the Championship tab, ensuring consistent user experience across all tabs
-  - **Immediate cursor placement**: When users switch to the Premiership tab, the cursor is now automatically placed in the first input field, making it ready for data entry
-- **Rationale:** The previous implementation was missing the crucial auto-focus logic that other tabs have. This caused a poor user experience where users had to manually click into the first field to start entering data, unlike the other tabs which automatically focus the first input.
-- **Impact:** Users now have immediate cursor placement when switching to the Premiership tab, providing consistent and efficient data entry experience across all tabs. 
+  - **Fixed ref assignment conflicts**: Corrected row index calculations for refs to prevent Best AB/LH/SH PR sections from overwriting Show Awards refs
+  - **Enhanced auto-focus logic**: Increased timeout from 0ms to 100ms and added `scrollIntoView` to ensure the first input field is properly focused and visible when switching to the tab
+  - **Added isActive dependency**: Auto-focus now only triggers when the tab is actually active, preventing unnecessary focus attempts
+  - **Matches Championship tab behavior**: Both Championship and Premiership tabs now have identical auto-focus behavior with the same timeout and scroll behavior
+  - **Immediate cursor placement**: When users switch to the Premiership tab, the cursor is now automatically placed in the first Show Awards input field (top-left) and the field is scrolled into view
+- **Rationale:** The previous implementation had two issues: 1) timing issues where the DOM wasn't fully rendered when the focus attempt was made, and 2) ref conflicts where multiple sections were using the same row indices, causing the wrong input to be focused.
+- **Impact:** Users now have immediate cursor placement in the correct first input field when switching to the Premiership tab, providing consistent and efficient data entry experience across all tabs. 
+
+### [2024-12-19] Championship Tab: Auto-Focus Enhancement for Tab Activation
+- **Tab:** Championship
+- **Change:** Enhanced auto-focus behavior to match Premiership tab and ensure reliable focus when switching tabs
+- **Summary:** 
+  - **Added isActive prop**: Championship tab now receives and uses the `isActive` prop to determine when to auto-focus
+  - **Enhanced auto-focus logic**: Increased timeout from 0ms to 100ms and added `scrollIntoView` to ensure the first input field is properly focused and visible
+  - **Consistent behavior**: Both Championship and Premiership tabs now have identical auto-focus behavior with the same timeout and scroll behavior
+- **Rationale:** Ensures consistent user experience across all tabs and prevents timing issues where the DOM wasn't fully rendered when focus was attempted.
+- **Impact:** Users now have reliable auto-focus behavior when switching to the Championship tab, matching the Premiership tab experience.
 
 ### [2024-12-19] All Tabs: Error Styling Consistency Fix
 - **Tabs:** Championship, Kitten, Household Pet
@@ -649,3 +746,33 @@ This changelog records all changes, additions, and deletions to validation rules
   - **Consistent visual feedback**: All tabs now use the same red background fill styling for error inputs, matching the Premiership tab behavior
 - **Rationale:** The Premiership tab was using `cfa-input-error` class which provides a red background fill effect for error inputs, while other tabs were using `border-red-500` which only provides a red border. This fix ensures consistent visual feedback across all tabs when validation errors are present.
 - **Impact:** Users now see consistent error styling across all tabs - inputs with errors will have a red background fill instead of just a red border, providing clearer visual feedback for validation errors. 
+
+### [2024-06-21] Championship & Premiership Tabs: LH/SH Order Validation Clarified (Subsequence Rule)
+- **Tabs:** Championship, Premiership
+- **Change:** Clarified and enforced that the order of cats in LH/SH CH and LH/SH PR sections must be a subsequence of the Best AB CH/PR list, not a strict prefix or exact match.
+- **Summary:**
+  - **Order validation**: LH/SH CH and LH/SH PR must preserve the order from Best AB CH/PR, but cats may be skipped if assigned to the other specialty.
+  - **Error message**: Now reads "Order violation: X is out of order in LH/SH CH/PR. Must preserve the order from Best AB CH/PR (subsequence required)."
+  - **Documentation**: Updated both VALIDATION_CHAMPIONSHIP.md and VALIDATION_PREMIERSHIP.md to clarify the subsequence rule and provide examples.
+  - **Rationale:** This matches CFA rules and user expectations, and prevents false order errors when cats are split between LH and SH sections.
+  - **Impact:** Users will only see order errors if the sequence in LH/SH CH/PR is not a valid subsequence of AB CH/PR, making validation more accurate and user-friendly. 
+
+### [2024-12-19] Championship & Premiership Tabs: Order Validation Fix for Fillers
+- **Tabs:** Championship, Premiership
+- **Change:** Fixed order validation logic to correctly handle fillers (cats not in AB CH/PR list)
+- **Summary:**
+  - **Order validation**: Now only validates order for cats that are actually in the Best AB CH/PR list
+  - **Fillers**: Cats not in AB CH/PR are allowed anywhere after the AB CH/PR cats
+  - **Logic**: Extract only AB CH/PR cats from LH/SH section and validate they form a subsequence of AB CH/PR
+  - **Error message**: Unchanged - still shows "Order violation: X is out of order in LH/SH CH/PR. Must preserve the order from Best AB CH/PR (subsequence required)."
+  - **Examples**: 
+    - Valid LH CH: [2, 7, 3] where AB CH is [1, 2, 3] (7 is a filler, allowed anywhere)
+    - Valid LH PR: [2, 8, 3] where AB PR is [1, 2, 3] (8 is a filler, allowed anywhere)
+  - **Documentation**: Updated both Championship and Premiership validation docs with examples
+- **Rationale:** Previous logic incorrectly flagged fillers as "out of order" when they appeared after AB CH/PR cats, even though fillers should be allowed anywhere after the AB CH/PR cats.
+
+### [2024-06-22] Championship & Premiership Tabs: Stricter Top-Aligned Order Validation for LH/SH CH/PR (Fillers)
+- **Tabs:** Championship, Premiership
+- **Change:** Enforced that all AB CH/PR cats assigned to a specialty section (LH/SH CH/PR) must be at the top, in the same order as Best AB CH/PR. Fillers (non-AB CH/PR) can only appear after all AB CH/PR cats. If any filler appears before an AB CH/PR cat, an order error is shown on the first offending cell.
+- **Docs:** Updated VALIDATION_CHAMPIONSHIP.md and VALIDATION_PREMIERSHIP.md with new rule and examples.
+- **Rationale:** Matches CFA rules and user expectation for top-aligned order. Prevents fillers from appearing above AB CH/PR cats in any specialty section.

@@ -357,6 +357,7 @@ function App() {
           errors: {},
         })}
         getShowState={getShowState}
+        isActive={activeTab === 'championship'}
       />,
       disabled: championshipTabDisabled
     },

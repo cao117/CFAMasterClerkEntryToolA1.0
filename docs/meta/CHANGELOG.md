@@ -135,5 +135,93 @@ This changelog records major changes to the CFA Master Clerk Entry Tool, includi
 - **Change:** Fixed a bug where the Best AB CH validation in the Championship tab incorrectly checked all columns' Show Awards for GC/NOV status. The validation is now column-specific: it only checks the current column's Show Awards for GC/NOV when determining eligibility for Best AB CH. This prevents errors from appearing when a cat is a GC/NOV in another ring but not in the current one.
 - **Rationale:** Ensures that validation logic matches CFA rules and user expectations. Prevents false errors and aligns with the correct behavior already present in the Premiership tab.
 
+### [2024-06-22] Championship Tab: Sequential Entry and Order Error Logic Improved
+- **Area:** src/validation/championshipValidation.ts, docs/validation/VALIDATION_CHAMPIONSHIP.md
+- **Change:**
+  - Sequential entry errors are now robustly enforced: if any previous position in a finals section is empty, a sequential error is shown (unless a duplicate or status error is present).
+  - Order errors are only shown if there are no duplicate, status, or sequential errors for that cell, and only for Best AB CH section.
+  - All error keys use hyphens (e.g., 'champions-0-0'), never underscores, for both validation and UI lookup.
+  - Debug logging is now present in the validation logic for duplicate, status, sequential, and order errors to aid in tracing error assignment and merging.
+  - Error precedence is strictly: duplicate > status > sequential > order > assignment reminder.
+- **Rationale:** Ensures robust, user-friendly, and maintainable error handling, strict adherence to project rules, and complete documentation parity.
+
+### [2024-06-22] Championship Tab: Assignment Reminder Logic Improved
+- **Area:** src/validation/championshipValidation.ts, docs/validation/VALIDATION_CHAMPIONSHIP.md
+- **Change:**
+  - Assignment reminder for Best AB CH is now always set after all other errors, using the correct error key ('champions-{colIdx}-{pos}'), and is robustly enforced for every filled cell not assigned to LH or SH CH.
+  - Debug logging is present for assignment reminders to aid in tracing error assignment and merging.
+- **Rationale:** Ensures robust, user-friendly, and maintainable error handling, strict adherence to project rules, and complete documentation parity for assignment reminders.
+
+### [2024-06-22] Championship Tab: Top 10/15 (Show Awards) Error Precedence Logic
+- **Area:** src/validation/championshipValidation.ts, docs/validation/VALIDATION_CHAMPIONSHIP.md
+- **Change:**
+  - Only duplicate and sequential entry (fill previous) errors are enforced in the Top 10/15 (Show Awards) section.
+  - Precedence is: duplicate > sequential entry.
+  - Only the highest-precedence error is shown per cell.
+  - Debug logging is present for both error types to aid in tracing error assignment and merging.
+- **Rationale:** Ensures robust, user-friendly, and maintainable error handling, strict adherence to project rules, and complete documentation parity for Show Awards error precedence.
+
+### [2024-06-22] Championship Tab: Show Awards Error Merging Logic
+- **Area:** src/validation/championshipValidation.ts, docs/validation/VALIDATION_CHAMPIONSHIP.md
+- **Change:**
+  - If a cell in the Top 10/15 (Show Awards) section has both a duplicate and a range error, both messages are shown (duplicate first, then range).
+  - Precedence is: duplicate > range > sequential entry.
+  - Only the highest-precedence error(s) are shown per cell.
+  - Debug logging is present for merged errors to aid in tracing error assignment and merging.
+- **Rationale:** Ensures robust, user-friendly, and maintainable error handling, strict adherence to project rules, and complete documentation parity for Show Awards error merging.
+
+### [2024-06-22] Championship Tab: Error Precedence and Merging Refactor
+- **Area:** src/validation/championshipValidation.ts, docs/validation/VALIDATION_CHAMPIONSHIP.md
+- **Change:**
+  - Top 10/15 (Show Awards): error precedence is now range > duplicate > sequential entry, merge range+duplicate if both (range first)
+  - Finals (Best AB CH, LH CH, SH CH): error precedence is now range > duplicate > status (GC/NOV) > sequential > order > assignment reminder, merge range+duplicate if both (range first)
+  - If a higher-precedence error is present, all lower-precedence errors are suppressed
+  - Debug logging is present for all error assignment and merging steps
+- **Rationale:** Ensures robust, user-friendly, and maintainable error handling, strict adherence to project rules, and complete documentation parity for error precedence and merging.
+
+### [2024-06-22] Championship Tab: Stricter Cat Number Validation
+- **Area:** src/validation/championshipValidation.ts, docs/validation/VALIDATION_CHAMPIONSHIP.md
+- **Change:**
+  - Cat numbers must now be all digits (no letters or symbols) and in the range 1-450.
+  - Any non-integer input (e.g., '15a', '1.5', 'abc') is now rejected as invalid.
+  - The validation logic no longer uses parseInt; only valid integer strings are accepted.
+  - Documentation updated to reflect stricter validation.
+- **Rationale:** Ensures robust, user-friendly, and maintainable error handling, strict adherence to project rules, and complete documentation parity for cat number validation.
+
+### [2024-06-22] Premiership Tab: Stricter Cat Number Validation & Error Precedence Refactor
+- **Area:** src/validation/premiershipValidation.ts, docs/validation/VALIDATION_PREMIERSHIP.md
+- **Change:**
+  - Cat numbers must now be all digits (no letters or symbols) and in the range 1-450.
+  - Any non-integer input (e.g., '15a', '1.5', 'abc') is now rejected as invalid.
+  - Finals and Show Awards: error precedence is now range > duplicate > status (GP/NOV) > sequential > order > assignment reminder (Best AB PR only).
+  - If both range and duplicate errors are present, both are shown (range first).
+  - If a higher-precedence error is present, all lower-precedence errors are suppressed.
+  - Debug logging is present for all error assignment and merging steps.
+- **Rationale:** Ensures robust, user-friendly, and maintainable error handling, strict adherence to project rules, and complete documentation parity for cat number validation and error precedence.
+
+### [2024-06-22] Premiership Tab: Order Error Logic Implemented in Finals Sections
+- **Area:** validation/premiershipValidation.ts, docs/validation/VALIDATION_PREMIERSHIP.md
+- **Change:** Implemented order error logic for Best AB PR, LH PR, and SH PR in the finals sections. Order errors (e.g., "Must be X (Nth PR required by CFA rules)") are now enforced after range, duplicate, status, and sequential errors, and only shown if no higher-precedence error is present. Debug logging is present for order errors. This matches the logic and error precedence of the Championship tab.
+- **Rationale:** Ensures strict CFA rule enforcement, robust error handling, and full UI/UX and validation parity between Championship and Premiership tabs. Documentation updated accordingly.
+
+### [2024-06-22] Premiership Tab: Status Check Now Searches All Columns' Show Awards
+- **Area:** validation/premiershipValidation.ts, docs/validation/VALIDATION_PREMIERSHIP.md
+- **Change:** Status validation for Best AB PR, LH PR, and SH PR now searches all columns' Show Awards for the cat number, not just the current column. If a cat is listed as GP or NOV in any ring, it is ineligible for Best PR finals in all columns. This ensures strict CFA rule enforcement and correct error display. Documentation updated accordingly.
+
+### [2024-06-22] Premiership Tab: LH/SH PR Order Validation Now Enforces Subsequence Rule
+- **Area:** validation/premiershipValidation.ts, docs/validation/VALIDATION_PREMIERSHIP.md
+- **Change:** The order of cats in Best LH PR and SH PR must now be a subsequence of the order in Best AB PR (relative order preserved). You may select any subset of AB PR cats for LH/SH PR, but their order must match AB PR. An order error is shown on the first cell where the order is violated. This matches the logic in the Championship tab for LH/SH CH order validation. Documentation updated with examples and rule clarification.
+- **Rationale:** Ensures strict CFA rule enforcement, robust error handling, and full UI/UX and validation parity between Championship and Premiership tabs.
+
+### [2024-06-22] Championship Tab: LH/SH CH Order Validation Now Enforces Subsequence Rule
+- **Area:** validation/championshipValidation.ts, docs/validation/VALIDATION_CHAMPIONSHIP.md
+- **Change:** The order of cats in Best LH CH and SH CH must now be a subsequence of the order in Best AB CH (relative order preserved). You may select any subset of AB CH cats for LH/SH CH, but their order must match AB CH. An order error is shown on the first cell where the order is violated. This matches the logic in the Premiership tab for LH/SH PR order validation. Documentation updated with examples and rule clarification.
+- **Rationale:** Ensures strict CFA rule enforcement, robust error handling, and full UI/UX and validation parity between Championship and Premiership tabs.
+
+### [2024-06-22] Championship Tab: LH/SH CH Strict Pairwise Order Validation
+- **Area:** validation/championshipValidation.ts, docs/validation/VALIDATION_CHAMPIONSHIP.md
+- **Change:** For each filled cell in LH/SH CH, if any previously filled cell is ranked lower in AB CH, an error is shown on the current cell: "X must come after Y in LH CH because Y is ranked higher in AB CH." Only the first such violation is flagged for clarity. Documentation updated with the new rule and example.
+- **Rationale:** Ensures strict CFA rule enforcement, robust error handling, and user feedback for order violations in LH/SH CH.
+
 ## Last Updated
 - 2024-06-20 

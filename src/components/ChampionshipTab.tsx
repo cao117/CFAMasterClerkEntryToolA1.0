@@ -43,6 +43,10 @@ interface ChampionshipTabProps {
    */
   onTabReset: () => void;
   getShowState: () => Record<string, unknown>;
+  /**
+   * Whether this tab is currently active
+   */
+  isActive?: boolean;
 }
 
 interface Column {
@@ -80,7 +84,7 @@ type ChampionshipTabData = {
  */
 const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
   (props, ref) => {
-    const { judges, championshipTotal, championshipCounts, showSuccess, showError, shouldFillTestData, onResetAllData, championshipTabData, setChampionshipTabData, getShowState } = props;
+    const { judges, championshipTotal, championshipCounts, showSuccess, showError, shouldFillTestData, onResetAllData, championshipTabData, setChampionshipTabData, getShowState, isActive } = props;
     // State for dynamic table structure
     const [columns, setColumns] = useState<Column[]>([]);
     const [numAwardRows, setNumAwardRows] = useState(10);
@@ -106,14 +110,16 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
 
     // Focus first Cat # input on mount or when columns/rows change, after refs are populated
     useEffect(() => {
-      if (columns.length > 0 && totalCatRows > 0) {
+      if (isActive && columns.length > 0 && totalCatRows > 0) {
+        // Use a longer timeout to ensure DOM is fully rendered
         setTimeout(() => {
           if (catInputRefs.current[0] && catInputRefs.current[0][0]) {
             catInputRefs.current[0][0].focus();
+            catInputRefs.current[0][0].scrollIntoView({ behavior: 'smooth', block: 'center' });
           }
-        }, 0);
+        }, 100);
       }
-    }, [columns.length, totalCatRows]);
+    }, [isActive, columns.length, totalCatRows]);
 
     /**
      * Handles focus events for Cat # input fields.

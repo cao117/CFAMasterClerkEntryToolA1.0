@@ -44,6 +44,7 @@ The Premiership tab validation follows the **exact same order and structure** as
 - **Cat number format**: Must be between 1-450
 - **Sequential entry**: Must fill positions sequentially (no skipping)
 - **Duplicate check**: No duplicates within the same section/column
+- **Cross-section duplicate check**: Same cat number cannot appear in both LH PR and SH PR sections
 - **Status validation**: Cats listed as GP or NOV in Top 10/15 cannot be in Best PR sections
 
 ### 3. Column Relationship Validation
@@ -51,7 +52,18 @@ The Premiership tab validation follows the **exact same order and structure** as
 - **Best AB PR order**: Must match PR cats from Top 10/15 in the same order
 - **LH/SH assignment**: Each cat in Best AB PR must be assigned to either LH or SH section (reminder if not)
 - **Best LH/SH PR validation**: Cats must not be GP, NOV, MISSING, or INVALID
-- **Order validation**: Best LH/SH PR cats must appear in the same order as Best AB PR
+- **Order validation (stricter rule as of 2024-06-22):**
+  - All AB PR cats assigned to a specialty section (LH/SH PR) must be at the top, in the same order as Best AB PR.
+  - Fillers (cats not in Best AB PR) can only appear after all AB PR cats.
+  - If any filler appears before an AB PR cat, this is an error and will be flagged on the first offending cell.
+
+#### Example: LH/SH PR Order (Top-Aligned)
+Suppose Best AB PR is [8, 6].
+- **Valid LH PR:** [8, 6, 9] (8 and 6 are at the top, filler 9 after)
+- **Invalid LH PR:** [9, 8, 6] (9 is a filler above AB PR cats; error on 9)
+- **Valid SH PR:** [6, 7] (6 is at the top, filler 7 after)
+- **Invalid SH PR:** [7, 6] (7 is a filler above AB PR cat 6; error on 7)
+
 - **Single specialty strict validation**: For Longhair/Shorthair only rings, strict order validation with Top 10/15
 
 ## Eligibility Rules
@@ -63,28 +75,33 @@ The Premiership tab validation follows the **exact same order and structure** as
   - Cats listed as **GP** (Grand Premier) or **NOV** (Novice) in the Top 10/15 section are **not eligible** for Best PR finals.
   - Cats not found in the Top 10/15 section or listed as **PR** (Premier) are assumed to be valid for Best PR finals.
   - If a GP or NOV cat from the Top 10/15 section is entered in any Best PR final, it triggers a validation error with the message: `"{catNumber} is listed as a {status} in Show Awards and cannot be awarded PR final."`
+  - **Status checks for Best AB PR, LH PR, and SH PR search all columns' Show Awards for the cat number, not just the current column. If a cat is GP or NOV in any judge's Top 10/15, it is ineligible for Best PR finals in all columns.**
   - **If a cat number is not found in the Top 10/15 section, it is allowed in Best PR finals (unless it is found as GP or NOV). Only show errors for cats found in Top 10/15 as GP, NOV, MISSING, or INVALID.**
   - **This matches the Championship tab logic exactly.**
 
 ### Example
 Suppose you have the following cats in the Premiership Final (Top 10/15):
 
-| Cat # | Status |
-|-------|--------|
-| 401   | GP     |
-| 402   | PR     |
-| 403   | NOV    |
-| 404   | PR     |
-| 405   | GP     |
+| Cat # | Status (Ring 1) | Status (Ring 2) |
+|-------|-----------------|-----------------|
+| 401   | GP              | PR              |
+| 402   | PR              | PR              |
+| 403   | NOV             | PR              |
+| 404   | PR              | GP              |
+| 405   | GP              | GP              |
 
-- **Premiership Final (Top 10/15):** All of these cats (GP, PR, NOV) are valid entries.
-- **Best AB PR, Best LH PR, Best SH PR:** 
-  - Only 402 and 404 (the PRs) are valid.
-  - 401, 403, and 405 (GP or NOV) are **not** valid and will trigger validation errors if entered.
-  - Error message for 401: "401 is listed as a GP in Show Awards and cannot be awarded PR final."
-  - Error message for 403: "403 is listed as a NOV in Show Awards and cannot be awarded PR final."
+- **If cat 401 is entered in Best AB PR in any column, it is ineligible (GP in Ring 1).**
+- **If cat 404 is entered in Best AB PR in any column, it is ineligible (GP in Ring 2).**
+- **If cat 402 is entered in Best AB PR in any column, it is eligible (PR in all columns).**
 
 ## Cross-Section Validation Rules
+
+### Cross-Section Duplicate Validation (LH PR vs SH PR)
+- **Rule**: The same cat number cannot appear in both the Longhair Premier Finals (LH PR) and Shorthair Premier Finals (SH PR) sections
+- **Error Message**: "Duplicate: a cat cannot be both longhair and shorthair"
+- **Validation Order**: This check occurs after within-section duplicate checks but before status validation
+- **Scope**: Only applies to LH PR and SH PR sections (does not affect Best AB PR)
+- **Example**: If cat #123 is entered in "Best LH PR" and also in "Best SH PR", both cells will show the error "Duplicate: a cat cannot be both longhair and shorthair"
 
 ### Best AB PR Assignment Reminder
 - If a cat is entered in Best AB PR but not assigned to either LH or SH section, a reminder message appears: `"{catNumber} must be assigned to either Longhair or Shorthair section."`
@@ -115,6 +132,22 @@ Suppose you have the following cats in the Premiership Final (Top 10/15):
   3. Assignment reminder (e.g., "must be assigned to LH/SH")
 - **Assignment reminders are only shown if there is no duplicate or status error for that cell.**
 - This strict order is now enforced in code and UI for all PR award sections, matching the Championship tab logic.
+
+## Error Precedence (Finals Sections)
+- For each cell in Best AB PR, Best LH PR, and Best SH PR, only the highest-precedence error is ever shown:
+  1. Range error (cat number not 1-450)
+  2. Duplicate error (within section, highest priority)
+  3. Cross-section duplicate error (LH PR vs SH PR) - "Duplicate: a cat cannot be both longhair and shorthair"
+  4. Status error (GP/NOV/MISSING/INVALID from Show Awards)
+  5. Sequential entry error ("You must fill previous placements before entering this position.")
+  6. **Order error** (e.g., "Must be X (Nth PR required by CFA rules)" or "Order violation: X is out of order in LH/SH PR. Must preserve the order from Best AB PR (subsequence required).")
+  7. Assignment reminder (e.g., "must be assigned to either Longhair or Shorthair section")
+- **Order errors are now enforced for all finals sections (Best AB PR, LH PR, SH PR) after range, duplicate, status, and sequential errors, and only shown if no higher-precedence error is present.**
+- Debug logging is present for order errors to aid in tracing error assignment and merging.
+- This matches the logic and error precedence of the Championship tab.
+
+### Example
+If the 1st PR in Show Awards is cat #402, but the 1st Best AB PR is cat #404, an order error will appear: "Must be 402 (1st PR required by CFA rules)".
 
 ## Void Feature
 - Works exactly as in Championship tab: voiding a cat number only affects all instances of that cat number within the same column (judge/ring), not across all columns.
@@ -196,6 +229,14 @@ The only differences are:
   - If you unvoid any of them, all will be unvoided.
 - This logic is enforced in the UI and validation code.
 
+## 2024-06-22: Stricter Cat Number Validation & Error Precedence Refactor
+- Cat numbers must now be all digits (no letters or symbols) and in the range 1-450.
+- Any non-integer input (e.g., '15a', '1.5', 'abc') is now rejected as invalid.
+- Finals and Show Awards: error precedence is now range > duplicate > status (GP/NOV) > sequential > order > assignment reminder (Best AB PR only).
+- If both range and duplicate errors are present, both are shown (range first).
+- If a higher-precedence error is present, all lower-precedence errors are suppressed.
+- Debug logging is present for all error assignment and merging steps.
+
 ## Bug Fixes & Technical Notes
 
 ### 2024-06-21: Controlled Input Warning Fix
@@ -209,3 +250,19 @@ The only differences are:
 - Other judges' columns and data are not affected.
 
 _Last Updated: 2024-06-22_ 
+
+## Order Validation for Best LH PR and SH PR
+- The order of cats in Best LH PR and Best SH PR must be a **subsequence** of the order in Best AB PR (relative order preserved).
+- You may select any subset of AB PR cats for LH/SH PR, but their order must match the order in AB PR.
+- If the order is violated (i.e., a cat appears before another cat that comes after it in AB PR), an order error is shown on the first cell where the violation occurs.
+- This matches the logic in the Championship tab for LH/SH CH order validation.
+
+### Example
+Suppose Best AB PR (in order) is: 1, 2, 3
+- **Valid LH PR:** 2, 3 (order preserved, subset)
+- **Valid LH PR:** 1, 2 (order preserved, subset)
+- **Invalid LH PR:** 2, 1 (order violated; error on '1')
+- **Invalid LH PR:** 3, 2, 1 (order violated; error on '2' and '1')
+
+The error message will appear on the first cell where the order is violated, e.g.,
+- "Order violation: 1 is out of order in LH PR. Must preserve AB PR order." 
