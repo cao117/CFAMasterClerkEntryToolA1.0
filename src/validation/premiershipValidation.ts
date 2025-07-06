@@ -9,7 +9,7 @@
  * Add `logger.debug(...)` calls at all critical validation and error-merging points.
  */
 
-// Placeholder: import { logger } from '../utils/logger';
+// Remove logger import, use only console.log for debug output
 
 export interface Judge {
   id: number;
@@ -46,12 +46,15 @@ export interface PremiershipValidationInput {
 }
 
 /**
- * Validates if a cat number is in the correct format (1-450)
+ * Validates if a cat number is in the correct format (1-450, must be all digits, no letters or symbols)
+ * Returns false if the value is not a valid integer string or out of range.
  */
 export function validateCatNumber(value: string): boolean {
   if (!value || value.trim() === '') return true;
-  const num = parseInt(value.trim());
-  return !isNaN(num) && num >= 1 && num <= 450;
+  const trimmed = value.trim();
+  if (!/^[0-9]+$/.test(trimmed)) return false; // Only allow digits
+  const num = Number(trimmed);
+  return num >= 1 && num <= 450;
 }
 
 /**
@@ -243,6 +246,108 @@ export function validateSequentialEntry(
 }
 
 /**
+ * Helper to get the list of PR cats from Top 10/15 (Show Awards) for a column, in order
+ */
+function getTop15PRCats(input: PremiershipValidationInput, columnIndex: number): string[] {
+  const { showAwards } = input;
+  const prCats: string[] = [];
+  for (let position = 0; position < 15; position++) {
+    const key = `${columnIndex}-${position}`;
+    const award = showAwards[key];
+    if (award && award.status === 'PR' && award.catNumber && award.catNumber.trim() !== '') {
+      prCats.push(award.catNumber.trim());
+    }
+  }
+  return prCats;
+}
+
+/**
+ * Helper to check order for Best AB PR: Nth PR in Best AB PR must match Nth PR in Top 10/15 (Show Awards)
+ */
+function validateBestABPROrder(input: PremiershipValidationInput, colIdx: number, pos: number, cat: string): string | undefined {
+  const prCats = getTop15PRCats(input, colIdx);
+  if (prCats.length > pos) {
+    const requiredCat = prCats[pos];
+    if (cat !== requiredCat) {
+      return `Must be ${requiredCat} (${ordinal(pos + 1)} PR required by CFA rules)`;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Validates that in LH/SH PR sections, all AB PR cats assigned to the section must be at the top (in AB PR order), and fillers (non-AB PR) can only appear after all AB PR cats.
+ * The AB PR cats in LH/SH must form a subsequence of the AB PR list (order preserved, but not necessarily consecutive).
+ * If any filler appears before an AB PR cat, show an order error on the first offending cell.
+ * @param input PremiershipValidationInput
+ * @param sectionKey 'lhPremiersFinals' | 'shPremiersFinals'
+ * @param colIdx number
+ * @param pos number
+ * @param cat string
+ * @returns string | undefined
+ */
+function validateBestHairPROrder(input: PremiershipValidationInput, sectionKey: 'lhPremiersFinals' | 'shPremiersFinals', colIdx: number, pos: number, cat: string): string | undefined {
+  const abFinals = (input as any)['abPremiersFinals'] as { [key: string]: string };
+  const numPositions = input.columns[colIdx] ? getFinalsPositionsForRingType(input, input.columns[colIdx].specialty) : 3;
+  
+  // Build the AB PR order array
+  const abCats: string[] = [];
+  for (let i = 0; i < numPositions; i++) {
+    const abCat = abFinals ? abFinals[`${colIdx}-${i}`] : '';
+    if (abCat && abCat.trim()) abCats.push(abCat.trim());
+  }
+  
+  // Build the current LH/SH PR order up to and including this position
+  const sectionFinals = (input as any)[sectionKey] as { [key: string]: string };
+  const hairCats: string[] = [];
+  for (let i = 0; i <= pos; i++) {
+    const hairCat = sectionFinals ? sectionFinals[`${colIdx}-${i}`] : '';
+    if (hairCat && hairCat.trim()) hairCats.push(hairCat.trim());
+  }
+  
+  // Create a set of AB PR cats for quick lookup
+  const abCatsSet = new Set(abCats);
+  
+  // Extract only the AB PR cats from the hair section (in order)
+  const abCatsInHairSection: string[] = [];
+  for (const hairCat of hairCats) {
+    if (abCatsSet.has(hairCat)) {
+      abCatsInHairSection.push(hairCat);
+    }
+  }
+  
+  // Check that AB PR cats form a subsequence of the AB PR list
+  let abIdx = 0;
+  for (let i = 0; i < abCatsInHairSection.length; i++) {
+    const currentCat = abCatsInHairSection[i];
+    while (abIdx < abCats.length && abCats[abIdx] !== currentCat) {
+      abIdx++;
+    }
+    if (abIdx === abCats.length) {
+      // Not found in the remaining AB PR cats: order violation
+      return `Order violation: ${currentCat} is out of order in ${sectionKey.replace('PremiersFinals','')} PR. Must preserve the order from Best AB PR (subsequence required).`;
+    }
+    abIdx++;
+  }
+  
+  // Check that all fillers come after all AB PR cats
+  let foundFirstFiller = false;
+  for (let i = 0; i < hairCats.length; i++) {
+    const currentCat = hairCats[i];
+    if (abCatsSet.has(currentCat)) {
+      if (foundFirstFiller) {
+        // AB PR cat appears after a filler - this is an error
+        return `Order violation: ${currentCat} (AB PR) must be above all fillers in ${sectionKey.replace('PremiersFinals','')} PR.`;
+      }
+    } else {
+      foundFirstFiller = true;
+    }
+  }
+  
+  return undefined;
+}
+
+/**
  * Main validation function for the Premiership tab.
  * Enforces strict error precedence: duplicate > status > sequential > assignment reminder.
  * All error keys are section-prefixed and use hyphens.
@@ -258,7 +363,7 @@ export function validatePremiershipTab(input: PremiershipValidationInput): { [ke
     { key: 'lhPremiersFinals', prefix: 'lhPremiersFinals', checkDuplicate: checkDuplicateCatNumbersInLHPremiersFinals },
     { key: 'shPremiersFinals', prefix: 'shPremiersFinals', checkDuplicate: checkDuplicateCatNumbersInSHPremiersFinals },
   ];
-  // 1. Duplicate detection for all finals sections (highest precedence)
+  // --- Finals validation ---
   for (const section of finalsSections) {
     for (let colIdx = 0; colIdx < input.columns.length; colIdx++) {
       const finals = (input as any)[section.key] as { [key: string]: string };
@@ -270,7 +375,16 @@ export function validatePremiershipTab(input: PremiershipValidationInput): { [ke
         const value = finals ? finals[dataKey] : '';
         if (value && value.trim()) catNumbers[pos] = value.trim();
       }
-      // Find duplicates
+      // 1. Range error: assign first
+      for (let pos = 0; pos < numPositions; pos++) {
+        const errorKey = `${section.prefix}-${colIdx}-${pos}`;
+        const value = finals ? finals[`${colIdx}-${pos}`] : '';
+        if (value && value.trim() && !validateCatNumber(value)) {
+          errors[errorKey] = 'Cat number must be between 1-450.';
+          // logger.debug(`[VALIDATION] Finals range error for ${errorKey}`);
+        }
+      }
+      // 2. Duplicate error: merge with range if both
       const seen: { [cat: string]: number[] } = {};
       Object.entries(catNumbers).forEach(([pos, cat]) => {
         if (!seen[cat]) seen[cat] = [];
@@ -280,84 +394,125 @@ export function validatePremiershipTab(input: PremiershipValidationInput): { [ke
         if (positions.length > 1) {
           positions.forEach(pos => {
             const errorKey = `${section.prefix}-${colIdx}-${pos}`;
-            errors[errorKey] = 'Duplicate cat number within this section of the final';
-            // logger.debug(`[VALIDATION] Duplicate error set for ${errorKey}`);
+            if (errors[errorKey]) {
+              errors[errorKey] = 'Cat number must be between 1-450. Duplicate: This cat is already placed in another finals position.';
+              // logger.debug(`[VALIDATION] Finals range+duplicate error for ${errorKey}`);
+            } else {
+              errors[errorKey] = 'Duplicate: This cat is already placed in another finals position.';
+              // logger.debug(`[VALIDATION] Finals duplicate error for ${errorKey}`);
+            }
           });
         }
       });
-    }
-  }
-  // 2. Status, sequential, and assignment reminder errors (only if no duplicate error present)
-  for (const section of finalsSections) {
-    for (let colIdx = 0; colIdx < input.columns.length; colIdx++) {
-      const finals = (input as any)[section.key] as { [key: string]: string };
-      const column = input.columns[colIdx];
-      const numPositions = column ? getFinalsPositionsForRingType(input, column.specialty) : 3;
-      for (let pos = 0; pos < numPositions; pos++) {
-        const dataKey = `${colIdx}-${pos}`;
+      // 2.5. Cross-section duplicate error: LH PR and SH PR cannot contain the same cat number
+      if (section.prefix === 'lhPremiersFinals' || section.prefix === 'shPremiersFinals') {
+        Object.entries(catNumbers).forEach(([pos, cat]) => {
+          const errorKey = `${section.prefix}-${colIdx}-${pos}`;
+          if (errors[errorKey]) return; // skip if range or duplicate error present
+          
+          // Check if this cat appears in the other hair section (LH vs SH)
+          const otherSection = section.prefix === 'lhPremiersFinals' ? 'shPremiersFinals' : 'lhPremiersFinals';
+          const otherFinals = (input as any)[`${otherSection}`] as { [key: string]: string };
+          const otherNumPositions = column ? getFinalsPositionsForRingType(input, column.specialty) : 3;
+          
+          for (let otherPos = 0; otherPos < otherNumPositions; otherPos++) {
+            const otherKey = `${colIdx}-${otherPos}`;
+            const otherValue = otherFinals ? otherFinals[otherKey] : '';
+            if (otherValue && otherValue.trim() === cat) {
+              errors[errorKey] = 'Duplicate: a cat cannot be both longhair and shorthair';
+              console.debug('[validatePremiershipTab] Finals cross-section duplicate error', errorKey, errors[errorKey]);
+              break;
+            }
+          }
+        });
+      }
+      // 3. Status error: only if no range, duplicate, or cross-section duplicate error
+      Object.entries(catNumbers).forEach(([pos, cat]) => {
         const errorKey = `${section.prefix}-${colIdx}-${pos}`;
-        const value = finals ? finals[dataKey] : '';
-        if (!value || !value.trim()) continue;
-        if (errors[errorKey]) continue; // Skip if duplicate, status, or sequential error present
+        if (errors[errorKey]) return; // skip if range, duplicate, or cross-section duplicate error present
         // Status error: Only PR eligible for finals (no GP/NOV)
+        // CFA rule: Must search ALL columns' Show Awards for this cat number, not just current column
         let status: string | undefined = undefined;
-        for (let i = 0; i < 15; i++) {
-          const showAward = input.showAwards[`${colIdx}-${i}`];
-          if (showAward && showAward.catNumber && showAward.catNumber.trim() === value.trim()) {
-            status = showAward.status;
+        // Deep debug log: show all Show Awards data
+        console.log(`[VALIDATION][STATUS] Checking status for errorKey=${errorKey}, cat=${cat}`);
+        console.log(`[VALIDATION][STATUS] Show Awards data:`, input.showAwards);
+        outer: for (let c = 0; c < input.columns.length; c++) {
+          for (let i = 0; i < 15; i++) {
+            const showAward = input.showAwards[`${c}-${i}`];
+            if (showAward && showAward.catNumber && showAward.catNumber.trim() === cat) {
+              status = showAward.status;
+              console.log(`[VALIDATION][STATUS] Found status for cat=${cat} at showAwards[${c}-${i}]: ${status}`);
+              break outer;
+            }
+          }
+        }
+        if (status === 'GP' || status === 'NOV') {
+          errors[errorKey] = `${cat} is listed as a ${status} in Show Awards and cannot be awarded PR final.`;
+          console.log(`[VALIDATION][STATUS] Assigned status error for errorKey=${errorKey}: ${errors[errorKey]}`);
+        }
+      });
+      Object.entries(catNumbers).forEach(([pos, cat]) => {
+        const errorKey = `${section.prefix}-${colIdx}-${pos}`;
+        if (errors[errorKey]) return; // skip if range, duplicate, or status error present
+        // 4. Sequential entry error: only if no range, duplicate, or status error
+        let sequentialError = false;
+        for (let i = 0; i < Number(pos); i++) {
+          const prevKey = `${colIdx}-${i}`;
+          const prevValue = finals ? finals[prevKey] : '';
+          if (!prevValue || prevValue.trim() === '') {
+            sequentialError = true;
             break;
           }
         }
-        if (status && status !== 'PR') {
-          errors[errorKey] = `${value.trim()} is listed as a ${status} in Show Awards and cannot be awarded PR final.`;
-          continue;
-        }
-        // Sequential error: must fill previous positions first
-        if (!validateSequentialEntry(input, section.prefix.replace('Finals','') as any, colIdx, pos, value)) {
+        if (sequentialError) {
           errors[errorKey] = 'You must fill previous placements before entering this position.';
-          continue;
+          // logger.debug(`[VALIDATION] Finals sequential error for ${errorKey}`);
+          return;
         }
-        // --- Assignment reminder logic for Best AB PR (Allbreed only) ---
-        /**
-         * If this is an Allbreed column and section is abPremiersFinals,
-         * and this PR cat does not appear in any LH or SH PR input for this column,
-         * set a reminder error on this cell.
-         */
-        if (section.prefix === 'abPremiersFinals' && column.specialty === 'Allbreed') {
+        // 5. Order error: only for Best AB PR, LH PR, SH PR, and only if no higher error
+        if (!errors[errorKey]) {
+          let orderError: string | undefined;
+          if (section.prefix === 'abPremiersFinals') {
+            orderError = validateBestABPROrder(input, colIdx, Number(pos), cat);
+          } else if (section.prefix === 'lhPremiersFinals' || section.prefix === 'shPremiersFinals') {
+            orderError = validateBestHairPROrder(input, section.prefix as any, colIdx, Number(pos), cat);
+          }
+          if (orderError) {
+            errors[errorKey] = orderError;
+            // logger.debug(`[VALIDATION] Finals order error for ${errorKey}: ${orderError}`);
+          }
+        }
+        // 6. Assignment reminder handled after all other errors
+        // Only set assignment reminder if there is no error already present for this cell
+        if (!errors[errorKey] && section.prefix === 'abPremiersFinals' && column.specialty === 'Allbreed') {
           let foundInLH = false;
           let foundInSH = false;
           const lhFinals = (input as any)['lhPremiersFinals'] as { [key: string]: string };
           const shFinals = (input as any)['shPremiersFinals'] as { [key: string]: string };
           for (let j = 0; j < numPositions; j++) {
-            if (lhFinals && lhFinals[`${colIdx}-${j}`] && lhFinals[`${colIdx}-${j}`].trim() === value.trim()) {
+            if (lhFinals && lhFinals[`${colIdx}-${j}`] && lhFinals[`${colIdx}-${j}`].trim() === cat) {
               foundInLH = true;
               break;
             }
           }
           for (let j = 0; j < numPositions; j++) {
-            if (shFinals && shFinals[`${colIdx}-${j}`] && shFinals[`${colIdx}-${j}`].trim() === value.trim()) {
+            if (shFinals && shFinals[`${colIdx}-${j}`] && shFinals[`${colIdx}-${j}`].trim() === cat) {
               foundInSH = true;
               break;
             }
           }
           if (!foundInLH && !foundInSH) {
-            errors[errorKey] = `${value.trim()} needs to be assigned to either LH or SH PR final.`;
-            // logger.debug(`[VALIDATION] Assignment reminder set for ${errorKey}`);
+            errors[errorKey] = `${cat} needs to be assigned to either LH or SH PR final.`;
+            // logger.debug(`[VALIDATION] Finals assignment reminder for ${errorKey}`);
           }
         }
-        // ... (other lowest-precedence logic if needed)
-      }
+      });
     }
   }
-  // 3. Show Awards section (Top 15) validation
+  // --- Show Awards (Top 10/15) validation ---
   for (let colIdx = 0; colIdx < input.columns.length; colIdx++) {
     const column = input.columns[colIdx];
     const breakpoint = getPremiershipCountForRingType(input, column.specialty) >= 50 ? 15 : 10;
-    // --- Duplicate error logic: assign to all involved cells ---
-    /**
-     * Build a map of cat numbers to all positions where they appear in this column.
-     * If a cat number appears more than once, assign the duplicate error to all those positions.
-     */
     const catNumToPositions: { [cat: string]: number[] } = {};
     for (let pos = 0; pos < breakpoint; pos++) {
       const key = `${colIdx}-${pos}`;
@@ -368,27 +523,39 @@ export function validatePremiershipTab(input: PremiershipValidationInput): { [ke
         catNumToPositions[cat].push(pos);
       }
     }
+    // 1. Range error: assign first
+    for (let pos = 0; pos < breakpoint; pos++) {
+      const key = `${colIdx}-${pos}`;
+      const award = input.showAwards[key];
+      if (award && award.catNumber && award.catNumber.trim() !== '' && !validateCatNumber(award.catNumber)) {
+        errors[key] = 'Cat number must be between 1-450.';
+        // logger.debug(`[VALIDATION] ShowAwards range error for ${key}`);
+      }
+    }
+    // 2. Duplicate error: merge with range if both
     Object.entries(catNumToPositions).forEach(([, positions]) => {
       if (positions.length > 1) {
         positions.forEach(pos => {
           const key = `${colIdx}-${pos}`;
-          errors[key] = 'Duplicate cat number within this section of the final';
+          if (errors[key]) {
+            errors[key] = 'Cat number must be between 1-450. Duplicate: This cat is already placed in another position.';
+            // logger.debug(`[VALIDATION] ShowAwards range+duplicate error for ${key}`);
+          } else {
+            errors[key] = 'Duplicate: This cat is already placed in another position.';
+            // logger.debug(`[VALIDATION] ShowAwards duplicate error for ${key}`);
+          }
         });
       }
     });
-    // --- Other error checks (only if no duplicate error present) ---
+    // 3. Sequential entry error: only if no range or duplicate error
     for (let pos = 0; pos < breakpoint; pos++) {
       const key = `${colIdx}-${pos}`;
       const award = input.showAwards[key];
       if (award && award.catNumber && award.catNumber.trim() !== '') {
-        if (errors[key]) continue; // Never overwrite duplicate error
-        if (!validateCatNumber(award.catNumber)) {
-          errors[key] = 'Cat number must be between 1-450';
-          continue;
-        }
+        if (errors[key]) continue; // skip if range or duplicate error present
         if (!validateSequentialEntry(input, 'showAwards', colIdx, pos, award.catNumber)) {
           errors[key] = 'You must fill previous placements before entering this position.';
-          continue;
+          // logger.debug(`[VALIDATION] ShowAwards sequential error for ${key}`);
         }
       }
     }
@@ -397,4 +564,11 @@ export function validatePremiershipTab(input: PremiershipValidationInput): { [ke
   return errors;
 }
 
+// Helper for ordinal suffix
+function ordinal(n: number) {
+  const s = ["th", "st", "nd", "rd"], v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+
+// ... (add any additional helper functions as needed for full parity with championshipValidation.ts)
 // ... (add any additional helper functions as needed for full parity with championshipValidation.ts)
