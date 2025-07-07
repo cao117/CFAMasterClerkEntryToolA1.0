@@ -28,10 +28,13 @@ export interface PremiershipValidationInput {
   shPremiersFinals: { [key: string]: string };
   premiershipTotal: number;
   premiershipCounts: {
-    gcs: number;
+    gps: number;
+    lhGps: number;
+    shGps: number;
     lhPrs: number;
     shPrs: number;
     novs: number;
+    prs: number;
   };
   voidedShowAwards?: { [key: string]: boolean };
   voidedPremiersFinals?: { [key: string]: boolean };
@@ -159,7 +162,8 @@ export function checkDuplicateCatNumbersInSHPremiersFinals(
  */
 export function getFinalsPositionsForRingType(input: PremiershipValidationInput, ringType: string): number {
   const count = getPremiershipCountForRingType(input, ringType);
-  return count >= 50 ? 3 : 2; // 3 positions if 15 awards, 2 if 10 awards
+  const positions = count >= 50 ? 3 : 2; // 3 positions if 15 awards, 2 if 10 awards
+  return positions;
 }
 
 /**
@@ -169,17 +173,25 @@ export function getFinalsPositionsForRingType(input: PremiershipValidationInput,
  * @returns number
  */
 export function getPremiershipCountForRingType(input: PremiershipValidationInput, ringType: string): number {
-  const { premiershipTotal, premiershipCounts } = input;
+  const { premiershipCounts } = input;
+  
+  let count = 0;
   switch (ringType) {
     case 'Allbreed':
-      return premiershipTotal;
+      count = premiershipCounts.gps + premiershipCounts.prs; // Total GPs + Total PRs
+      break;
     case 'Longhair':
-      return premiershipCounts.lhPrs;
+      count = premiershipCounts.lhGps + premiershipCounts.lhPrs; // LH GPs + LH PRs
+      break;
     case 'Shorthair':
-      return premiershipCounts.shPrs;
+      count = premiershipCounts.shGps + premiershipCounts.shPrs; // SH GPs + SH PRs
+      break;
     default:
-      return premiershipTotal;
+      count = premiershipCounts.gps + premiershipCounts.prs; // Default to total
+      break;
   }
+  
+  return count;
 }
 
 /**
@@ -191,7 +203,8 @@ export function getPremiershipCountForRingType(input: PremiershipValidationInput
  */
 export function getBreakpointForRingType(input: PremiershipValidationInput, ringType: string): number {
   const count = getPremiershipCountForRingType(input, ringType);
-  return count >= 50 ? 15 : 10;
+  const breakpoint = count >= 50 ? 15 : 10;
+  return breakpoint;
 }
 
 /**
@@ -254,6 +267,108 @@ function getTop15PRCats(input: PremiershipValidationInput, columnIndex: number):
     }
   }
   return prCats;
+}
+
+/**
+ * Validates that Best LH PR finals contain only cats from PR cats in show awards (for Longhair rings)
+ * Returns { isValid, firstErrorPosition, errorMessage }
+ */
+export function validateBestLHPRWithTop15AndGetFirstError(input: PremiershipValidationInput, columnIndex: number): { isValid: boolean, firstErrorPosition: number, errorMessage: string } {
+  const prCats = getTop15PRCats(input, columnIndex);
+  const numPositions = input.columns[columnIndex] ? getFinalsPositionsForRingType(input, input.columns[columnIndex].specialty) : 3;
+  const N = prCats.length;
+  const seen = new Set<string>();
+  
+  for (let position = 0; position < numPositions; position++) {
+    const key = `${columnIndex}-${position}`;
+    const value = input.lhPremiersFinals[key];
+    if (!value || value.trim() === '') continue;
+    
+    if (seen.has(value.trim())) {
+      return { isValid: false, firstErrorPosition: position, errorMessage: `${value.trim()} is a duplicate in LH PR.` };
+    }
+    seen.add(value.trim());
+    
+    if (position < N) {
+      // Main positions: must match PR cats from show awards in order
+      if (value.trim() !== prCats[position]) {
+        return {
+          isValid: false,
+          firstErrorPosition: position,
+          errorMessage: `Must be ${prCats[position]} (${ordinal(position + 1)} PR required by CFA rules)`
+        };
+      }
+    } else {
+      // Filler positions: only check for not being a non-PR from Show Awards
+      const showAward = getShowAwardByCatNumber(input, columnIndex, value);
+      if (showAward && showAward.status !== 'PR') {
+        return {
+          isValid: false,
+          firstErrorPosition: position,
+          errorMessage: `${value.trim()} is a ${showAward.status} in Show Awards and cannot be used in PR finals.`
+        };
+      }
+      // Do NOT check 'must match PR cats from show awards in order' for fillers
+    }
+  }
+  return { isValid: true, firstErrorPosition: -1, errorMessage: '' };
+}
+
+/**
+ * Validates that Best SH PR finals contain only cats from PR cats in show awards (for Shorthair rings)
+ * Returns { isValid, firstErrorPosition, errorMessage }
+ */
+export function validateBestSHPRWithTop15AndGetFirstError(input: PremiershipValidationInput, columnIndex: number): { isValid: boolean, firstErrorPosition: number, errorMessage: string } {
+  const prCats = getTop15PRCats(input, columnIndex);
+  const numPositions = input.columns[columnIndex] ? getFinalsPositionsForRingType(input, input.columns[columnIndex].specialty) : 3;
+  const N = prCats.length;
+  const seen = new Set<string>();
+  
+  for (let position = 0; position < numPositions; position++) {
+    const key = `${columnIndex}-${position}`;
+    const value = input.shPremiersFinals[key];
+    if (!value || value.trim() === '') continue;
+    
+    if (seen.has(value.trim())) {
+      return { isValid: false, firstErrorPosition: position, errorMessage: `${value.trim()} is a duplicate in SH PR.` };
+    }
+    seen.add(value.trim());
+    
+    if (position < N) {
+      // Main positions: must match PR cats from show awards in order
+      if (value.trim() !== prCats[position]) {
+        return {
+          isValid: false,
+          firstErrorPosition: position,
+          errorMessage: `Must be ${prCats[position]} (${ordinal(position + 1)} PR required by CFA rules)`
+        };
+      }
+    } else {
+      // Filler positions: only check for not being a non-PR from Show Awards
+      const showAward = getShowAwardByCatNumber(input, columnIndex, value);
+      if (showAward && showAward.status !== 'PR') {
+        return {
+          isValid: false,
+          firstErrorPosition: position,
+          errorMessage: `${value.trim()} is a ${showAward.status} in Show Awards and cannot be used in PR finals.`
+        };
+      }
+      // Do NOT check 'must match PR cats from show awards in order' for fillers
+    }
+  }
+  return { isValid: true, firstErrorPosition: -1, errorMessage: '' };
+}
+
+// Helper to get show award by cat number for a column
+function getShowAwardByCatNumber(input: PremiershipValidationInput, columnIndex: number, catNumber: string) {
+  for (let i = 0; i < 15; i++) {
+    const key = `${columnIndex}-${i}`;
+    const award = input.showAwards[key];
+    if (award && award.catNumber && award.catNumber.trim() === catNumber.trim()) {
+      return award;
+    }
+  }
+  return null;
 }
 
 /**
@@ -458,8 +573,26 @@ export function validatePremiershipTab(input: PremiershipValidationInput): { [ke
           let orderError: string | undefined;
           if (section.prefix === 'abPremiersFinals') {
             orderError = validateBestABPROrder(input, colIdx, Number(pos), cat);
-          } else if (section.prefix === 'lhPremiersFinals' || section.prefix === 'shPremiersFinals') {
-            orderError = validateBestHairPROrder(input, section.prefix as any, colIdx, Number(pos), cat);
+          } else if (section.prefix === 'lhPremiersFinals') {
+            // For LH PR: use single specialty validation for Longhair rings, AB validation for Allbreed rings
+            if (column.specialty === 'Longhair') {
+              const lhResult = validateBestLHPRWithTop15AndGetFirstError(input, colIdx);
+              if (!lhResult.isValid && lhResult.firstErrorPosition === Number(pos)) {
+                orderError = lhResult.errorMessage;
+              }
+            } else if (column.specialty === 'Allbreed') {
+              orderError = validateBestHairPROrder(input, 'lhPremiersFinals', colIdx, Number(pos), cat);
+            }
+          } else if (section.prefix === 'shPremiersFinals') {
+            // For SH PR: use single specialty validation for Shorthair rings, AB validation for Allbreed rings
+            if (column.specialty === 'Shorthair') {
+              const shResult = validateBestSHPRWithTop15AndGetFirstError(input, colIdx);
+              if (!shResult.isValid && shResult.firstErrorPosition === Number(pos)) {
+                orderError = shResult.errorMessage;
+              }
+            } else if (column.specialty === 'Allbreed') {
+              orderError = validateBestHairPROrder(input, 'shPremiersFinals', colIdx, Number(pos), cat);
+            }
           }
           if (orderError) {
             errors[errorKey] = orderError;

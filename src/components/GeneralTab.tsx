@@ -31,10 +31,12 @@ interface ShowData {
     total: number;
   };
   premiershipCounts: {
-    gcs: number;
+    lhGps: number;
+    shGps: number;
     lhPrs: number;
     shPrs: number;
     novs: number;
+    gps: number;
     prs: number;
     total: number;
   };
@@ -313,7 +315,7 @@ export default function GeneralTab({
       numberOfJudges: 0,
       championshipCounts: { gcs: 0, lhGcs: 0, shGcs: 0, lhChs: 0, shChs: 0, novs: 0, chs: 0, total: 0 },
       kittenCounts: { lhKittens: 0, shKittens: 0, total: 0 },
-      premiershipCounts: { gcs: 0, lhPrs: 0, shPrs: 0, novs: 0, prs: 0, total: 0 },
+      premiershipCounts: { lhGps: 0, shGps: 0, lhPrs: 0, shPrs: 0, novs: 0, gps: 0, prs: 0, total: 0 },
       householdPetCount: 0
     });
     setJudges([]);
@@ -365,6 +367,7 @@ export default function GeneralTab({
     const maxAttempts = 100;
 
     let championshipTotal, kittenTotal, premiershipTotal, householdPetCount;
+    let chNovs, prNovs; // Declare outside loop for scope
 
     do {
       // Generate random counts between 1-100
@@ -372,18 +375,20 @@ export default function GeneralTab({
       const shGcs = getRandomCount();
       const lhChs = getRandomCount();
       const shChs = getRandomCount();
-      const novs = getRandomCount();
+      chNovs = getRandomCount(); // assign inside loop
       const lhKittens = getRandomCount();
       const shKittens = getRandomCount();
+      const lhGps = getRandomCount();
+      const shGps = getRandomCount();
       const lhPrs = getRandomCount();
       const shPrs = getRandomCount();
-      const prNovs = getRandomCount();
+      prNovs = getRandomCount(); // assign inside loop
       const hhp = getRandomCount();
 
       // Calculate totals
-      championshipTotal = lhGcs + shGcs + lhChs + shChs + novs;
+      championshipTotal = lhGcs + shGcs + lhChs + shChs + chNovs;
       kittenTotal = lhKittens + shKittens;
-      premiershipTotal = lhPrs + shPrs + prNovs;
+      premiershipTotal = lhGps + shGps + lhPrs + shPrs + prNovs;
       householdPetCount = hhp;
 
       totalCats = championshipTotal + kittenTotal + premiershipTotal + householdPetCount;
@@ -411,7 +416,7 @@ export default function GeneralTab({
         shGcs: Math.floor(championshipTotal * 0.25), // 25% of total
         lhChs: Math.floor(championshipTotal * 0.15), // 15% of total
         shChs: Math.floor(championshipTotal * 0.10), // 10% of total
-        novs: Math.floor(championshipTotal * 0.15), // 15% of total
+        novs: chNovs,
         chs: Math.floor(championshipTotal * 0.25), // 25% of total
         total: championshipTotal
       },
@@ -421,11 +426,13 @@ export default function GeneralTab({
         total: kittenTotal
       },
       premiershipCounts: {
-        gcs: Math.floor(premiershipTotal * 0.4), // 40% of total
-        lhPrs: Math.floor(premiershipTotal * 0.35), // 35% of total
-        shPrs: Math.floor(premiershipTotal * 0.25), // 25% of total
-        novs: Math.floor(premiershipTotal * 0.25), // 25% of total
-        prs: Math.floor(premiershipTotal * 0.6), // 60% of total
+        lhGps: Math.floor(premiershipTotal * 0.4), // 40% of total
+        shGps: Math.floor(premiershipTotal * 0.25), // 25% of total
+        lhPrs: Math.floor(premiershipTotal * 0.25), // 25% of total
+        shPrs: Math.floor(premiershipTotal * 0.15), // 15% of total
+        novs: prNovs,
+        gps: Math.floor(premiershipTotal * 0.4), // 40% of total
+        prs: Math.floor(premiershipTotal * 0.4), // 40% of total
         total: premiershipTotal
       },
       householdPetCount: householdPetCount
@@ -611,19 +618,29 @@ export default function GeneralTab({
                 <tr className="cfa-table-header">
                   <td colSpan={12} className="py-3 pl-4">Premiership Count</td>
                 </tr>
+                {/* Editable fields row */}
                 <tr className="cfa-table-row">
-                  <td className="text-sm font-medium pl-4 py-3"># of GCs:</td>
-                  <td className="py-3"><input type="number" min="0" value={showData.premiershipCounts.gcs} onChange={e => updatePremiershipCount('gcs', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'premiershipgcs')} className="cfa-input w-20 text-sm"/></td>
+                  <td className="text-sm font-medium pl-4 py-3"># of LH GPs:</td>
+                  <td className="py-3"><input type="number" min="0" value={showData.premiershipCounts.lhGps} onChange={e => updatePremiershipCount('lhGps', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'premiershiplhGps')} className="cfa-input w-20 text-sm"/></td>
+                  <td className="text-sm font-medium"># of SH GPs:</td>
+                  <td><input type="number" min="0" value={showData.premiershipCounts.shGps} onChange={e => updatePremiershipCount('shGps', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'premiershipshGps')} className="cfa-input w-20 text-sm"/></td>
                   <td className="text-sm font-medium"># of LH PRs:</td>
                   <td><input type="number" min="0" value={showData.premiershipCounts.lhPrs} onChange={e => updatePremiershipCount('lhPrs', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'premiershiplhPrs')} className="cfa-input w-20 text-sm"/></td>
                   <td className="text-sm font-medium"># of SH PRs:</td>
                   <td><input type="number" min="0" value={showData.premiershipCounts.shPrs} onChange={e => updatePremiershipCount('shPrs', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'premiershipshPrs')} className="cfa-input w-20 text-sm"/></td>
                   <td className="text-sm font-medium"># of NOVs:</td>
                   <td><input type="number" min="0" value={showData.premiershipCounts.novs} onChange={e => updatePremiershipCount('novs', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'premiershipnovs')} className="cfa-input w-20 text-sm"/></td>
+                  <td colSpan={4}></td>
+                </tr>
+                {/* Calculated fields row */}
+                <tr className="cfa-table-row">
+                  <td className="text-sm font-medium pl-4 py-3"># of GPs:</td>
+                  <td className="py-3"><input type="number" value={showData.premiershipCounts.gps} readOnly className="cfa-input cfa-input-readonly w-20 text-sm"/></td>
                   <td className="text-sm font-medium"># of PRs:</td>
                   <td><input type="number" value={showData.premiershipCounts.prs} readOnly className="cfa-input cfa-input-readonly w-20 text-sm"/></td>
                   <td className="text-sm font-medium">Total Count:</td>
                   <td><input type="number" value={showData.premiershipCounts.total} readOnly className="cfa-input cfa-input-readonly w-20 text-sm"/></td>
+                  <td colSpan={8}></td>
                 </tr>
                 {/* Household Pet Count */}
                 <tr className="cfa-table-header">

@@ -27,10 +27,12 @@ export interface ShowData {
     total: number;
   };
   premiershipCounts: {
-    gcs: number;
+    lhGps: number;
+    shGps: number;
     lhPrs: number;
     shPrs: number;
     novs: number;
+    gps: number;
     prs: number;
     total: number;
   };

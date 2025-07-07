@@ -37,11 +37,13 @@ interface ShowData {
     total: number;
   };
   premiershipCounts: {
-    gcs: number;
+    gps: number; // total GPs (auto-calculated)
+    lhGps: number;
+    shGps: number;
     lhPrs: number;
     shPrs: number;
     novs: number;
-    prs: number;
+    prs: number; // total PRs (auto-calculated)
     total: number;
   };
   householdPetCount: number;
@@ -58,7 +60,7 @@ function App() {
     numberOfJudges: 0,
     championshipCounts: { gcs: 0, lhGcs: 0, shGcs: 0, lhChs: 0, shChs: 0, novs: 0, chs: 0, total: 0 },
     kittenCounts: { lhKittens: 0, shKittens: 0, total: 0 },
-    premiershipCounts: { gcs: 0, lhPrs: 0, shPrs: 0, novs: 0, prs: 0, total: 0 },
+    premiershipCounts: { gps: 0, lhGps: 0, shGps: 0, lhPrs: 0, shPrs: 0, novs: 0, prs: 0, total: 0 },
     householdPetCount: 0
   });
 
@@ -129,17 +131,19 @@ function App() {
 
   // Auto-calculate premiership counts
   useEffect(() => {
+    const gps = showData.premiershipCounts.lhGps + showData.premiershipCounts.shGps;
     const prs = showData.premiershipCounts.lhPrs + showData.premiershipCounts.shPrs;
-    const total = showData.premiershipCounts.gcs + prs + showData.premiershipCounts.novs;
+    const total = gps + prs + showData.premiershipCounts.novs;
     setShowData(prev => ({
       ...prev,
       premiershipCounts: {
         ...prev.premiershipCounts,
+        gps,
         prs,
         total
       }
     }));
-  }, [showData.premiershipCounts.gcs, showData.premiershipCounts.lhPrs, showData.premiershipCounts.shPrs, showData.premiershipCounts.novs]);
+  }, [showData.premiershipCounts.lhGps, showData.premiershipCounts.shGps, showData.premiershipCounts.lhPrs, showData.premiershipCounts.shPrs, showData.premiershipCounts.novs]);
 
   // Auto-calculate kitten counts
   useEffect(() => {
@@ -195,7 +199,7 @@ function App() {
       numberOfJudges: 0,
       championshipCounts: { gcs: 0, lhGcs: 0, shGcs: 0, lhChs: 0, shChs: 0, novs: 0, chs: 0, total: 0 },
       kittenCounts: { lhKittens: 0, shKittens: 0, total: 0 },
-      premiershipCounts: { gcs: 0, lhPrs: 0, shPrs: 0, novs: 0, prs: 0, total: 0 },
+      premiershipCounts: { gps: 0, lhGps: 0, shGps: 0, lhPrs: 0, shPrs: 0, novs: 0, prs: 0, total: 0 },
       householdPetCount: 0
     });
     setJudges([]);
@@ -408,10 +412,13 @@ function App() {
         judges={judges}
         premiershipTotal={showData.premiershipCounts.total}
         premiershipCounts={{
-          gcs: showData.premiershipCounts.gcs,
+          gps: showData.premiershipCounts.gps,
+          lhGps: showData.premiershipCounts.lhGps,
+          shGps: showData.premiershipCounts.shGps,
           lhPrs: showData.premiershipCounts.lhPrs,
           shPrs: showData.premiershipCounts.shPrs,
-          novs: showData.premiershipCounts.novs
+          novs: showData.premiershipCounts.novs,
+          prs: showData.premiershipCounts.prs
         }}
         showSuccess={showSuccess}
         showError={showError}

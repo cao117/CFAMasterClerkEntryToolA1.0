@@ -23,10 +23,13 @@ interface PremiershipTabProps {
   judges: Judge[];
   premiershipTotal: number;
   premiershipCounts: {
-    gcs: number;
+    gps: number;
+    lhGps: number;
+    shGps: number;
     lhPrs: number;
     shPrs: number;
     novs: number;
+    prs: number;
   };
   showSuccess: (title: string, message?: string, duration?: number) => void;
   showError: (title: string, message?: string, duration?: number) => void;
@@ -106,28 +109,50 @@ export default function PremiershipTab({
   const columns: Column[] = useMemo(() => generateColumns(), [judges]);
 
   // --- Helper: Get finals/Best PR counts for a ring type ---
-  const getFinalsCount = (ringType: string) =>
-    getBreakpointForRingType({
-      columns,
+  const getFinalsCount = (ringType: string) => {
+    const result = getBreakpointForRingType({
+      columns: columns.map(col => ({ judge: col.judge, specialty: col.specialty })),
       showAwards: premiershipTabData.showAwards,
       premiersFinals: premiershipTabData.premiersFinals,
       abPremiersFinals: premiershipTabData.abPremiersFinals,
       lhPremiersFinals: premiershipTabData.lhPremiersFinals,
       shPremiersFinals: premiershipTabData.shPremiersFinals,
       premiershipTotal,
-      premiershipCounts
+      premiershipCounts: {
+        gps: premiershipCounts.gps,
+        lhGps: premiershipCounts.lhGps,
+        shGps: premiershipCounts.shGps,
+        lhPrs: premiershipCounts.lhPrs,
+        shPrs: premiershipCounts.shPrs,
+        novs: premiershipCounts.novs,
+        prs: premiershipCounts.prs
+      }
     }, ringType);
-  const getFinalsPositionsForRingTypeLocal = (ringType: string) =>
-    getFinalsPositionsForRingType({
-      columns,
+    
+    return result;
+  };
+  const getFinalsPositionsForRingTypeLocal = (ringType: string) => {
+    const result = getFinalsPositionsForRingType({
+      columns: columns.map(col => ({ judge: col.judge, specialty: col.specialty })),
       showAwards: premiershipTabData.showAwards,
       premiersFinals: premiershipTabData.premiersFinals,
       abPremiersFinals: premiershipTabData.abPremiersFinals,
       lhPremiersFinals: premiershipTabData.lhPremiersFinals,
       shPremiersFinals: premiershipTabData.shPremiersFinals,
       premiershipTotal,
-      premiershipCounts
+      premiershipCounts: {
+        gps: premiershipCounts.gps,
+        lhGps: premiershipCounts.lhGps,
+        shGps: premiershipCounts.shGps,
+        lhPrs: premiershipCounts.lhPrs,
+        shPrs: premiershipCounts.shPrs,
+        novs: premiershipCounts.novs,
+        prs: premiershipCounts.prs
+      }
     }, ringType);
+    
+    return result;
+  };
 
   // Accessibility: refs for ALL Cat # input fields (Show Awards + Finals)
   // We'll build a 2D array: catInputRefs[columnIndex][verticalRowIndex]
@@ -358,7 +383,15 @@ export default function PremiershipTab({
     lhPremiersFinals: premiershipTabData.lhPremiersFinals,
     shPremiersFinals: premiershipTabData.shPremiersFinals,
     premiershipTotal,
-    premiershipCounts,
+    premiershipCounts: {
+      gps: premiershipCounts.gps,
+      lhGps: premiershipCounts.lhGps,
+      shGps: premiershipCounts.shGps,
+      lhPrs: premiershipCounts.lhPrs,
+      shPrs: premiershipCounts.shPrs,
+      novs: premiershipCounts.novs,
+      prs: premiershipCounts.prs
+    },
     voidedShowAwards: premiershipTabData.voidedShowAwards,
     voidedABPremiersFinals: premiershipTabData.voidedABPremiersFinals,
     voidedLHPremiersFinals: premiershipTabData.voidedLHPremiersFinals,
