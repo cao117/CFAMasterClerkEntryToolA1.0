@@ -27,7 +27,9 @@ interface ShowData {
     shGcs: number;
     lhChs: number;
     shChs: number;
-    novs: number;
+    lhNovs: number; // NEW – LH novices
+    shNovs: number; // NEW – SH novices
+    novs: number;   // Aggregated novices (auto-calc)
     chs: number;
     total: number;
   };
@@ -42,8 +44,10 @@ interface ShowData {
     shGps: number;
     lhPrs: number;
     shPrs: number;
-    novs: number;
-    prs: number; // total PRs (auto-calculated)
+    lhNovs: number; // NEW – LH novices
+    shNovs: number; // NEW – SH novices
+    novs: number;   // Aggregated novices (auto-calc)
+    prs: number;    // total PRs (auto-calculated)
     total: number;
   };
   householdPetCount: number;
@@ -58,9 +62,9 @@ function App() {
     clubName: '',
     masterClerk: '',
     numberOfJudges: 0,
-    championshipCounts: { gcs: 0, lhGcs: 0, shGcs: 0, lhChs: 0, shChs: 0, novs: 0, chs: 0, total: 0 },
+    championshipCounts: { gcs: 0, lhGcs: 0, shGcs: 0, lhChs: 0, shChs: 0, lhNovs: 0, shNovs: 0, novs: 0, chs: 0, total: 0 },
     kittenCounts: { lhKittens: 0, shKittens: 0, total: 0 },
-    premiershipCounts: { gps: 0, lhGps: 0, shGps: 0, lhPrs: 0, shPrs: 0, novs: 0, prs: 0, total: 0 },
+    premiershipCounts: { gps: 0, lhGps: 0, shGps: 0, lhPrs: 0, shPrs: 0, lhNovs: 0, shNovs: 0, novs: 0, prs: 0, total: 0 },
     householdPetCount: 0
   });
 
@@ -117,33 +121,37 @@ function App() {
   useEffect(() => {
     const gcs = showData.championshipCounts.lhGcs + showData.championshipCounts.shGcs;
     const chs = showData.championshipCounts.lhChs + showData.championshipCounts.shChs;
-    const total = gcs + chs + showData.championshipCounts.novs;
+    const novs = showData.championshipCounts.lhNovs + showData.championshipCounts.shNovs;
+    const total = gcs + chs + novs;
     setShowData(prev => ({
       ...prev,
       championshipCounts: {
         ...prev.championshipCounts,
         gcs,
         chs,
+        novs,
         total
       }
     }));
-  }, [showData.championshipCounts.lhGcs, showData.championshipCounts.shGcs, showData.championshipCounts.lhChs, showData.championshipCounts.shChs, showData.championshipCounts.novs]);
+  }, [showData.championshipCounts.lhGcs, showData.championshipCounts.shGcs, showData.championshipCounts.lhChs, showData.championshipCounts.shChs, showData.championshipCounts.lhNovs, showData.championshipCounts.shNovs]);
 
   // Auto-calculate premiership counts
   useEffect(() => {
     const gps = showData.premiershipCounts.lhGps + showData.premiershipCounts.shGps;
     const prs = showData.premiershipCounts.lhPrs + showData.premiershipCounts.shPrs;
-    const total = gps + prs + showData.premiershipCounts.novs;
+    const novs = showData.premiershipCounts.lhNovs + showData.premiershipCounts.shNovs;
+    const total = gps + prs + novs;
     setShowData(prev => ({
       ...prev,
       premiershipCounts: {
         ...prev.premiershipCounts,
         gps,
         prs,
+        novs,
         total
       }
     }));
-  }, [showData.premiershipCounts.lhGps, showData.premiershipCounts.shGps, showData.premiershipCounts.lhPrs, showData.premiershipCounts.shPrs, showData.premiershipCounts.novs]);
+  }, [showData.premiershipCounts.lhGps, showData.premiershipCounts.shGps, showData.premiershipCounts.lhPrs, showData.premiershipCounts.shPrs, showData.premiershipCounts.lhNovs, showData.premiershipCounts.shNovs]);
 
   // Auto-calculate kitten counts
   useEffect(() => {
@@ -197,9 +205,9 @@ function App() {
       clubName: '',
       masterClerk: '',
       numberOfJudges: 0,
-      championshipCounts: { gcs: 0, lhGcs: 0, shGcs: 0, lhChs: 0, shChs: 0, novs: 0, chs: 0, total: 0 },
+      championshipCounts: { gcs: 0, lhGcs: 0, shGcs: 0, lhChs: 0, shChs: 0, lhNovs: 0, shNovs: 0, novs: 0, chs: 0, total: 0 },
       kittenCounts: { lhKittens: 0, shKittens: 0, total: 0 },
-      premiershipCounts: { gps: 0, lhGps: 0, shGps: 0, lhPrs: 0, shPrs: 0, novs: 0, prs: 0, total: 0 },
+      premiershipCounts: { gps: 0, lhGps: 0, shGps: 0, lhPrs: 0, shPrs: 0, lhNovs: 0, shNovs: 0, novs: 0, prs: 0, total: 0 },
       householdPetCount: 0
     });
     setJudges([]);

@@ -1,0 +1,30 @@
+name: Merge Conflict Prevention (MCP)
+
+on:
+  pull_request:
+    types: [synchronize, opened, reopened, ready_for_review]
+
+jobs:
+  check-merge-conflicts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch base branch
+        run: |
+          git fetch origin ${{ github.base_ref }}
+
+      - name: Check for merge conflicts
+        id: conflict-check
+        run: |
+          git checkout ${{ github.base_ref }}
+          git merge --no-commit --no-ff ${{ github.head_ref }} || echo "conflict"
+          if git ls-files -u | grep .; then
+            echo "::error ::Merge conflicts detected! Please resolve before merging."
+            exit 1
+          else
+            echo "No merge conflicts detected."
+          fi 

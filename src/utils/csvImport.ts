@@ -16,6 +16,8 @@ interface ImportedShowState {
       shGcs: number;
       lhChs: number;
       shChs: number;
+      lhNovs: number;
+      shNovs: number;
       novs: number;
       chs: number;
       total: number;
@@ -29,6 +31,8 @@ interface ImportedShowState {
       gcs: number;
       lhPrs: number;
       shPrs: number;
+      lhNovs: number;
+      shNovs: number;
       novs: number;
       prs: number;
       total: number;
@@ -138,9 +142,9 @@ export function parseCSVAndRestoreState(
         clubName: '',
         masterClerk: '',
         numberOfJudges: 0,
-        championshipCounts: { gcs: 0, lhGcs: 0, shGcs: 0, lhChs: 0, shChs: 0, novs: 0, chs: 0, total: 0 },
+        championshipCounts: { gcs: 0, lhGcs: 0, shGcs: 0, lhChs: 0, shChs: 0, lhNovs: 0, shNovs: 0, novs: 0, chs: 0, total: 0 },
         kittenCounts: { lhKittens: 0, shKittens: 0, total: 0 },
-        premiershipCounts: { gcs: 0, lhPrs: 0, shPrs: 0, novs: 0, prs: 0, total: 0 },
+        premiershipCounts: { gcs: 0, lhPrs: 0, shPrs: 0, lhNovs: 0, shNovs: 0, novs: 0, prs: 0, total: 0 },
         householdPetCount: 0
       },
       judges: [],
@@ -337,6 +341,12 @@ function parseGeneralSection(row: string[], general: ImportedShowState['general'
     case 'championshipCounts - total':
       general.championshipCounts.total = parseInt(value) || 0;
       break;
+    case 'championshipCounts - lhNovs':
+      general.championshipCounts.lhNovs = parseInt(value) || 0;
+      break;
+    case 'championshipCounts - shNovs':
+      general.championshipCounts.shNovs = parseInt(value) || 0;
+      break;
     case 'kittenCounts - lhKittens':
       general.kittenCounts.lhKittens = parseInt(value) || 0;
       break;
@@ -363,6 +373,12 @@ function parseGeneralSection(row: string[], general: ImportedShowState['general'
       break;
     case 'premiershipCounts - total':
       general.premiershipCounts.total = parseInt(value) || 0;
+      break;
+    case 'premiershipCounts - lhNovs':
+      general.premiershipCounts.lhNovs = parseInt(value) || 0;
+      break;
+    case 'premiershipCounts - shNovs':
+      general.premiershipCounts.shNovs = parseInt(value) || 0;
       break;
     case 'householdPetCount':
       general.householdPetCount = parseInt(value) || 0;

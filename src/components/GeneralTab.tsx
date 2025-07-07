@@ -21,6 +21,8 @@ interface ShowData {
     shGcs: number;
     lhChs: number;
     shChs: number;
+    lhNovs: number;
+    shNovs: number;
     novs: number;
     chs: number;
     total: number;
@@ -35,6 +37,8 @@ interface ShowData {
     shGps: number;
     lhPrs: number;
     shPrs: number;
+    lhNovs: number;
+    shNovs: number;
     novs: number;
     gps: number;
     prs: number;
@@ -57,6 +61,35 @@ interface GeneralTabProps {
   onCSVImport: () => Promise<void>;
 }
 
+// Inline SVG components for classy arrow-in-circle icons (collapse ↧ / expand ↥)
+const ChevronDownCircleIcon = () => (
+  <svg
+    className="w-6 h-6 text-gray-600"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth={2}
+    aria-hidden="true"
+  >
+    <circle cx="12" cy="12" r="10" />
+    <polyline points="8 10 12 14 16 10" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+const ChevronUpCircleIcon = () => (
+  <svg
+    className="w-6 h-6 text-gray-600"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth={2}
+    aria-hidden="true"
+  >
+    <circle cx="12" cy="12" r="10" />
+    <polyline points="16 14 12 10 8 14" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
 export default function GeneralTab({ 
   showData, 
   setShowData, 
@@ -70,6 +103,8 @@ export default function GeneralTab({
   getShowState,
   onCSVImport
 }: GeneralTabProps) {
+  // Ref to the component root for event delegation
+  const containerRef = useRef<HTMLDivElement>(null);
   // Local state for form validation
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const [focusedField, setFocusedField] = useState<string>('');
@@ -82,6 +117,11 @@ export default function GeneralTab({
   const numberOfJudgesRef = useRef<HTMLInputElement>(null);
   const clubNameRef = useRef<HTMLInputElement>(null);
   const masterClerkRef = useRef<HTMLInputElement>(null);
+
+  // State for collapsing sections
+  const [isShowInfoCollapsed, setIsShowInfoCollapsed] = useState(false);
+  const [isShowCountCollapsed, setIsShowCountCollapsed] = useState(false);
+  const [isJudgeInfoCollapsed, setIsJudgeInfoCollapsed] = useState(false);
 
   // Set default date on component mount and focus on number of judges
   useEffect(() => {
@@ -190,11 +230,35 @@ export default function GeneralTab({
     updateShowData('numberOfJudges', value);
   };
 
+  /**
+   * Automatically select (highlight) the full value inside ANY input element when it gains focus.
+   * We attach a single delegated listener on the component root for efficiency and consistency.
+   */
+  useEffect(() => {
+    const root = containerRef.current;
+    if (!root) return;
+
+    const handleFocusIn = (e: FocusEvent) => {
+      const target = e.target as HTMLElement;
+      if (target && target.tagName === 'INPUT') {
+        const inputEl = target as HTMLInputElement;
+        // Delay to ensure cursor is placed before selection (mobile Safari quirk)
+        setTimeout(() => {
+          if (document.activeElement === inputEl) {
+            inputEl.select();
+          }
+        }, 0);
+      }
+    };
+
+    root.addEventListener('focusin', handleFocusIn);
+    return () => root.removeEventListener('focusin', handleFocusIn);
+  }, []);
+
   // Focus handler for number inputs - clear the field if it's 0
   const handleNumberFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-    if (e.target.value === '0') {
-      e.target.select(); // Select all text for immediate replacement
-    }
+    // Always select the entire value for quick replacement (numeric fields)
+    e.target.select();
   };
 
   // Blur handler for number inputs - revert to 0 if empty or invalid
@@ -313,9 +377,9 @@ export default function GeneralTab({
       clubName: '',
       masterClerk: '',
       numberOfJudges: 0,
-      championshipCounts: { gcs: 0, lhGcs: 0, shGcs: 0, lhChs: 0, shChs: 0, novs: 0, chs: 0, total: 0 },
+      championshipCounts: { gcs: 0, lhGcs: 0, shGcs: 0, lhChs: 0, shChs: 0, lhNovs: 0, shNovs: 0, novs: 0, chs: 0, total: 0 },
       kittenCounts: { lhKittens: 0, shKittens: 0, total: 0 },
-      premiershipCounts: { lhGps: 0, shGps: 0, lhPrs: 0, shPrs: 0, novs: 0, gps: 0, prs: 0, total: 0 },
+      premiershipCounts: { lhGps: 0, shGps: 0, lhPrs: 0, shPrs: 0, lhNovs: 0, shNovs: 0, novs: 0, gps: 0, prs: 0, total: 0 },
       householdPetCount: 0
     });
     setJudges([]);
@@ -416,6 +480,8 @@ export default function GeneralTab({
         shGcs: Math.floor(championshipTotal * 0.25), // 25% of total
         lhChs: Math.floor(championshipTotal * 0.15), // 15% of total
         shChs: Math.floor(championshipTotal * 0.10), // 10% of total
+        lhNovs: chNovs,
+        shNovs: chNovs, // Assuming shNovs is the same as chNovs for simplicity in test data
         novs: chNovs,
         chs: Math.floor(championshipTotal * 0.25), // 25% of total
         total: championshipTotal
@@ -430,6 +496,8 @@ export default function GeneralTab({
         shGps: Math.floor(premiershipTotal * 0.25), // 25% of total
         lhPrs: Math.floor(premiershipTotal * 0.25), // 25% of total
         shPrs: Math.floor(premiershipTotal * 0.15), // 15% of total
+        lhNovs: prNovs,
+        shNovs: prNovs, // Assuming shNovs is the same as prNovs for simplicity in test data
         novs: prNovs,
         gps: Math.floor(premiershipTotal * 0.4), // 40% of total
         prs: Math.floor(premiershipTotal * 0.4), // 40% of total
@@ -458,7 +526,7 @@ export default function GeneralTab({
   };
 
   return (
-    <div className="p-8">
+    <div ref={containerRef} className="p-8">
       {/* Reset Confirmation Modal */}
       <Modal
         isOpen={isResetModalOpen}
@@ -493,191 +561,216 @@ export default function GeneralTab({
       <div className="space-y-8">
         {/* Show Information */}
         <div className="cfa-section">
-          <h2 className="cfa-section-header">Show Information</h2>
-          <table className="mb-4 w-full border-separate" style={{ borderSpacing: 0 }}>
-            <tbody>
-              <tr>
-                <td className="w-1/4 pr-2 align-top"><label className="block font-semibold text-gray-700 mb-1">Show Date: <span className="text-red-500">*</span></label></td>
-                <td className="w-1/4 pr-2 align-top"><input type="date" value={showData.showDate} onChange={e => updateShowData('showDate', e.target.value)} className={`cfa-input w-32 ${errors.showDate ? 'cfa-input-error' : ''}`}/>{errors.showDate && <div className="text-red-500 text-xs mt-1">{errors.showDate}</div>}</td>
-                <td className="w-1/4 pr-2 align-top"><label className="block font-semibold text-gray-700 mb-1"># of Judges: <span className="text-red-500">*</span></label></td>
-                <td className="w-1/4 align-top">
-                  <div className="space-y-1">
-                    <input 
-                      ref={numberOfJudgesRef}
-                      type="number" 
-                      min="0" 
-                      max="12" 
-                      value={showData.numberOfJudges} 
-                      onChange={handleNumberOfJudgesChange}
-                      onFocus={(e) => {
-                        handleNumberFocus(e);
-                        handleFieldFocus('numberOfJudges');
-                      }}
-                      onBlur={(e) => {
-                        handleNumberBlur(e, 'numberOfJudges', 0);
-                        handleFieldBlur();
-                      }}
-                      className={`cfa-input w-20 ${errors.numberOfJudges ? 'cfa-input-error' : ''}`}
-                    />
-                    <div className="h-4">
-                      {errors.numberOfJudges && <div className="text-red-500 text-xs">{errors.numberOfJudges}</div>}
-                      {focusedField === 'numberOfJudges' && !errors.numberOfJudges && <div className="text-gray-500 text-xs">Enter a number between 1 and 12</div>}
+          <h2 className="cfa-section-header flex items-center justify-between">
+            Show Information
+            <button
+              type="button"
+              onClick={() => setIsShowInfoCollapsed(prev => !prev)}
+              className="transition-transform duration-200 focus:outline-none"
+              aria-label={isShowInfoCollapsed ? 'Expand section' : 'Collapse section'}
+            >
+              {isShowInfoCollapsed ? <ChevronDownCircleIcon /> : <ChevronUpCircleIcon />}
+            </button>
+          </h2>
+          {!isShowInfoCollapsed && (
+            <table className="mb-4 w-full border-separate" style={{ borderSpacing: 0 }}>
+              <tbody>
+                <tr>
+                  <td className="w-1/4 pr-2 align-top"><label className="block font-semibold text-gray-700 mb-1">Show Date: <span className="text-red-500">*</span></label></td>
+                  <td className="w-1/4 pr-2 align-top"><input type="date" value={showData.showDate} onChange={e => updateShowData('showDate', e.target.value)} className={`cfa-input w-32 ${errors.showDate ? 'cfa-input-error' : ''}`}/>{errors.showDate && <div className="text-red-500 text-xs mt-1">{errors.showDate}</div>}</td>
+                  <td className="w-1/4 pr-2 align-top"><label className="block font-semibold text-gray-700 mb-1"># of Judges: <span className="text-red-500">*</span></label></td>
+                  <td className="w-1/4 align-top">
+                    <div className="space-y-1">
+                      <input 
+                        ref={numberOfJudgesRef}
+                        type="number" 
+                        min="0" 
+                        max="12" 
+                        value={showData.numberOfJudges} 
+                        onChange={handleNumberOfJudgesChange}
+                        onFocus={(e) => {
+                          handleNumberFocus(e);
+                          handleFieldFocus('numberOfJudges');
+                        }}
+                        onBlur={(e) => {
+                          handleNumberBlur(e, 'numberOfJudges', 0);
+                          handleFieldBlur();
+                        }}
+                        className={`cfa-input w-20 ${errors.numberOfJudges ? 'cfa-input-error' : ''}`}
+                      />
+                      <div className="h-4">
+                        {errors.numberOfJudges && <div className="text-red-500 text-xs">{errors.numberOfJudges}</div>}
+                        {focusedField === 'numberOfJudges' && !errors.numberOfJudges && <div className="text-gray-500 text-xs">Enter a number between 1 and 12</div>}
+                      </div>
                     </div>
-                  </div>
-                </td>
-              </tr>
-              <tr>
-                <td className="w-1/4 pr-2 align-top"><label className="block font-semibold text-gray-700 mb-1">Club Name: <span className="text-red-500">*</span></label></td>
-                <td className="w-1/4 pr-2 align-top">
-                  <div className="space-y-1">
-                    <input 
-                      ref={clubNameRef}
-                      type="text" 
-                      value={showData.clubName} 
-                      onChange={handleClubNameChange}
-                      onFocus={() => handleFieldFocus('clubName')}
-                      onBlur={handleFieldBlur}
-                      className={`cfa-input w-64 ${errors.clubName ? 'cfa-input-error' : ''}`}
-                      placeholder="Enter club name"
-                    />
-                    <div className="h-4">
-                      {errors.clubName && <div className="text-red-500 text-xs">{errors.clubName}</div>}
-                      {focusedField === 'clubName' && !errors.clubName && <div className="text-gray-500 text-xs">Enter the name of the cat club</div>}
+                  </td>
+                </tr>
+                <tr>
+                  <td className="w-1/4 pr-2 align-top"><label className="block font-semibold text-gray-700 mb-1">Club Name: <span className="text-red-500">*</span></label></td>
+                  <td className="w-1/4 pr-2 align-top">
+                    <div className="space-y-1">
+                      <input 
+                        ref={clubNameRef}
+                        type="text" 
+                        value={showData.clubName} 
+                        onChange={handleClubNameChange}
+                        onFocus={() => handleFieldFocus('clubName')}
+                        onBlur={handleFieldBlur}
+                        className={`cfa-input w-64 ${errors.clubName ? 'cfa-input-error' : ''}`}
+                        placeholder="Enter club name"
+                      />
+                      <div className="h-4">
+                        {errors.clubName && <div className="text-red-500 text-xs">{errors.clubName}</div>}
+                        {focusedField === 'clubName' && !errors.clubName && <div className="text-gray-500 text-xs">Enter the name of the cat club</div>}
+                      </div>
                     </div>
-                  </div>
-                </td>
-                <td className="w-1/4 pr-2 align-top"><label className="block font-semibold text-gray-700 mb-1">Master Clerk Name: <span className="text-red-500">*</span></label></td>
-                <td className="w-1/4 align-top">
-                  <div className="space-y-1">
-                    <input 
-                      ref={masterClerkRef}
-                      type="text" 
-                      value={showData.masterClerk} 
-                      onChange={handleMasterClerkChange}
-                      onFocus={() => handleFieldFocus('masterClerk')}
-                      onBlur={handleFieldBlur}
-                      className={`cfa-input w-64 ${errors.masterClerk ? 'cfa-input-error' : ''}`}
-                      placeholder="Enter master clerk name"
-                    />
-                    <div className="h-4">
-                      {errors.masterClerk && <div className="text-red-500 text-xs">{errors.masterClerk}</div>}
-                      {focusedField === 'masterClerk' && !errors.masterClerk && <div className="text-gray-500 text-xs">Enter the master clerk's full name</div>}
+                  </td>
+                  <td className="w-1/4 pr-2 align-top"><label className="block font-semibold text-gray-700 mb-1">Master Clerk Name: <span className="text-red-500">*</span></label></td>
+                  <td className="w-1/4 align-top">
+                    <div className="space-y-1">
+                      <input 
+                        ref={masterClerkRef}
+                        type="text" 
+                        value={showData.masterClerk} 
+                        onChange={handleMasterClerkChange}
+                        onFocus={() => handleFieldFocus('masterClerk')}
+                        onBlur={handleFieldBlur}
+                        className={`cfa-input w-64 ${errors.masterClerk ? 'cfa-input-error' : ''}`}
+                        placeholder="Enter master clerk name"
+                      />
+                      <div className="h-4">
+                        {errors.masterClerk && <div className="text-red-500 text-xs">{errors.masterClerk}</div>}
+                        {focusedField === 'masterClerk' && !errors.masterClerk && <div className="text-gray-500 text-xs">Enter the master clerk's full name</div>}
+                      </div>
                     </div>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          )}
         </div>
 
         {/* Show Count */}
         <div className="cfa-section">
-          <h2 className="cfa-section-header">Show Count</h2>
-          <div className="cfa-table">
-            <table className="w-full">
-              <tbody>
-                {/* Championship Count */}
-                <tr className="cfa-table-header">
-                  <td colSpan={12} className="py-3 pl-4">Championship Count</td>
-                </tr>
-                <tr className="cfa-table-row">
-                  <td className="text-sm font-medium pl-4 py-3"># of LH GCs:</td>
-                  <td className="py-3"><input type="number" min="0" value={showData.championshipCounts.lhGcs} onChange={e => updateChampionshipCount('lhGcs', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'championshiplhGcs')} className="cfa-input w-20 text-sm"/></td>
-                  <td className="text-sm font-medium"># of SH GCs:</td>
-                  <td><input type="number" min="0" value={showData.championshipCounts.shGcs} onChange={e => updateChampionshipCount('shGcs', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'championshipshGcs')} className="cfa-input w-20 text-sm"/></td>
-                  <td className="text-sm font-medium"># of LH CHs:</td>
-                  <td><input type="number" min="0" value={showData.championshipCounts.lhChs} onChange={e => updateChampionshipCount('lhChs', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'championshiplhChs')} className="cfa-input w-20 text-sm"/></td>
-                  <td className="text-sm font-medium"># of SH CHs:</td>
-                  <td><input type="number" min="0" value={showData.championshipCounts.shChs} onChange={e => updateChampionshipCount('shChs', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'championshipshChs')} className="cfa-input w-20 text-sm"/></td>
-                  <td className="text-sm font-medium"># of NOVs:</td>
-                  <td><input type="number" min="0" value={showData.championshipCounts.novs} onChange={e => updateChampionshipCount('novs', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'championshipnovs')} className="cfa-input w-20 text-sm"/></td>
-                </tr>
-                <tr className="cfa-table-row">
-                  <td className="text-sm font-medium pl-4 py-3"># of GCs:</td>
-                  <td className="py-3"><input type="number" value={showData.championshipCounts.gcs} readOnly className="cfa-input cfa-input-readonly w-20 text-sm"/></td>
-                  <td className="text-sm font-medium"># of CHs:</td>
-                  <td><input type="number" value={showData.championshipCounts.chs} readOnly className="cfa-input cfa-input-readonly w-20 text-sm"/></td>
-                  <td className="text-sm font-medium">Total Count:</td>
-                  <td><input type="number" value={showData.championshipCounts.total} readOnly className="cfa-input cfa-input-readonly w-20 text-sm"/></td>
-                  <td colSpan={6}></td>
-                </tr>
-                {/* Kitten Count */}
-                <tr className="cfa-table-header">
-                  <td colSpan={12} className="py-3 pl-4">Kitten Count</td>
-                </tr>
-                <tr className="cfa-table-row">
-                  <td className="text-sm font-medium pl-4 py-3"># of LH Kittens:</td>
-                  <td className="py-3"><input type="number" min="0" value={showData.kittenCounts.lhKittens} onChange={e => updateKittenCount('lhKittens', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'kittenCountslhKittens')} className="cfa-input w-20 text-sm"/></td>
-                  <td className="text-sm font-medium"># of SH Kittens:</td>
-                  <td><input type="number" min="0" value={showData.kittenCounts.shKittens} onChange={e => updateKittenCount('shKittens', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'kittenCountsshKittens')} className="cfa-input w-20 text-sm"/></td>
-                  <td className="text-sm font-medium">Total Kittens:</td>
-                  <td><input type="number" value={showData.kittenCounts.total} readOnly className="cfa-input cfa-input-readonly w-20 text-sm"/></td>
-                  <td colSpan={6}></td>
-                </tr>
-                {/* Premiership Count */}
-                <tr className="cfa-table-header">
-                  <td colSpan={12} className="py-3 pl-4">Premiership Count</td>
-                </tr>
-                {/* Editable fields row */}
-                <tr className="cfa-table-row">
-                  <td className="text-sm font-medium pl-4 py-3"># of LH GPs:</td>
-                  <td className="py-3"><input type="number" min="0" value={showData.premiershipCounts.lhGps} onChange={e => updatePremiershipCount('lhGps', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'premiershiplhGps')} className="cfa-input w-20 text-sm"/></td>
-                  <td className="text-sm font-medium"># of SH GPs:</td>
-                  <td><input type="number" min="0" value={showData.premiershipCounts.shGps} onChange={e => updatePremiershipCount('shGps', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'premiershipshGps')} className="cfa-input w-20 text-sm"/></td>
-                  <td className="text-sm font-medium"># of LH PRs:</td>
-                  <td><input type="number" min="0" value={showData.premiershipCounts.lhPrs} onChange={e => updatePremiershipCount('lhPrs', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'premiershiplhPrs')} className="cfa-input w-20 text-sm"/></td>
-                  <td className="text-sm font-medium"># of SH PRs:</td>
-                  <td><input type="number" min="0" value={showData.premiershipCounts.shPrs} onChange={e => updatePremiershipCount('shPrs', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'premiershipshPrs')} className="cfa-input w-20 text-sm"/></td>
-                  <td className="text-sm font-medium"># of NOVs:</td>
-                  <td><input type="number" min="0" value={showData.premiershipCounts.novs} onChange={e => updatePremiershipCount('novs', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'premiershipnovs')} className="cfa-input w-20 text-sm"/></td>
-                  <td colSpan={4}></td>
-                </tr>
-                {/* Calculated fields row */}
-                <tr className="cfa-table-row">
-                  <td className="text-sm font-medium pl-4 py-3"># of GPs:</td>
-                  <td className="py-3"><input type="number" value={showData.premiershipCounts.gps} readOnly className="cfa-input cfa-input-readonly w-20 text-sm"/></td>
-                  <td className="text-sm font-medium"># of PRs:</td>
-                  <td><input type="number" value={showData.premiershipCounts.prs} readOnly className="cfa-input cfa-input-readonly w-20 text-sm"/></td>
-                  <td className="text-sm font-medium">Total Count:</td>
-                  <td><input type="number" value={showData.premiershipCounts.total} readOnly className="cfa-input cfa-input-readonly w-20 text-sm"/></td>
-                  <td colSpan={8}></td>
-                </tr>
-                {/* Household Pet Count */}
-                <tr className="cfa-table-header">
-                  <td colSpan={12} className="py-3 pl-4">Household Pet Count</td>
-                </tr>
-                <tr className="cfa-table-row">
-                  <td className="text-sm font-medium pl-4 py-3"># of Household Pets:</td>
-                  <td className="py-3"><input type="number" min="0" value={showData.householdPetCount} onChange={e => updateShowData('householdPetCount', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'householdPetCount')} className="cfa-input w-20 text-sm"/></td>
-                  <td colSpan={10}></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          <h2 className="cfa-section-header flex items-center justify-between">
+            Show Count
+            <button
+              type="button"
+              onClick={() => setIsShowCountCollapsed(prev => !prev)}
+              className="transition-transform duration-200 focus:outline-none"
+              aria-label={isShowCountCollapsed ? 'Expand section' : 'Collapse section'}
+            >
+              {isShowCountCollapsed ? <ChevronDownCircleIcon /> : <ChevronUpCircleIcon />}
+            </button>
+          </h2>
+          {!isShowCountCollapsed && (
+            <div className="cfa-table">
+              <table className="w-full">
+                <tbody>
+                  {/* Championship Count */}
+                  <tr className="cfa-table-header">
+                    <td colSpan={12} className="py-3 pl-4">Championship Count</td>
+                  </tr>
+                  {/* 1st row – Longhair counts */}
+                  <tr className="cfa-table-row">
+                    <td className="text-sm font-medium pl-4 py-3"># of LH GCs:</td>
+                    <td className="py-3"><input type="number" min="0" value={showData.championshipCounts.lhGcs} onChange={e => updateChampionshipCount('lhGcs', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'championshiplhGcs')} className="cfa-input w-20 text-sm"/></td>
+                    <td className="text-sm font-medium"># of LH CHs:</td>
+                    <td><input type="number" min="0" value={showData.championshipCounts.lhChs} onChange={e => updateChampionshipCount('lhChs', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'championshiplhChs')} className="cfa-input w-20 text-sm"/></td>
+                    <td className="text-sm font-medium"># of LH NOVs:</td>
+                    <td><input type="number" min="0" value={showData.championshipCounts.lhNovs} onChange={e => updateChampionshipCount('lhNovs', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'championshiplhNovs')} className="cfa-input w-20 text-sm"/></td>
+                    <td colSpan={4}></td>
+                  </tr>
+                  {/* 2nd row – Shorthair counts */}
+                  <tr className="cfa-table-row">
+                    <td className="text-sm font-medium pl-4 py-3"># of SH GCs:</td>
+                    <td className="py-3"><input type="number" min="0" value={showData.championshipCounts.shGcs} onChange={e => updateChampionshipCount('shGcs', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'championshipshGcs')} className="cfa-input w-20 text-sm"/></td>
+                    <td className="text-sm font-medium"># of SH CHs:</td>
+                    <td><input type="number" min="0" value={showData.championshipCounts.shChs} onChange={e => updateChampionshipCount('shChs', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'championshipshChs')} className="cfa-input w-20 text-sm"/></td>
+                    <td className="text-sm font-medium"># of SH NOVs:</td>
+                    <td><input type="number" min="0" value={showData.championshipCounts.shNovs} onChange={e => updateChampionshipCount('shNovs', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'championshipshNovs')} className="cfa-input w-20 text-sm"/></td>
+                    <td colSpan={4}></td>
+                  </tr>
+                  <tr className="cfa-table-row">
+                    <td className="text-sm font-medium pl-4 py-3"># of GCs:</td>
+                    <td className="py-3"><input type="number" value={showData.championshipCounts.gcs} readOnly className="cfa-input cfa-input-readonly w-20 text-sm"/></td>
+                    <td className="text-sm font-medium"># of CHs:</td>
+                    <td><input type="number" value={showData.championshipCounts.chs} readOnly className="cfa-input cfa-input-readonly w-20 text-sm"/></td>
+                    <td className="text-sm font-medium">Total Count:</td>
+                    <td><input type="number" value={showData.championshipCounts.total} readOnly className="cfa-input cfa-input-readonly w-20 text-sm"/></td>
+                    <td colSpan={6}></td>
+                  </tr>
+                  {/* Kitten Count */}
+                  <tr className="cfa-table-header">
+                    <td colSpan={12} className="py-3 pl-4">Kitten Count</td>
+                  </tr>
+                  <tr className="cfa-table-row">
+                    <td className="text-sm font-medium pl-4 py-3"># of LH Kittens:</td>
+                    <td className="py-3"><input type="number" min="0" value={showData.kittenCounts.lhKittens} onChange={e => updateKittenCount('lhKittens', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'kittenCountslhKittens')} className="cfa-input w-20 text-sm"/></td>
+                    <td className="text-sm font-medium"># of SH Kittens:</td>
+                    <td><input type="number" min="0" value={showData.kittenCounts.shKittens} onChange={e => updateKittenCount('shKittens', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'kittenCountsshKittens')} className="cfa-input w-20 text-sm"/></td>
+                    <td className="text-sm font-medium">Total Kittens:</td>
+                    <td><input type="number" value={showData.kittenCounts.total} readOnly className="cfa-input cfa-input-readonly w-20 text-sm"/></td>
+                    <td colSpan={6}></td>
+                  </tr>
+                  {/* Premiership Count */}
+                  <tr className="cfa-table-header">
+                    <td colSpan={12} className="py-3 pl-4">Premiership Count</td>
+                  </tr>
+                  {/* Editable fields row */}
+                  <tr className="cfa-table-row">
+                    <td className="text-sm font-medium pl-4 py-3"># of LH GPs:</td>
+                    <td className="py-3"><input type="number" min="0" value={showData.premiershipCounts.lhGps} onChange={e => updatePremiershipCount('lhGps', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'premiershiplhGps')} className="cfa-input w-20 text-sm"/></td>
+                    <td className="text-sm font-medium"># of LH PRs:</td>
+                    <td><input type="number" min="0" value={showData.premiershipCounts.lhPrs} onChange={e => updatePremiershipCount('lhPrs', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'premiershiplhPrs')} className="cfa-input w-20 text-sm"/></td>
+                    <td className="text-sm font-medium"># of LH NOVs:</td>
+                    <td><input type="number" min="0" value={showData.premiershipCounts.lhNovs} onChange={e => updatePremiershipCount('lhNovs', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'premiershiplhNovs')} className="cfa-input w-20 text-sm"/></td>
+                  </tr>
+                  {/* Second editable row for Premiership - SH NOVs */}
+                  <tr className="cfa-table-row">
+                    <td className="text-sm font-medium pl-4 py-3"># of SH NOVs:</td>
+                    <td className="py-3"><input type="number" min="0" value={showData.premiershipCounts.shNovs} onChange={e => updatePremiershipCount('shNovs', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'premiershipshNovs')} className="cfa-input w-20 text-sm"/></td>
+                    <td colSpan={10}></td>
+                  </tr>
+                  {/* Calculated fields row */}
+                  <tr className="cfa-table-row">
+                    <td className="text-sm font-medium pl-4 py-3"># of GPs:</td>
+                    <td className="py-3"><input type="number" value={showData.premiershipCounts.gps} readOnly className="cfa-input cfa-input-readonly w-20 text-sm"/></td>
+                    <td className="text-sm font-medium"># of PRs:</td>
+                    <td><input type="number" value={showData.premiershipCounts.prs} readOnly className="cfa-input cfa-input-readonly w-20 text-sm"/></td>
+                    <td className="text-sm font-medium">Total Count:</td>
+                    <td><input type="number" value={showData.premiershipCounts.total} readOnly className="cfa-input cfa-input-readonly w-20 text-sm"/></td>
+                    <td colSpan={8}></td>
+                  </tr>
+                  {/* Household Pet Count */}
+                  <tr className="cfa-table-header">
+                    <td colSpan={12} className="py-3 pl-4">Household Pet Count</td>
+                  </tr>
+                  <tr className="cfa-table-row">
+                    <td className="text-sm font-medium pl-4 py-3"># of Household Pets:</td>
+                    <td className="py-3"><input type="number" min="0" value={showData.householdPetCount} onChange={e => updateShowData('householdPetCount', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'householdPetCount')} className="cfa-input w-20 text-sm"/></td>
+                    <td colSpan={10}></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
         {/* Judge Information */}
         <div className="cfa-section">
-          <h2 className="cfa-section-header">Judge Information</h2>
-          
-          {showData.numberOfJudges === 0 ? (
-            <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-              <div className="text-gray-500 mb-4">
-                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No Judges Selected</h3>
-              <p className="text-gray-600 mb-4">
-                Please set the number of judges (1-12) in the "# of Judges" field above to begin entering judge information.
-              </p>
-              <div className="text-sm text-gray-500">
-                <p>• Enter a number between 1-12 in the "# of Judges" field to add judges</p>
-                <p>• Judge information table will appear once you set the count</p>
-                <p>• You can set the count to 0 to clear all judges</p>
-              </div>
-            </div>
-          ) : (
+          <h2 className="cfa-section-header flex items-center justify-between">
+            Judge Information
+            <button
+              type="button"
+              onClick={() => setIsJudgeInfoCollapsed(prev => !prev)}
+              className="transition-transform duration-200 focus:outline-none"
+              aria-label={isJudgeInfoCollapsed ? 'Expand section' : 'Collapse section'}
+            >
+              {isJudgeInfoCollapsed ? <ChevronDownCircleIcon /> : <ChevronUpCircleIcon />}
+            </button>
+          </h2>
+          {!isJudgeInfoCollapsed && (
             <div className="cfa-table">
               <table className="w-full table-fixed">
                 <thead>
