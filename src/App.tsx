@@ -8,6 +8,7 @@ import cfaLogo from './assets/cfa-logo-official.png';
 import PremiershipTab from './components/PremiershipTab'
 import KittenTab from './components/KittenTab'
 import HouseholdPetTab from './components/HouseholdPetTab'
+import SettingsPanel from './components/SettingsPanel'
 
 interface Judge {
   id: number;
@@ -57,6 +58,7 @@ function App() {
   const [activeTab, setActiveTab] = useState('general');
   const [judges, setJudges] = useState<Judge[]>([]);
   const [zoomLevel, setZoomLevel] = useState(100); // Zoom level in percentage
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false); // Settings panel state
   const [showData, setShowData] = useState<ShowData>({
     showDate: '',
     clubName: '',
@@ -551,28 +553,49 @@ function App() {
                 </div>
               ))}
             </div>
-            
-            {/* Zoom Controls */}
-            <div className="flex items-center space-x-1 bg-white rounded-lg shadow-md px-2 py-1">
+            {/* Zoom + Settings Controls */}
+            <div className="flex items-center space-x-0">
+              {/* Zoom Controls */}
+              <div className="flex items-center bg-gradient-to-br from-slate-800 to-slate-600 border border-slate-500/30 rounded-full shadow-lg h-9 ring-0 transition-all duration-200">
+                <button
+                  onClick={handleZoomOut}
+                  className="p-1 hover:bg-amber-400/10 hover:ring-2 hover:ring-amber-400/60 rounded-full transition-all"
+                  title="Zoom Out (Shift + Scroll Down)"
+                  style={{ height: '28px', width: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <svg className="w-4 h-4 text-slate-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7" />
+                  </svg>
+                </button>
+                <span className="text-xs text-slate-100 font-medium min-w-[3rem] text-center select-none">
+                  {zoomLevel}%
+                </span>
+                <button
+                  onClick={handleZoomIn}
+                  className="p-1 hover:bg-amber-400/10 hover:ring-2 hover:ring-amber-400/60 rounded-full transition-all"
+                  title="Zoom In (Shift + Scroll Up)"
+                  style={{ height: '28px', width: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <svg className="w-4 h-4 text-slate-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7" />
+                  </svg>
+                </button>
+              </div>
+              {/* Settings Button */}
               <button
-                onClick={handleZoomOut}
-                className="p-1 hover:bg-gray-100 rounded transition-colors"
-                title="Zoom Out (Shift + Scroll Down)"
+                onClick={() => setIsSettingsOpen(true)}
+                className="ml-2 p-0.5 bg-gradient-to-br from-slate-800 to-slate-600 border border-slate-500/30 rounded-full shadow-lg backdrop-blur-sm flex items-center justify-center h-9 w-9 transition-all duration-200 group focus:outline-none focus:ring-2 focus:ring-amber-400/80"
+                title="Settings"
+                style={{ marginLeft: '8px' }}
               >
-                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7" />
-                </svg>
-              </button>
-              <span className="text-xs text-gray-600 font-medium min-w-[3rem] text-center">
-                {zoomLevel}%
-              </span>
-              <button
-                onClick={handleZoomIn}
-                className="p-1 hover:bg-gray-100 rounded transition-colors"
-                title="Zoom In (Shift + Scroll Up)"
-              >
-                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7" />
+                <svg
+                  className="w-6 h-6 text-slate-100 drop-shadow group-hover:scale-110 group-hover:rotate-12 group-hover:drop-shadow-[0_0_8px_rgba(245,197,24,0.7)] transition-transform duration-200"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
               </button>
             </div>
@@ -593,6 +616,13 @@ function App() {
           {tabs.find(tab => tab.id === activeTab)?.component}
         </div>
       </div>
+
+      {/* Settings Panel */}
+      <SettingsPanel
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        showSuccess={showSuccess}
+      />
     </div>
   )
 }
