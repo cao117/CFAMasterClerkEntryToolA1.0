@@ -50,6 +50,7 @@ interface ShowData {
 function App() {
   const [activeTab, setActiveTab] = useState('general');
   const [judges, setJudges] = useState<Judge[]>([]);
+  const [zoomLevel, setZoomLevel] = useState(100); // Zoom level in percentage
   const [showData, setShowData] = useState<ShowData>({
     showDate: '',
     clubName: '',
@@ -449,6 +450,32 @@ function App() {
     }
   }, [activeTab, tabs]);
 
+  // Zoom functions
+  const handleZoomIn = () => {
+    setZoomLevel(prev => Math.min(prev + 10, 200)); // Max 200%
+  };
+
+  const handleZoomOut = () => {
+    setZoomLevel(prev => Math.max(prev - 10, 50)); // Min 50%
+  };
+
+  // Handle keyboard zoom (Shift + mouse wheel)
+  useEffect(() => {
+    const handleWheel = (e: WheelEvent) => {
+      if (e.shiftKey) {
+        e.preventDefault();
+        if (e.deltaY < 0) {
+          handleZoomIn();
+        } else {
+          handleZoomOut();
+        }
+      }
+    };
+
+    document.addEventListener('wheel', handleWheel, { passive: false });
+    return () => document.removeEventListener('wheel', handleWheel);
+  }, []);
+
   return (
     <div className="min-h-screen bg-white">
       {/* Toast Notifications */}
@@ -474,7 +501,7 @@ function App() {
             {/* Version Badge */}
             <div className="cfa-badge">
               <span className="mr-1">●</span>
-              Version 1.0
+              Version 0.1.0
             </div>
           </div>
         </div>
@@ -483,36 +510,71 @@ function App() {
       {/* Tab Navigation */}
       <div className="cfa-tab-nav">
         <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex space-x-2">
-            {tabs.map(tab => (
-              <div key={tab.id} className="relative flex items-center group">
-                <button
-                  onClick={() => !tab.disabled && setActiveTab(tab.id)}
-                  className={`cfa-tab ${activeTab === tab.id ? 'cfa-tab-active' : 'text-gray-700'} ${tab.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  disabled={tab.disabled}
-                  tabIndex={tab.disabled ? -1 : 0}
-                  aria-disabled={tab.disabled}
-                >
-                  {tab.name}
-                </button>
-                {/* Tooltip for disabled tabs - positioned outside the button */}
-                {tab.disabled && (
-                  <div className="absolute left-1/2 -translate-x-1/2 -mb-2 z-20 hidden group-hover:block">
-                    <div className="bg-white text-gray-800 text-xs rounded-lg px-3 py-2 shadow-lg border border-gray-300 whitespace-nowrap min-w-max flex items-center gap-2">
-                      <span className="text-orange-500 font-bold">⚠</span>
-                      Complete all required fields in the General tab to continue.
+          <div className="flex items-center justify-between">
+            {/* Tabs */}
+            <div className="flex space-x-2">
+              {tabs.map(tab => (
+                <div key={tab.id} className="relative flex items-center group">
+                  <button
+                    onClick={() => !tab.disabled && setActiveTab(tab.id)}
+                    className={`cfa-tab ${activeTab === tab.id ? 'cfa-tab-active' : 'text-gray-700'} ${tab.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    disabled={tab.disabled}
+                    tabIndex={tab.disabled ? -1 : 0}
+                    aria-disabled={tab.disabled}
+                  >
+                    {tab.name}
+                  </button>
+                  {/* Tooltip for disabled tabs - positioned outside the button */}
+                  {tab.disabled && (
+                    <div className="absolute left-1/2 -translate-x-1/2 -mb-2 z-20 hidden group-hover:block">
+                      <div className="bg-white text-gray-800 text-xs rounded-lg px-3 py-2 shadow-lg border border-gray-300 whitespace-nowrap min-w-max flex items-center gap-2">
+                        <span className="text-orange-500 font-bold">⚠</span>
+                        Complete all required fields in the General tab to continue.
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            ))}
+                  )}
+                </div>
+              ))}
+            </div>
+            
+            {/* Zoom Controls */}
+            <div className="flex items-center space-x-1 bg-white rounded-lg shadow-md px-2 py-1">
+              <button
+                onClick={handleZoomOut}
+                className="p-1 hover:bg-gray-100 rounded transition-colors"
+                title="Zoom Out (Shift + Scroll Down)"
+              >
+                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7" />
+                </svg>
+              </button>
+              <span className="text-xs text-gray-600 font-medium min-w-[3rem] text-center">
+                {zoomLevel}%
+              </span>
+              <button
+                onClick={handleZoomIn}
+                className="p-1 hover:bg-gray-100 rounded transition-colors"
+                title="Zoom In (Shift + Scroll Up)"
+              >
+                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="cfa-card cfa-card-hover">
+        <div 
+          className="cfa-card cfa-card-hover"
+          style={{ 
+            transform: `scale(${zoomLevel / 100})`,
+            transformOrigin: 'top center',
+            transition: 'transform 0.2s ease-in-out'
+          }}
+        >
           {tabs.find(tab => tab.id === activeTab)?.component}
         </div>
       </div>
