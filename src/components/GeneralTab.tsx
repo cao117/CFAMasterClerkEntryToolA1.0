@@ -728,9 +728,13 @@ export default function GeneralTab({
                   </tr>
                   {/* Second editable row for Premiership - SH NOVs */}
                   <tr className="cfa-table-row">
-                    <td className="text-sm font-medium pl-4 py-3"># of SH NOVs:</td>
-                    <td className="py-3"><input type="number" min="0" value={showData.premiershipCounts.shNovs} onChange={e => updatePremiershipCount('shNovs', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'premiershipshNovs')} className="cfa-input w-20 text-sm"/></td>
-                    <td colSpan={10}></td>
+                    <td className="text-sm font-medium pl-4 py-3"># of SH GPs:</td>
+                    <td className="py-3"><input type="number" min="0" value={showData.premiershipCounts.shGps} onChange={e => updatePremiershipCount('shGps', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'premiershipshGps')} className="cfa-input w-20 text-sm"/></td>
+                    <td className="text-sm font-medium"># of SH PRs:</td>
+                    <td><input type="number" min="0" value={showData.premiershipCounts.shPrs} onChange={e => updatePremiershipCount('shPrs', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'premiershipshPrs')} className="cfa-input w-20 text-sm"/></td>
+                    <td className="text-sm font-medium"># of SH NOVs:</td>
+                    <td><input type="number" min="0" value={showData.premiershipCounts.shNovs} onChange={e => updatePremiershipCount('shNovs', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'premiershipshNovs')} className="cfa-input w-20 text-sm"/></td>
+                    <td colSpan={6}></td>
                   </tr>
                   {/* Calculated fields row */}
                   <tr className="cfa-table-row">
