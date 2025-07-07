@@ -2,6 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * HarmonyOS Sans font packaged locally for consistent branding
+ * Font file: /public/fonts/HarmonyOS_Sans.woff2
+ * Downloaded from: https://github.com/HarmonyOS/HarmonyOS-Sans
+ */
+@font-face {
+  font-family: 'HarmonyOS Sans';
+  src: url('/fonts/HarmonyOS_Sans.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --cfa-primary: #000000; /* CFA Black */
   --cfa-secondary: #C7B273; /* CFA Gold */
@@ -187,14 +200,15 @@
     border-bottom: 3px solid var(--cfa-secondary);
   }
   
+  /* Use HarmonyOS Sans for the main header/title if available */
   .cfa-header-text {
     color: var(--cfa-secondary);
-    font-family: 'Georgia', 'Times New Roman', serif;
+    font-family: 'HarmonyOS Sans', 'HarmonyOS Sans SC', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Georgia', 'Times New Roman', serif;
   }
   
   .cfa-header-subtitle {
     color: #ffffff;
-    font-family: 'Arial', 'Helvetica', sans-serif;
+    font-family: 'HarmonyOS Sans', 'HarmonyOS Sans SC', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Arial', 'Helvetica', sans-serif;
   }
   
   /* CFA Tab Navigation styling */

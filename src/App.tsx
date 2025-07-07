@@ -4,7 +4,7 @@ import ChampionshipTab from './components/ChampionshipTab'
 import type { ChampionshipTabRef } from './components/ChampionshipTab'
 import ToastContainer from './components/ToastContainer'
 import { useToast } from './hooks/useToast'
-import cfaLogo from './assets/cfa-logo.png'
+import cfaLogo from './assets/cfa-logo-official.png';
 import PremiershipTab from './components/PremiershipTab'
 import KittenTab from './components/KittenTab'
 import HouseholdPetTab from './components/HouseholdPetTab'
