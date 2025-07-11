@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { handleSaveToCSV } from '../utils/formActions';
 import Modal from './Modal';
+import ActionButtons from './ActionButtons';
 import * as premiershipValidation from '../validation/premiershipValidation';
-import { getBreakpointForRingType, getFinalsPositionsForRingType } from '../validation/premiershipValidation';
 
 
 
@@ -110,48 +110,32 @@ export default function PremiershipTab({
 
   // --- Helper: Get finals/Best PR counts for a ring type ---
   const getFinalsCount = (ringType: string) => {
-    const result = getBreakpointForRingType({
-      columns: columns.map(col => ({ judge: col.judge, specialty: col.specialty })),
-      showAwards: premiershipTabData.showAwards,
-      premiersFinals: premiershipTabData.premiersFinals,
-      abPremiersFinals: premiershipTabData.abPremiersFinals,
-      lhPremiersFinals: premiershipTabData.lhPremiersFinals,
-      shPremiersFinals: premiershipTabData.shPremiersFinals,
-      premiershipTotal,
-      premiershipCounts: {
-        gps: premiershipCounts.gps,
-        lhGps: premiershipCounts.lhGps,
-        shGps: premiershipCounts.shGps,
-        lhPrs: premiershipCounts.lhPrs,
-        shPrs: premiershipCounts.shPrs,
-        novs: premiershipCounts.novs,
-        prs: premiershipCounts.prs
-      }
-    }, ringType);
-    
-    return result;
+    if (ringType === 'Allbreed') {
+      return premiershipCounts.gps + premiershipCounts.prs >= 50 ? 15 : 10;
+    } else if (ringType === 'Longhair') {
+      return premiershipCounts.lhGps + premiershipCounts.lhPrs >= 50 ? 15 : 10;
+    } else if (ringType === 'Shorthair') {
+      return premiershipCounts.shGps + premiershipCounts.shPrs >= 50 ? 15 : 10;
+    }
+    return 10; // Default fallback
   };
   const getFinalsPositionsForRingTypeLocal = (ringType: string) => {
-    const result = getFinalsPositionsForRingType({
-      columns: columns.map(col => ({ judge: col.judge, specialty: col.specialty })),
-      showAwards: premiershipTabData.showAwards,
-      premiersFinals: premiershipTabData.premiersFinals,
-      abPremiersFinals: premiershipTabData.abPremiersFinals,
-      lhPremiersFinals: premiershipTabData.lhPremiersFinals,
-      shPremiersFinals: premiershipTabData.shPremiersFinals,
-      premiershipTotal,
-      premiershipCounts: {
-        gps: premiershipCounts.gps,
-        lhGps: premiershipCounts.lhGps,
-        shGps: premiershipCounts.shGps,
-        lhPrs: premiershipCounts.lhPrs,
-        shPrs: premiershipCounts.shPrs,
-        novs: premiershipCounts.novs,
-        prs: premiershipCounts.prs
-      }
-    }, ringType);
-    
-    return result;
+    let count = 0;
+    switch (ringType) {
+      case 'Allbreed':
+        count = premiershipCounts.gps + premiershipCounts.prs;
+        break;
+      case 'Longhair':
+        count = premiershipCounts.lhGps + premiershipCounts.lhPrs;
+        break;
+      case 'Shorthair':
+        count = premiershipCounts.shGps + premiershipCounts.shPrs;
+        break;
+      default:
+        count = premiershipCounts.gps + premiershipCounts.prs;
+        break;
+    }
+    return count >= 50 ? 3 : 2; // 3 positions if 15 awards, 2 if 10 awards
   };
 
   // Accessibility: refs for ALL Cat # input fields (Show Awards + Finals)
@@ -567,28 +551,44 @@ export default function PremiershipTab({
          showCancel={false}
          onConfirm={() => setIsCSVErrorModalOpen(false)}
        />
-      <div className="cfa-section">
-        <h2 className="cfa-section-header flex items-center justify-between">
-          Premiership Finals
-          {/* Dropdown for ring jump */}
-          <div className="flex-1 flex justify-end items-center">
-            <select
-              className="ml-4 px-3 py-2 rounded-lg border border-gray-300 bg-white text-sm font-medium shadow-sm focus:outline-none focus:border-cfa-gold focus:ring-2 focus:ring-cfa-gold/30 transition-all duration-200 ring-jump-dropdown"
-              style={{ minWidth: 180, maxWidth: 260 }}
-              onChange={handleRingJump}
-              defaultValue=""
-            >
-              <option value="" disabled>Jump to Ring...</option>
-              {columns.map((col, idx) => (
-                <option key={idx} value={col.judge.id}>
-                  Ring {col.judge.id} - {col.judge.acronym}
-                </option>
-              ))}
-            </select>
-          </div>
-        </h2>
-        <div className="cfa-table overflow-x-auto">
-          <div className="table-container" ref={tableContainerRef}>
+      {/* Premiership Finals - Premium Design */}
+      <div className="group relative">
+        <div className="absolute inset-0 bg-gradient-to-br from-rose-50 via-pink-50 to-fuchsia-50 rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-500 blur-xl"></div>
+        <div className="relative bg-white border-2 border-gray-200 rounded-2xl p-6 shadow-lg hover:shadow-2xl hover:shadow-rose-200/30 transition-all duration-500 transform hover:scale-[1.01] group-hover:border-rose-300">
+          {/* Decorative corner accent */}
+          <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-br from-rose-400 to-pink-500 rounded-bl-2xl opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
+          
+          <h2 className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-3">
+              <span className="p-1.5 bg-gradient-to-br from-cyan-500 to-blue-400 rounded-xl shadow flex-shrink-0">
+                {/* Minimal Trophy Icon */}
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 21h8M12 17v4M7 4h10l1 5a5 5 0 01-10 0l1-5zm0 0V2m10 2V2" />
+                </svg>
+              </span>
+              <span className="text-xl font-bold text-gray-800">Premiership Finals</span>
+            </div>
+            
+            {/* Premium Ring Jump Dropdown */}
+            <div className="flex items-center">
+              <select
+                className="px-4 py-2 bg-gradient-to-r from-rose-50 to-pink-50 border-2 border-rose-300 rounded-xl text-sm font-semibold shadow-lg focus:border-rose-400 focus:ring-4 focus:ring-rose-200/30 focus:outline-none transition-all duration-300 hover:border-rose-400 hover:shadow-xl"
+                style={{ minWidth: 200, maxWidth: 280 }}
+                onChange={handleRingJump}
+                defaultValue=""
+              >
+                <option value="" disabled>⭐ Jump to Ring...</option>
+                {columns.map((col, idx) => (
+                  <option key={idx} value={col.judge.id}>
+                    Ring {col.judge.id} - {col.judge.acronym}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </h2>
+        </div>
+        <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl border border-gray-200 overflow-hidden shadow-lg">
+          <div className="table-container overflow-x-auto" ref={tableContainerRef}>
             <table className="border-collapse" style={{ width: 'auto', tableLayout: 'fixed' }}>
               <thead>
                 {/* Header Row 1: Ring Numbers */}
@@ -866,33 +866,13 @@ export default function PremiershipTab({
             </table>
           </div>
         </div>
-                  {/* Action Buttons */}
-          <div className="flex flex-wrap gap-4 justify-center mt-8">
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={handleSaveToCSVClick}
-                className="cfa-button"
-              >
-                Save to CSV
-              </button>
-              <button
-                type="button"
-                onClick={handleRestoreFromCSVClick}
-                className="cfa-button-secondary"
-                style={{ backgroundColor: '#1e3a8a', borderColor: '#1e3a8a', color: 'white' }}
-              >
-                Load from CSV
-              </button>
-              <button
-                type="button"
-                onClick={handleResetClick}
-                className="cfa-button-secondary"
-              >
-                Reset
-              </button>
-            </div>
-          </div>
+
+        {/* Premium Action Buttons */}
+        <ActionButtons
+          onSaveToCSV={handleSaveToCSVClick}
+          onLoadFromCSV={handleRestoreFromCSVClick}
+          onReset={handleResetClick}
+        />
       </div>
     </div>
   );

@@ -2,6 +2,7 @@ import React, { useMemo, useRef, useState } from 'react';
 import * as householdPetValidation from '../validation/householdPetValidation';
 import { handleSaveToCSV } from '../utils/formActions';
 import Modal from './Modal';
+import ActionButtons from './ActionButtons';
 
 interface Judge {
   id: number;
@@ -334,28 +335,44 @@ export default function HouseholdPetTab({
         showCancel={false}
         onConfirm={() => setIsCSVErrorModalOpen(false)}
       />
-      <div className="cfa-section">
-        <h2 className="cfa-section-header flex items-center justify-between">
-          Household Pet Finals
-          {/* Jump to Ring Dropdown */}
-          <div className="flex-1 flex justify-end items-center">
-            <select
-              className="ml-4 px-3 py-2 rounded-lg border border-gray-300 bg-white text-sm font-medium shadow-sm focus:outline-none focus:border-cfa-gold focus:ring-2 focus:ring-cfa-gold/30 transition-all duration-200 ring-jump-dropdown"
-              style={{ minWidth: 180, maxWidth: 260 }}
-              onChange={handleRingJump}
-              defaultValue=""
-            >
-              <option value="" disabled>Jump to Ring...</option>
-              {columns.map((col, idx) => (
-                <option key={idx} value={col.judge.id}>
-                  Ring {col.judge.id} - {col.judge.acronym}
-                </option>
-              ))}
-            </select>
-          </div>
-        </h2>
-        <div className="cfa-table overflow-x-auto">
-          <div className="table-container" ref={tableContainerRef}>
+      {/* Household Pet Finals - Premium Design */}
+      <div className="group relative">
+        <div className="absolute inset-0 bg-gradient-to-br from-lime-50 via-green-50 to-emerald-50 rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-500 blur-xl"></div>
+        <div className="relative bg-white border-2 border-gray-200 rounded-2xl p-6 shadow-lg hover:shadow-2xl hover:shadow-lime-200/30 transition-all duration-500 transform hover:scale-[1.01] group-hover:border-lime-300">
+          {/* Decorative corner accent */}
+          <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-br from-lime-400 to-green-500 rounded-bl-2xl opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
+          
+          <h2 className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-3">
+              <span className="p-1.5 bg-gradient-to-br from-lime-500 to-green-600 rounded-xl shadow flex-shrink-0">
+                {/* Minimal Heart Icon */}
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+              </span>
+              <span className="text-xl font-bold text-gray-800">Household Pet Finals</span>
+            </div>
+            
+            {/* Premium Ring Jump Dropdown */}
+            <div className="flex items-center">
+              <select
+                className="px-4 py-2 bg-gradient-to-r from-lime-50 to-green-50 border-2 border-lime-300 rounded-xl text-sm font-semibold shadow-lg focus:border-lime-400 focus:ring-4 focus:ring-lime-200/30 focus:outline-none transition-all duration-300 hover:border-lime-400 hover:shadow-xl"
+                style={{ minWidth: 200, maxWidth: 280 }}
+                onChange={handleRingJump}
+                defaultValue=""
+              >
+                <option value="" disabled>🏠 Jump to Ring...</option>
+                {columns.map((col, idx) => (
+                  <option key={idx} value={col.judge.id}>
+                    Ring {col.judge.id} - {col.judge.acronym}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </h2>
+        </div>
+        <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl border border-gray-200 overflow-hidden shadow-lg">
+          <div className="table-container overflow-x-auto" ref={tableContainerRef}>
             <table className="border-collapse" style={{ width: 'auto', tableLayout: 'fixed' }}>
               <thead>
                 {/* Header Row 1: Ring Numbers */}
@@ -480,40 +497,21 @@ export default function HouseholdPetTab({
             </table>
           </div>
         </div>
-        {/* Action Buttons */}
-        <div className="flex flex-wrap gap-4 justify-center mt-8">
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={() => {
-                // Check for validation errors before CSV export
-                if (Object.keys(errors).length > 0) {
-                  showError('CSV Export Error', 'Cannot export CSV while there are validation errors. Please fix all errors first.');
-                  return;
-                }
-                handleSaveToCSVClick();
-              }}
-              className="cfa-button"
-            >
-              Save to CSV
-            </button>
-            <button
-              type="button"
-              onClick={handleRestoreFromCSVClick}
-              className="cfa-button-secondary"
-              style={{ backgroundColor: '#1e3a8a', borderColor: '#1e3a8a', color: 'white' }}
-            >
-              Load from CSV
-            </button>
-            <button
-              type="button"
-              onClick={handleResetClick}
-              className="cfa-button-secondary"
-            >
-              Reset Tab
-            </button>
-          </div>
-        </div>
+
+        {/* Premium Action Buttons */}
+        <ActionButtons
+          onSaveToCSV={() => {
+            // Check for validation errors before CSV export
+            if (Object.keys(errors).length > 0) {
+              showError('CSV Export Error', 'Cannot export CSV while there are validation errors. Please fix all errors first.');
+              return;
+            }
+            handleSaveToCSVClick();
+          }}
+          onLoadFromCSV={handleRestoreFromCSVClick}
+          onReset={handleResetClick}
+          resetButtonText="Reset Tab"
+        />
       </div>
     </div>
   );

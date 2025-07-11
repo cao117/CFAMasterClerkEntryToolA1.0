@@ -1,1 +1,20 @@
- 
+<svg width="120" height="48" viewBox="0 0 120 48" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle with CFA gold -->
+  <circle cx="24" cy="24" r="22" fill="#C7B273" stroke="#000000" stroke-width="2"/>
+  
+  <!-- Cat silhouette in black -->
+  <path d="M16 20 Q16 16 20 16 Q24 16 28 20 Q30 22 30 24 Q30 26 28 28 Q24 32 20 32 Q16 32 16 28 Q16 26 18 24 Q16 22 16 20 Z" fill="#000000"/>
+  
+  <!-- Cat ears -->
+  <path d="M18 18 L20 14 L22 18 Z" fill="#000000"/>
+  <path d="M26 18 L28 14 L30 18 Z" fill="#000000"/>
+  
+  <!-- Cat eyes -->
+  <circle cx="20" cy="24" r="1.5" fill="#C7B273"/>
+  <circle cx="28" cy="24" r="1.5" fill="#C7B273"/>
+  
+  <!-- CFA text -->
+  <text x="50" y="18" font-family="Georgia, serif" font-size="16" font-weight="bold" fill="#C7B273">CFA</text>
+  <text x="50" y="32" font-family="Arial, sans-serif" font-size="10" fill="#C7B273">Cat Fanciers'</text>
+  <text x="50" y="42" font-family="Arial, sans-serif" font-size="10" fill="#C7B273">Association</text>
+</svg> 

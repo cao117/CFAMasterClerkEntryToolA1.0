@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Modal from './Modal';
+import ActionButtons from './ActionButtons';
 import { validateGeneralForm } from '../validation/generalValidation';
 import { handleSaveToCSV, handleReset } from '../utils/formActions';
+import CustomSelect from './CustomSelect';
 
 interface Judge {
   id: number;
@@ -61,33 +63,46 @@ interface GeneralTabProps {
   onCSVImport: () => Promise<void>;
 }
 
-// Inline SVG components for classy arrow-in-circle icons (collapse ↧ / expand ↥)
-const ChevronDownCircleIcon = () => (
-  <svg
-    className="w-6 h-6 text-gray-600"
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    strokeWidth={2}
-    aria-hidden="true"
+// Replace ChevronDownCircleIcon and ChevronUpCircleIcon with integrated corner icon
+const CornerCollapseIcon = ({ expanded, onClick, label, gradient }: { expanded: boolean; onClick: () => void; label: string; gradient: string }) => (
+  <button
+    type="button"
+    aria-label={label}
+    onClick={onClick}
+    className="absolute z-20 top-0 right-0 w-10 h-10 flex items-center justify-center focus:outline-none"
+    style={{ background: 'transparent', border: 'none', padding: 0 }}
   >
-    <circle cx="12" cy="12" r="10" />
-    <polyline points="8 10 12 14 16 10" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
-const ChevronUpCircleIcon = () => (
-  <svg
-    className="w-6 h-6 text-gray-600"
+    <span
+      className="rounded-tr-lg"
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '100%',
+        height: '100%',
+        background: gradient,
+        position: 'relative',
+      }}
+    >
+      <svg
+        width="28"
+        height="28"
+        viewBox="0 0 28 28"
     fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    strokeWidth={2}
-    aria-hidden="true"
-  >
-    <circle cx="12" cy="12" r="10" />
-    <polyline points="16 14 12 10 8 14" strokeLinecap="round" strokeLinejoin="round" />
+        xmlns="http://www.w3.org/2000/svg"
+        className="transition-colors duration-150"
+        style={{
+          background: 'white',
+          borderRadius: '50%',
+          boxShadow: expanded ? '0 0 0 2px #5b9fff55' : '0 1px 3px 0 rgba(30,42,80,0.08)',
+        }}
+      >
+        <circle cx="14" cy="14" r="13" stroke="#5b9fff" strokeWidth="2" fill="white" />
+        <rect x="8" y="13" width="12" height="2" rx="1" fill="#5b9fff" />
+        {!expanded && <rect x="13" y="8" width="2" height="12" rx="1" fill="#5b9fff" />}
   </svg>
+    </span>
+  </button>
 );
 
 export default function GeneralTab({ 
@@ -552,35 +567,71 @@ export default function GeneralTab({
         onConfirm={() => setIsCSVErrorModalOpen(false)}
       />
 
-      {/* Required Field Legend - Form Level */}
-      <div className="flex items-center gap-2 mb-2">
-        <span className="text-red-500 font-bold">*</span>
-        <span className="text-sm text-gray-600">Required field</span>
+      {/* Premium Required Field Legend */}
+      <div className="flex items-center gap-2 mb-6">
+        <div className="flex items-center space-x-2 bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-full px-3 py-1.5">
+          <span className="text-red-500 font-bold text-lg">●</span>
+          <span className="text-sm font-medium text-gray-700">Required field</span>
+        </div>
       </div>
 
-      <div className="space-y-8">
-        {/* Show Information */}
-        <div className="cfa-section">
-          <h2 className="cfa-section-header flex items-center justify-between">
-            Show Information
-            <button
-              type="button"
-              onClick={() => setIsShowInfoCollapsed(prev => !prev)}
-              className="transition-transform duration-200 focus:outline-none"
-              aria-label={isShowInfoCollapsed ? 'Expand section' : 'Collapse section'}
-            >
-              {isShowInfoCollapsed ? <ChevronDownCircleIcon /> : <ChevronUpCircleIcon />}
-            </button>
+      {/* --- Redesigned Show Information Section --- */}
+      <div className="space-y-6">
+        <div className="group relative">
+          {/* Subtle background glow */}
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-500 blur-xl pointer-events-none"></div>
+          <div className="relative bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-lg hover:shadow-blue-100/50 transition-all duration-300 transform hover:scale-[1.005] group-hover:border-blue-200">
+            {/* Decorative accent */}
+            <div className="absolute top-0 right-0 w-6 h-6 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-bl-2xl opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
+            
+            <h2 className="flex items-center justify-between mb-6">
+              <div className="flex items-center space-x-4">
+                <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <div>
+                  <span className="text-2xl font-bold text-gray-900 tracking-tight" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>Show Information</span>
+                </div>
+              </div>
+              <CornerCollapseIcon expanded={!isShowInfoCollapsed} onClick={() => setIsShowInfoCollapsed(v => !v)} label={isShowInfoCollapsed ? 'Expand section' : 'Collapse section'} gradient="linear-gradient(135deg, #3b82f6 60%, #6366f1 100%)" />
           </h2>
+            
           {!isShowInfoCollapsed && (
-            <table className="mb-4 w-full border-separate" style={{ borderSpacing: 0 }}>
-              <tbody>
-                <tr>
-                  <td className="w-1/4 pr-2 align-top"><label className="block font-semibold text-gray-700 mb-1">Show Date: <span className="text-red-500">*</span></label></td>
-                  <td className="w-1/4 pr-2 align-top"><input type="date" value={showData.showDate} onChange={e => updateShowData('showDate', e.target.value)} className={`cfa-input w-32 ${errors.showDate ? 'cfa-input-error' : ''}`}/>{errors.showDate && <div className="text-red-500 text-xs mt-1">{errors.showDate}</div>}</td>
-                  <td className="w-1/4 pr-2 align-top"><label className="block font-semibold text-gray-700 mb-1"># of Judges: <span className="text-red-500">*</span></label></td>
-                  <td className="w-1/4 align-top">
-                    <div className="space-y-1">
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100 p-4 shadow-sm">
+                <header className="flex items-center mb-3">
+                  <div className="w-1 h-5 bg-gradient-to-b from-blue-400 to-indigo-500 rounded-full mr-3"></div>
+                  <div>
+                    <h3 className="text-base font-semibold text-blue-900 tracking-wide" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>Show Details</h3>
+                  </div>
+                </header>
+                
+                <div className="space-y-3">
+                  {/* Row 1: Show Date & # of Judges */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div className="flex items-center space-x-3 h-8">
+                      <label className="text-sm font-semibold text-gray-700 min-w-[120px]" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>
+                        Show Date:
+                        <span className="ml-1 text-red-500 text-base">●</span>
+                      </label>
+                      <input 
+                        type="date"
+                        value={showData.showDate}
+                        onChange={e => updateShowData('showDate', e.target.value)}
+                        onFocus={e => e.target.select()}
+                        className="text-sm font-medium bg-white border border-blue-200 rounded-md py-1 px-2 focus:border-blue-400 focus:ring-1 focus:ring-blue-100 focus:outline-none transition-all duration-200 shadow-sm"
+                        style={{ fontFamily: 'Arial, Helvetica, sans-serif', width: '150px' }}
+                      />
+                      {errors.showDate && (
+                        <div className="text-red-500 text-xs font-medium" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>{errors.showDate}</div>
+                      )}
+                    </div>
+                    <div className="flex items-center space-x-3 h-8">
+                      <label className="text-sm font-semibold text-gray-700 min-w-[120px]" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>
+                        # of Judges:
+                        <span className="ml-1 text-red-500 text-base">●</span>
+                      </label>
                       <input 
                         ref={numberOfJudgesRef}
                         type="number" 
@@ -588,334 +639,565 @@ export default function GeneralTab({
                         max="12" 
                         value={showData.numberOfJudges} 
                         onChange={handleNumberOfJudgesChange}
-                        onFocus={(e) => {
-                          handleNumberFocus(e);
-                          handleFieldFocus('numberOfJudges');
-                        }}
-                        onBlur={(e) => {
-                          handleNumberBlur(e, 'numberOfJudges', 0);
-                          handleFieldBlur();
-                        }}
-                        className={`cfa-input w-20 ${errors.numberOfJudges ? 'cfa-input-error' : ''}`}
+                        onFocus={e => { e.target.select(); handleNumberFocus(e); handleFieldFocus('numberOfJudges'); }}
+                        onBlur={e => { handleNumberBlur(e, 'numberOfJudges', 0); handleFieldBlur(); }}
+                        className="text-center text-sm font-medium bg-white border border-blue-200 rounded-md py-1 px-2 focus:border-blue-400 focus:ring-1 focus:ring-blue-100 focus:outline-none transition-all duration-200 shadow-sm"
+                        style={{ fontFamily: 'Arial, Helvetica, sans-serif', width: '80px' }}
                       />
-                      <div className="h-4">
-                        {errors.numberOfJudges && <div className="text-red-500 text-xs">{errors.numberOfJudges}</div>}
-                        {focusedField === 'numberOfJudges' && !errors.numberOfJudges && <div className="text-gray-500 text-xs">Enter a number between 1 and 12</div>}
+                      {errors.numberOfJudges && (
+                        <div className="text-red-500 text-xs font-medium" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>{errors.numberOfJudges}</div>
+                      )}
                       </div>
                     </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td className="w-1/4 pr-2 align-top"><label className="block font-semibold text-gray-700 mb-1">Club Name: <span className="text-red-500">*</span></label></td>
-                  <td className="w-1/4 pr-2 align-top">
-                    <div className="space-y-1">
+                  
+                  {/* Row 2: Club Name & Master Clerk Name */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div className="flex items-center space-x-3 h-8">
+                      <label className="text-sm font-semibold text-gray-700 min-w-[120px]" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>
+                        Club Name:
+                        <span className="ml-1 text-red-500 text-base">●</span>
+                      </label>
                       <input 
                         ref={clubNameRef}
                         type="text" 
                         value={showData.clubName} 
                         onChange={handleClubNameChange}
-                        onFocus={() => handleFieldFocus('clubName')}
+                        onFocus={e => { e.target.select(); handleFieldFocus('clubName'); }}
                         onBlur={handleFieldBlur}
-                        className={`cfa-input w-64 ${errors.clubName ? 'cfa-input-error' : ''}`}
+                        className="text-sm font-medium bg-white border border-blue-200 rounded-md py-1 px-2 focus:border-blue-400 focus:ring-1 focus:ring-blue-100 focus:outline-none transition-all duration-200 shadow-sm" 
                         placeholder="Enter club name"
+                        style={{ fontFamily: 'Arial, Helvetica, sans-serif', width: '260px' }}
                       />
-                      <div className="h-4">
-                        {errors.clubName && <div className="text-red-500 text-xs">{errors.clubName}</div>}
-                        {focusedField === 'clubName' && !errors.clubName && <div className="text-gray-500 text-xs">Enter the name of the cat club</div>}
+                      {errors.clubName && (
+                        <div className="text-red-500 text-xs font-medium" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>{errors.clubName}</div>
+                      )}
                       </div>
-                    </div>
-                  </td>
-                  <td className="w-1/4 pr-2 align-top"><label className="block font-semibold text-gray-700 mb-1">Master Clerk Name: <span className="text-red-500">*</span></label></td>
-                  <td className="w-1/4 align-top">
-                    <div className="space-y-1">
+                    <div className="flex items-center space-x-3 h-8">
+                      <label className="text-sm font-semibold text-gray-700 min-w-[120px]" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>
+                        Master Clerk:
+                        <span className="ml-1 text-red-500 text-base">●</span>
+                      </label>
                       <input 
                         ref={masterClerkRef}
                         type="text" 
                         value={showData.masterClerk} 
                         onChange={handleMasterClerkChange}
-                        onFocus={() => handleFieldFocus('masterClerk')}
+                        onFocus={e => { e.target.select(); handleFieldFocus('masterClerk'); }}
                         onBlur={handleFieldBlur}
-                        className={`cfa-input w-64 ${errors.masterClerk ? 'cfa-input-error' : ''}`}
+                        className="text-sm font-medium bg-white border border-blue-200 rounded-md py-1 px-2 focus:border-blue-400 focus:ring-1 focus:ring-blue-100 focus:outline-none transition-all duration-200 shadow-sm" 
                         placeholder="Enter master clerk name"
+                        style={{ fontFamily: 'Arial, Helvetica, sans-serif', width: '260px' }}
                       />
-                      <div className="h-4">
-                        {errors.masterClerk && <div className="text-red-500 text-xs">{errors.masterClerk}</div>}
-                        {focusedField === 'masterClerk' && !errors.masterClerk && <div className="text-gray-500 text-xs">Enter the master clerk's full name</div>}
+                      {errors.masterClerk && (
+                        <div className="text-red-500 text-xs font-medium" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>{errors.masterClerk}</div>
+                      )}
                       </div>
                     </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          )}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Show Count */}
-        <div className="cfa-section">
-          <h2 className="cfa-section-header flex items-center justify-between">
-            Show Count
-            <button
-              type="button"
-              onClick={() => setIsShowCountCollapsed(prev => !prev)}
-              className="transition-transform duration-200 focus:outline-none"
-              aria-label={isShowCountCollapsed ? 'Expand section' : 'Collapse section'}
-            >
-              {isShowCountCollapsed ? <ChevronDownCircleIcon /> : <ChevronUpCircleIcon />}
-            </button>
+        {/* Show Count - Modern Green Design */}
+        {/*
+         * @section Show Count (Modern Green Redesign)
+         * @description
+         *   - Sleek, modern design while keeping the green theme
+         *   - Fixed alignment issues with proper grid consistency
+         *   - Modern typography and spacing for trendy appearance
+         *   - Enhanced visual hierarchy with better organization
+         *   - No changes to logic, validation, or input handling
+         *   - All number inputs retain auto-highlight on focus
+         */}
+        <div className="group relative">
+          {/* Subtle background glow */}
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-500 blur-xl pointer-events-none"></div>
+          <div className="relative bg-white border border-gray-200 rounded-2xl p-8 shadow-sm hover:shadow-lg hover:shadow-emerald-100/50 transition-all duration-300 transform hover:scale-[1.005] group-hover:border-emerald-200">
+            {/* Decorative accent */}
+            <div className="absolute top-0 right-0 w-6 h-6 bg-gradient-to-br from-emerald-400 to-green-500 rounded-bl-2xl opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
+            
+            <h2 className="flex items-center justify-between mb-8">
+              <div className="flex items-center space-x-4">
+                <div className="p-3 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl shadow-lg">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                </div>
+                <div>
+                  <span className="text-2xl font-bold text-gray-900 tracking-tight" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>Show Count</span>
+                </div>
+              </div>
+              <CornerCollapseIcon expanded={!isShowCountCollapsed} onClick={() => setIsShowCountCollapsed(v => !v)} label={isShowCountCollapsed ? 'Expand section' : 'Collapse section'} gradient="linear-gradient(135deg, #10b981 60%, #059669 100%)" />
           </h2>
+            
           {!isShowCountCollapsed && (
-            <div className="cfa-table">
-              <table className="w-full">
-                <tbody>
-                  {/* Championship Count */}
-                  <tr className="cfa-table-header">
-                    <td colSpan={12} className="py-3 pl-4">Championship Count</td>
-                  </tr>
-                  {/* 1st row – Longhair counts */}
-                  <tr className="cfa-table-row">
-                    <td className="text-sm font-medium pl-4 py-3"># of LH GCs:</td>
-                    <td className="py-3"><input type="number" min="0" value={showData.championshipCounts.lhGcs} onChange={e => updateChampionshipCount('lhGcs', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'championshiplhGcs')} className="cfa-input w-20 text-sm"/></td>
-                    <td className="text-sm font-medium"># of LH CHs:</td>
-                    <td><input type="number" min="0" value={showData.championshipCounts.lhChs} onChange={e => updateChampionshipCount('lhChs', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'championshiplhChs')} className="cfa-input w-20 text-sm"/></td>
-                    <td className="text-sm font-medium"># of LH NOVs:</td>
-                    <td><input type="number" min="0" value={showData.championshipCounts.lhNovs} onChange={e => updateChampionshipCount('lhNovs', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'championshiplhNovs')} className="cfa-input w-20 text-sm"/></td>
-                    <td colSpan={4}></td>
-                  </tr>
-                  {/* 2nd row – Shorthair counts */}
-                  <tr className="cfa-table-row">
-                    <td className="text-sm font-medium pl-4 py-3"># of SH GCs:</td>
-                    <td className="py-3"><input type="number" min="0" value={showData.championshipCounts.shGcs} onChange={e => updateChampionshipCount('shGcs', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'championshipshGcs')} className="cfa-input w-20 text-sm"/></td>
-                    <td className="text-sm font-medium"># of SH CHs:</td>
-                    <td><input type="number" min="0" value={showData.championshipCounts.shChs} onChange={e => updateChampionshipCount('shChs', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'championshipshChs')} className="cfa-input w-20 text-sm"/></td>
-                    <td className="text-sm font-medium"># of SH NOVs:</td>
-                    <td><input type="number" min="0" value={showData.championshipCounts.shNovs} onChange={e => updateChampionshipCount('shNovs', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'championshipshNovs')} className="cfa-input w-20 text-sm"/></td>
-                    <td colSpan={4}></td>
-                  </tr>
-                  <tr className="cfa-table-row">
-                    <td className="text-sm font-medium pl-4 py-3"># of GCs:</td>
-                    <td className="py-3"><input type="number" value={showData.championshipCounts.gcs} readOnly className="cfa-input cfa-input-readonly w-20 text-sm"/></td>
-                    <td className="text-sm font-medium"># of CHs:</td>
-                    <td><input type="number" value={showData.championshipCounts.chs} readOnly className="cfa-input cfa-input-readonly w-20 text-sm"/></td>
-                    <td className="text-sm font-medium">Total Count:</td>
-                    <td><input type="number" value={showData.championshipCounts.total} readOnly className="cfa-input cfa-input-readonly w-20 text-sm"/></td>
-                    <td colSpan={6}></td>
-                  </tr>
-                  {/* Kitten Count */}
-                  <tr className="cfa-table-header">
-                    <td colSpan={12} className="py-3 pl-4">Kitten Count</td>
-                  </tr>
-                  <tr className="cfa-table-row">
-                    <td className="text-sm font-medium pl-4 py-3"># of LH Kittens:</td>
-                    <td className="py-3"><input type="number" min="0" value={showData.kittenCounts.lhKittens} onChange={e => updateKittenCount('lhKittens', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'kittenCountslhKittens')} className="cfa-input w-20 text-sm"/></td>
-                    <td className="text-sm font-medium"># of SH Kittens:</td>
-                    <td><input type="number" min="0" value={showData.kittenCounts.shKittens} onChange={e => updateKittenCount('shKittens', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'kittenCountsshKittens')} className="cfa-input w-20 text-sm"/></td>
-                    <td className="text-sm font-medium">Total Kittens:</td>
-                    <td><input type="number" value={showData.kittenCounts.total} readOnly className="cfa-input cfa-input-readonly w-20 text-sm"/></td>
-                    <td colSpan={6}></td>
-                  </tr>
-                  {/* Premiership Count */}
-                  <tr className="cfa-table-header">
-                    <td colSpan={12} className="py-3 pl-4">Premiership Count</td>
-                  </tr>
-                  {/* Editable fields row */}
-                  <tr className="cfa-table-row">
-                    <td className="text-sm font-medium pl-4 py-3"># of LH GPs:</td>
-                    <td className="py-3"><input type="number" min="0" value={showData.premiershipCounts.lhGps} onChange={e => updatePremiershipCount('lhGps', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'premiershiplhGps')} className="cfa-input w-20 text-sm"/></td>
-                    <td className="text-sm font-medium"># of LH PRs:</td>
-                    <td><input type="number" min="0" value={showData.premiershipCounts.lhPrs} onChange={e => updatePremiershipCount('lhPrs', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'premiershiplhPrs')} className="cfa-input w-20 text-sm"/></td>
-                    <td className="text-sm font-medium"># of LH NOVs:</td>
-                    <td><input type="number" min="0" value={showData.premiershipCounts.lhNovs} onChange={e => updatePremiershipCount('lhNovs', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'premiershiplhNovs')} className="cfa-input w-20 text-sm"/></td>
-                  </tr>
-                  {/* Second editable row for Premiership - SH NOVs */}
-                  <tr className="cfa-table-row">
-                    <td className="text-sm font-medium pl-4 py-3"># of SH GPs:</td>
-                    <td className="py-3"><input type="number" min="0" value={showData.premiershipCounts.shGps} onChange={e => updatePremiershipCount('shGps', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'premiershipshGps')} className="cfa-input w-20 text-sm"/></td>
-                    <td className="text-sm font-medium"># of SH PRs:</td>
-                    <td><input type="number" min="0" value={showData.premiershipCounts.shPrs} onChange={e => updatePremiershipCount('shPrs', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'premiershipshPrs')} className="cfa-input w-20 text-sm"/></td>
-                    <td className="text-sm font-medium"># of SH NOVs:</td>
-                    <td><input type="number" min="0" value={showData.premiershipCounts.shNovs} onChange={e => updatePremiershipCount('shNovs', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'premiershipshNovs')} className="cfa-input w-20 text-sm"/></td>
-                    <td colSpan={6}></td>
-                  </tr>
-                  {/* Calculated fields row */}
-                  <tr className="cfa-table-row">
-                    <td className="text-sm font-medium pl-4 py-3"># of GPs:</td>
-                    <td className="py-3"><input type="number" value={showData.premiershipCounts.gps} readOnly className="cfa-input cfa-input-readonly w-20 text-sm"/></td>
-                    <td className="text-sm font-medium"># of PRs:</td>
-                    <td><input type="number" value={showData.premiershipCounts.prs} readOnly className="cfa-input cfa-input-readonly w-20 text-sm"/></td>
-                    <td className="text-sm font-medium">Total Count:</td>
-                    <td><input type="number" value={showData.premiershipCounts.total} readOnly className="cfa-input cfa-input-readonly w-20 text-sm"/></td>
-                    <td colSpan={8}></td>
-                  </tr>
-                  {/* Household Pet Count */}
-                  <tr className="cfa-table-header">
-                    <td colSpan={12} className="py-3 pl-4">Household Pet Count</td>
-                  </tr>
-                  <tr className="cfa-table-row">
-                    <td className="text-sm font-medium pl-4 py-3"># of Household Pets:</td>
-                    <td className="py-3"><input type="number" min="0" value={showData.householdPetCount} onChange={e => updateShowData('householdPetCount', parseInt(e.target.value) || 0)} onFocus={handleNumberFocus} onBlur={(e) => handleNumberBlur(e, 'householdPetCount')} className="cfa-input w-20 text-sm"/></td>
-                    <td colSpan={10}></td>
-                  </tr>
-                </tbody>
-              </table>
+              <div className="space-y-4">
+                {/* Championship Count Section */}
+                <section className="bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl border border-emerald-100 p-4 shadow-sm">
+                  <header className="flex items-center mb-3">
+                    <div className="w-1 h-5 bg-gradient-to-b from-emerald-400 to-green-500 rounded-full mr-3"></div>
+                    <div>
+                      <h3 className="text-base font-semibold text-emerald-900 tracking-wide" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>Championship Count</h3>
+            </div>
+                  </header>
+                  
+                  <div className="space-y-3">
+                    {/* Longhair Row */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                      <div className="flex items-center space-x-3 h-8">
+                        <label className="text-sm font-semibold text-gray-700 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of LH GCs:</label>
+                        <input 
+                          type="number" 
+                          min="0" 
+                          value={showData.championshipCounts.lhGcs} 
+                          onChange={e => updateChampionshipCount('lhGcs', parseInt(e.target.value) || 0)} 
+                          onFocus={e => e.target.select()}
+                          onBlur={e => handleNumberBlur(e, 'championshiplhGcs')} 
+                          className="w-20 text-center text-sm font-medium bg-white border border-emerald-200 rounded-md py-1 px-2 focus:border-emerald-400 focus:ring-1 focus:ring-emerald-100 focus:outline-none transition-all duration-200 shadow-sm" 
+                          style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+                        />
+                      </div>
+                      <div className="flex items-center space-x-3 h-8">
+                        <label className="text-sm font-semibold text-gray-700 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of LH CHs:</label>
+                        <input 
+                          type="number" 
+                          min="0" 
+                          value={showData.championshipCounts.lhChs} 
+                          onChange={e => updateChampionshipCount('lhChs', parseInt(e.target.value) || 0)} 
+                          onFocus={e => e.target.select()}
+                          onBlur={e => handleNumberBlur(e, 'championshiplhChs')} 
+                          className="w-20 text-center text-sm font-medium bg-white border border-emerald-200 rounded-md py-1 px-2 focus:border-emerald-400 focus:ring-1 focus:ring-emerald-100 focus:outline-none transition-all duration-200 shadow-sm" 
+                          style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+                        />
+                      </div>
+                      <div className="flex items-center space-x-3 h-8">
+                        <label className="text-sm font-semibold text-gray-700 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of LH NOVs:</label>
+                        <input 
+                          type="number" 
+                          min="0" 
+                          value={showData.championshipCounts.lhNovs} 
+                          onChange={e => updateChampionshipCount('lhNovs', parseInt(e.target.value) || 0)} 
+                          onFocus={e => e.target.select()}
+                          onBlur={e => handleNumberBlur(e, 'championshiplhNovs')} 
+                          className="w-20 text-center text-sm font-medium bg-white border border-emerald-200 rounded-md py-1 px-2 focus:border-emerald-400 focus:ring-1 focus:ring-emerald-100 focus:outline-none transition-all duration-200 shadow-sm" 
+                          style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+                        />
+                      </div>
+        </div>
+
+                    {/* Shorthair Row */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                      <div className="flex items-center space-x-3 h-8">
+                        <label className="text-sm font-semibold text-gray-700 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of SH GCs:</label>
+                        <input 
+                          type="number" 
+                          min="0" 
+                          value={showData.championshipCounts.shGcs} 
+                          onChange={e => updateChampionshipCount('shGcs', parseInt(e.target.value) || 0)} 
+                          onFocus={handleNumberFocus}
+                          onBlur={e => handleNumberBlur(e, 'championshipshGcs')} 
+                          className="w-20 text-center text-sm font-medium bg-white border border-emerald-200 rounded-md py-1 px-2 focus:border-emerald-400 focus:ring-1 focus:ring-emerald-100 focus:outline-none transition-all duration-200 shadow-sm" 
+                          style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+                        />
+                          </div>
+                      <div className="flex items-center space-x-3 h-8">
+                        <label className="text-sm font-semibold text-gray-700 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of SH CHs:</label>
+                        <input 
+                          type="number" 
+                          min="0" 
+                          value={showData.championshipCounts.shChs} 
+                          onChange={e => updateChampionshipCount('shChs', parseInt(e.target.value) || 0)} 
+                          onFocus={handleNumberFocus}
+                          onBlur={e => handleNumberBlur(e, 'championshipshChs')} 
+                          className="w-20 text-center text-sm font-medium bg-white border border-emerald-200 rounded-md py-1 px-2 focus:border-emerald-400 focus:ring-1 focus:ring-emerald-100 focus:outline-none transition-all duration-200 shadow-sm" 
+                          style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+                        />
+                        </div>
+                      <div className="flex items-center space-x-3 h-8">
+                        <label className="text-sm font-semibold text-gray-700 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of SH NOVs:</label>
+                          <input
+                          type="number" 
+                          min="0" 
+                          value={showData.championshipCounts.shNovs} 
+                          onChange={e => updateChampionshipCount('shNovs', parseInt(e.target.value) || 0)} 
+                          onFocus={handleNumberFocus}
+                          onBlur={e => handleNumberBlur(e, 'championshipshNovs')} 
+                          className="w-20 text-center text-sm font-medium bg-white border border-emerald-200 rounded-md py-1 px-2 focus:border-emerald-400 focus:ring-1 focus:ring-emerald-100 focus:outline-none transition-all duration-200 shadow-sm" 
+                          style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+                        />
+                          </div>
+                        </div>
+                    
+                    {/* Totals Row - Fixed Alignment */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 pt-3 border-t border-emerald-100">
+                      <div className="flex items-center space-x-3 h-8">
+                        <label className="text-sm font-semibold text-emerald-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of GCs:</label>
+                          <input
+                          type="number" 
+                          value={showData.championshipCounts.gcs} 
+                          readOnly 
+                          className="w-20 text-center text-sm font-semibold bg-emerald-50 border border-emerald-200 rounded-md py-1 px-2 text-emerald-800" 
+                          style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+                        />
+                          </div>
+                      <div className="flex items-center space-x-3 h-8">
+                        <label className="text-sm font-semibold text-emerald-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of CHs:</label>
+                        <input 
+                          type="number" 
+                          value={showData.championshipCounts.chs} 
+                          readOnly 
+                          className="w-20 text-center text-sm font-semibold bg-emerald-50 border border-emerald-200 rounded-md py-1 px-2 text-emerald-800" 
+                          style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+                        />
+                        </div>
+                      <div className="flex items-center space-x-3 h-8">
+                        <label className="text-sm font-semibold text-emerald-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>Total Count:</label>
+                        <input 
+                          type="number" 
+                          value={showData.championshipCounts.total} 
+                          readOnly 
+                          className="w-20 text-center text-sm font-semibold bg-emerald-50 border border-emerald-200 rounded-md py-1 px-2 text-emerald-800" 
+                          style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+                        />
+                          </div>
+                        </div>
+                  </div>
+                </section>
+
+                {/* Kitten Count Section */}
+                <section className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100 p-4 shadow-sm">
+                  <header className="flex items-center mb-3">
+                    <div className="w-1 h-5 bg-gradient-to-b from-green-400 to-emerald-500 rounded-full mr-3"></div>
+                    <div>
+                      <h3 className="text-base font-semibold text-green-900 tracking-wide" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>Kitten Count</h3>
+                    </div>
+                  </header>
+                  
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    <div className="flex items-center space-x-3 h-8">
+                      <label className="text-sm font-semibold text-gray-700 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of LH Kittens:</label>
+                      <input 
+                        type="number" 
+                        min="0" 
+                        value={showData.kittenCounts.lhKittens} 
+                        onChange={e => updateKittenCount('lhKittens', parseInt(e.target.value) || 0)} 
+                        onFocus={handleNumberFocus}
+                        onBlur={e => handleNumberBlur(e, 'kittenCountslhKittens')} 
+                        className="w-20 text-center text-sm font-medium bg-white border border-green-200 rounded-md py-1 px-2 focus:border-green-400 focus:ring-1 focus:ring-green-100 focus:outline-none transition-all duration-200 shadow-sm" 
+                        style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+                      />
+                    </div>
+                    <div className="flex items-center space-x-3 h-8">
+                      <label className="text-sm font-semibold text-gray-700 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of SH Kittens:</label>
+                      <input 
+                        type="number" 
+                        min="0" 
+                        value={showData.kittenCounts.shKittens} 
+                        onChange={e => updateKittenCount('shKittens', parseInt(e.target.value) || 0)} 
+                        onFocus={handleNumberFocus}
+                        onBlur={e => handleNumberBlur(e, 'kittenCountsshKittens')} 
+                        className="w-20 text-center text-sm font-medium bg-white border border-green-200 rounded-md py-1 px-2 focus:border-green-400 focus:ring-1 focus:ring-green-100 focus:outline-none transition-all duration-200 shadow-sm" 
+                        style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+                      />
+                    </div>
+                    <div className="flex items-center space-x-3 h-8">
+                      <label className="text-sm font-semibold text-green-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>Total Kittens:</label>
+                      <input 
+                        type="number" 
+                        value={showData.kittenCounts.total} 
+                        readOnly 
+                        className="w-20 text-center text-sm font-semibold bg-green-50 border border-green-200 rounded-md py-1 px-2 text-green-800" 
+                        style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+                      />
+                    </div>
+                  </div>
+                </section>
+
+                {/* Premiership Count Section */}
+                <section className="bg-gradient-to-r from-teal-50 to-blue-50 rounded-xl border border-teal-100 p-4 shadow-sm">
+                  <header className="flex items-center mb-3">
+                    <div className="w-1 h-5 bg-gradient-to-b from-teal-400 to-blue-500 rounded-full mr-3"></div>
+                    <div>
+                      <h3 className="text-base font-semibold text-teal-900 tracking-wide" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>Premiership Count</h3>
+                    </div>
+                  </header>
+                  
+                  <div className="space-y-3">
+                    {/* Longhair Row */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                      <div className="flex items-center space-x-3 h-8">
+                        <label className="text-sm font-semibold text-gray-700 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of LH GPs:</label>
+                        <input 
+                          type="number" 
+                          min="0" 
+                          value={showData.premiershipCounts.lhGps} 
+                          onChange={e => updatePremiershipCount('lhGps', parseInt(e.target.value) || 0)} 
+                          onFocus={handleNumberFocus}
+                          onBlur={e => handleNumberBlur(e, 'premiershiplhGps')} 
+                          className="w-20 text-center text-sm font-medium bg-white border border-teal-200 rounded-md py-1 px-2 focus:border-teal-400 focus:ring-1 focus:ring-teal-100 focus:outline-none transition-all duration-200 shadow-sm" 
+                          style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+                        />
+                      </div>
+                      <div className="flex items-center space-x-3 h-8">
+                        <label className="text-sm font-semibold text-gray-700 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of LH PRs:</label>
+                        <input 
+                          type="number" 
+                          min="0" 
+                          value={showData.premiershipCounts.lhPrs} 
+                          onChange={e => updatePremiershipCount('lhPrs', parseInt(e.target.value) || 0)} 
+                          onFocus={handleNumberFocus}
+                          onBlur={e => handleNumberBlur(e, 'premiershiplhPrs')} 
+                          className="w-20 text-center text-sm font-medium bg-white border border-teal-200 rounded-md py-1 px-2 focus:border-teal-400 focus:ring-1 focus:ring-teal-100 focus:outline-none transition-all duration-200 shadow-sm" 
+                          style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+                        />
+                      </div>
+                      <div className="flex items-center space-x-3 h-8">
+                        <label className="text-sm font-semibold text-gray-700 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of LH NOVs:</label>
+                        <input 
+                          type="number" 
+                          min="0" 
+                          value={showData.premiershipCounts.lhNovs} 
+                          onChange={e => updatePremiershipCount('lhNovs', parseInt(e.target.value) || 0)} 
+                          onFocus={handleNumberFocus}
+                          onBlur={e => handleNumberBlur(e, 'premiershiplhNovs')} 
+                          className="w-20 text-center text-sm font-medium bg-white border border-teal-200 rounded-md py-1 px-2 focus:border-teal-400 focus:ring-1 focus:ring-teal-100 focus:outline-none transition-all duration-200 shadow-sm" 
+                          style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* Shorthair Row */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                      <div className="flex items-center space-x-3 h-8">
+                        <label className="text-sm font-semibold text-gray-700 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of SH GPs:</label>
+                        <input 
+                          type="number" 
+                          min="0" 
+                          value={showData.premiershipCounts.shGps} 
+                          onChange={e => updatePremiershipCount('shGps', parseInt(e.target.value) || 0)} 
+                          onFocus={handleNumberFocus}
+                          onBlur={e => handleNumberBlur(e, 'premiershipshGps')} 
+                          className="w-20 text-center text-sm font-medium bg-white border border-teal-200 rounded-md py-1 px-2 focus:border-teal-400 focus:ring-1 focus:ring-teal-100 focus:outline-none transition-all duration-200 shadow-sm" 
+                          style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+                        />
+                      </div>
+                      <div className="flex items-center space-x-3 h-8">
+                        <label className="text-sm font-semibold text-gray-700 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of SH PRs:</label>
+                        <input 
+                          type="number" 
+                          min="0" 
+                          value={showData.premiershipCounts.shPrs} 
+                          onChange={e => updatePremiershipCount('shPrs', parseInt(e.target.value) || 0)} 
+                          onFocus={handleNumberFocus}
+                          onBlur={e => handleNumberBlur(e, 'premiershipshPrs')} 
+                          className="w-20 text-center text-sm font-medium bg-white border border-teal-200 rounded-md py-1 px-2 focus:border-teal-400 focus:ring-1 focus:ring-teal-100 focus:outline-none transition-all duration-200 shadow-sm" 
+                          style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+                        />
+                      </div>
+                      <div className="flex items-center space-x-3 h-8">
+                        <label className="text-sm font-semibold text-gray-700 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of SH NOVs:</label>
+                        <input 
+                          type="number" 
+                          min="0" 
+                          value={showData.premiershipCounts.shNovs} 
+                          onChange={e => updatePremiershipCount('shNovs', parseInt(e.target.value) || 0)} 
+                          onFocus={handleNumberFocus}
+                          onBlur={e => handleNumberBlur(e, 'premiershipshNovs')} 
+                          className="w-20 text-center text-sm font-medium bg-white border border-teal-200 rounded-md py-1 px-2 focus:border-teal-400 focus:ring-1 focus:ring-teal-100 focus:outline-none transition-all duration-200 shadow-sm" 
+                          style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* Totals Row - Fixed Alignment */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 pt-3 border-t border-teal-100">
+                      <div className="flex items-center space-x-3 h-8">
+                        <label className="text-sm font-semibold text-teal-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of GPs:</label>
+                        <input 
+                          type="number" 
+                          value={showData.premiershipCounts.gps} 
+                          readOnly 
+                          className="w-20 text-center text-sm font-semibold bg-teal-50 border border-teal-200 rounded-md py-1 px-2 text-teal-800" 
+                          style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+                        />
+                      </div>
+                      <div className="flex items-center space-x-3 h-8">
+                        <label className="text-sm font-semibold text-teal-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of PRs:</label>
+                        <input 
+                          type="number" 
+                          value={showData.premiershipCounts.prs} 
+                          readOnly 
+                          className="w-20 text-center text-sm font-semibold bg-teal-50 border border-teal-200 rounded-md py-1 px-2 text-teal-800" 
+                          style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+                        />
+                      </div>
+                      <div className="flex items-center space-x-3 h-8">
+                        <label className="text-sm font-semibold text-teal-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>Total Count:</label>
+                        <input 
+                          type="number" 
+                          value={showData.premiershipCounts.total} 
+                          readOnly 
+                          className="w-20 text-center text-sm font-semibold bg-teal-50 border border-teal-200 rounded-md py-1 px-2 text-teal-800" 
+                          style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                {/* Household Pet Count Section */}
+                <section className="bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl border border-emerald-100 p-4 shadow-sm">
+                  <header className="flex items-center mb-3">
+                    <div className="w-1 h-5 bg-gradient-to-b from-emerald-400 to-green-500 rounded-full mr-3"></div>
+                    <div>
+                      <h3 className="text-base font-semibold text-emerald-900 tracking-wide" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>Household Pet Count</h3>
+                    </div>
+                  </header>
+                  
+                  <div className="flex items-center space-x-3 h-8">
+                    <label className="text-sm font-semibold text-gray-700 w-40" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of Household Pets:</label>
+                    <input 
+                      type="number" 
+                      min="0" 
+                      value={showData.householdPetCount} 
+                      onChange={e => updateShowData('householdPetCount', parseInt(e.target.value) || 0)} 
+                      onFocus={handleNumberFocus}
+                      onBlur={e => handleNumberBlur(e, 'householdPetCount')} 
+                      className="w-20 text-center text-sm font-medium bg-white border border-emerald-200 rounded-md py-1 px-2 focus:border-emerald-400 focus:ring-1 focus:ring-emerald-100 focus:outline-none transition-all duration-200 shadow-sm" 
+                      style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+                    />
+                  </div>
+                </section>
             </div>
           )}
+          </div>
         </div>
 
-        {/* Judge Information */}
-        <div className="cfa-section">
-          <h2 className="cfa-section-header flex items-center justify-between">
-            Judge Information
-            <button
-              type="button"
-              onClick={() => setIsJudgeInfoCollapsed(prev => !prev)}
-              className="transition-transform duration-200 focus:outline-none"
-              aria-label={isJudgeInfoCollapsed ? 'Expand section' : 'Collapse section'}
-            >
-              {isJudgeInfoCollapsed ? <ChevronDownCircleIcon /> : <ChevronUpCircleIcon />}
-            </button>
+        {/* Judge Information - Modern Design */}
+        <div className="group relative">
+          {/* Subtle background glow */}
+          <div className="absolute inset-0 bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-500 blur-xl pointer-events-none"></div>
+          <div className="relative bg-white border border-gray-200 rounded-2xl p-8 shadow-sm hover:shadow-lg hover:shadow-amber-100/50 transition-all duration-300 transform hover:scale-[1.005] group-hover:border-amber-200">
+            {/* Decorative accent */}
+            <div className="absolute top-0 right-0 w-6 h-6 bg-gradient-to-br from-amber-400 to-orange-500 rounded-bl-2xl opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
+            
+            <h2 className="flex items-center justify-between mb-8">
+              <div className="flex items-center space-x-4">
+                <div className="p-3 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl shadow-lg">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                        </div>
+                <div>
+                  <span className="text-2xl font-bold text-gray-900 tracking-tight" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>Judge Information</span>
+                </div>
+              </div>
+              <CornerCollapseIcon expanded={!isJudgeInfoCollapsed} onClick={() => setIsJudgeInfoCollapsed(v => !v)} label={isJudgeInfoCollapsed ? 'Expand section' : 'Collapse section'} gradient="linear-gradient(135deg, #f59e0b 60%, #d97706 100%)" />
           </h2>
+            
           {!isJudgeInfoCollapsed && (
-            <div className="cfa-table">
-              <table className="w-full table-fixed">
+              <div>
+                {/* Show explanation when no judges */}
+                {judges.length === 0 && (
+                  <div className="flex flex-col items-center justify-center p-8 my-8 bg-gradient-to-br from-amber-50 via-white to-yellow-50 rounded-2xl shadow-lg border border-amber-100 max-w-xl mx-auto animate-fade-in">
+                    {/* Animated Chubby Kitten SVG */}
+                    <div className="mb-4">
+                      <svg width="90" height="90" viewBox="0 0 90 90" fill="none" className="animate-bounce-slow">
+                        <ellipse cx="45" cy="80" rx="26" ry="7" fill="#FDE68A"/>
+                        {/* Body */}
+                        <ellipse cx="45" cy="54" rx="22" ry="20" fill="#FBBF24" stroke="#F59E0B" strokeWidth="2"/>
+                        {/* Head */}
+                        <ellipse cx="45" cy="36" rx="18" ry="16" fill="#FBBF24" stroke="#F59E0B" strokeWidth="2"/>
+                        {/* Cheeks */}
+                        <ellipse cx="33" cy="41" rx="4" ry="2.5" fill="#FDE68A"/>
+                        <ellipse cx="57" cy="41" rx="4" ry="2.5" fill="#FDE68A"/>
+                        {/* Ears */}
+                        <ellipse cx="30" cy="25" rx="3.5" ry="5" fill="#FBBF24" stroke="#F59E0B" strokeWidth="1"/>
+                        <ellipse cx="60" cy="25" rx="3.5" ry="5" fill="#FBBF24" stroke="#F59E0B" strokeWidth="1"/>
+                        {/* Eyes */}
+                        <ellipse cx="39" cy="36" rx="2.2" ry="3" fill="#fff"/>
+                        <ellipse cx="51" cy="36" rx="2.2" ry="3" fill="#fff"/>
+                        <ellipse cx="39" cy="37" rx="1.1" ry="1.7" fill="#444"/>
+                        <ellipse cx="51" cy="37" rx="1.1" ry="1.7" fill="#444"/>
+                        {/* Nose */}
+                        <ellipse cx="45" cy="41" rx="1.1" ry="0.7" fill="#F59E0B"/>
+                        {/* Smile */}
+                        <path d="M43.5 43 Q45 44.5 46.5 43" stroke="#F59E0B" strokeWidth="1.2" fill="none"/>
+                        {/* Paws */}
+                        <ellipse cx="36" cy="70" rx="3" ry="2" fill="#FBBF24" stroke="#F59E0B" strokeWidth="1"/>
+                        <ellipse cx="54" cy="70" rx="3" ry="2" fill="#FBBF24" stroke="#F59E0B" strokeWidth="1"/>
+                        {/* Fluffy Tail */}
+                        <g className="cat-tail">
+                          <path d="M67 68 Q82 70 75 58 Q72 54 67 62" stroke="#F59E0B" strokeWidth="4" fill="none"/>
+                          <ellipse cx="75" cy="58" rx="3.5" ry="6" fill="#FBBF24" stroke="#F59E0B" strokeWidth="1"/>
+                        </g>
+                      </svg>
+                    </div>
+                    <h3 className="text-2xl font-bold font-serif text-amber-700 mb-2 text-center">No Judges Assigned</h3>
+                    <div className="h-1 w-16 bg-gradient-to-r from-amber-400 to-yellow-300 rounded-full mb-4 mx-auto"></div>
+                    <ul className="space-y-3 text-base text-slate-700 font-medium w-full max-w-xs mx-auto">
+                      <li className="flex items-start space-x-3">
+                        <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-amber-100 text-amber-700 font-bold text-lg shadow-sm">1</span>
+                        <span>Set the <span className="font-semibold text-amber-600"># of Judges</span> field above to a number between <span className="font-semibold">1-12</span></span>
+                      </li>
+                      <li className="flex items-start space-x-3">
+                        <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-amber-100 text-amber-700 font-bold text-lg shadow-sm">2</span>
+                        <span>Fill in the <span className="font-semibold text-amber-600">judge name</span>, <span className="font-semibold text-amber-600">acronym</span>, and <span className="font-semibold text-amber-600">ring type</span> for each judge</span>
+                      </li>
+                      <li className="flex items-start space-x-3">
+                        <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-amber-100 text-amber-700 font-bold text-lg shadow-sm">3</span>
+                        <span>All fields marked with <span className="text-red-500 text-base align-middle">●</span> are required</span>
+                      </li>
+                    </ul>
+                    <style>{`
+                      @keyframes bounce-slow { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+                      .animate-bounce-slow { animation: bounce-slow 2.2s infinite cubic-bezier(.68,-0.55,.27,1.55); }
+                      .cat-tail { transform-origin: 67px 68px; animation: tail-wag 1.8s infinite alternate ease-in-out; }
+                      @keyframes tail-wag { 0% { transform: rotate(-12deg); } 100% { transform: rotate(20deg); } }
+                    `}</style>
+                  </div>
+                )}
+                
+                {/* Judge table */}
+                {judges.length > 0 && (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full rounded-2xl bg-white/95 shadow border border-gray-200">
                 <thead>
-                  <tr className="cfa-table-header">
-                    <th className="text-left py-2 pl-4 w-20">Ring #</th>
-                    <th className="text-left py-2 w-48">Judge Name <span className="text-red-500">*</span></th>
-                    <th className="text-left py-2 w-40">Acronym <span className="text-red-500">*</span></th>
-                    <th className="text-left py-2 w-48">Ring Type <span className="text-red-500">*</span></th>
-                    <th className="text-left py-2 w-12"></th>
+                        <tr>
+                          <th className="uppercase text-xs font-bold tracking-wider text-slate-700 bg-white border-b border-zinc-200 py-2 px-3 text-left font-serif w-20">Ring #</th>
+                          <th className="uppercase text-xs font-bold tracking-wider text-slate-700 bg-white border-b border-zinc-200 py-2 px-3 text-left font-serif w-48">Judge Name <span className="text-red-500 text-base">●</span></th>
+                          <th className="uppercase text-xs font-bold tracking-wider text-slate-700 bg-white border-b border-zinc-200 py-2 px-3 text-left font-serif w-28">Acronym <span className="text-red-500 text-base">●</span></th>
+                          <th className="uppercase text-xs font-bold tracking-wider text-slate-700 bg-white border-b border-zinc-200 py-2 px-3 text-left font-serif w-40">Ring Type <span className="text-red-500 text-base">●</span></th>
+                          <th className="bg-white border-b border-zinc-200 py-2 px-3 w-12"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {judges.map((judge, index) => (
-                    <tr key={judge.id} className="cfa-table-row">
-                      <td className="py-2 pl-4 align-top w-20">
-                        <div className="space-y-1">
-                          <div className="flex items-center justify-center w-16 h-8 bg-gray-100 border border-gray-300 rounded-md text-sm font-medium text-gray-700">
-                            {index + 1}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-2 align-top w-48">
-                        <div className="space-y-1">
-                          <input
-                            type="text"
-                            value={judge.name}
-                            onChange={(e) => updateJudge(judge.id, 'name', e.target.value)}
-                            onFocus={() => handleFieldFocus(`judge${index}Name`)}
-                            onBlur={handleFieldBlur}
-                            className={`cfa-input w-40 text-sm ${errors[`judge${index}Name`] ? 'cfa-input-error' : ''}`}
-                            placeholder="Enter judge name"
-                          />
-                          <div className="h-3">
-                            {errors[`judge${index}Name`] && <div className="text-red-500 text-xs">{errors[`judge${index}Name`]}</div>}
-                            {focusedField === `judge${index}Name` && !errors[`judge${index}Name`] && <div className="text-gray-500 text-xs">Enter the judge's full name</div>}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-2 align-top w-40">
-                        <div className="space-y-1">
-                          <input
-                            type="text"
-                            value={judge.acronym}
-                            onChange={(e) => updateJudge(judge.id, 'acronym', e.target.value)}
-                            onFocus={() => handleFieldFocus(`judge${index}Acronym`)}
-                            onBlur={handleFieldBlur}
-                            className={`cfa-input w-32 text-sm ${errors[`judge${index}Acronym`] ? 'cfa-input-error' : ''}`}
-                            placeholder="Acronym"
-                            maxLength={6}
-                          />
-                          <div className="h-3">
-                            {errors[`judge${index}Acronym`] && <div className="text-red-500 text-xs">{errors[`judge${index}Acronym`]}</div>}
-                            {focusedField === `judge${index}Acronym` && !errors[`judge${index}Acronym`] && <div className="text-gray-500 text-xs">Enter judge's acronym (max 6 characters)</div>}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-2 align-top w-48">
-                        <div className="space-y-1">
-                          <select
-                            value={judge.ringType}
-                            onChange={(e) => updateJudge(judge.id, 'ringType', e.target.value)}
-                            onFocus={() => handleFieldFocus(`judge${index}RingType`)}
-                            onBlur={handleFieldBlur}
-                            className="cfa-input w-40 text-sm"
-                          >
-                            <option value="Longhair">Longhair</option>
-                            <option value="Shorthair">Shorthair</option>
-                            <option value="Allbreed">Allbreed</option>
-                            <option value="Double Specialty">Double Specialty</option>
-                          </select>
-                          <div className="h-3">
-                            {focusedField === `judge${index}RingType` && !judge.ringType && <div className="text-gray-500 text-xs">Select the judge's ring type</div>}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-2 text-center align-top w-12">
-                        <div className="pt-0">
-                          <button
-                            onClick={() => {
-                              const newJudges = judges.filter(j => j.id !== judge.id);
-                              const reindexedJudges = reindexJudges(newJudges);
-                              setJudges(reindexedJudges);
-                              setShowData(prev => ({ ...prev, numberOfJudges: reindexedJudges.length }));
-                            }}
-                            className="w-6 h-6 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-                            title="Remove judge"
-                          >
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
-                        </div>
-                      </td>
+                    <tr key={judge.id} className={index % 2 === 0 ? "bg-white" : "bg-zinc-50"} style={{ height: 40 }}>
+                      <td className="px-3 py-2 align-middle"><span className="inline-block min-w-[2rem] px-2 py-1 rounded-full bg-gradient-to-r from-amber-300 to-amber-200 text-slate-800 font-bold text-xs shadow font-mono text-center border border-amber-100">{index + 1}</span></td>
+                      <td className="px-3 py-2 align-middle"><input type="text" value={judge.name} onChange={e => updateJudge(judge.id, 'name', e.target.value)} onFocus={() => handleFieldFocus(`judge${index}Name`)} onBlur={handleFieldBlur} className="w-full rounded-full px-3 py-1.5 text-sm font-medium border border-zinc-200 focus:border-amber-400 focus:ring-2 focus:ring-amber-100 !focus:border-amber-400 !focus:ring-amber-100 transition-all duration-200 shadow-sm bg-white placeholder-zinc-300" placeholder="Enter judge name" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }} /></td>
+                      <td className="px-3 py-2 align-middle"><input type="text" value={judge.acronym} onChange={e => updateJudge(judge.id, 'acronym', e.target.value)} onFocus={() => handleFieldFocus(`judge${index}Acronym`)} onBlur={handleFieldBlur} className="w-full rounded-full px-3 py-1.5 text-sm font-medium border border-zinc-200 focus:border-amber-400 focus:ring-2 focus:ring-amber-100 !focus:border-amber-400 !focus:ring-amber-100 transition-all duration-200 shadow-sm bg-white placeholder-zinc-300" placeholder="Acronym" maxLength={5} style={{ fontFamily: 'Arial, Helvetica, sans-serif' }} /></td>
+                      <td className="px-3 py-2 align-middle"><CustomSelect options={["Longhair", "Shorthair", "Allbreed", "Double Specialty"]} value={judge.ringType} onChange={val => updateJudge(judge.id, 'ringType', val)} ariaLabel="Ring Type" className="min-w-[120px] focus:border-amber-400 focus:ring-2 focus:ring-amber-100 !focus:border-amber-400 !focus:ring-amber-100" /></td>
+                      <td className="px-3 py-2 align-middle text-center"><div className="flex items-center justify-center"><div className="relative group"><button type="button" onClick={() => { const newJudges = judges.filter(j => j.id !== judge.id); const reindexedJudges = reindexJudges(newJudges); setJudges(reindexedJudges); setShowData(prev => ({ ...prev, numberOfJudges: reindexedJudges.length })); }} className="p-1.5 rounded-full bg-gradient-to-br from-zinc-100 to-zinc-200 hover:from-amber-200 hover:to-amber-300 shadow hover:shadow-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-amber-400" title="Remove judge" onMouseEnter={e => e.currentTarget.parentElement?.classList.add('show-tooltip')} onMouseLeave={e => e.currentTarget.parentElement?.classList.remove('show-tooltip')}><svg className="w-4 h-4 text-amber-700 group-hover:text-red-600 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg><span className="sr-only">Remove judge</span><span className="absolute -top-7 left-1/2 -translate-x-1/2 scale-0 group-[.show-tooltip]:scale-100 transition-transform duration-200 bg-amber-700 text-white text-xs rounded px-2 py-1 shadow-lg pointer-events-none z-10">Remove judge</span></button></div></div></td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              {errors.judgeNames && (
-                <div className="text-red-500 text-sm mt-2 p-2 bg-red-50 rounded">
-                  {errors.judgeNames}
                 </div>
               )}
             </div>
           )}
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex flex-wrap gap-4 justify-center mt-8">
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={handleSaveToCSVClick}
-              className="cfa-button"
-            >
-              Save to CSV
-            </button>
-            <button
-              type="button"
-              onClick={handleRestoreFromCSVClick}
-              className="cfa-button-secondary"
-              style={{ backgroundColor: '#1e3a8a', borderColor: '#1e3a8a', color: 'white' }}
-            >
-              Load from CSV
-            </button>
-            <button
-              type="button"
-              onClick={handleResetClick}
-              className="cfa-button-secondary"
-            >
-              Reset
-            </button>
-            <button
-              type="button"
-              onClick={handleFillTestData}
-              className="cfa-button-secondary"
-              style={{ backgroundColor: '#ea580c', borderColor: '#ea580c', color: 'white' }}
-            >
-              Fill Test Data
-            </button>
           </div>
         </div>
+
+        {/* Premium Action Buttons */}
+        <ActionButtons
+          onSaveToCSV={handleSaveToCSVClick}
+          onLoadFromCSV={handleRestoreFromCSVClick}
+          onReset={handleResetClick}
+          onFillTestData={handleFillTestData}
+        />
       </div>
     </div>
   );

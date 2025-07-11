@@ -9,6 +9,7 @@ import PremiershipTab from './components/PremiershipTab'
 import KittenTab from './components/KittenTab'
 import HouseholdPetTab from './components/HouseholdPetTab'
 import SettingsPanel from './components/SettingsPanel'
+import Tooltip from './components/Tooltip'
 
 interface Judge {
   id: number;
@@ -500,7 +501,7 @@ function App() {
 
       {/* Header */}
       <header className="cfa-header">
-        <div className="max-w-7xl mx-auto px-4 py-6">
+        <div className="max-w-7xl mx-auto px-8 py-8">
           <div className="flex items-center justify-between">
             {/* Logo */}
             <div className="flex items-center">
@@ -509,97 +510,189 @@ function App() {
             
             {/* Centered Title */}
             <div className="flex-1 flex flex-col items-center justify-center">
-              <h1 className="text-2xl font-bold cfa-header-text text-center">
+              <h1
+                className="text-3xl md:text-4xl font-bold modern-header-gradient text-center"
+                style={{
+                  background: 'linear-gradient(90deg, #a89256 0%, #d6cfa1 60%, #e5e4e2 100%)',
+                  color: '#b7a97a',
+                  WebkitBackgroundClip: 'text',
+                  backgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  textShadow: '0 2px 8px #b7a97a33',
+                  fontFamily: 'Inter, Montserrat, Arial, Helvetica Neue, sans-serif',
+                  letterSpacing: '0.01em',
+                  margin: 0,
+                  padding: 0,
+                }}
+              >
                 CFA Master Clerk Entry Tool
               </h1>
-              <p className="cfa-header-subtitle text-sm text-center">Professional Cat Show Data Management</p>
+              <p
+                className="mt-1 text-sm md:text-base font-normal text-center"
+                style={{
+                  color: '#d6d5ce', // soft platinum/muted gray
+                  fontWeight: 400,
+                  letterSpacing: '0.03em',
+                  fontFamily: 'Inter, Montserrat, Arial, Helvetica Neue, sans-serif',
+                  background: 'none',
+                  border: 'none',
+                  boxShadow: 'none',
+                  margin: 0,
+                  padding: 0,
+                }}
+              >
+                Professional Cat Show Data Management
+              </p>
             </div>
             
-            {/* Version Badge */}
-            <div className="cfa-badge">
-              <span className="mr-1">●</span>
-              Version 0.1.0
+            {/* Zoom Controls and Settings */}
+            <div className="flex items-center gap-3">
+              {/* Zoom Controls */}
+              <div className="flex items-center gap-2 bg-black/20 backdrop-blur-sm rounded-lg px-3 py-2 border border-[#C7B273]/30">
+                <button
+                  onClick={handleZoomOut}
+                  className="w-8 h-8 flex items-center justify-center rounded-md bg-[#C7B273]/20 hover:bg-[#C7B273]/30 transition-colors duration-200 text-[#C7B273] hover:text-white"
+                  title="Zoom Out (Shift + Scroll)"
+                >
+                  <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
+                    <path d="M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                </button>
+                <span className="text-sm font-medium text-[#C7B273] min-w-[3rem] text-center">
+                  {zoomLevel}%
+                </span>
+                <button
+                  onClick={handleZoomIn}
+                  className="w-8 h-8 flex items-center justify-center rounded-md bg-[#C7B273]/20 hover:bg-[#C7B273]/30 transition-colors duration-200 text-[#C7B273] hover:text-white"
+                  title="Zoom In (Shift + Scroll)"
+                >
+                  <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
+                    <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                </button>
+              </div>
+              
+              {/* Settings Gear */}
+              <button
+                onClick={() => setIsSettingsOpen(true)}
+                className="w-10 h-10 flex items-center justify-center rounded-lg bg-[#C7B273]/20 hover:bg-[#C7B273]/30 transition-all duration-200 text-[#C7B273] hover:text-white border border-[#C7B273]/30 hover:border-[#C7B273]/50"
+                title="Settings"
+              >
+                <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
+                  <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke="currentColor" strokeWidth="2"/>
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1Z" stroke="currentColor" strokeWidth="2"/>
+                </svg>
+              </button>
             </div>
           </div>
         </div>
       </header>
 
       {/* Tab Navigation */}
-      <div className="cfa-tab-nav">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            {/* Tabs */}
-            <div className="flex space-x-2">
-              {tabs.map(tab => (
-                <div key={tab.id} className="relative flex items-center group">
-                  <button
-                    onClick={() => !tab.disabled && setActiveTab(tab.id)}
-                    className={`cfa-tab ${activeTab === tab.id ? 'cfa-tab-active' : 'text-gray-700'} ${tab.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    disabled={tab.disabled}
-                    tabIndex={tab.disabled ? -1 : 0}
-                    aria-disabled={tab.disabled}
-                  >
-                    {tab.name}
-                  </button>
-                  {/* Tooltip for disabled tabs - positioned outside the button */}
-                  {tab.disabled && (
-                    <div className="absolute left-1/2 -translate-x-1/2 -mb-2 z-20 hidden group-hover:block">
-                      <div className="bg-white text-gray-800 text-xs rounded-lg px-3 py-2 shadow-lg border border-gray-300 whitespace-nowrap min-w-max flex items-center gap-2">
-                        <span className="text-orange-500 font-bold">⚠</span>
-                        Complete all required fields in the General tab to continue.
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-            {/* Zoom + Settings Controls */}
-            <div className="flex items-center space-x-0">
-              {/* Zoom Controls */}
-              <div className="flex items-center bg-gradient-to-br from-slate-800 to-slate-600 border border-slate-500/30 rounded-full shadow-lg h-9 ring-0 transition-all duration-200">
-                <button
-                  onClick={handleZoomOut}
-                  className="p-1 hover:bg-amber-400/10 hover:ring-2 hover:ring-amber-400/60 rounded-full transition-all"
-                  title="Zoom Out (Shift + Scroll Down)"
-                  style={{ height: '28px', width: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                >
-                  <svg className="w-4 h-4 text-slate-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7" />
-                  </svg>
-                </button>
-                <span className="text-xs text-slate-100 font-medium min-w-[3rem] text-center select-none">
-                  {zoomLevel}%
-                </span>
-                <button
-                  onClick={handleZoomIn}
-                  className="p-1 hover:bg-amber-400/10 hover:ring-2 hover:ring-amber-400/60 rounded-full transition-all"
-                  title="Zoom In (Shift + Scroll Up)"
-                  style={{ height: '28px', width: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                >
-                  <svg className="w-4 h-4 text-slate-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7" />
-                  </svg>
-                </button>
-              </div>
-              {/* Settings Button */}
+      {/* --- Refined, business-class tab bar --- */}
+      <div className="w-full flex justify-center items-center py-4" style={{ background: 'rgba(20,20,20,0.92)', borderBottom: '2px solid #C7B273' }}>
+        <div className="flex gap-2 px-2">
+          {/* General Tab */}
+          <button
+            className={`flex items-center gap-2 px-5 py-2 rounded-full font-bold text-base transition-all duration-200 focus:outline-none modern-tab-font border-b-2 ${activeTab === 'general' ? 'border-[#C7B273] text-[#C7B273] shadow-gold' : 'border-transparent text-gray-200 hover:border-[#C7B273] hover:text-[#C7B273]'}`}
+            onClick={() => setActiveTab('general')}
+            aria-current={activeTab === 'general'}
+          >
+            <svg width="18" height="18" fill="none" viewBox="0 0 20 20"><rect x="3" y="7" width="14" height="10" rx="2" stroke="#C7B273" strokeWidth="2"/><rect x="7" y="3" width="6" height="4" rx="1" stroke="#C7B273" strokeWidth="2"/></svg>
+            General
+          </button>
+          {/* Championship Tab */}
+          {championshipTabDisabled ? (
+            <Tooltip content="Complete General Info to unlock.">
               <button
-                onClick={() => setIsSettingsOpen(true)}
-                className="ml-2 p-0.5 bg-gradient-to-br from-slate-800 to-slate-600 border border-slate-500/30 rounded-full shadow-lg backdrop-blur-sm flex items-center justify-center h-9 w-9 transition-all duration-200 group focus:outline-none focus:ring-2 focus:ring-amber-400/80"
-                title="Settings"
-                style={{ marginLeft: '8px' }}
+                className={`flex items-center gap-2 px-5 py-2 rounded-full font-bold text-base transition-all duration-200 focus:outline-none modern-tab-font border-b-2 disabled`}
+                aria-disabled="true"
+                tabIndex={-1}
               >
-                <svg
-                  className="w-6 h-6 text-slate-100 drop-shadow group-hover:scale-110 group-hover:rotate-12 group-hover:drop-shadow-[0_0_8px_rgba(245,197,24,0.7)] transition-transform duration-200"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
+                <svg width="18" height="18" fill="none" viewBox="0 0 20 20"><path d="M10 2l2.39 4.84 5.34.78-3.87 3.77.91 5.32L10 13.27l-4.77 2.51.91-5.32-3.87-3.77 5.34-.78L10 2z" stroke="#C7B273" strokeWidth="2" fill="none"/></svg>
+                Championship
               </button>
-            </div>
-          </div>
+            </Tooltip>
+          ) : (
+            <button
+              className={`flex items-center gap-2 px-5 py-2 rounded-full font-bold text-base transition-all duration-200 focus:outline-none modern-tab-font border-b-2 ${activeTab === 'championship' ? 'border-[#C7B273] text-[#C7B273] shadow-gold' : 'border-transparent text-gray-200 hover:border-[#C7B273] hover:text-[#C7B273]'}`}
+              onClick={() => setActiveTab('championship')}
+              aria-disabled={false}
+              tabIndex={0}
+            >
+              <svg width="18" height="18" fill="none" viewBox="0 0 20 20"><path d="M10 2l2.39 4.84 5.34.78-3.87 3.77.91 5.32L10 13.27l-4.77 2.51.91-5.32-3.87-3.77 5.34-.78L10 2z" stroke="#C7B273" strokeWidth="2" fill="none"/></svg>
+              Championship
+            </button>
+          )}
+          {/* Kittens Tab */}
+          {kittenTabDisabled ? (
+            <Tooltip content="Complete General Info to unlock.">
+              <button
+                className={`flex items-center gap-2 px-5 py-2 rounded-full font-bold text-base transition-all duration-200 focus:outline-none modern-tab-font border-b-2 disabled`}
+                aria-disabled="true"
+                tabIndex={-1}
+              >
+                <svg width="18" height="18" fill="none" viewBox="0 0 20 20"><ellipse cx="10" cy="13" rx="6" ry="4" stroke="#C7B273" strokeWidth="2"/><circle cx="7" cy="8" r="2" stroke="#C7B273" strokeWidth="2"/><circle cx="13" cy="8" r="2" stroke="#C7B273" strokeWidth="2"/></svg>
+                Kittens
+              </button>
+            </Tooltip>
+          ) : (
+                  <button
+              className={`flex items-center gap-2 px-5 py-2 rounded-full font-bold text-base transition-all duration-200 focus:outline-none modern-tab-font border-b-2 ${activeTab === 'kitten' ? 'border-[#C7B273] text-[#C7B273] shadow-gold' : 'border-transparent text-gray-200 hover:border-[#C7B273] hover:text-[#C7B273]'}`}
+              onClick={() => setActiveTab('kitten')}
+              aria-disabled={false}
+              tabIndex={0}
+            >
+              <svg width="18" height="18" fill="none" viewBox="0 0 20 20"><ellipse cx="10" cy="13" rx="6" ry="4" stroke="#C7B273" strokeWidth="2"/><circle cx="7" cy="8" r="2" stroke="#C7B273" strokeWidth="2"/><circle cx="13" cy="8" r="2" stroke="#C7B273" strokeWidth="2"/></svg>
+              Kittens
+                  </button>
+          )}
+          {/* Premiership Tab */}
+          {premiershipTabDisabled ? (
+            <Tooltip content="Complete General Info to unlock.">
+              <button
+                className={`flex items-center gap-2 px-5 py-2 rounded-full font-bold text-base transition-all duration-200 focus:outline-none modern-tab-font border-b-2 disabled`}
+                aria-disabled="true"
+                tabIndex={-1}
+              >
+                <svg width="18" height="18" fill="none" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" stroke="#C7B273" strokeWidth="2"/><text x="10" y="15" textAnchor="middle" fontSize="10" fill="#C7B273">PR</text></svg>
+                Premiership
+              </button>
+            </Tooltip>
+          ) : (
+            <button
+              className={`flex items-center gap-2 px-5 py-2 rounded-full font-bold text-base transition-all duration-200 focus:outline-none modern-tab-font border-b-2 ${activeTab === 'premiership' ? 'border-[#C7B273] text-[#C7B273] shadow-gold' : 'border-transparent text-gray-200 hover:border-[#C7B273] hover:text-[#C7B273]'}`}
+              onClick={() => setActiveTab('premiership')}
+              aria-disabled={false}
+              tabIndex={0}
+            >
+              <svg width="18" height="18" fill="none" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" stroke="#C7B273" strokeWidth="2"/><text x="10" y="15" textAnchor="middle" fontSize="10" fill="#C7B273">PR</text></svg>
+              Premiership
+            </button>
+          )}
+          {/* Household Pet Tab */}
+          {showData.householdPetCount <= 0 ? (
+            <Tooltip content="Complete General Info to unlock.">
+              <button
+                className={`flex items-center gap-2 px-5 py-2 rounded-full font-bold text-base transition-all duration-200 focus:outline-none modern-tab-font border-b-2 disabled`}
+                aria-disabled="true"
+                tabIndex={-1}
+              >
+                <svg width="18" height="18" fill="none" viewBox="0 0 20 20"><rect x="4" y="8" width="12" height="8" rx="2" stroke="#C7B273" strokeWidth="2"/><ellipse cx="10" cy="6" rx="4" ry="3" stroke="#C7B273" strokeWidth="2"/></svg>
+                Household Pet
+              </button>
+            </Tooltip>
+          ) : (
+            <button
+              className={`flex items-center gap-2 px-5 py-2 rounded-full font-bold text-base transition-all duration-200 focus:outline-none modern-tab-font border-b-2 ${activeTab === 'household' ? 'border-[#C7B273] text-[#C7B273] shadow-gold' : 'border-transparent text-gray-200 hover:border-[#C7B273] hover:text-[#C7B273]'}`}
+              onClick={() => setActiveTab('household')}
+              aria-disabled={false}
+              tabIndex={0}
+            >
+              <svg width="18" height="18" fill="none" viewBox="0 0 20 20"><rect x="4" y="8" width="12" height="8" rx="2" stroke="#C7B273" strokeWidth="2"/><ellipse cx="10" cy="6" rx="4" ry="3" stroke="#C7B273" strokeWidth="2"/></svg>
+              Household Pet
+            </button>
+          )}
         </div>
       </div>
 
@@ -623,6 +716,17 @@ function App() {
         onClose={() => setIsSettingsOpen(false)}
         showSuccess={showSuccess}
       />
+      {/* App Version Badge Footer */}
+      <footer className="fixed bottom-4 right-4 z-50">
+        <div
+          className="flex items-center px-4 py-1.5 rounded-full bg-black/70 border border-[#C7B273] shadow-lg text-[#C7B273] font-semibold text-sm backdrop-blur-md transition-all duration-200 hover:shadow-gold cursor-pointer select-none"
+          title="App Version"
+          style={{ boxShadow: '0 2px 12px 0 #C7B27355, 0 0 8px 2px #C7B27322' }}
+        >
+          <svg width="10" height="10" fill="#C7B273" className="mr-2" viewBox="0 0 10 10"><circle cx="5" cy="5" r="5"/></svg>
+          Version 0.1.0
+        </div>
+      </footer>
     </div>
   )
 }

@@ -1,7 +1,10 @@
-import React, { useMemo, useRef } from 'react';
-import * as kittenValidation from '../validation/kittenValidation';
-import { handleSaveToCSV } from '../utils/formActions';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Modal from './Modal';
+import ActionButtons from './ActionButtons';
+import { validateKittenTab } from '../validation/kittenValidation';
+import type { KittenValidationInput } from '../validation/kittenValidation';
+import { handleSaveToCSV } from '../utils/formActions';
+import CustomSelect from './CustomSelect';
 
 interface Judge {
   id: number;
@@ -252,13 +255,13 @@ export default function KittenTab({
 
   // --- Validation ---
   const validate = () => {
-    const validationInput: kittenValidation.KittenValidationInput = {
+    const validationInput: KittenValidationInput = {
       columns,
       showAwards: kittenTabData.showAwards || {},
       voidedShowAwards: kittenTabData.voidedShowAwards || {},
       kittenCounts
     };
-    return kittenValidation.validateKittenTab(validationInput);
+    return validateKittenTab(validationInput);
   };
 
   // --- Validate on blur ---
@@ -379,65 +382,103 @@ export default function KittenTab({
         }}
         onCancel={() => setIsResetModalOpen(false)}
       />
-      <div className="cfa-section">
-        <h2 className="cfa-section-header flex items-center justify-between">
-          Kittens Finals
-          {/* Jump to Ring Dropdown */}
-          <div className="flex-1 flex justify-end items-center">
-            <select
-              className="ml-4 px-3 py-2 rounded-lg border border-gray-300 bg-white text-sm font-medium shadow-sm focus:outline-none focus:border-cfa-gold focus:ring-2 focus:ring-cfa-gold/30 transition-all duration-200 ring-jump-dropdown"
-              style={{ minWidth: 180, maxWidth: 260 }}
-              onChange={handleRingJump}
-              defaultValue=""
+
+      {/* Kittens Finals - Premium Design */}
+      <div className="group relative">
+        {/* Sticky header and dropdown */}
+        <div className="sticky top-0 z-30 bg-white flex items-center justify-between px-6 pt-4 pb-3 gap-4">
+          {/* Left: Icon, Title, Arrow */}
+          <div className="flex items-center min-w-0">
+            <span className="p-1.5 bg-gradient-to-br from-green-500 to-emerald-400 rounded-xl shadow flex-shrink-0">
+              {/* Minimal Cat Face Icon */}
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.5 9.5L3 5l4.5 2M19.5 9.5L21 5l-4.5 2M12 17c-4 0-7-2.5-7-6.5C5 7 8 5 12 5s7 2 7 5.5c0 4-3 6.5-7 6.5zm-2 0c0 1.5 2 2 2 2s2-.5 2-2" />
+                <circle cx="9" cy="10" r="1" fill="white"/>
+                <circle cx="15" cy="10" r="1" fill="white"/>
+              </svg>
+            </span>
+            <span className="text-xl font-bold text-green-700 ml-3">Kittens Finals</span>
+            <button
+              onClick={() => {
+                if (tableContainerRef.current) {
+                  tableContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+              }}
+              className="ml-3 w-7 h-7 flex items-center justify-center rounded-lg border border-green-400 bg-white shadow-sm transition-all duration-200 hover:border-green-500 hover:bg-green-50/70 hover:shadow-green-200/60 focus:outline-none focus:ring-2 focus:ring-green-300 group"
+              aria-label="Scroll to Top"
             >
-              <option value="" disabled>Jump to Ring...</option>
-              {columns.map((col, idx) => (
-                <option key={idx} value={col.judge.id}>
-                  Ring {col.judge.id} - {col.judge.acronym}
-                </option>
-              ))}
-            </select>
+              <svg
+                width="16"
+                height="16"
+                fill="none"
+                stroke="#22c55e"
+                strokeWidth="1.7"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="transition-colors duration-200 rotate-180 group-hover:stroke-green-500"
+                viewBox="0 0 24 24"
+              >
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
           </div>
-        </h2>
-        <div className="cfa-table overflow-x-auto">
-          <div className="table-container" ref={tableContainerRef}>
-            <table className="border-collapse" style={{ width: 'auto', tableLayout: 'fixed' }}>
+          {/* Right: Minimal Dropdown, inline kitten icon in selected value only */}
+          <select
+            className="min-w-[200px] max-w-[240px] w-[220px] font-semibold text-base border border-green-200 rounded px-4 py-2 bg-white focus:ring-2 focus:ring-green-200 focus:outline-none transition-all duration-200 hover:border-green-300"
+            onChange={handleRingJump}
+            defaultValue=""
+          >
+            <option value="" disabled>🐱 Jump to Ring...</option>
+            {columns.map((col, idx) => (
+              <option key={idx} value={col.judge.id}>
+                Ring {col.judge.id} - {col.judge.acronym}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="relative">
+          {/* Table scroll container with floating scroll buttons outside to the right */}
+          <div
+            className="outer-table-scroll-container overflow-x-auto rounded-tl-xl rounded-tr-xl rounded-bl-xl rounded-br-xl border border-green-200 bg-white shadow-lg"
+            ref={tableContainerRef}
+          >
+            <table className="border-collapse w-auto table-fixed divide-y divide-gray-200 rounded-tl-xl rounded-tr-xl rounded-bl-xl rounded-br-xl bg-white">
               <thead>
                 {/* Header Row 1: Ring Numbers */}
-                <tr className="cfa-table-header sticky-header sticky-header-1">
-                  <th className="text-left py-1 pl-4 font-medium border-r border-gray-300 frozen-column" style={{ width: '80px', minWidth: '80px' }}></th>
+                <tr className="bg-white border-b border-green-200">
+                  <th className="text-left pl-6 font-bold text-green-700 border-r border-green-200 frozen-column" style={{ width: '140px', minWidth: '140px' }}></th>
                   {columns.map((column, index) => (
                     <th
                       id={`ring-th-${index}`}
                       key={`ring-${index}`}
-                      className={`text-center py-1 px-1 font-medium text-sm border-r border-gray-300${focusedColumnIndex === index ? ' ring-glow' : ''}`}
-                      style={{ width: '120px', minWidth: '120px' }}
+                      className={`text-center py-3 px-2 font-bold text-green-700 border-r border-green-200${focusedColumnIndex === index ? ' bg-green-50 border-l-4 border-r-4 border-green-300 z-10' : ''} whitespace-nowrap`}
+                      style={{ width: 190, minWidth: 190, maxWidth: 190 }}
                     >
                       Ring {column.judge.id}
                     </th>
                   ))}
                 </tr>
                 {/* Header Row 2: Judge Acronyms */}
-                <tr className="cfa-table-header sticky-header sticky-header-2">
-                  <th className="text-left py-1 pl-4 font-medium border-r border-gray-300 frozen-column" style={{ width: '80px', minWidth: '80px' }}></th>
+                <tr className="bg-white border-b border-green-200">
+                  <th className="text-left py-2 pl-6 font-semibold text-green-700 border-r border-green-200 frozen-column" style={{ width: '140px', minWidth: '140px' }}></th>
                   {columns.map((column, index) => (
                     <th
                       key={`acronym-${index}`}
-                      className={`text-center py-1 px-1 font-medium text-sm border-r border-gray-300${focusedColumnIndex === index ? ' ring-glow' : ''}`}
-                      style={{ width: '120px', minWidth: '120px' }}
+                      className={`text-center py-2 px-2 font-semibold text-green-700 border-r border-green-200${focusedColumnIndex === index ? ' bg-green-50 border-l-4 border-r-4 border-green-300 z-10' : ''}`}
+                      style={{ width: 120, minWidth: 120 }}
                     >
                       {column.judge.acronym}
                     </th>
                   ))}
                 </tr>
                 {/* Header Row 3: Ring Types */}
-                <tr className="cfa-table-header sticky-header sticky-header-3">
-                  <th className="text-left py-1 pl-4 font-medium border-r border-gray-300 frozen-column" style={{ width: '80px', minWidth: '80px' }}>Position</th>
+                <tr className="bg-white border-b border-green-200">
+                  <th className="text-left py-2 pl-6 font-semibold text-green-700 border-r border-green-200 frozen-column" style={{ width: '140px', minWidth: '140px' }}>Position</th>
                   {columns.map((column, index) => (
                     <th
                       key={`type-${index}`}
-                      className={`text-center py-1 px-1 font-medium text-sm border-r border-gray-300${focusedColumnIndex === index ? ' ring-glow' : ''}`}
-                      style={{ width: '120px', minWidth: '120px' }}
+                      className={`text-center py-2 px-2 font-semibold text-green-700 border-r border-green-200${focusedColumnIndex === index ? ' bg-green-50 border-l-4 border-r-4 border-green-300 z-10' : ''}`}
+                      style={{ width: 120, minWidth: 120 }}
                     >
                       {column.specialty}
                     </th>
@@ -445,26 +486,35 @@ export default function KittenTab({
                 </tr>
               </thead>
               <tbody>
-                                {/* Kittens Final Section (Top 10/15) */}
+                {/* Kittens Final Section (Top 10/15) */}
                 {Array.from({ length: maxFinalRows }, (_, i) => (
-                  <tr key={`kitten-final-${i}`} className="cfa-table-row">
-                    <td className="py-2 pl-4 font-medium text-sm border-r border-gray-300 bg-white frozen-column" style={{ width: '80px', minWidth: '80px' }}>
-                      {i + 1}{i >= 10 ? '*' : ''}
+                  <tr key={`kitten-final-${i}`} className={`cfa-table-row transition-all duration-150 ${i % 2 === 0 ? 'bg-white' : 'bg-green-50'} hover:bg-green-100/40 hover:shadow-sm`}>
+                    <td className="py-2 pl-4 font-medium text-sm border-r border-gray-200 bg-transparent frozen-column" style={{ width: '140px', minWidth: '140px' }}>
+                      {i + 1}{i >= 10 ? <span className="text-green-400 font-bold">*</span> : ''}
                     </td>
                     {columns.map((col, colIdx) => {
                       const cell = getShowAward(colIdx, i) || { catNumber: '', status: 'KIT' };
                       const voided = getVoidState(colIdx, i);
                       const maxRowsForThisColumn = getAwardCount(col.specialty);
+                      const errorKey = `${colIdx}-${i}`;
                       
                       // Only show input if this row is within the breakpoint for this column
                       if (i < maxRowsForThisColumn) {
                         return (
-                          <td key={`kitten-final-${i}-${colIdx}`} className={`py-2 px-2 border-r border-gray-300 align-top${focusedColumnIndex === colIdx ? ' ring-glow' : ''}`}> 
+                          <td key={`kitten-final-${i}-${colIdx}`} className={`py-2 px-2 border-r border-gray-200 align-top transition-all duration-150 ${focusedColumnIndex === colIdx ? ' bg-green-50 border-l-4 border-r-4 border-green-300 z-10' : ''} hover:bg-green-100/30 whitespace-nowrap overflow-x-visible`}
+                            style={{
+                              width: (cell.catNumber && cell.catNumber.trim()) ? 130 : 110,
+                              minWidth: (cell.catNumber && cell.catNumber.trim()) ? 130 : 110,
+                              maxWidth: (cell.catNumber && cell.catNumber.trim()) ? 130 : 110,
+                              transition: 'width 0.2s'
+                            }}
+                          > 
                             <div className="flex flex-col items-start">
-                              <div className="flex gap-1 items-center">
+                              <div className="flex gap-2 items-center">
+                                {/* Cat # input: rounded-md, semi-transparent, focus ring, shadow */}
                                 <input
                                   type="text"
-                                  className={`w-14 h-7 text-xs text-center border rounded px-0.5 ${getBorderStyle(`${colIdx}-${i}`)} ${voided ? 'voided-input' : ''} focus:outline-none focus:border-cfa-gold`}
+                                  className={`w-16 h-9 text-sm text-center font-medium rounded-md px-3 bg-white/60 border border-green-200 shadow focus:border-green-400 focus:ring-2 focus:ring-green-100 focus:bg-white/90 focus:shadow-lg transition-all duration-200 placeholder-zinc-300 ${voided ? 'opacity-50 grayscale pointer-events-none line-through' : ''} ${getBorderStyle(errorKey)}`}
                                   placeholder="Cat #"
                                   value={cell.catNumber ?? ''}
                                   onChange={e => updateShowAward(colIdx, i, 'catNumber', e.target.value)}
@@ -487,38 +537,63 @@ export default function KittenTab({
                                     }
                                   }}
                                 />
-                                <select
-                                  className={`w-14 h-7 text-xs text-center border rounded px-0.5 ${getBorderStyle(`${colIdx}-${i}`)} ${voided ? 'voided-input' : ''} focus:outline-none focus:border-cfa-gold`}
+                                {/* Status select: green theme */}
+                                <CustomSelect
+                                  options={['KIT']}
                                   value="KIT"
-                                  disabled
-                                >
-                                  <option value="KIT">KIT</option>
-                                </select>
+                                  onChange={() => {}}
+                                  className="min-w-[70px] pointer-events-none opacity-80"
+                                  ariaLabel="Status"
+                                />
+                                {/* Void toggle: minimal, crisp, circular, green border, green gradient on check */}
                                 {cell.catNumber && (
-                                  <input
-                                    type="checkbox"
-                                    className="void-checkbox"
-                                    checked={voided}
-                                    onChange={() => {
-                                      const newVoided = !voided;
-                                      const catNumber = cell.catNumber;
-                                      
-                                      if (catNumber) {
-                                        // Iterate through all positions in the same column (colIdx)
-                                        for (let pos = 0; pos < maxFinalRows; pos++) {
-                                          const otherCell = getShowAward(colIdx, pos);
-                                          if (otherCell.catNumber === catNumber) {
-                                            setKittenTabDataVoidState(colIdx, pos, newVoided);
+                                  <div className="relative group/void">
+                                    <input
+                                      type="checkbox"
+                                      className="sr-only peer"
+                                      checked={voided}
+                                      onChange={e => {
+                                        const newVoided = e.target.checked;
+                                        const catNumber = cell.catNumber;
+                                        if (catNumber) {
+                                          for (let pos = 0; pos < maxFinalRows; pos++) {
+                                            const otherCell = getShowAward(colIdx, pos);
+                                            if (otherCell.catNumber === catNumber) {
+                                              setKittenTabDataVoidState(colIdx, pos, newVoided);
+                                            }
                                           }
                                         }
-                                      }
-                                    }}
-                                    disabled={!cell.catNumber}
-                                  />
+                                      }}
+                                      onFocus={() => setFocusedColumnIndex(colIdx)}
+                                      tabIndex={-1}
+                                      id={`void-toggle-${colIdx}-${i}`}
+                                    />
+                                    <label htmlFor={`void-toggle-${colIdx}-${i}`} className="w-5 h-5 flex items-center justify-center rounded-full border border-red-500 bg-white shadow-sm transition-all duration-200 cursor-pointer peer-checked:bg-white peer-checked:border-red-500 peer-checked:ring-2 peer-checked:ring-red-200 hover:ring-2 hover:ring-red-200 focus:ring-2 focus:ring-red-200">
+                                      {voided && (
+                                        <svg className="w-3 h-3 text-red-500 font-bold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                      )}
+                                    </label>
+                                    {/* Modern premium tooltip for void */}
+                                    <span className="absolute left-8 top-1/2 -translate-y-1/2 z-20 hidden group-hover/void:flex flex-row items-center">
+                                      {/* Arrow */}
+                                      <span className="w-0 h-0 mr-1 border-t-8 border-t-transparent border-b-8 border-b-transparent border-r-8 border-r-teal-300"></span>
+                                      {/* Tooltip Box */}
+                                      <span className="bg-white border border-teal-300 shadow-lg rounded-lg px-3 py-2 flex items-start gap-2 transition-all duration-200">
+                                        <svg className="w-4 h-4 text-teal-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <circle cx="12" cy="12" r="10" strokeWidth="2" />
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01" />
+                                        </svg>
+                                        <span className="text-sm font-medium text-teal-800 leading-snug">Mark this placement void.</span>
+                                      </span>
+                                    </span>
+                                  </div>
                                 )}
                               </div>
-                              {errors[`${colIdx}-${i}`] && (
-                                <div className="text-xs mt-1" style={getErrorStyle()}>{getCleanMessage(errors[`${colIdx}-${i}`])}</div>
+                              {/* Error message */}
+                              {errors[errorKey] && (
+                                <div className="text-xs mt-1" style={getErrorStyle()}>{getCleanMessage(errors[errorKey])}</div>
                               )}
                             </div>
                           </td>
@@ -526,7 +601,7 @@ export default function KittenTab({
                       } else {
                         // Show empty cell for rows beyond this column's breakpoint
                         return (
-                          <td key={`kitten-final-${i}-${colIdx}`} className={`py-2 px-2 border-r border-gray-300 align-top${focusedColumnIndex === colIdx ? ' ring-glow' : ''}`}>
+                          <td key={`kitten-final-${i}-${colIdx}`} className={`py-2 px-2 border-r border-gray-200 align-top transition-all duration-150 ${focusedColumnIndex === colIdx ? ' bg-green-50 border-l-4 border-r-4 border-green-300 z-10' : ''} hover:bg-green-100/30`}>
                             &nbsp;
                           </td>
                         );
@@ -538,33 +613,14 @@ export default function KittenTab({
             </table>
           </div>
         </div>
-                  {/* Action buttons (Save, Generate, Restore, Reset) - match PremiershipTab */}
-          <div className="flex flex-wrap gap-4 justify-center mt-8">
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={handleSaveToCSVClick}
-                className="cfa-button"
-              >
-                Save to CSV
-              </button>
-              <button
-                type="button"
-                onClick={handleRestoreFromCSVClick}
-                className="cfa-button-secondary"
-                style={{ backgroundColor: '#1e3a8a', borderColor: '#1e3a8a', color: 'white' }}
-              >
-                Load from CSV
-              </button>
-              <button
-                type="button"
-                onClick={handleResetClick}
-                className="cfa-button-secondary"
-              >
-                Reset
-              </button>
-            </div>
-          </div>
+
+        {/* Premium Action Buttons */}
+        <ActionButtons
+          onSaveToCSV={handleSaveToCSVClick}
+          onLoadFromCSV={handleRestoreFromCSVClick}
+          onReset={handleResetClick}
+          resetButtonText="Reset Tab"
+        />
       </div>
 
       {/* CSV Error Modal */}

@@ -1,6 +1,7 @@
 import { useState, useEffect, useImperativeHandle, useCallback, useRef } from 'react';
 import React from 'react';
 import Modal from './Modal';
+import ActionButtons from './ActionButtons';
 import { 
   validateChampionshipTab, 
   validateCatNumber,
@@ -8,6 +9,7 @@ import {
 } from '../validation/championshipValidation';
 import type { CellData } from '../validation/championshipValidation';
 import { handleSaveToCSV } from '../utils/formActions';
+import CustomSelect from './CustomSelect';
 
 interface Judge {
   id: number;
@@ -89,6 +91,18 @@ type ChampionshipTabData = {
 const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
   (props, ref) => {
     const { judges, championshipTotal, championshipCounts, showSuccess, showError, shouldFillTestData, onResetAllData, championshipTabData, setChampionshipTabData, getShowState, isActive, onCSVImport } = props;
+    // State for scroll icon direction (must be at the top, before any return)
+    const [scrollDown, setScrollDown] = useState(true);
+    // Handler for scroll button click (must be at the top, before any return)
+    const handleScrollButtonClick = () => {
+      if (scrollDown) {
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        setScrollDown(false);
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        setScrollDown(true);
+      }
+    };
     // State for dynamic table structure
     const [columns, setColumns] = useState<Column[]>([]);
     const [numAwardRows, setNumAwardRows] = useState(10);
@@ -887,18 +901,11 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
 
     // --- Handler: Update finals sections ---
 
-    if (judges.length === 0) {
+    // Loading guard: Only render table if judges and championshipTabData are ready
+    if (!judges.length || !columns.length) {
       return (
-        <div className="p-8 space-y-8">
-          <div className="cfa-section">
-            <h2 className="cfa-section-header">Championship Finals</h2>
-            <p className="text-gray-600 mb-6">Dynamic championship table based on judge information from the General tab.</p>
-            
-            <div className="text-center py-12">
-              <div className="cfa-badge cfa-badge-warning mb-4">No Judges Available</div>
-              <p className="text-gray-600">Please add judges in the General tab to populate the championship table.</p>
-            </div>
-          </div>
+        <div className="flex items-center justify-center min-h-[300px]">
+          <span className="text-violet-600 text-lg font-semibold animate-pulse">Loading championship data...</span>
         </div>
       );
     }
@@ -941,101 +948,127 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
           showCancel={false}
         />
 
-        <div className="cfa-section">
-          <h2 className="cfa-section-header flex items-center justify-between">
-            Championship Finals
-            {/* Dropdown for ring jump */}
-            <div className="flex-1 flex justify-end items-center">
-              <select
-                className="ml-4 px-3 py-2 rounded-lg border border-gray-300 bg-white text-sm font-medium shadow-sm focus:outline-none focus:border-cfa-gold focus:ring-2 focus:ring-cfa-gold/30 transition-all duration-200 ring-jump-dropdown"
-                style={{ minWidth: 180, maxWidth: 260 }}
-                onChange={handleRingJump}
-                defaultValue=""
+        {/* Championship Finals - Premium Design */}
+        <div className="group relative">
+          {/* Sticky header and dropdown */}
+          <div className="sticky top-0 z-30 bg-white flex items-center justify-between px-6 pt-4 pb-3 gap-4">
+            {/* Left: Icon, Title, Arrow */}
+            <div className="flex items-center min-w-0">
+              <span className="p-1.5 bg-gradient-to-br from-violet-500 to-yellow-400 rounded-xl shadow flex-shrink-0">
+                {/* Star Icon */}
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                </svg>
+              </span>
+              <span className="text-xl font-bold text-violet-700 ml-3">Championship Finals</span>
+              <button
+                onClick={handleScrollButtonClick}
+                className="ml-3 w-7 h-7 flex items-center justify-center rounded-lg border border-violet-400 bg-white shadow-sm transition-all duration-200 hover:border-violet-500 hover:bg-violet-50/70 hover:shadow-violet-200/60 focus:outline-none focus:ring-2 focus:ring-violet-300 group"
+                aria-label={scrollDown ? 'Scroll to Bottom' : 'Scroll to Top'}
               >
-                <option value="" disabled>Jump to Ring...</option>
-                {columns.map((col, idx) => (
-                  <option key={idx} value={col.judge.id}>
-                    Ring {col.judge.id} - {col.judge.acronym}
-                  </option>
-                ))}
-              </select>
+                <svg
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="#a78bfa"
+                  strokeWidth="1.7"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className={`transition-colors duration-200 ${scrollDown ? '' : 'rotate-180'} group-hover:stroke-violet-500`}
+                  viewBox="0 0 24 24"
+                >
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </button>
             </div>
-          </h2>
-          
-          <div className="cfa-table overflow-x-auto">
-            <div className="table-container" ref={tableContainerRef}>
-              <table className="border-collapse" style={{ width: 'auto', tableLayout: 'fixed' }}>
-                <thead>
-                  {/* Header Row 1: Ring Numbers */}
-                  <tr className="cfa-table-header sticky-header sticky-header-1">
-                    <th className="text-left py-1 pl-4 font-medium border-r border-gray-300 frozen-column" style={{ width: '140px', minWidth: '140px' }}></th>
+            {/* Right: Minimal Dropdown, inline trophy icon in selected value only */}
+            <CustomSelect
+              options={columns.map((col, idx) => `Ring ${col.judge.id} - ${col.judge.acronym}`)}
+              value={
+                focusedColumnIndex !== null && focusedColumnIndex >= 0 && focusedColumnIndex < columns.length
+                  ? `Ring ${columns[focusedColumnIndex].judge.id} - ${columns[focusedColumnIndex].judge.acronym}`
+                  : `Ring ${columns[0].judge.id} - ${columns[0].judge.acronym}`
+              }
+              onChange={val => {
+                const ringId = parseInt(val.split(" ")[1]);
+                const colIdx = columns.findIndex(col => col.judge.id === ringId);
+                if (colIdx === -1) return;
+                setFocusedColumnIndex(colIdx);
+                const th = document.getElementById(`ring-th-${colIdx}`);
+                const container = tableContainerRef.current;
+                if (th && container) {
+                  const frozenWidth = 140;
+                  const scrollLeft = th.offsetLeft - frozenWidth;
+                  container.scrollTo({ left: scrollLeft, behavior: 'smooth' });
+                }
+              }}
+              className="w-[220px] font-semibold text-base rounded-full px-4 py-2 bg-white border-2 border-violet-200 shadow-md hover:shadow-lg focus:border-violet-400 focus:shadow-lg text-violet-700 transition-all duration-200"
+              ariaLabel="Jump to Ring"
+              selectedIcon="🏆"
+              dropdownMenuClassName="w-[220px] rounded-xl bg-gradient-to-b from-white via-violet-50 to-white shadow-xl border-2 border-violet-200 text-base font-semibold text-violet-800 transition-all duration-200"
+            />
+          </div>
+          <div className="relative">
+            {/* Table scroll container with floating scroll buttons outside to the right */}
+            <div
+              className="outer-table-scroll-container overflow-x-auto border border-violet-200 bg-white shadow-lg" ref={tableContainerRef} style={{ borderTopLeftRadius: 0, borderTopRightRadius: 0, marginTop: 0, paddingTop: 0 }}
+            >
+              <table className="border-collapse w-auto table-fixed divide-y divide-gray-200 bg-white" style={{ borderTopLeftRadius: 0, borderTopRightRadius: 0, marginTop: 0, paddingTop: 0 }}>
+                <thead style={{ margin: 0, padding: 0 }}>
+                  <tr className="cfa-table-header-modern" style={{ margin: 0, padding: 0, borderTopLeftRadius: 0, borderTopRightRadius: 0 }}>
+                    <th className="cfa-table-header-cell-modern text-left pl-6 align-bottom" style={{ minWidth: 140, maxWidth: 140, verticalAlign: 'top', borderTopLeftRadius: 0, margin: 0, padding: 0 }}>
+                      <div className="flex flex-col justify-start items-start gap-0.5 relative">
+                        <span className="header-main block">Position</span>
+                        <span className="header-sub block">Placement</span>
+                      </div>
+                    </th>
                     {columns.map((column, index) => (
-                      <th 
-                        id={`ring-th-${index}`} 
-                        key={`ring-${index}`} 
-                        className={`text-center py-1 px-1 font-medium text-sm border-r border-gray-300 ${shouldApplyRingGlow(index) ? 'ring-glow' : ''}`} 
-                        style={{ width: '120px', minWidth: '120px' }}
+                      <th
+                        key={`header-modern-${index}`}
+                        id={`ring-th-${index}`}
+                        className={`cfa-table-header-cell-modern text-center align-bottom`}
+                        style={{ width: 190, minWidth: 190, maxWidth: 190, verticalAlign: 'top', borderTopRightRadius: 0, margin: 0, padding: 0 }}
                       >
-                        Ring {column.judge.id}
-                      </th>
-                    ))}
-                  </tr>
-
-                  {/* Header Row 2: Judge Acronyms */}
-                  <tr className="cfa-table-header sticky-header sticky-header-2">
-                    <th className="text-left py-1 pl-4 font-medium border-r border-gray-300 frozen-column" style={{ width: '140px', minWidth: '140px' }}></th>
-                    {columns.map((column, index) => (
-                      <th 
-                        key={`acronym-${index}`} 
-                        className={`text-center py-1 px-1 font-medium text-sm border-r border-gray-300 ${shouldApplyRingGlow(index) ? 'ring-glow' : ''}`} 
-                        style={{ width: '120px', minWidth: '120px' }}
-                      >
-                        {column.judge.acronym}
-                      </th>
-                    ))}
-                  </tr>
-
-                  {/* Header Row 3: Ring Types */}
-                  <tr className="cfa-table-header sticky-header sticky-header-3">
-                    <th className="text-left py-1 pl-4 font-medium border-r border-gray-300 frozen-column" style={{ width: '140px', minWidth: '140px' }}>Position</th>
-                    {columns.map((column, index) => (
-                      <th 
-                        key={`type-${index}`} 
-                        className={`text-center py-1 px-1 font-medium text-sm border-r border-gray-300 ${shouldApplyRingGlow(index) ? 'ring-glow' : ''}`} 
-                        style={{ width: '120px', minWidth: '120px' }}
-                      >
-                        {column.specialty}
+                        <div className="flex flex-col items-center justify-center gap-0.5 relative">
+                          <span className="header-main block">Ring {column.judge.id}</span>
+                          <span className="header-sub font-semibold block">{column.judge.acronym}</span>
+                          <span className="header-sub italic block">{column.specialty}</span>
+                        </div>
                       </th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {/* Show Awards Section (Rows 4-18) */}
-                  {Array.from({ length: 15 }, (_, i) => (
-                    columns.some(col => i < getShowAwardsRowCount(columns.indexOf(col), col.specialty)) ? (
-                      <tr key={`award-${i}`} className="cfa-table-row">
-                        <td className="py-2 pl-4 font-medium text-sm border-r border-gray-300 bg-white frozen-column" style={{ width: '140px', minWidth: '140px' }}>
-                          {i + 1}{i >= 10 ? '*' : ''}
+                {Array.from({ length: 15 }, (_, i) => {
+                  if (columns.some(col => i < getShowAwardsRowCount(columns.indexOf(col), col.specialty))) {
+                    return (
+                      <tr key={`award-${i}`} className={`cfa-table-row transition-all duration-150 ${i % 2 === 0 ? 'bg-white' : ''} hover:shadow-sm`}>
+                        <td className="py-2 pl-4 font-medium text-sm border-r border-gray-200 bg-transparent frozen-column" style={{ width: '140px', minWidth: '140px' }}>
+                          {i + 1}{i >= 10 ? <span className="text-violet-400 font-bold">*</span> : ''}
                         </td>
                         {columns.map((_, columnIndex) => {
                           const col = columns[columnIndex];
-                          // Only render input if this row is enabled for this column (now using robust row count)
                           if (i < getShowAwardsRowCount(columnIndex, col.specialty)) {
                             const award = getShowAward(columnIndex, i);
                             const errorKey = `${columnIndex}-${i}`;
-                            // Debug: Log status for voided cells after import (outside JSX)
-                            if (getVoidState('showAwards', columnIndex, i)) {
-                              // Voided cell detected
-                            }
                             return (
-                              <td key={`award-${i}-${columnIndex}`} className={`py-2 px-2 border-r border-gray-300 align-top${shouldApplyRingGlow(columnIndex) ? ' ring-glow' : ''}`}> 
+                              <td
+                                key={`award-${i}-${columnIndex}`}
+                                className={`py-2 px-2 border-r border-gray-200 align-top transition-all duration-150 ${shouldApplyRingGlow(columnIndex) ? ' border-l-4 border-r-4 border-violet-300 z-10' : ''} hover:bg-gray-50 whitespace-nowrap overflow-x-visible`}
+                                style={{
+                                  width: (award.catNumber && award.catNumber.trim()) ? 130 : 110,
+                                  minWidth: (award.catNumber && award.catNumber.trim()) ? 130 : 110,
+                                  maxWidth: (award.catNumber && award.catNumber.trim()) ? 130 : 110,
+                                  transition: 'width 0.2s'
+                                }}
+                              >
                                 <div className="flex flex-col items-start">
-                                  <div className="flex gap-1 items-center">
+                                  <div className="flex gap-2 items-center">
+                                    {/* Cat # input: rounded-md, semi-transparent, focus ring, shadow */}
                                     <input
                                       type="text"
-                                      className={`w-10 h-7 text-xs text-center border rounded px-0.5 ${getBorderStyle(errorKey)} focus:border-cfa-gold focus:outline-none ${
-                                        getVoidState('showAwards', columnIndex, i) ? 'voided-input' : ''
-                                      }`}
+                                      className={`w-16 h-9 text-sm text-center font-medium rounded-md px-3 bg-white/60 border border-violet-200 shadow focus:border-violet-400 focus:ring-2 focus:ring-violet-100 focus:bg-white/90 focus:shadow-lg transition-all duration-200 placeholder-zinc-300 ${getVoidState('showAwards', columnIndex, i) ? 'opacity-50 grayscale pointer-events-none line-through' : ''} ${getBorderStyle(errorKey)}`}
                                       placeholder="Cat #"
                                       value={localInputState[errorKey] !== undefined ? localInputState[errorKey] : award.catNumber}
                                       onChange={(e) => setLocalInputState(prev => ({ ...prev, [errorKey]: e.target.value }))}
@@ -1051,331 +1084,410 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                                         catInputRefs.current[columnIndex][i] = el;
                                       }}
                                       onKeyDown={(e) => handleCatInputKeyDown(e, columnIndex, i)}
-                                      onFocus={(e) => handleCatInputFocus(e, columnIndex)}
+                                      onFocus={(e) => {
+                                        e.target.select();
+                                        handleCatInputFocus(e, columnIndex);
+                                      }}
                                     />
-                                    <select
-                                      className="w-14 h-7 text-xs border border-gray-300 rounded focus:border-cfa-gold focus:outline-none"
-                                      value={award.status}
-                                      onChange={(e) => updateShowAward(columnIndex, i, 'status', e.target.value)}
-                                      onFocus={() => setFocusedColumnIndex(columnIndex)}
-                                      disabled={getVoidState('showAwards', columnIndex, i)}
-                                      tabIndex={-1}
-                                    >
-                                      <option value="GC">GC</option>
-                                      <option value="CH">CH</option>
-                                      <option value="NOV">NOV</option>
-                                    </select>
+                                    {/* CustomSelect for status, lavender theme */}
+                                    <CustomSelect
+                                      options={['GC', 'CH', 'NOV']}
+                                      value={award.status || 'GC'}
+                                      onChange={val => updateShowAward(columnIndex, i, 'status', val)}
+                                      className="min-w-[70px]"
+                                      ariaLabel="Status"
+                                    />
+                                    {/* Void toggle: minimal, crisp, circular, lavender border, gold/purple gradient on check */}
                                     {award.catNumber && award.catNumber.trim() && (
-                                      <div className="void-tooltip">
+                                      <div className="relative group/void">
                                         <input
                                           type="checkbox"
-                                          className="void-checkbox"
+                                          className="sr-only peer"
                                           checked={getVoidState('showAwards', columnIndex, i)}
                                           onChange={(e) => updateVoidStateColumnWide('showAwards', columnIndex, i, e.target.checked)}
                                           onFocus={() => setFocusedColumnIndex(columnIndex)}
                                           tabIndex={-1}
+                                          id={`void-toggle-${columnIndex}-${i}`}
                                         />
-                                        <span className="tooltip-text">
-                                          Mark this placement as voided (award given but not received by cat)
+                                        <label htmlFor={`void-toggle-${columnIndex}-${i}`} className="w-5 h-5 flex items-center justify-center rounded-full border border-red-500 bg-white shadow-sm transition-all duration-200 cursor-pointer peer-checked:bg-white peer-checked:border-red-500 peer-checked:ring-2 peer-checked:ring-red-200 hover:ring-2 hover:ring-red-200 focus:ring-2 focus:ring-red-200">
+                                          {getVoidState('showAwards', columnIndex, i) && (
+                                            <svg className="w-3 h-3 text-red-500 font-bold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                          )}
+                                        </label>
+                                          {/* Modern premium tooltip for void */}
+                                          <span className="absolute left-8 top-1/2 -translate-y-1/2 z-20 hidden group-hover/void:flex flex-row items-center">
+                                            {/* Arrow */}
+                                            <span className="w-0 h-0 mr-1 border-t-8 border-t-transparent border-b-8 border-b-transparent border-r-8 border-r-teal-300"></span>
+                                            {/* Tooltip Box */}
+                                            <span className="bg-white border border-teal-300 shadow-lg rounded-lg px-3 py-2 flex items-start gap-2 transition-all duration-200">
+                                              <svg className="w-4 h-4 text-teal-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <circle cx="12" cy="12" r="10" strokeWidth="2" />
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01" />
+                                          </svg>
+                                              <span className="text-sm font-medium text-teal-800 leading-snug">Mark this placement void.</span>
+                                            </span>
                                         </span>
                                       </div>
                                     )}
                                   </div>
+                                    {/* Error message */}
                                   {errors[errorKey] && (
-                                    <div className="text-xs mt-1" style={getErrorStyle()}>{getCleanMessage(errors[errorKey])}</div>
+                                    <div
+                                      className="mt-1 rounded-lg bg-red-50 border border-red-300 px-3 py-2 shadow text-xs text-red-700 font-semibold flex items-center gap-2 whitespace-normal break-words w-full"
+                                    >
+                                      <svg className="w-4 h-4 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <circle cx="12" cy="12" r="10" strokeWidth="2" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01" />
+                                      </svg>
+                                      {getCleanMessage(errors[errorKey])}
+                                    </div>
                                   )}
                                 </div>
                               </td>
                             );
-                          } else {
-                            // Render empty cell for columns that do not need this row
-                            // Always apply border/padding classes for visual consistency
-                            // Also apply ring-glow if this is the focused column, for highlight continuity
-                            return <td key={`award-${i}-${columnIndex}`} className={`py-2 px-2 border-r border-gray-300 align-top${shouldApplyRingGlow(columnIndex) ? ' ring-glow' : ''}`}>&nbsp;</td>;
                           }
+                            return <td key={`award-${i}-${columnIndex}`} className="py-2 px-2 border-r border-gray-200"></td>;
                         })}
                       </tr>
-                    ) : null
-                  ))}
-
-                  {/* Champions Finals Section (Rows 19-23) - Only for Allbreed rings */}
-                  {Array.from({ length: 5 }, (_, i) => (
-                    columns.some(col => col.specialty === 'Allbreed' && i < getFinalsRowCount(columns.indexOf(col), col.specialty, 'champions')) ? (
-                      <tr key={`ch-final-${i}`} className="cfa-table-row">
-                        <td className="py-2 pl-4 font-medium text-sm text-black border-r border-gray-300 frozen-column" style={{ width: '140px', minWidth: '140px' }}>
-                          {getOrdinalLabel(i, 'AB')}
+                    );
+                  }
+                  return null;
+                })}
+                    {/* Finals Sections (Rows 19-23) */}
+                  {Array.from({ length: 5 }, (_, i) => {
+                    if (columns.some(col => i < getFinalsRowCount(columns.indexOf(col), col.specialty, 'champions'))) {
+                      const ordinals = ['Best', '2nd Best', '3rd Best', '4th Best', '5th Best'];
+                      return (
+                        <tr key={`champions-${i}`} className={`cfa-table-row transition-all duration-150 ${i % 2 === 0 ? 'bg-white' : ''} hover:shadow-sm`}>
+                          <td className="py-2 pl-4 font-medium text-sm border-r border-gray-200 bg-transparent frozen-column" style={{ width: '140px', minWidth: '140px' }}>
+                            {ordinals[i]} AB CH
                         </td>
-                        {columns.map((col, columnIndex) => {
-                          const enabled = col.specialty === 'Allbreed' && i < getFinalsRowCount(columnIndex, col.specialty, 'champions');
-                          if (enabled) {
-                            const value = getFinalsValue('champions', columnIndex, i);
+                          {columns.map((_, columnIndex) => {
+                            const col = columns[columnIndex];
+                            if (i < getFinalsRowCount(columnIndex, col.specialty, 'champions')) {
                             const errorKey = `champions-${columnIndex}-${i}`;
-                            // Map Finals Cat # input to refs: rowIdx = numAwardRows + i
-                            const finalsRowIdx = getShowAwardsRowCount(columnIndex, col.specialty) + i;
                             return (
-                              <td 
-                                key={`ch-final-${i}-${columnIndex}`} 
-                                className={`py-2 px-2 border-r border-gray-300 align-top${shouldApplyRingGlow(columnIndex) ? ' ring-glow' : ''}`}
-                              >
+                                <td key={`champions-${i}-${columnIndex}`} className={`py-2 px-2 border-r border-gray-200 align-top transition-all duration-150 ${shouldApplyRingGlow(columnIndex) ? ' border-l-4 border-r-4 border-violet-300 z-10' : ''} hover:bg-gray-50`}>
                                 <div className="flex flex-col items-start">
-                                  <div className="flex items-center">
+                                    <div className="flex gap-2 items-center">
+                                  {/* Cat # input: rounded-md, semi-transparent, focus ring, shadow */}
                                     <input
                                       type="text"
-                                      className={`w-10 h-7 text-xs text-center border rounded px-0.5 font-medium ${
-                                        getBorderStyle(errorKey)
-                                      } focus:border-cfa-gold focus:outline-none ${
-                                        getVoidState('championsFinals', columnIndex, i) ? 'voided-input' : ''
-                                      }`}
+                                    className={`w-16 h-9 text-sm text-center font-medium rounded-md px-3 bg-white/60 border border-violet-200 shadow focus:border-violet-400 focus:ring-2 focus:ring-violet-100 focus:bg-white/90 focus:shadow-lg transition-all duration-200 placeholder-zinc-300 ${getVoidState('championsFinals', columnIndex, i) ? 'opacity-50 grayscale pointer-events-none' : ''} ${getBorderStyle(errorKey)}`}
                                       placeholder="Cat #"
-                                      value={localInputState[errorKey] !== undefined ? localInputState[errorKey] : value}
-                                      disabled={getVoidState('championsFinals', columnIndex, i)}
+                                      value={localInputState[errorKey] !== undefined ? localInputState[errorKey] : getFinalsValue('champions', columnIndex, i)}
                                       onChange={(e) => setLocalInputState(prev => ({ ...prev, [errorKey]: e.target.value }))}
                                       onBlur={(e) => {
                                         updateFinals('champions', columnIndex, i, e.target.value);
                                         setLocalInputState(prev => { const copy = { ...prev }; delete copy[errorKey]; return copy; });
-                                        handleFinalsBlur('champions', columnIndex, i, e.target.value);
                                       }}
+                                      disabled={getVoidState('championsFinals', columnIndex, i)}
                                       ref={el => {
                                         if (!catInputRefs.current[columnIndex]) {
                                           catInputRefs.current[columnIndex] = Array(totalCatRows).fill(null);
                                         }
-                                        catInputRefs.current[columnIndex][finalsRowIdx] = el;
+                                        catInputRefs.current[columnIndex][i + 15] = el; // Adjust index for Finals rows
                                       }}
-                                      onKeyDown={(e) => handleCatInputKeyDown(e, columnIndex, finalsRowIdx)}
-                                      onFocus={(e) => handleCatInputFocus(e, columnIndex)}
+                                      onKeyDown={(e) => handleCatInputKeyDown(e, columnIndex, i + 15)}
+                                      onFocus={(e) => {
+                                        e.target.select();
+                                        handleCatInputFocus(e, columnIndex);
+                                      }}
                                     />
-                                    {value && value.trim() && (
-                                      <div className="void-tooltip ml-1">
+                                    {/* CustomSelect for status, lavender theme */}
+                                    <CustomSelect
+                                      options={['GC', 'CH', 'NOV']}
+                                      value={getFinalsValue('champions', columnIndex, i) || 'GC'}
+                                      onChange={val => updateFinals('champions', columnIndex, i, val)}
+                                      className="min-w-[70px]"
+                                      ariaLabel="Status"
+                                    />
+                                    {/* Void toggle: minimal, crisp, circular, lavender border, gold/purple gradient on check */}
+                                    {getFinalsValue('champions', columnIndex, i) && getFinalsValue('champions', columnIndex, i).trim() && (
+                                    <div className="relative group/void">
                                         <input
                                           type="checkbox"
-                                          className="void-checkbox"
+                                        className="sr-only peer"
                                           checked={getVoidState('championsFinals', columnIndex, i)}
                                           onChange={(e) => updateVoidStateColumnWide('championsFinals', columnIndex, i, e.target.checked)}
                                           onFocus={() => setFocusedColumnIndex(columnIndex)}
                                           tabIndex={-1}
-                                        />
-                                        <span className="tooltip-text">
-                                          Mark this placement as voided (award given but not received by cat)
+                                        id={`void-toggle-champions-${columnIndex}-${i}`}
+                                      />
+                                      <label htmlFor={`void-toggle-champions-${columnIndex}-${i}`} className="w-5 h-5 flex items-center justify-center rounded-full border border-red-500 bg-white shadow-sm transition-all duration-200 cursor-pointer peer-checked:bg-white peer-checked:border-red-500 peer-checked:ring-2 peer-checked:ring-red-200 hover:ring-2 hover:ring-red-200 focus:ring-2 focus:ring-red-200">
+                                        {getVoidState('championsFinals', columnIndex, i) && (
+                                          <svg className="w-3 h-3 text-red-500 font-bold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                                          </svg>
+                                        )}
+                                      </label>
+                                        {/* Modern premium tooltip for void */}
+                                        <span className="absolute left-8 top-1/2 -translate-y-1/2 z-20 hidden group-hover/void:flex flex-row items-center">
+                                          {/* Arrow */}
+                                          <span className="w-0 h-0 mr-1 border-t-8 border-t-transparent border-b-8 border-b-transparent border-r-8 border-r-teal-300"></span>
+                                          {/* Tooltip Box */}
+                                          <span className="bg-white border border-teal-300 shadow-lg rounded-lg px-3 py-2 flex items-start gap-2 transition-all duration-200">
+                                            <svg className="w-4 h-4 text-teal-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <circle cx="12" cy="12" r="10" strokeWidth="2" />
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01" />
+                                          </svg>
+                                              <span className="text-sm font-medium text-teal-800 leading-snug">Mark this placement void.</span>
+                                          </span>
                                         </span>
                                       </div>
                                     )}
                                   </div>
+                                  {/* Error message */}
                                   {errors[errorKey] && (
-                                    <>
-                                      <div className="text-xs mt-1" style={getErrorStyle()}>{getCleanMessage(errors[errorKey])}</div>
-                                    </>
+                                    <div
+                                      className="mt-1 rounded-lg bg-red-50 border border-red-300 px-3 py-2 shadow text-xs text-red-700 font-semibold flex items-center gap-2 whitespace-normal break-words w-full"
+                                    >
+                                      <svg className="w-4 h-4 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <circle cx="12" cy="12" r="10" strokeWidth="2" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01" />
+                                      </svg>
+                                      {getCleanMessage(errors[errorKey])}
+                                    </div>
                                   )}
                                 </div>
                               </td>
                             );
-                          } else {
-                            // Render empty cell for columns that do not need this row
-                            // Always apply border/padding classes for visual consistency
-                            // Also apply ring-glow if this is the focused column, for highlight continuity
-                            return <td key={`ch-final-${i}-${columnIndex}`} className={`py-2 px-2 border-r border-gray-300 align-top${shouldApplyRingGlow(columnIndex) ? ' ring-glow' : ''}`}>&nbsp;</td>;
                           }
+                          return <td key={`champions-${i}-${columnIndex}`} className="py-2 px-2 border-r border-gray-200"></td>;
                         })}
                       </tr>
-                    ) : null
-                  ))}
-
-                  {/* Longhair Champions Finals Section (Rows 24-28) - Only for Longhair and Allbreed rings */}
-                  {Array.from({ length: 5 }, (_, i) => (
-                    columns.some(col => (col.specialty === 'Longhair' || col.specialty === 'Allbreed') && i < getFinalsRowCount(columns.indexOf(col), col.specialty, 'lhChampions')) ? (
-                      <tr key={`lh-final-${i}`} className="cfa-table-row">
-                        <td className="py-2 pl-4 font-medium text-sm text-black border-r border-gray-300 frozen-column" style={{ width: '140px', minWidth: '140px' }}>
-                          {getOrdinalLabel(i, 'LH')}
+                    );
+                  }
+                  return null;
+                })}
+                {/* LH Champions Section (Rows 24-28) */}
+                {Array.from({ length: 5 }, (_, i) => {
+                  if (columns.some(col => i < getFinalsRowCount(columns.indexOf(col), col.specialty, 'lhChampions'))) {
+                    const ordinals = ['Best', '2nd Best', '3rd Best', '4th Best', '5th Best'];
+                    return (
+                      <tr key={`lhChampions-${i}`} className={`cfa-table-row transition-all duration-150 ${i % 2 === 0 ? 'bg-white' : ''} hover:shadow-sm`}>
+                        <td className="py-2 pl-4 font-medium text-sm border-r border-gray-200 bg-transparent frozen-column" style={{ width: '140px', minWidth: '140px' }}>
+                          {ordinals[i]} LH CH
                         </td>
-                        {columns.map((col, columnIndex) => {
-                          const enabled = (col.specialty === 'Longhair' || col.specialty === 'Allbreed') && i < getFinalsRowCount(columnIndex, col.specialty, 'lhChampions');
-                          if (enabled) {
-                            const value = getFinalsValue('lhChampions', columnIndex, i);
+                        {columns.map((_, columnIndex) => {
+                          const col = columns[columnIndex];
+                          if (i < getFinalsRowCount(columnIndex, col.specialty, 'lhChampions')) {
                             const errorKey = `lhChampions-${columnIndex}-${i}`;
-                            // Map Finals Cat # input to refs: rowIdx = numAwardRows + numBestCH + i
-                            const finalsRowIdx = getShowAwardsRowCount(columnIndex, col.specialty) + (col.specialty === 'Allbreed' ? getFinalsRowCount(columnIndex, col.specialty, 'champions') : 0) + i;
                             return (
-                              <td 
-                                key={`lh-final-${i}-${columnIndex}`} 
-                                className={`py-2 px-2 border-r border-gray-300 align-top${shouldApplyRingGlow(columnIndex) ? ' ring-glow' : ''}`}
-                              >
+                              <td key={`lhChampions-${i}-${columnIndex}`} className={`py-2 px-2 border-r border-gray-200 align-top transition-all duration-150 ${shouldApplyRingGlow(columnIndex) ? ' border-l-4 border-r-4 border-violet-300 z-10' : ''} hover:bg-gray-50`}>
                                 <div className="flex flex-col items-start">
-                                  <div className="flex items-center">
+                                  <div className="flex gap-2 items-center">
+                                  {/* Cat # input: rounded-md, semi-transparent, focus ring, shadow */}
                                     <input
                                       type="text"
-                                      className={`w-10 h-7 text-xs text-center border rounded px-0.5 font-medium ${
-                                        getBorderStyle(errorKey)
-                                      } focus:border-cfa-gold focus:outline-none ${
-                                        getVoidState('lhChampionsFinals', columnIndex, i) ? 'voided-input' : ''
-                                      }`}
+                                    className={`w-16 h-9 text-sm text-center font-medium rounded-md px-3 bg-white/60 border border-violet-200 shadow focus:border-violet-400 focus:ring-2 focus:ring-violet-100 focus:bg-white/90 focus:shadow-lg transition-all duration-200 placeholder-zinc-300 ${getVoidState('lhChampionsFinals', columnIndex, i) ? 'opacity-50 grayscale pointer-events-none' : ''} ${getBorderStyle(errorKey)}`}
                                       placeholder="Cat #"
-                                      value={localInputState[errorKey] !== undefined ? localInputState[errorKey] : value}
-                                      disabled={getVoidState('lhChampionsFinals', columnIndex, i)}
+                                      value={localInputState[errorKey] !== undefined ? localInputState[errorKey] : getFinalsValue('lhChampions', columnIndex, i)}
                                       onChange={(e) => setLocalInputState(prev => ({ ...prev, [errorKey]: e.target.value }))}
                                       onBlur={(e) => {
                                         updateFinals('lhChampions', columnIndex, i, e.target.value);
                                         setLocalInputState(prev => { const copy = { ...prev }; delete copy[errorKey]; return copy; });
-                                        handleFinalsBlur('lhChampions', columnIndex, i, e.target.value);
                                       }}
+                                      disabled={getVoidState('lhChampionsFinals', columnIndex, i)}
                                       ref={el => {
                                         if (!catInputRefs.current[columnIndex]) {
                                           catInputRefs.current[columnIndex] = Array(totalCatRows).fill(null);
                                         }
-                                        catInputRefs.current[columnIndex][finalsRowIdx] = el;
+                                        catInputRefs.current[columnIndex][i + 20] = el; // Adjust index for LH Champions rows
                                       }}
-                                      onKeyDown={(e) => handleCatInputKeyDown(e, columnIndex, finalsRowIdx)}
-                                      onFocus={(e) => handleCatInputFocus(e, columnIndex)}
+                                      onKeyDown={(e) => handleCatInputKeyDown(e, columnIndex, i + 20)}
+                                      onFocus={(e) => {
+                                        e.target.select();
+                                        handleCatInputFocus(e, columnIndex);
+                                      }}
                                     />
-                                    {value && value.trim() && (
-                                      <div className="void-tooltip ml-1">
+                                    {/* CustomSelect for status, lavender theme */}
+                                    <CustomSelect
+                                      options={['GC', 'CH', 'NOV']}
+                                      value={getFinalsValue('lhChampions', columnIndex, i) || 'GC'}
+                                      onChange={val => updateFinals('lhChampions', columnIndex, i, val)}
+                                      className="min-w-[70px]"
+                                      ariaLabel="Status"
+                                    />
+                                    {/* Void toggle: minimal, crisp, circular, lavender border, gold/purple gradient on check */}
+                                    {getFinalsValue('lhChampions', columnIndex, i) && getFinalsValue('lhChampions', columnIndex, i).trim() && (
+                                    <div className="relative group/void">
                                         <input
                                           type="checkbox"
-                                          className="void-checkbox"
+                                        className="sr-only peer"
                                           checked={getVoidState('lhChampionsFinals', columnIndex, i)}
                                           onChange={(e) => updateVoidStateColumnWide('lhChampionsFinals', columnIndex, i, e.target.checked)}
                                           onFocus={() => setFocusedColumnIndex(columnIndex)}
                                           tabIndex={-1}
-                                        />
-                                        <span className="tooltip-text">
-                                          Mark this placement as voided (award given but not received by cat)
+                                        id={`void-toggle-lhChampions-${columnIndex}-${i}`}
+                                      />
+                                      <label htmlFor={`void-toggle-lhChampions-${columnIndex}-${i}`} className="w-5 h-5 flex items-center justify-center rounded-full border border-red-500 bg-white shadow-sm transition-all duration-200 cursor-pointer peer-checked:bg-white peer-checked:border-red-500 peer-checked:ring-2 peer-checked:ring-red-200 hover:ring-2 hover:ring-red-200 focus:ring-2 focus:ring-red-200">
+                                        {getVoidState('lhChampionsFinals', columnIndex, i) && (
+                                          <svg className="w-3 h-3 text-red-500 font-bold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                                          </svg>
+                                        )}
+                                      </label>
+                                        {/* Modern premium tooltip for void */}
+                                        <span className="absolute left-8 top-1/2 -translate-y-1/2 z-20 hidden group-hover/void:flex flex-row items-center">
+                                          {/* Arrow */}
+                                          <span className="w-0 h-0 mr-1 border-t-8 border-t-transparent border-b-8 border-b-transparent border-r-8 border-r-teal-300"></span>
+                                          {/* Tooltip Box */}
+                                          <span className="bg-white border border-teal-300 shadow-lg rounded-lg px-3 py-2 flex items-start gap-2 transition-all duration-200">
+                                            <svg className="w-4 h-4 text-teal-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <circle cx="12" cy="12" r="10" strokeWidth="2" />
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01" />
+                                        </svg>
+                                              <span className="text-sm font-medium text-teal-800 leading-snug">Mark this placement void.</span>
+                                          </span>
                                         </span>
                                       </div>
                                     )}
                                   </div>
+                                  {/* Error message */}
                                   {errors[errorKey] && (
-                                    <div className="text-xs mt-1" style={getErrorStyle()}>{getCleanMessage(errors[errorKey])}</div>
+                                    <div
+                                      className="mt-1 rounded-lg bg-red-50 border border-red-300 px-3 py-2 shadow text-xs text-red-700 font-semibold flex items-center gap-2 whitespace-normal break-words w-full"
+                                    >
+                                      <svg className="w-4 h-4 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <circle cx="12" cy="12" r="10" strokeWidth="2" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01" />
+                                      </svg>
+                                      {getCleanMessage(errors[errorKey])}
+                                    </div>
                                   )}
                                 </div>
                               </td>
                             );
-                          } else {
-                            // Render empty cell for columns that do not need this row
-                            // Always apply border/padding classes for visual consistency
-                            // Also apply ring-glow if this is the focused column, for highlight continuity
-                            return <td key={`lh-final-${i}-${columnIndex}`} className={`py-2 px-2 border-r border-gray-300 align-top${shouldApplyRingGlow(columnIndex) ? ' ring-glow' : ''}`}>&nbsp;</td>;
                           }
+                          return <td key={`lhChampions-${i}-${columnIndex}`} className="py-2 px-2 border-r border-gray-200"></td>;
                         })}
                       </tr>
-                    ) : null
-                  ))}
-
-                  {/* Shorthair Champions Finals Section (Rows 29-33) - Only for Shorthair and Allbreed rings */}
-                  {Array.from({ length: 5 }, (_, i) => (
-                    columns.some(col => (col.specialty === 'Shorthair' || col.specialty === 'Allbreed') && i < getFinalsRowCount(columns.indexOf(col), col.specialty, 'shChampions')) ? (
-                      <tr key={`sh-final-${i}`} className="cfa-table-row">
-                        <td className="py-2 pl-4 font-medium text-sm text-black border-r border-gray-300 frozen-column" style={{ width: '140px', minWidth: '140px' }}>
-                          {getOrdinalLabel(i, 'SH')}
+                    );
+                  }
+                  return null;
+                })}
+                {/* SH Champions Section (Rows 29-33) */}
+                {Array.from({ length: 5 }, (_, i) => {
+                  if (columns.some(col => i < getFinalsRowCount(columns.indexOf(col), col.specialty, 'shChampions'))) {
+                    const ordinals = ['Best', '2nd Best', '3rd Best', '4th Best', '5th Best'];
+                    return (
+                      <tr key={`shChampions-${i}`} className={`cfa-table-row transition-all duration-150 ${i % 2 === 0 ? 'bg-white' : ''} hover:shadow-sm`}>
+                        <td className="py-2 pl-4 font-medium text-sm border-r border-gray-200 bg-transparent frozen-column" style={{ width: '140px', minWidth: '140px' }}>
+                          {ordinals[i]} SH CH
                         </td>
-                        {columns.map((col, columnIndex) => {
-                          const enabled = (col.specialty === 'Shorthair' || col.specialty === 'Allbreed') && i < getFinalsRowCount(columnIndex, col.specialty, 'shChampions');
-                          if (enabled) {
-                            const value = getFinalsValue('shChampions', columnIndex, i);
+                        {columns.map((_, columnIndex) => {
+                          const col = columns[columnIndex];
+                          if (i < getFinalsRowCount(columnIndex, col.specialty, 'shChampions')) {
                             const errorKey = `shChampions-${columnIndex}-${i}`;
-                            // Map Finals Cat # input to refs: rowIdx = numAwardRows + numBestCH + numBestLHCH + i
-                            const finalsRowIdx = getShowAwardsRowCount(columnIndex, col.specialty) + (col.specialty === 'Allbreed' ? getFinalsRowCount(columnIndex, col.specialty, 'champions') : 0) + (col.specialty === 'Allbreed' || col.specialty === 'Longhair' ? getFinalsRowCount(columnIndex, col.specialty, 'lhChampions') : 0) + i;
                             return (
-                              <td 
-                                key={`sh-final-${i}-${columnIndex}`} 
-                                className={`py-2 px-2 border-r border-gray-300 align-top${shouldApplyRingGlow(columnIndex) ? ' ring-glow' : ''}`}
-                              >
+                              <td key={`shChampions-${i}-${columnIndex}`} className={`py-2 px-2 border-r border-gray-200 align-top transition-all duration-150 ${shouldApplyRingGlow(columnIndex) ? ' border-l-4 border-r-4 border-violet-300 z-10' : ''} hover:bg-gray-50`}>
                                 <div className="flex flex-col items-start">
-                                  <div className="flex items-center">
+                                  <div className="flex gap-2 items-center">
+                                  {/* Cat # input: rounded-md, semi-transparent, focus ring, shadow */}
                                     <input
                                       type="text"
-                                      className={`w-10 h-7 text-xs text-center border rounded px-0.5 font-medium ${
-                                        getBorderStyle(errorKey)
-                                      } focus:border-cfa-gold focus:outline-none ${
-                                        getVoidState('shChampionsFinals', columnIndex, i) ? 'voided-input' : ''
-                                      }`}
+                                    className={`w-16 h-9 text-sm text-center font-medium rounded-md px-3 bg-white/60 border border-violet-200 shadow focus:border-violet-400 focus:ring-2 focus:ring-violet-100 focus:bg-white/90 focus:shadow-lg transition-all duration-200 placeholder-zinc-300 ${getVoidState('shChampionsFinals', columnIndex, i) ? 'opacity-50 grayscale pointer-events-none' : ''} ${getBorderStyle(errorKey)}`}
                                       placeholder="Cat #"
-                                      value={localInputState[errorKey] !== undefined ? localInputState[errorKey] : value}
-                                      disabled={getVoidState('shChampionsFinals', columnIndex, i)}
+                                      value={localInputState[errorKey] !== undefined ? localInputState[errorKey] : getFinalsValue('shChampions', columnIndex, i)}
                                       onChange={(e) => setLocalInputState(prev => ({ ...prev, [errorKey]: e.target.value }))}
                                       onBlur={(e) => {
                                         updateFinals('shChampions', columnIndex, i, e.target.value);
                                         setLocalInputState(prev => { const copy = { ...prev }; delete copy[errorKey]; return copy; });
-                                        handleFinalsBlur('shChampions', columnIndex, i, e.target.value);
                                       }}
+                                      disabled={getVoidState('shChampionsFinals', columnIndex, i)}
                                       ref={el => {
                                         if (!catInputRefs.current[columnIndex]) {
                                           catInputRefs.current[columnIndex] = Array(totalCatRows).fill(null);
                                         }
-                                        catInputRefs.current[columnIndex][finalsRowIdx] = el;
+                                        catInputRefs.current[columnIndex][i + 25] = el; // Adjust index for SH Champions rows
                                       }}
-                                      onKeyDown={(e) => handleCatInputKeyDown(e, columnIndex, finalsRowIdx)}
-                                      onFocus={(e) => handleCatInputFocus(e, columnIndex)}
+                                      onKeyDown={(e) => handleCatInputKeyDown(e, columnIndex, i + 25)}
+                                      onFocus={(e) => {
+                                        e.target.select();
+                                        handleCatInputFocus(e, columnIndex);
+                                      }}
                                     />
-                                    {value && value.trim() && (
-                                      <div className="void-tooltip ml-1">
+                                    {/* CustomSelect for status, lavender theme */}
+                                    <CustomSelect
+                                      options={['GC', 'CH', 'NOV']}
+                                      value={getFinalsValue('shChampions', columnIndex, i) || 'GC'}
+                                      onChange={val => updateFinals('shChampions', columnIndex, i, val)}
+                                      className="min-w-[70px]"
+                                      ariaLabel="Status"
+                                    />
+                                    {/* Void toggle: minimal, crisp, circular, lavender border, gold/purple gradient on check */}
+                                    {getFinalsValue('shChampions', columnIndex, i) && getFinalsValue('shChampions', columnIndex, i).trim() && (
+                                    <div className="relative group/void">
                                         <input
                                           type="checkbox"
-                                          className="void-checkbox"
+                                        className="sr-only peer"
                                           checked={getVoidState('shChampionsFinals', columnIndex, i)}
                                           onChange={(e) => updateVoidStateColumnWide('shChampionsFinals', columnIndex, i, e.target.checked)}
                                           onFocus={() => setFocusedColumnIndex(columnIndex)}
                                           tabIndex={-1}
-                                        />
-                                        <span className="tooltip-text">
-                                          Mark this placement as voided (award given but not received by cat)
+                                        id={`void-toggle-shChampions-${columnIndex}-${i}`}
+                                      />
+                                      <label htmlFor={`void-toggle-shChampions-${columnIndex}-${i}`} className="w-5 h-5 flex items-center justify-center rounded-full border border-red-500 bg-white shadow-sm transition-all duration-200 cursor-pointer peer-checked:bg-white peer-checked:border-red-500 peer-checked:ring-2 peer-checked:ring-red-200 hover:ring-2 hover:ring-red-200 focus:ring-2 focus:ring-red-200">
+                                        {getVoidState('shChampionsFinals', columnIndex, i) && (
+                                          <svg className="w-3 h-3 text-red-500 font-bold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                                          </svg>
+                                        )}
+                                      </label>
+                                        {/* Modern premium tooltip for void */}
+                                        <span className="absolute left-8 top-1/2 -translate-y-1/2 z-20 hidden group-hover/void:flex flex-row items-center">
+                                          {/* Arrow */}
+                                          <span className="w-0 h-0 mr-1 border-t-8 border-t-transparent border-b-8 border-b-transparent border-r-8 border-r-teal-300"></span>
+                                          {/* Tooltip Box */}
+                                          <span className="bg-white border border-teal-300 shadow-lg rounded-lg px-3 py-2 flex items-start gap-2 transition-all duration-200">
+                                            <svg className="w-4 h-4 text-teal-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <circle cx="12" cy="12" r="10" strokeWidth="2" />
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01" />
+                                        </svg>
+                                              <span className="text-sm font-medium text-teal-800 leading-snug">Mark this placement void.</span>
+                                          </span>
                                         </span>
                                       </div>
                                     )}
                                   </div>
+                                  {/* Error message */}
                                   {errors[errorKey] && (
-                                    <div className="text-xs mt-1" style={getErrorStyle()}>{getCleanMessage(errors[errorKey])}</div>
+                                    <div
+                                      className="mt-1 rounded-lg bg-red-50 border border-red-300 px-3 py-2 shadow text-xs text-red-700 font-semibold flex items-center gap-2 whitespace-normal break-words w-full"
+                                    >
+                                      <svg className="w-4 h-4 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <circle cx="12" cy="12" r="10" strokeWidth="2" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01" />
+                                      </svg>
+                                      {getCleanMessage(errors[errorKey])}
+                                    </div>
                                   )}
                                 </div>
                               </td>
                             );
-                          } else {
-                            // Render empty cell for columns that do not need this row
-                            // Always apply border/padding classes for visual consistency
-                            // Also apply ring-glow if this is the focused column, for highlight continuity
-                            return <td key={`sh-final-${i}-${columnIndex}`} className={`py-2 px-2 border-r border-gray-300 align-top${shouldApplyRingGlow(columnIndex) ? ' ring-glow' : ''}`}>&nbsp;</td>;
                           }
+                          return <td key={`shChampions-${i}-${columnIndex}`} className="py-2 px-2 border-r border-gray-200"></td>;
                         })}
                       </tr>
-                    ) : null
-                  ))}
+                    );
+                  }
+                  return null;
+                })}
                 </tbody>
               </table>
             </div>
-
-            {/* Legend for rows 11-15 */}
-            {numAwardRows > 10 && (
-              <div className="mt-4 text-sm text-gray-600">
-                <span className="font-medium">*</span> Positions 11-15 available when ≥85 cats in championship
-              </div>
-            )}
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex flex-wrap gap-4 justify-center mt-8">
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={handleSaveToCSVClick}
-                className="cfa-button"
-              >
-                Save to CSV
-              </button>
-              <button
-                type="button"
-                onClick={handleRestoreFromCSVClick}
-                className="cfa-button-secondary"
-                style={{ backgroundColor: '#1e3a8a', borderColor: '#1e3a8a', color: 'white' }}
-              >
-                Load from CSV
-              </button>
-              <button
-                type="button"
-                onClick={handleResetClick}
-                className="cfa-button-secondary"
-              >
-                Reset
-              </button>
-            </div>
           </div>
         </div>
+
+        {/* Premium Action Buttons - Centered, matches GeneralTab */}
+        <ActionButtons
+          onSaveToCSV={handleSaveToCSVClick}
+          onLoadFromCSV={handleRestoreFromCSVClick}
+          onReset={handleResetClick}
+        />
       </div>
     );
   }

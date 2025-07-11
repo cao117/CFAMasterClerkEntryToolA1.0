@@ -345,6 +345,18 @@ If you have 2 Allbreed judges and 1 Double Specialty judge, the Championship and
 - Ring 3 - [Acronym3] - Longhair (Double Specialty)
 - Ring 4 - [Acronym3] - Shorthair (Double Specialty)
 
+## UI/UX: Main Tab Bar Redesign (2024-04)
+
+The main navigation tab bar (General, Championship, Kittens, Premiership, Household Pet) has been redesigned for a premium, business-class look:
+- Dark, semi-transparent background (CFA-branded)
+- Subtle CFA gold border at the bottom
+- Modern, bold font and minimal, outline-style icons for each tab
+- Active tab: gold underline, gold text, and subtle gold glow
+- Inactive tabs: muted color, gold hover underline
+- Smooth transitions and professional spacing
+
+This design matches the premium style of the SettingsPanel and ensures a cohesive, high-class user experience throughout the application.
+
 ## Action Buttons & Workflow
 
 The following action buttons are present in the Championship and Premiership tabs (and, where relevant, the General tab). These buttons are essential for data management, validation, and workflow completion:
