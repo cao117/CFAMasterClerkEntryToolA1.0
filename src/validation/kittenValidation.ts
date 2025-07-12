@@ -4,13 +4,13 @@
  * @typedef {Object} KittenValidationInput
  * @property {Array<{judge: any, specialty: string, columnIndex: number}>} columns - Columns for the tab
  * @property {Record<string, {catNumber: string, status: string}>} showAwards - Cat numbers/statuses by cell key
- * @property {Record<string, boolean>} voidedShowAwards - Voided state by cell key
+ * @property {Record<string, boolean>} voidedShowAwards - Voided state by cell key (DEPRECATED: now handled via VOID in catNumber)
  * @property {Object} kittenCounts - Hair-specific kitten counts for breakpoint calculation
  */
 export type KittenValidationInput = {
   columns: { judge: any; specialty: string; columnIndex: number }[];
   showAwards: Record<string, { catNumber: string; status: string }>;
-  voidedShowAwards: Record<string, boolean>;
+  voidedShowAwards: Record<string, boolean>; // DEPRECATED: kept for backward compatibility
   kittenCounts: {
     lhKittens: number;
     shKittens: number;
@@ -19,17 +19,40 @@ export type KittenValidationInput = {
 };
 
 /**
+ * Check if a cat number input is VOID (case-insensitive)
+ * @param {string} catNumber - The cat number to check
+ * @returns {boolean} True if the input is VOID
+ */
+export function isVoidInput(catNumber: string): boolean {
+  return catNumber.trim().toUpperCase() === 'VOID';
+}
+
+/**
+ * Validate cat number format: either a number 1-450 or VOID (case-insensitive)
+ * @param {string} catNumber - The cat number to validate
+ * @returns {boolean} True if valid
+ */
+export function validateCatNumberFormat(catNumber: string): boolean {
+  if (!catNumber || catNumber.trim() === '') return true; // Empty is valid
+  if (isVoidInput(catNumber)) return true; // VOID is valid
+  const num = Number(catNumber);
+  return !isNaN(num) && num >= 1 && num <= 450;
+}
+
+/**
  * Validate the Kitten tab: sequential entry, duplicate, range, voiding. Only KIT status allowed.
  *
  * - If catNumber is empty, do not require or check status (no error).
+ * - If catNumber is VOID, do not require or check status (no error).
  * - Only filled rows require status === 'KIT'.
+ * - VOIDED placements are treated as if they don't exist for validation purposes.
  *
  * @param {KittenValidationInput} input
  * @returns {Record<string, string>} errors keyed by cell
  */
 export function validateKittenTab(input: KittenValidationInput): Record<string, string> {
   const errors: Record<string, string> = {};
-  const { columns, showAwards, voidedShowAwards, kittenCounts } = input;
+  const { columns, showAwards, kittenCounts } = input;
   
   // Helper function to get breakpoint for a ring type
   const getBreakpointForRingType = (ringType: string): number => {
@@ -49,17 +72,21 @@ export function validateKittenTab(input: KittenValidationInput): Record<string, 
     const maxRows = getBreakpointForRingType(col.specialty);
     // Map from catNumber to all row indices where it appears (excluding voided and empty)
     const catNumberToRows: Record<string, number[]> = {};
+    
     for (let rowIdx = 0; rowIdx < maxRows; rowIdx++) {
       const key = `${colIdx}-${rowIdx}`;
       const cell = showAwards[key] || { catNumber: '', status: 'KIT' };
-      const voided = voidedShowAwards[key];
-      if (voided) continue;
-      // Range check
-      if (cell.catNumber && (isNaN(Number(cell.catNumber)) || Number(cell.catNumber) < 1 || Number(cell.catNumber) > 450)) {
-        errors[key] = 'Cat number must be between 1 and 450';
+      
+      // Skip VOIDED placements for validation (treat as if they don't exist)
+      if (isVoidInput(cell.catNumber)) continue;
+      
+      // Format validation
+      if (cell.catNumber && !validateCatNumberFormat(cell.catNumber)) {
+        errors[key] = 'Cat number must be between 1-450 or VOID';
         continue;
       }
-      // Sequential entry
+      
+      // Sequential entry check
       if (cell.catNumber === '' && firstEmpty === -1) {
         firstEmpty = rowIdx;
       }
@@ -67,18 +94,20 @@ export function validateKittenTab(input: KittenValidationInput): Record<string, 
         errors[key] = 'You must fill previous placements before entering this position.';
         continue;
       }
-      // Build map for duplicate detection
-      if (cell.catNumber) {
+      
+      // Build map for duplicate detection (only for non-VOID cat numbers)
+      if (cell.catNumber && !isVoidInput(cell.catNumber)) {
         if (!catNumberToRows[cell.catNumber]) catNumberToRows[cell.catNumber] = [];
         catNumberToRows[cell.catNumber].push(rowIdx);
       }
-      // Status check: Only require status === 'KIT' if catNumber is present
-      if (cell.catNumber && cell.status !== 'KIT') {
+      
+      // Status check: Only require status === 'KIT' if catNumber is present and not VOID
+      if (cell.catNumber && !isVoidInput(cell.catNumber) && cell.status !== 'KIT') {
         errors[key] = 'Status must be KIT';
         continue;
       }
-      // If catNumber is empty, do not check or require status (no error)
     }
+    
     // After collecting, set duplicate error for all rows with duplicate cat numbers
     Object.entries(catNumberToRows).forEach(([catNum, rows]) => {
       if (catNum && rows.length > 1) {
@@ -89,5 +118,6 @@ export function validateKittenTab(input: KittenValidationInput): Record<string, 
       }
     });
   });
+  
   return errors;
 } 

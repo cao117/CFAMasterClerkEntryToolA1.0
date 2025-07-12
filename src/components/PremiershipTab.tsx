@@ -3,7 +3,7 @@ import { handleSaveToCSV } from '../utils/formActions';
 import Modal from './Modal';
 import ActionButtons from './ActionButtons';
 import * as premiershipValidation from '../validation/premiershipValidation';
-
+import CustomSelect from './CustomSelect';
 
 
 interface Judge {
@@ -553,81 +553,82 @@ export default function PremiershipTab({
        />
       {/* Premiership Finals - Premium Design */}
       <div className="group relative">
-        <div className="absolute inset-0 bg-gradient-to-br from-rose-50 via-pink-50 to-fuchsia-50 rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-500 blur-xl"></div>
-        <div className="relative bg-white border-2 border-gray-200 rounded-2xl p-6 shadow-lg hover:shadow-2xl hover:shadow-rose-200/30 transition-all duration-500 transform hover:scale-[1.01] group-hover:border-rose-300">
-          {/* Decorative corner accent */}
-          <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-br from-rose-400 to-pink-500 rounded-bl-2xl opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
-          
-          <h2 className="flex items-center justify-between mb-6">
-            <div className="flex items-center space-x-3">
-              <span className="p-1.5 bg-gradient-to-br from-cyan-500 to-blue-400 rounded-xl shadow flex-shrink-0">
-                {/* Minimal Trophy Icon */}
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 21h8M12 17v4M7 4h10l1 5a5 5 0 01-10 0l1-5zm0 0V2m10 2V2" />
-                </svg>
-              </span>
-              <span className="text-xl font-bold text-gray-800">Premiership Finals</span>
-            </div>
-            
-            {/* Premium Ring Jump Dropdown */}
-            <div className="flex items-center">
-              <select
-                className="px-4 py-2 bg-gradient-to-r from-rose-50 to-pink-50 border-2 border-rose-300 rounded-xl text-sm font-semibold shadow-lg focus:border-rose-400 focus:ring-4 focus:ring-rose-200/30 focus:outline-none transition-all duration-300 hover:border-rose-400 hover:shadow-xl"
-                style={{ minWidth: 200, maxWidth: 280 }}
-                onChange={handleRingJump}
-                defaultValue=""
-              >
-                <option value="" disabled>⭐ Jump to Ring...</option>
-                {columns.map((col, idx) => (
-                  <option key={idx} value={col.judge.id}>
-                    Ring {col.judge.id} - {col.judge.acronym}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </h2>
+        {/* Sticky header and dropdown - match ChampionshipTab layout */}
+        <div className="sticky top-0 z-30 bg-white flex items-center justify-between px-6 pt-4 pb-3 gap-4">
+          {/* Left: Icon, Title, Arrow (if present) */}
+          <div className="flex items-center min-w-0">
+            <span className="p-1.5 bg-gradient-to-br from-blue-500 to-blue-400 rounded-xl shadow flex-shrink-0">
+              {/* Blue Ribbon Icon */}
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <circle cx="12" cy="8" r="5" strokeWidth="2" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 13v6m0 0l-2.5-2.5M12 19l2.5-2.5" />
+              </svg>
+            </span>
+            <span className="text-xl font-bold text-blue-700 ml-3">Premiership Finals</span>
+            {/* Optional: Scroll button, if you want parity with ChampionshipTab */}
+            {/* <button ...>...</button> */}
+          </div>
+          {/* Right: Minimal Dropdown, inline blue icon in selected value only */}
+          <CustomSelect
+            options={columns.map((col, idx) => `Ring ${col.judge.id} - ${col.judge.acronym}`)}
+            value={
+              focusedColumnIndex !== null && focusedColumnIndex >= 0 && focusedColumnIndex < columns.length
+                ? `Ring ${columns[focusedColumnIndex].judge.id} - ${columns[focusedColumnIndex].judge.acronym}`
+                : `Ring ${columns[0].judge.id} - ${columns[0].judge.acronym}`
+            }
+            onChange={(val: string) => {
+              const ringId = parseInt(val.split(" ")[1]);
+              const colIdx = columns.findIndex(col => col.judge.id === ringId);
+              if (colIdx === -1) return;
+              setFocusedColumnIndex(colIdx);
+              const th = document.getElementById(`ring-th-${colIdx}`);
+              const container = tableContainerRef.current;
+              if (th && container) {
+                const frozenWidth = 140;
+                const scrollLeft = th.offsetLeft - frozenWidth;
+                container.scrollTo({ left: scrollLeft, behavior: 'smooth' });
+              }
+            }}
+            className="w-[220px] font-semibold text-base rounded-full px-4 py-2 bg-white border-2 border-blue-200 shadow-md hover:shadow-lg focus:border-blue-400 focus:shadow-lg text-blue-700 transition-all duration-200"
+            ariaLabel="Jump to Ring"
+            selectedIcon="🎗️"
+            dropdownMenuClassName="w-[220px] rounded-xl bg-gradient-to-b from-white via-blue-50 to-white shadow-xl border-2 border-blue-200 text-base font-semibold text-blue-800 transition-all duration-200"
+            highlightBg="bg-blue-50"
+            highlightText="text-blue-900"
+            selectedBg="bg-blue-100"
+            selectedText="text-blue-800"
+            hoverBg="bg-blue-50"
+            hoverText="text-blue-900"
+          />
         </div>
-        <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl border border-gray-200 overflow-hidden shadow-lg">
-          <div className="table-container overflow-x-auto" ref={tableContainerRef}>
-            <table className="border-collapse" style={{ width: 'auto', tableLayout: 'fixed' }}>
-              <thead>
-                {/* Header Row 1: Ring Numbers */}
-                <tr className="cfa-table-header sticky-header sticky-header-1">
-                  <th className="text-left py-1 pl-4 font-medium border-r border-gray-300 frozen-column" style={{ width: '140px', minWidth: '140px' }}></th>
+        {/* Table scroll container with sticky header */}
+        <div className="relative">
+          <div
+            className="outer-table-scroll-container overflow-x-auto border border-blue-200 bg-white shadow-lg"
+            ref={tableContainerRef}
+            style={{ borderTopLeftRadius: 0, borderTopRightRadius: 0, borderBottomLeftRadius: 0, borderBottomRightRadius: 0, marginTop: 0, paddingTop: 0 }}
+          >
+            <table className="border-collapse w-auto table-fixed divide-y divide-gray-200 bg-white" style={{ borderTopLeftRadius: 0, borderTopRightRadius: 0, borderBottomLeftRadius: 0, borderBottomRightRadius: 0, marginTop: 0, paddingTop: 0 }}>
+              <thead style={{ margin: 0, padding: 0 }}>
+                <tr className="cfa-table-header-modern" style={{ margin: 0, padding: 0, borderTopLeftRadius: 0, borderTopRightRadius: 0, background: 'linear-gradient(90deg, #3b82f6 0%, #60a5fa 100%)', color: '#fff', boxShadow: '0 6px 24px 0 rgba(59,130,246,0.12), 0 1.5px 0 0 #C7B273', borderBottom: '4px solid #C7B273' }}>
+                  <th className="cfa-table-header-cell-modern text-left pl-6 align-bottom" style={{ minWidth: 140, maxWidth: 140, verticalAlign: 'top', borderTopLeftRadius: 0, margin: 0, padding: 0 }}>
+                    <div className="flex flex-col justify-start items-start gap-0.5 relative">
+                      <span className="header-main block">Position</span>
+                      <span className="header-sub block">Placement</span>
+                    </div>
+                  </th>
                   {columns.map((column, index) => (
                     <th
+                      key={`header-modern-${index}`}
                       id={`ring-th-${index}`}
-                      key={`ring-${index}`}
-                      className={`text-center py-1 px-1 font-medium text-sm border-r border-gray-300 ${shouldApplyRingGlow(index) ? 'ring-glow' : ''}`}
-                      style={{ width: '120px', minWidth: '120px' }}
+                      className={`cfa-table-header-cell-modern text-center align-bottom`}
+                      style={{ width: 190, minWidth: 190, maxWidth: 190, verticalAlign: 'top', borderTopRightRadius: 0, margin: 0, padding: 0 }}
                     >
-                      Ring {column.judge.id}
-                    </th>
-                  ))}
-                </tr>
-                {/* Header Row 2: Judge Acronyms */}
-                <tr className="cfa-table-header sticky-header sticky-header-2">
-                  <th className="text-left py-1 pl-4 font-medium border-r border-gray-300 frozen-column" style={{ width: '140px', minWidth: '140px' }}></th>
-                  {columns.map((column, index) => (
-                    <th
-                      key={`acronym-${index}`}
-                      className={`text-center py-1 px-1 font-medium text-sm border-r border-gray-300 ${shouldApplyRingGlow(index) ? 'ring-glow' : ''}`}
-                      style={{ width: '120px', minWidth: '120px' }}
-                    >
-                      {column.judge.acronym}
-                    </th>
-                  ))}
-                </tr>
-                {/* Header Row 3: Ring Types */}
-                <tr className="cfa-table-header sticky-header sticky-header-3">
-                  <th className="text-left py-1 pl-4 font-medium border-r border-gray-300 frozen-column" style={{ width: '140px', minWidth: '140px' }}>Position</th>
-                  {columns.map((column, index) => (
-                    <th
-                      key={`type-${index}`}
-                      className={`text-center py-1 px-1 font-medium text-sm border-r border-gray-300 ${shouldApplyRingGlow(index) ? 'ring-glow' : ''}`}
-                      style={{ width: '120px', minWidth: '120px' }}
-                    >
-                      {column.specialty}
+                      <div className="flex flex-col items-center justify-center gap-0.5 relative">
+                        <span className="header-main block">Ring {column.judge.id}</span>
+                        <span className="header-sub font-semibold block">{column.judge.acronym}</span>
+                        <span className="header-sub italic block">{column.specialty}</span>
+                      </div>
                     </th>
                   ))}
                 </tr>

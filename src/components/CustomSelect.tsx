@@ -8,6 +8,14 @@ import React, { useState, useRef, useEffect } from 'react';
  * @param {string} className - Additional classes for the select box
  * @param {string} placeholder - Placeholder text
  * @param {string} ariaLabel - ARIA label for accessibility
+ * @param {React.ReactNode} selectedIcon - Icon to show in selected value
+ * @param {string} dropdownMenuClassName - Additional classes for dropdown menu
+ * @param {string} highlightBg - Background color class for highlighted items
+ * @param {string} highlightText - Text color class for highlighted items
+ * @param {string} selectedBg - Background color class for selected items
+ * @param {string} selectedText - Text color class for selected items
+ * @param {string} hoverBg - Background color class for hover states
+ * @param {string} hoverText - Text color class for hover states
  */
 const CustomSelect: React.FC<{
   options: string[];
@@ -18,7 +26,28 @@ const CustomSelect: React.FC<{
   ariaLabel?: string;
   selectedIcon?: React.ReactNode;
   dropdownMenuClassName?: string;
-}> = ({ options, value, onChange, className = '', placeholder = 'Select...', ariaLabel, selectedIcon, dropdownMenuClassName = '' }) => {
+  highlightBg?: string;
+  highlightText?: string;
+  selectedBg?: string;
+  selectedText?: string;
+  hoverBg?: string;
+  hoverText?: string;
+}> = ({ 
+  options, 
+  value, 
+  onChange, 
+  className = '', 
+  placeholder = 'Select...', 
+  ariaLabel, 
+  selectedIcon, 
+  dropdownMenuClassName = '',
+  highlightBg = 'bg-violet-50',
+  highlightText = 'text-violet-900',
+  selectedBg = 'bg-violet-100',
+  selectedText = 'text-violet-800',
+  hoverBg = 'bg-violet-50',
+  hoverText = 'text-violet-900'
+}) => {
   const [open, setOpen] = useState(false);
   const [highlighted, setHighlighted] = useState(-1);
   const ref = useRef<HTMLDivElement>(null);
@@ -100,11 +129,11 @@ const CustomSelect: React.FC<{
               aria-selected={value === opt}
               className={`px-4 py-2 cursor-pointer text-base font-semibold transition-all duration-150 rounded-lg mx-1 my-0.5 outline-none
                 ${highlighted === i
-                  ? 'bg-violet-50 text-violet-900 font-bold'
+                  ? `${highlightBg} ${highlightText} font-bold`
                   : value === opt
-                    ? 'bg-violet-100 text-violet-800'
+                    ? `${selectedBg} ${selectedText}`
                     : ''}
-                hover:bg-violet-50 hover:text-violet-900 hover:font-bold
+                hover:${hoverBg} hover:${hoverText} hover:font-bold
               `}
               onMouseEnter={() => setHighlighted(i)}
               onMouseDown={e => { e.preventDefault(); onChange(opt); setOpen(false); }}
