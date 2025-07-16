@@ -71,10 +71,6 @@ type ChampionshipTabData = {
   championsFinals: { [key: string]: string };
   lhChampionsFinals: { [key: string]: string };
   shChampionsFinals: { [key: string]: string };
-      voidedShowAwards: { [key: string]: boolean };
-      voidedChampionsFinals: { [key: string]: boolean };
-      voidedLHChampionsFinals: { [key: string]: boolean };
-      voidedSHChampionsFinals: { [key: string]: boolean };
   errors: { [key: string]: string };
 };
 
@@ -252,18 +248,6 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
             catNumber: value,
             status: prevCell.status || (value ? 'GC' : '')
           };
-          // --- Auto-void logic: if this cat number is voided elsewhere in the column, void this cell too ---
-          if (value && value.trim() !== '') {
-            const isVoided = (
-              Object.keys(prev.voidedShowAwards).some(k => k.startsWith(`${columnIndex}-`) && prev.showAwards[k]?.catNumber === value && prev.voidedShowAwards[k]) ||
-              Object.keys(prev.voidedChampionsFinals).some(k => k.startsWith(`${columnIndex}-`) && prev.championsFinals[k] === value && prev.voidedChampionsFinals[k]) ||
-              Object.keys(prev.voidedLHChampionsFinals).some(k => k.startsWith(`${columnIndex}-`) && prev.lhChampionsFinals[k] === value && prev.voidedLHChampionsFinals[k]) ||
-              Object.keys(prev.voidedSHChampionsFinals).some(k => k.startsWith(`${columnIndex}-`) && prev.shChampionsFinals[k] === value && prev.voidedSHChampionsFinals[k])
-            );
-            setChampionshipTabDataVoidState('voidedShowAwards', columnIndex, position, isVoided);
-          } else {
-            setChampionshipTabDataVoidState('voidedShowAwards', columnIndex, position, false);
-          }
           return {
             ...prev,
             showAwards: {
@@ -293,19 +277,6 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
     const updateFinals = (section: 'champions' | 'lhChampions' | 'shChampions', columnIndex: number, position: number, value: string) => {
       const key = `${columnIndex}-${position}`;
       setChampionshipTabData((prev: ChampionshipTabData) => {
-        // --- Auto-void logic: if this cat number is voided elsewhere in the column, void this cell too ---
-        let isVoided = false;
-        if (value && value.trim() !== '') {
-          isVoided = (
-            Object.keys(prev.voidedShowAwards).some(k => k.startsWith(`${columnIndex}-`) && prev.showAwards[k]?.catNumber === value && prev.voidedShowAwards[k]) ||
-            Object.keys(prev.voidedChampionsFinals).some(k => k.startsWith(`${columnIndex}-`) && prev.championsFinals[k] === value && prev.voidedChampionsFinals[k]) ||
-            Object.keys(prev.voidedLHChampionsFinals).some(k => k.startsWith(`${columnIndex}-`) && prev.lhChampionsFinals[k] === value && prev.voidedLHChampionsFinals[k]) ||
-            Object.keys(prev.voidedSHChampionsFinals).some(k => k.startsWith(`${columnIndex}-`) && prev.shChampionsFinals[k] === value && prev.voidedSHChampionsFinals[k])
-          );
-          setChampionshipTabDataVoidState(sectionToVoidKey(section), columnIndex, position, isVoided);
-        } else {
-          setChampionshipTabDataVoidState(sectionToVoidKey(section), columnIndex, position, false);
-        }
         // Update the finals value
         return {
           ...prev,
@@ -316,32 +287,6 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
         };
       });
     };
-
-    /**
-     * Helper to set void state for a given section/position.
-     */
-    function setChampionshipTabDataVoidState(section: 'voidedShowAwards' | 'voidedChampionsFinals' | 'voidedLHChampionsFinals' | 'voidedSHChampionsFinals', columnIndex: number, position: number, voided: boolean) {
-      const key = `${columnIndex}-${position}`;
-      setChampionshipTabData((prev: ChampionshipTabData) => ({
-        ...prev,
-        [section]: {
-          ...prev[section],
-          [key]: voided
-          }
-      }));
-    }
-
-    /**
-     * Helper to map section to void state key.
-     */
-    function sectionToVoidKey(section: 'champions' | 'lhChampions' | 'shChampions') {
-      switch (section) {
-        case 'champions': return 'voidedChampionsFinals';
-        case 'lhChampions': return 'voidedLHChampionsFinals';
-        case 'shChampions': return 'voidedSHChampionsFinals';
-        default: return 'voidedChampionsFinals';
-      }
-    }
 
     /**
      * Helper to map section to finals key.
@@ -356,11 +301,6 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
     }
 
     // Getter functions
-    const getShowAward = (columnIndex: number, position: number): CellData => {
-      const key = `${columnIndex}-${position}`;
-      return championshipTabData.showAwards[key] || { catNumber: '', status: 'GC' };
-    };
-
     const getFinalsValue = (section: 'champions' | 'lhChampions' | 'shChampions', columnIndex: number, position: number): string => {
       const key = `${columnIndex}-${position}`;
       switch (section) {
@@ -562,10 +502,6 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
         championsFinals: newChampionsFinals,
         lhChampionsFinals: newLhChampionsFinals,
         shChampionsFinals: newShChampionsFinals,
-        voidedShowAwards: {},
-        voidedChampionsFinals: {},
-        voidedLHChampionsFinals: {},
-        voidedSHChampionsFinals: {},
         errors: {}
       }));
       // After state is updated, trigger a full-form validation to clear any stale errors
@@ -579,10 +515,7 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
           shChampionsFinals: newShChampionsFinals,
           championshipTotal,
           championshipCounts,
-          voidedShowAwards: {},
-          voidedChampionsFinals: {},
-          voidedLHChampionsFinals: {},
-          voidedSHChampionsFinals: {}
+          // [VOID LOGIC REFACTOR] Removed last remaining voided state properties from object initialization.
           })
         );
       }, 0);
@@ -617,6 +550,38 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
       );
     }, [columns, championshipTabData.showAwards, championshipTabData.championsFinals, championshipTabData.lhChampionsFinals, championshipTabData.shChampionsFinals, championshipTotal, championshipCounts]);
 
+    // Defensive getter for showAwards (Top 10/15)
+    const getShowAward = (colIdx: number, i: number) =>
+      championshipTabData.showAwards[`${colIdx}-${i}`] || { catNumber: '', status: 'GC' };
+
+    // Ensure showAwards is initialized for all visible cells (robust, merge missing keys)
+    useEffect(() => {
+      if (columns.length > 0 && numAwardRows > 0) {
+        setChampionshipTabData(prev => {
+          // Build a new object with all required keys
+          const newShowAwards = { ...prev.showAwards };
+          let changed = false;
+          for (let colIdx = 0; colIdx < columns.length; colIdx++) {
+            for (let i = 0; i < numAwardRows; i++) {
+              const key = `${colIdx}-${i}`;
+              if (!newShowAwards[key]) {
+                newShowAwards[key] = { catNumber: '', status: 'GC' };
+                changed = true;
+              }
+            }
+          }
+          if (changed) {
+            return {
+              ...prev,
+              showAwards: newShowAwards,
+            };
+          }
+          return prev;
+        });
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [columns.length, numAwardRows]);
+
     // Action button handlers
     const handleSaveToCSVClick = () => {
       // Check for validation errors before CSV export
@@ -645,10 +610,6 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
         championsFinals: {},
         lhChampionsFinals: {},
         shChampionsFinals: {},
-        voidedShowAwards: {},
-        voidedChampionsFinals: {},
-        voidedLHChampionsFinals: {},
-        voidedSHChampionsFinals: {},
         errors: {},
       }));
       
@@ -699,85 +660,6 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
         return 'cfa-input-error'; // Use CFA input error styling with red background fill
       }
       return 'border-gray-300';
-    };
-
-    /**
-     * Synchronized voiding logic for Championship tab.
-     * If a cat number is voided in any cell in a column, all other cells in that column with the same cat number (across all sections) are also voided.
-     * If any voided checkbox is unchecked, all instances are unvoided.
-     * This matches the Premiership tab logic and CFA rules.
-     *
-     * @param section Section name ('showAwards' | 'championsFinals' | 'lhChampionsFinals' | 'shChampionsFinals')
-     * @param columnIndex Column index (ring)
-     * @param position Row/position in section
-     * @param voided Boolean: true to void, false to unvoid
-     */
-    const updateVoidStateColumnWide = (
-      section: 'showAwards' | 'championsFinals' | 'lhChampionsFinals' | 'shChampionsFinals',
-      columnIndex: number,
-      position: number,
-      voided: boolean
-    ) => {
-      // Get the Cat # for the toggled cell
-      let catNumber = '';
-      if (section === 'showAwards') catNumber = championshipTabData.showAwards[`${columnIndex}-${position}`]?.catNumber || '';
-      if (section === 'championsFinals') catNumber = championshipTabData.championsFinals[`${columnIndex}-${position}`] || '';
-      if (section === 'lhChampionsFinals') catNumber = championshipTabData.lhChampionsFinals[`${columnIndex}-${position}`] || '';
-      if (section === 'shChampionsFinals') catNumber = championshipTabData.shChampionsFinals[`${columnIndex}-${position}`] || '';
-      if (!catNumber) return;
-      // Find all keys in all sections for this column where the Cat # matches
-      setChampionshipTabData((prev: ChampionshipTabData) => {
-        const newData = { ...prev };
-        // Show Awards
-        Object.keys(newData.showAwards).forEach(key => {
-          const [colIdx] = key.split('-').map(Number);
-          if (colIdx === columnIndex && newData.showAwards[key]?.catNumber === catNumber) {
-            newData.voidedShowAwards[key] = voided;
-          }
-        });
-        // Best AB CH
-        Object.keys(newData.championsFinals).forEach(key => {
-          const [colIdx] = key.split('-').map(Number);
-          if (colIdx === columnIndex && newData.championsFinals[key] === catNumber) {
-            newData.voidedChampionsFinals[key] = voided;
-          }
-        });
-        // Best LH CH
-        Object.keys(newData.lhChampionsFinals).forEach(key => {
-          const [colIdx] = key.split('-').map(Number);
-          if (colIdx === columnIndex && newData.lhChampionsFinals[key] === catNumber) {
-            newData.voidedLHChampionsFinals[key] = voided;
-          }
-        });
-        // Best SH CH
-        Object.keys(newData.shChampionsFinals).forEach(key => {
-          const [colIdx] = key.split('-').map(Number);
-          if (colIdx === columnIndex && newData.shChampionsFinals[key] === catNumber) {
-            newData.voidedSHChampionsFinals[key] = voided;
-          }
-        });
-        return newData;
-      });
-    };
-
-    const getVoidState = (section: 'showAwards' | 'championsFinals' | 'lhChampionsFinals' | 'shChampionsFinals', columnIndex: number, position: number): boolean => {
-      const key = `${columnIndex}-${position}`;
-      switch (section) {
-        case 'showAwards':
-          return championshipTabData.voidedShowAwards[key] || false;
-        case 'championsFinals':
-          return championshipTabData.voidedChampionsFinals[key] || false;
-        case 'lhChampionsFinals':
-          return championshipTabData.voidedLHChampionsFinals[key] || false;
-        case 'shChampionsFinals':
-          return championshipTabData.voidedSHChampionsFinals[key] || false;
-        default:
-          return false;
-      }
-    };
-
-    const shouldApplyRingGlow = (columnIndex: number): boolean => {
-      return focusedColumnIndex === columnIndex;
     };
 
     // Ref for the table container (for horizontal scrolling)
@@ -876,17 +758,13 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
         shChampionsFinals: championshipTabData.shChampionsFinals,
         championshipTotal,
         championshipCounts,
-        voidedShowAwards: championshipTabData.voidedShowAwards,
-        voidedChampionsFinals: championshipTabData.voidedChampionsFinals,
-        voidedLHChampionsFinals: championshipTabData.voidedLHChampionsFinals,
-        voidedSHChampionsFinals: championshipTabData.voidedSHChampionsFinals
       };
       
       // Run basic validation for this input
       if (value.trim() !== '') {
         // Validate cat number format
         if (!validateCatNumber(value)) {
-          setErrors((prev: any) => ({ ...prev, [errorKey]: 'Cat number must be between 1-450' }));
+          setErrors((prev: any) => ({ ...prev, [errorKey]: 'Cat number must be between 1-450 or VOID' }));
           return;
         }
         // Sequential entry validation
@@ -909,6 +787,171 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
         </div>
       );
     }
+
+    // 1. Add isVoidInput utility (if not already present)
+    function isVoidInput(catNumber: string): boolean {
+      return typeof catNumber === 'string' && catNumber.trim().toUpperCase() === 'VOID';
+    }
+
+    // --- CONTEXT-7: PremiershipTab-style Cat # input dynamic validation for all sections ---
+    // Helper to namespace Cat # input keys by section for local input state
+    const getCatInputKey = (section: 'showAwards' | 'champions' | 'lhChampions' | 'shChampions', colIdx: number, rowIdx: number) => `${section}-${colIdx}-${rowIdx}`;
+
+    // Generalized onChange handler for Cat # input (only updates local input state)
+    const handleCatInputChange = (section: 'showAwards' | 'champions' | 'lhChampions' | 'shChampions', colIdx: number, rowIdx: number, value: string) => {
+      const key = getCatInputKey(section, colIdx, rowIdx);
+      setLocalInputState(prev => ({ ...prev, [key]: value }));
+    };
+
+    // --- CONTEXT-7: PremiershipTab-style Cat # input validation order for all sections ---
+    // Helper: Get error key for each section (must match keys in validateChampionshipTab error object)
+    const getErrorKey = (section: 'showAwards' | 'champions' | 'lhChampions' | 'shChampions', colIdx: number, rowIdx: number) => {
+      switch (section) {
+        case 'showAwards': return `${colIdx}-${rowIdx}`; // Use unprefixed key for Top 10/15 to match error object
+        case 'champions': return `champions-${colIdx}-${rowIdx}`;
+        case 'lhChampions': return `lhChampions-${colIdx}-${rowIdx}`;
+        case 'shChampions': return `shChampions-${colIdx}-${rowIdx}`;
+        default: return '';
+      }
+    };
+
+    // Generalized onBlur handler for Cat # input (updates model and triggers validation in PremiershipTab order)
+    const handleCatInputBlur = (section: 'showAwards' | 'champions' | 'lhChampions' | 'shChampions', colIdx: number, rowIdx: number) => {
+      const key = getCatInputKey(section, colIdx, rowIdx);
+      const localValue = localInputState[key];
+      let modelValue = '';
+      if (section === 'showAwards') modelValue = championshipTabData.showAwards[`${colIdx}-${rowIdx}`]?.catNumber ?? '';
+      if (section === 'champions') modelValue = championshipTabData.championsFinals[`${colIdx}-${rowIdx}`] ?? '';
+      if (section === 'lhChampions') modelValue = championshipTabData.lhChampionsFinals[`${colIdx}-${rowIdx}`] ?? '';
+      if (section === 'shChampions') modelValue = championshipTabData.shChampionsFinals[`${colIdx}-${rowIdx}`] ?? '';
+      // Always update model with localValue (including empty string) if localValue is defined
+      if (localValue !== undefined) {
+      if (section === 'showAwards') {
+          updateShowAward(colIdx, rowIdx, 'catNumber', localValue); // allow ''
+      } else {
+          updateFinals(section as any, colIdx, rowIdx, localValue); // allow ''
+        }
+      }
+      // --- PremiershipTab-style validation order ---
+      const errorKey = getErrorKey(section, colIdx, rowIdx);
+      const input = {
+        columns,
+        showAwards: championshipTabData.showAwards,
+        championsFinals: championshipTabData.championsFinals,
+        lhChampionsFinals: championshipTabData.lhChampionsFinals,
+        shChampionsFinals: championshipTabData.shChampionsFinals,
+        championshipTotal,
+        championshipCounts
+      };
+      // --- Section-specific validation order ---
+      if (section === 'showAwards') {
+        // Top 10/15: VOID → format → duplicate (full-form) → sequential → always run full-form validation for all cells
+        // See VALIDATION_CHAMPIONSHIP.md for full validation order and rationale
+        if (isVoidInput(localValue)) {
+          console.log('[CH Tab] VOID check:', { errorKey, localValue });
+          setErrors((prev: any) => {
+            const copy = { ...prev };
+            delete copy[errorKey];
+            return copy;
+          });
+          const allErrors = validateChampionshipTab(input);
+          console.log('[CH Tab] After VOID, allErrors:', allErrors);
+          setErrors(allErrors);
+          setLocalInputState(prev => { const copy = { ...prev }; delete copy[key]; return copy; });
+          return;
+        }
+        if (localValue && !validateCatNumber(localValue)) {
+          console.log('[CH Tab] Format error:', { errorKey, localValue });
+          setErrors((prev: any) => ({ ...prev, [errorKey]: 'Cat number must be between 1-450 or VOID' }));
+          const allErrors = validateChampionshipTab(input);
+          console.log('[CH Tab] After format, allErrors:', allErrors);
+          setErrors(allErrors); // Always set all errors after any check
+          setLocalInputState(prev => { const copy = { ...prev }; delete copy[key]; return copy; });
+          return;
+        }
+        // Duplicate check (full-form): show duplicate error if present before sequential
+        const allErrors = validateChampionshipTab(input);
+        console.log('[CH Tab] After full-form validation:', { errorKey, errorForCell: allErrors[errorKey], allErrors });
+        if (allErrors[errorKey] && allErrors[errorKey].toLowerCase().includes('duplicate')) {
+          setErrors(allErrors); // Set all errors for all cells, not just this one
+          setLocalInputState(prev => { const copy = { ...prev }; delete copy[key]; return copy; });
+          return;
+        }
+        // Sequential entry check (only if no duplicate error)
+        if (!validateSequentialEntry(input, section, colIdx, rowIdx, localValue)) {
+          console.log('[CH Tab] Sequential error:', { errorKey, localValue });
+          setErrors((prev: any) => ({ ...prev, [errorKey]: 'You must fill previous placements before entering this position.' }));
+          const allErrorsSeq = validateChampionshipTab(input);
+          console.log('[CH Tab] After sequential, allErrorsSeq:', allErrorsSeq);
+          setErrors(allErrorsSeq); // Always set all errors after any check
+          setLocalInputState(prev => { const copy = { ...prev }; delete copy[key]; return copy; });
+          return;
+        }
+        // If no errors, always run full-form validation for all cells
+        console.log('[CH Tab] No errors, setting all errors:', validateChampionshipTab(input));
+        setErrors(validateChampionshipTab(input));
+        setLocalInputState(prev => { const copy = { ...prev }; delete copy[key]; return copy; });
+        return;
+      } else {
+        // Finals: VOID → format → full-form validation (duplicate) → sequential (if no duplicate) → clear error
+        if (isVoidInput(localValue)) {
+          setErrors((prev: any) => {
+            const copy = { ...prev };
+            delete copy[errorKey];
+            return copy;
+          });
+          setErrors(validateChampionshipTab(input));
+          setLocalInputState(prev => { const copy = { ...prev }; delete copy[key]; return copy; });
+          return;
+        }
+        if (localValue && !validateCatNumber(localValue)) {
+          setErrors((prev: any) => ({ ...prev, [errorKey]: 'Cat number must be between 1-450 or VOID' }));
+          setLocalInputState(prev => { const copy = { ...prev }; delete copy[key]; return copy; });
+          return;
+        }
+        const allErrors = validateChampionshipTab(input);
+        if (allErrors[errorKey] && allErrors[errorKey].toLowerCase().includes('duplicate')) {
+          setErrors((prev: any) => ({ ...prev, [errorKey]: allErrors[errorKey] }));
+          setLocalInputState(prev => { const copy = { ...prev }; delete copy[key]; return copy; });
+          return;
+        }
+        if (!validateSequentialEntry(input, section, colIdx, rowIdx, localValue)) {
+          setErrors((prev: any) => ({ ...prev, [errorKey]: 'You must fill previous placements before entering this position.' }));
+          setLocalInputState(prev => { const copy = { ...prev }; delete copy[key]; return copy; });
+          return;
+        }
+        setErrors((prev: any) => {
+          const copy = { ...prev };
+          delete copy[errorKey];
+          return copy;
+        });
+        setLocalInputState(prev => { const copy = { ...prev }; delete copy[key]; return copy; });
+        return;
+      }
+    };
+
+    // Generalized onFocus handler for Cat # input (selects text and sets local input state)
+    const handleCatInputFocusLocal = (section: 'showAwards' | 'champions' | 'lhChampions' | 'shChampions', colIdx: number, rowIdx: number, value: string, e: React.FocusEvent<HTMLInputElement>) => {
+      const key = getCatInputKey(section, colIdx, rowIdx);
+      setLocalInputState(prev => ({ ...prev, [key]: value }));
+      e.target.select();
+      setFocusedColumnIndex(colIdx);
+    };
+
+    // Generalized onKeyDown handler for Cat # input (triggers blur on Tab/Enter, preserves navigation)
+    const handleCatInputKeyDownLocal = (section: 'showAwards' | 'champions' | 'lhChampions' | 'shChampions', colIdx: number, rowIdx: number, e: React.KeyboardEvent<HTMLInputElement>, tableRowIdx: number) => {
+      if (e.key === 'Tab' || e.key === 'Enter') {
+        handleCatInputBlur(section, colIdx, rowIdx);
+      }
+      handleCatInputKeyDown(e, colIdx, tableRowIdx);
+    };
+
+    // Defensive: always prefer local input state if present, else model value
+    const getCatInputValue = (section: 'showAwards' | 'champions' | 'lhChampions' | 'shChampions', colIdx: number, rowIdx: number, modelValue: string) => {
+      const key = getCatInputKey(section, colIdx, rowIdx);
+      return localInputState[key] !== undefined ? localInputState[key] : modelValue;
+    };
+    // --- END CONTEXT-7 DYNAMIC VALIDATION PARITY ---
 
     return (
       <div className="p-8 space-y-8">
@@ -1027,7 +1070,7 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                         key={`header-modern-${index}`}
                         id={`ring-th-${index}`}
                         className={`cfa-table-header-cell-modern text-center align-bottom`}
-                        style={{ width: 190, minWidth: 190, maxWidth: 190, verticalAlign: 'top', borderTopRightRadius: 0, margin: 0, padding: 0 }}
+                        style={{ width: 170, minWidth: 170, maxWidth: 170, verticalAlign: 'top', borderTopRightRadius: 0, margin: 0, padding: 0 }}
                       >
                         <div className="flex flex-col items-center justify-center gap-0.5 relative">
                           <span className="header-main block">Ring {column.judge.id}</span>
@@ -1052,14 +1095,15 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                           if (i < getShowAwardsRowCount(columnIndex, col.specialty)) {
                             const award = getShowAward(columnIndex, i);
                             const errorKey = `${columnIndex}-${i}`;
+                            const hasCatNumber = (localInputState[errorKey] !== undefined ? localInputState[errorKey] : award.catNumber)?.trim();
                             return (
                               <td
                                 key={`award-${i}-${columnIndex}`}
-                                className={`py-2 px-2 border-r border-gray-200 align-top transition-all duration-150 ${shouldApplyRingGlow(columnIndex) ? ' border-l-4 border-r-4 border-violet-300 z-10' : ''} hover:bg-gray-50 whitespace-nowrap overflow-x-visible`}
+                                className={`py-2 px-2 border-r border-gray-200 align-top transition-all duration-150 ${focusedColumnIndex === columnIndex ? ' border-l-4 border-r-4 border-violet-300 z-10' : ''} hover:bg-gray-50 whitespace-nowrap overflow-x-visible`}
                                 style={{
-                                  width: (award.catNumber && award.catNumber.trim()) ? 130 : 110,
-                                  minWidth: (award.catNumber && award.catNumber.trim()) ? 130 : 110,
-                                  maxWidth: (award.catNumber && award.catNumber.trim()) ? 130 : 110,
+                                  width: hasCatNumber ? 110 : 90,
+                                  minWidth: hasCatNumber ? 110 : 90,
+                                  maxWidth: hasCatNumber ? 110 : 90,
                                   transition: 'width 0.2s'
                                 }}
                               >
@@ -1068,68 +1112,38 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                                     {/* Cat # input: rounded-md, semi-transparent, focus ring, shadow */}
                                     <input
                                       type="text"
-                                      className={`w-16 h-9 text-sm text-center font-medium rounded-md px-3 bg-white/60 border border-violet-200 shadow focus:border-violet-400 focus:ring-2 focus:ring-violet-100 focus:bg-white/90 focus:shadow-lg transition-all duration-200 placeholder-zinc-300 ${getVoidState('showAwards', columnIndex, i) ? 'opacity-50 grayscale pointer-events-none line-through' : ''} ${getBorderStyle(errorKey)}`}
+                                      className={`w-16 h-9 text-sm text-center font-medium rounded-md px-3 bg-white/60 border border-violet-200 shadow focus:border-violet-400 focus:ring-2 focus:ring-violet-100 focus:bg-white/90 focus:shadow-lg transition-all duration-200 placeholder-zinc-300 ${getBorderStyle(errorKey)} ${isVoidInput(award.catNumber) ? 'opacity-50 grayscale line-through' : ''}`}
                                       placeholder="Cat #"
-                                      value={localInputState[errorKey] !== undefined ? localInputState[errorKey] : award.catNumber}
-                                      onChange={(e) => setLocalInputState(prev => ({ ...prev, [errorKey]: e.target.value }))}
-                                      onBlur={(e) => {
-                                        updateShowAward(columnIndex, i, 'catNumber', e.target.value);
-                                        setLocalInputState(prev => { const copy = { ...prev }; delete copy[errorKey]; return copy; });
-                                      }}
-                                      disabled={getVoidState('showAwards', columnIndex, i)}
+                                      value={getCatInputValue('showAwards', columnIndex, i, award.catNumber)}
+                                      onChange={e => handleCatInputChange('showAwards', columnIndex, i, e.target.value)}
+                                      onBlur={() => handleCatInputBlur('showAwards', columnIndex, i)}
+                                      onFocus={e => handleCatInputFocusLocal('showAwards', columnIndex, i, award.catNumber, e)}
+                                      onKeyDown={e => handleCatInputKeyDownLocal('showAwards', columnIndex, i, e, i)}
                                       ref={el => {
                                         if (!catInputRefs.current[columnIndex]) {
                                           catInputRefs.current[columnIndex] = Array(totalCatRows).fill(null);
                                         }
                                         catInputRefs.current[columnIndex][i] = el;
                                       }}
-                                      onKeyDown={(e) => handleCatInputKeyDown(e, columnIndex, i)}
-                                      onFocus={(e) => {
-                                        e.target.select();
-                                        handleCatInputFocus(e, columnIndex);
-                                      }}
                                     />
-                                    {/* CustomSelect for status, lavender theme */}
-                                    <CustomSelect
-                                      options={['GC', 'CH', 'NOV']}
-                                      value={award.status || 'GC'}
-                                      onChange={val => updateShowAward(columnIndex, i, 'status', val)}
-                                      className="min-w-[70px]"
-                                      ariaLabel="Status"
-                                    />
-                                    {/* Void toggle: minimal, crisp, circular, lavender border, gold/purple gradient on check */}
-                                    {award.catNumber && award.catNumber.trim() && (
-                                      <div className="relative group/void">
-                                        <input
-                                          type="checkbox"
-                                          className="sr-only peer"
-                                          checked={getVoidState('showAwards', columnIndex, i)}
-                                          onChange={(e) => updateVoidStateColumnWide('showAwards', columnIndex, i, e.target.checked)}
-                                          onFocus={() => setFocusedColumnIndex(columnIndex)}
-                                          tabIndex={-1}
-                                          id={`void-toggle-${columnIndex}-${i}`}
-                                        />
-                                        <label htmlFor={`void-toggle-${columnIndex}-${i}`} className="w-5 h-5 flex items-center justify-center rounded-full border border-red-500 bg-white shadow-sm transition-all duration-200 cursor-pointer peer-checked:bg-white peer-checked:border-red-500 peer-checked:ring-2 peer-checked:ring-red-200 hover:ring-2 hover:ring-red-200 focus:ring-2 focus:ring-red-200">
-                                          {getVoidState('showAwards', columnIndex, i) && (
-                                            <svg className="w-3 h-3 text-red-500 font-bold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-                                            </svg>
-                                          )}
-                                        </label>
-                                          {/* Modern premium tooltip for void */}
-                                          <span className="absolute left-8 top-1/2 -translate-y-1/2 z-20 hidden group-hover/void:flex flex-row items-center">
-                                            {/* Arrow */}
-                                            <span className="w-0 h-0 mr-1 border-t-8 border-t-transparent border-b-8 border-b-transparent border-r-8 border-r-teal-300"></span>
-                                            {/* Tooltip Box */}
-                                            <span className="bg-white border border-teal-300 shadow-lg rounded-lg px-3 py-2 flex items-start gap-2 transition-all duration-200">
-                                              <svg className="w-4 h-4 text-teal-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <circle cx="12" cy="12" r="10" strokeWidth="2" />
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01" />
-                                          </svg>
-                                              <span className="text-sm font-medium text-teal-800 leading-snug">Mark this placement void.</span>
-                                            </span>
-                                        </span>
-                                      </div>
+                                    {/* Only render status dropdown if not VOID */}
+                                    {!isVoidInput(award.catNumber) && (
+                                      <CustomSelect
+                                        options={['GC', 'CH', 'NOV']}
+                                        value={award.status || 'GC'}
+                                        onChange={val => updateShowAward(columnIndex, i, 'status', val)}
+                                        className="min-w-[70px]"
+                                        ariaLabel="Status"
+                                        borderColor="border-violet-300"
+                                        focusBorderColor="focus:border-violet-500"
+                                        textColor="text-violet-700"
+                                        highlightBg="bg-violet-50"
+                                        highlightText="text-violet-900"
+                                        selectedBg="bg-violet-100"
+                                        selectedText="text-violet-800"
+                                        hoverBg="bg-violet-50"
+                                        hoverText="text-violet-900"
+                                      />
                                     )}
                                   </div>
                                     {/* Error message */}
@@ -1166,80 +1180,31 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                         </td>
                           {columns.map((_, columnIndex) => {
                             const col = columns[columnIndex];
-                            if (i < getFinalsRowCount(columnIndex, col.specialty, 'champions')) {
+                            const isFocused = focusedColumnIndex === columnIndex;
+                            const shouldRenderCell = i < getFinalsRowCount(columnIndex, col.specialty, 'champions');
                             const errorKey = `champions-${columnIndex}-${i}`;
                             return (
-                                <td key={`champions-${i}-${columnIndex}`} className={`py-2 px-2 border-r border-gray-200 align-top transition-all duration-150 ${shouldApplyRingGlow(columnIndex) ? ' border-l-4 border-r-4 border-violet-300 z-10' : ''} hover:bg-gray-50`}>
+                              <td key={`champions-${i}-${columnIndex}`} className={`py-2 px-2 border-r border-gray-200 align-top transition-all duration-150${isFocused ? ' border-l-4 border-r-4 border-violet-300 z-10' : ''} hover:bg-gray-50`}>
+                                {shouldRenderCell ? (
                                 <div className="flex flex-col items-start">
                                     <div className="flex gap-2 items-center">
-                                  {/* Cat # input: rounded-md, semi-transparent, focus ring, shadow */}
                                     <input
                                       type="text"
-                                    className={`w-16 h-9 text-sm text-center font-medium rounded-md px-3 bg-white/60 border border-violet-200 shadow focus:border-violet-400 focus:ring-2 focus:ring-violet-100 focus:bg-white/90 focus:shadow-lg transition-all duration-200 placeholder-zinc-300 ${getVoidState('championsFinals', columnIndex, i) ? 'opacity-50 grayscale pointer-events-none' : ''} ${getBorderStyle(errorKey)}`}
+                                    className={`w-16 h-9 text-sm text-center font-medium rounded-md px-3 bg-white/60 border border-violet-200 shadow focus:border-violet-400 focus:ring-2 focus:ring-violet-100 focus:bg-white/90 focus:shadow-lg transition-all duration-200 placeholder-zinc-300 ${getBorderStyle(errorKey)} ${isVoidInput(getFinalsValue('champions', columnIndex, i)) ? 'opacity-50 grayscale line-through' : ''}`}
                                       placeholder="Cat #"
-                                      value={localInputState[errorKey] !== undefined ? localInputState[errorKey] : getFinalsValue('champions', columnIndex, i)}
-                                      onChange={(e) => setLocalInputState(prev => ({ ...prev, [errorKey]: e.target.value }))}
-                                      onBlur={(e) => {
-                                        updateFinals('champions', columnIndex, i, e.target.value);
-                                        setLocalInputState(prev => { const copy = { ...prev }; delete copy[errorKey]; return copy; });
-                                      }}
-                                      disabled={getVoidState('championsFinals', columnIndex, i)}
+                                        value={getCatInputValue('champions', columnIndex, i, getFinalsValue('champions', columnIndex, i))}
+                                        onChange={e => handleCatInputChange('champions', columnIndex, i, e.target.value)}
+                                        onBlur={() => handleCatInputBlur('champions', columnIndex, i)}
+                                        onFocus={e => handleCatInputFocusLocal('champions', columnIndex, i, getFinalsValue('champions', columnIndex, i), e)}
+                                        onKeyDown={e => handleCatInputKeyDownLocal('champions', columnIndex, i, e, i + 4)}
                                       ref={el => {
                                         if (!catInputRefs.current[columnIndex]) {
                                           catInputRefs.current[columnIndex] = Array(totalCatRows).fill(null);
                                         }
-                                        catInputRefs.current[columnIndex][i + 15] = el; // Adjust index for Finals rows
-                                      }}
-                                      onKeyDown={(e) => handleCatInputKeyDown(e, columnIndex, i + 15)}
-                                      onFocus={(e) => {
-                                        e.target.select();
-                                        handleCatInputFocus(e, columnIndex);
+                                          catInputRefs.current[columnIndex][i + 4] = el; // Adjust index for Finals rows
                                       }}
                                     />
-                                    {/* CustomSelect for status, lavender theme */}
-                                    <CustomSelect
-                                      options={['GC', 'CH', 'NOV']}
-                                      value={getFinalsValue('champions', columnIndex, i) || 'GC'}
-                                      onChange={val => updateFinals('champions', columnIndex, i, val)}
-                                      className="min-w-[70px]"
-                                      ariaLabel="Status"
-                                    />
-                                    {/* Void toggle: minimal, crisp, circular, lavender border, gold/purple gradient on check */}
-                                    {getFinalsValue('champions', columnIndex, i) && getFinalsValue('champions', columnIndex, i).trim() && (
-                                    <div className="relative group/void">
-                                        <input
-                                          type="checkbox"
-                                        className="sr-only peer"
-                                          checked={getVoidState('championsFinals', columnIndex, i)}
-                                          onChange={(e) => updateVoidStateColumnWide('championsFinals', columnIndex, i, e.target.checked)}
-                                          onFocus={() => setFocusedColumnIndex(columnIndex)}
-                                          tabIndex={-1}
-                                        id={`void-toggle-champions-${columnIndex}-${i}`}
-                                      />
-                                      <label htmlFor={`void-toggle-champions-${columnIndex}-${i}`} className="w-5 h-5 flex items-center justify-center rounded-full border border-red-500 bg-white shadow-sm transition-all duration-200 cursor-pointer peer-checked:bg-white peer-checked:border-red-500 peer-checked:ring-2 peer-checked:ring-red-200 hover:ring-2 hover:ring-red-200 focus:ring-2 focus:ring-red-200">
-                                        {getVoidState('championsFinals', columnIndex, i) && (
-                                          <svg className="w-3 h-3 text-red-500 font-bold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-                                          </svg>
-                                        )}
-                                      </label>
-                                        {/* Modern premium tooltip for void */}
-                                        <span className="absolute left-8 top-1/2 -translate-y-1/2 z-20 hidden group-hover/void:flex flex-row items-center">
-                                          {/* Arrow */}
-                                          <span className="w-0 h-0 mr-1 border-t-8 border-t-transparent border-b-8 border-b-transparent border-r-8 border-r-teal-300"></span>
-                                          {/* Tooltip Box */}
-                                          <span className="bg-white border border-teal-300 shadow-lg rounded-lg px-3 py-2 flex items-start gap-2 transition-all duration-200">
-                                            <svg className="w-4 h-4 text-teal-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                              <circle cx="12" cy="12" r="10" strokeWidth="2" />
-                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01" />
-                                          </svg>
-                                              <span className="text-sm font-medium text-teal-800 leading-snug">Mark this placement void.</span>
-                                          </span>
-                                        </span>
-                                      </div>
-                                    )}
                                   </div>
-                                  {/* Error message */}
                                   {errors[errorKey] && (
                                     <div
                                       className="mt-1 rounded-lg bg-red-50 border border-red-300 px-3 py-2 shadow text-xs text-red-700 font-semibold flex items-center gap-2 whitespace-normal break-words w-full"
@@ -1252,10 +1217,9 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                                     </div>
                                   )}
                                 </div>
+                                ) : null}
                               </td>
                             );
-                          }
-                          return <td key={`champions-${i}-${columnIndex}`} className="py-2 px-2 border-r border-gray-200"></td>;
                         })}
                       </tr>
                     );
@@ -1273,80 +1237,31 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                         </td>
                         {columns.map((_, columnIndex) => {
                           const col = columns[columnIndex];
-                          if (i < getFinalsRowCount(columnIndex, col.specialty, 'lhChampions')) {
+                          const isFocused = focusedColumnIndex === columnIndex;
+                          const shouldRenderCell = i < getFinalsRowCount(columnIndex, col.specialty, 'lhChampions');
                             const errorKey = `lhChampions-${columnIndex}-${i}`;
                             return (
-                              <td key={`lhChampions-${i}-${columnIndex}`} className={`py-2 px-2 border-r border-gray-200 align-top transition-all duration-150 ${shouldApplyRingGlow(columnIndex) ? ' border-l-4 border-r-4 border-violet-300 z-10' : ''} hover:bg-gray-50`}>
+                            <td key={`lhChampions-${i}-${columnIndex}`} className={`py-2 px-2 border-r border-gray-200 align-top transition-all duration-150${isFocused ? ' border-l-4 border-r-4 border-violet-300 z-10' : ''} hover:bg-gray-50`}>
+                              {shouldRenderCell ? (
                                 <div className="flex flex-col items-start">
                                   <div className="flex gap-2 items-center">
-                                  {/* Cat # input: rounded-md, semi-transparent, focus ring, shadow */}
                                     <input
                                       type="text"
-                                    className={`w-16 h-9 text-sm text-center font-medium rounded-md px-3 bg-white/60 border border-violet-200 shadow focus:border-violet-400 focus:ring-2 focus:ring-violet-100 focus:bg-white/90 focus:shadow-lg transition-all duration-200 placeholder-zinc-300 ${getVoidState('lhChampionsFinals', columnIndex, i) ? 'opacity-50 grayscale pointer-events-none' : ''} ${getBorderStyle(errorKey)}`}
+                                    className={`w-16 h-9 text-sm text-center font-medium rounded-md px-3 bg-white/60 border border-violet-200 shadow focus:border-violet-400 focus:ring-2 focus:ring-violet-100 focus:bg-white/90 focus:shadow-lg transition-all duration-200 placeholder-zinc-300 ${getBorderStyle(errorKey)} ${isVoidInput(getFinalsValue('lhChampions', columnIndex, i)) ? 'opacity-50 grayscale line-through' : ''}`}
                                       placeholder="Cat #"
-                                      value={localInputState[errorKey] !== undefined ? localInputState[errorKey] : getFinalsValue('lhChampions', columnIndex, i)}
-                                      onChange={(e) => setLocalInputState(prev => ({ ...prev, [errorKey]: e.target.value }))}
-                                      onBlur={(e) => {
-                                        updateFinals('lhChampions', columnIndex, i, e.target.value);
-                                        setLocalInputState(prev => { const copy = { ...prev }; delete copy[errorKey]; return copy; });
-                                      }}
-                                      disabled={getVoidState('lhChampionsFinals', columnIndex, i)}
+                                      value={getCatInputValue('lhChampions', columnIndex, i, getFinalsValue('lhChampions', columnIndex, i))}
+                                      onChange={e => handleCatInputChange('lhChampions', columnIndex, i, e.target.value)}
+                                      onBlur={() => handleCatInputBlur('lhChampions', columnIndex, i)}
+                                      onFocus={e => handleCatInputFocusLocal('lhChampions', columnIndex, i, getFinalsValue('lhChampions', columnIndex, i), e)}
+                                      onKeyDown={e => handleCatInputKeyDownLocal('lhChampions', columnIndex, i, e, i + 9)}
                                       ref={el => {
                                         if (!catInputRefs.current[columnIndex]) {
                                           catInputRefs.current[columnIndex] = Array(totalCatRows).fill(null);
                                         }
-                                        catInputRefs.current[columnIndex][i + 20] = el; // Adjust index for LH Champions rows
-                                      }}
-                                      onKeyDown={(e) => handleCatInputKeyDown(e, columnIndex, i + 20)}
-                                      onFocus={(e) => {
-                                        e.target.select();
-                                        handleCatInputFocus(e, columnIndex);
+                                        catInputRefs.current[columnIndex][i + 9] = el; // Adjust index for LH Champions rows
                                       }}
                                     />
-                                    {/* CustomSelect for status, lavender theme */}
-                                    <CustomSelect
-                                      options={['GC', 'CH', 'NOV']}
-                                      value={getFinalsValue('lhChampions', columnIndex, i) || 'GC'}
-                                      onChange={val => updateFinals('lhChampions', columnIndex, i, val)}
-                                      className="min-w-[70px]"
-                                      ariaLabel="Status"
-                                    />
-                                    {/* Void toggle: minimal, crisp, circular, lavender border, gold/purple gradient on check */}
-                                    {getFinalsValue('lhChampions', columnIndex, i) && getFinalsValue('lhChampions', columnIndex, i).trim() && (
-                                    <div className="relative group/void">
-                                        <input
-                                          type="checkbox"
-                                        className="sr-only peer"
-                                          checked={getVoidState('lhChampionsFinals', columnIndex, i)}
-                                          onChange={(e) => updateVoidStateColumnWide('lhChampionsFinals', columnIndex, i, e.target.checked)}
-                                          onFocus={() => setFocusedColumnIndex(columnIndex)}
-                                          tabIndex={-1}
-                                        id={`void-toggle-lhChampions-${columnIndex}-${i}`}
-                                      />
-                                      <label htmlFor={`void-toggle-lhChampions-${columnIndex}-${i}`} className="w-5 h-5 flex items-center justify-center rounded-full border border-red-500 bg-white shadow-sm transition-all duration-200 cursor-pointer peer-checked:bg-white peer-checked:border-red-500 peer-checked:ring-2 peer-checked:ring-red-200 hover:ring-2 hover:ring-red-200 focus:ring-2 focus:ring-red-200">
-                                        {getVoidState('lhChampionsFinals', columnIndex, i) && (
-                                          <svg className="w-3 h-3 text-red-500 font-bold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-                                          </svg>
-                                        )}
-                                      </label>
-                                        {/* Modern premium tooltip for void */}
-                                        <span className="absolute left-8 top-1/2 -translate-y-1/2 z-20 hidden group-hover/void:flex flex-row items-center">
-                                          {/* Arrow */}
-                                          <span className="w-0 h-0 mr-1 border-t-8 border-t-transparent border-b-8 border-b-transparent border-r-8 border-r-teal-300"></span>
-                                          {/* Tooltip Box */}
-                                          <span className="bg-white border border-teal-300 shadow-lg rounded-lg px-3 py-2 flex items-start gap-2 transition-all duration-200">
-                                            <svg className="w-4 h-4 text-teal-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                              <circle cx="12" cy="12" r="10" strokeWidth="2" />
-                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01" />
-                                        </svg>
-                                              <span className="text-sm font-medium text-teal-800 leading-snug">Mark this placement void.</span>
-                                          </span>
-                                        </span>
-                                      </div>
-                                    )}
                                   </div>
-                                  {/* Error message */}
                                   {errors[errorKey] && (
                                     <div
                                       className="mt-1 rounded-lg bg-red-50 border border-red-300 px-3 py-2 shadow text-xs text-red-700 font-semibold flex items-center gap-2 whitespace-normal break-words w-full"
@@ -1359,10 +1274,9 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                                     </div>
                                   )}
                                 </div>
+                              ) : null}
                               </td>
                             );
-                          }
-                          return <td key={`lhChampions-${i}-${columnIndex}`} className="py-2 px-2 border-r border-gray-200"></td>;
                         })}
                       </tr>
                     );
@@ -1380,80 +1294,31 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                         </td>
                         {columns.map((_, columnIndex) => {
                           const col = columns[columnIndex];
-                          if (i < getFinalsRowCount(columnIndex, col.specialty, 'shChampions')) {
+                          const isFocused = focusedColumnIndex === columnIndex;
+                          const shouldRenderCell = i < getFinalsRowCount(columnIndex, col.specialty, 'shChampions');
                             const errorKey = `shChampions-${columnIndex}-${i}`;
                             return (
-                              <td key={`shChampions-${i}-${columnIndex}`} className={`py-2 px-2 border-r border-gray-200 align-top transition-all duration-150 ${shouldApplyRingGlow(columnIndex) ? ' border-l-4 border-r-4 border-violet-300 z-10' : ''} hover:bg-gray-50`}>
+                            <td key={`shChampions-${i}-${columnIndex}`} className={`py-2 px-2 border-r border-gray-200 align-top transition-all duration-150${isFocused ? ' border-l-4 border-r-4 border-violet-300 z-10' : ''} hover:bg-gray-50`}>
+                              {shouldRenderCell ? (
                                 <div className="flex flex-col items-start">
                                   <div className="flex gap-2 items-center">
-                                  {/* Cat # input: rounded-md, semi-transparent, focus ring, shadow */}
                                     <input
                                       type="text"
-                                    className={`w-16 h-9 text-sm text-center font-medium rounded-md px-3 bg-white/60 border border-violet-200 shadow focus:border-violet-400 focus:ring-2 focus:ring-violet-100 focus:bg-white/90 focus:shadow-lg transition-all duration-200 placeholder-zinc-300 ${getVoidState('shChampionsFinals', columnIndex, i) ? 'opacity-50 grayscale pointer-events-none' : ''} ${getBorderStyle(errorKey)}`}
+                                    className={`w-16 h-9 text-sm text-center font-medium rounded-md px-3 bg-white/60 border border-violet-200 shadow focus:border-violet-400 focus:ring-2 focus:ring-violet-100 focus:bg-white/90 focus:shadow-lg transition-all duration-200 placeholder-zinc-300 ${getBorderStyle(errorKey)} ${isVoidInput(getFinalsValue('shChampions', columnIndex, i)) ? 'opacity-50 grayscale line-through' : ''}`}
                                       placeholder="Cat #"
-                                      value={localInputState[errorKey] !== undefined ? localInputState[errorKey] : getFinalsValue('shChampions', columnIndex, i)}
-                                      onChange={(e) => setLocalInputState(prev => ({ ...prev, [errorKey]: e.target.value }))}
-                                      onBlur={(e) => {
-                                        updateFinals('shChampions', columnIndex, i, e.target.value);
-                                        setLocalInputState(prev => { const copy = { ...prev }; delete copy[errorKey]; return copy; });
-                                      }}
-                                      disabled={getVoidState('shChampionsFinals', columnIndex, i)}
+                                      value={getCatInputValue('shChampions', columnIndex, i, getFinalsValue('shChampions', columnIndex, i))}
+                                      onChange={e => handleCatInputChange('shChampions', columnIndex, i, e.target.value)}
+                                      onBlur={() => handleCatInputBlur('shChampions', columnIndex, i)}
+                                      onFocus={e => handleCatInputFocusLocal('shChampions', columnIndex, i, getFinalsValue('shChampions', columnIndex, i), e)}
+                                      onKeyDown={e => handleCatInputKeyDownLocal('shChampions', columnIndex, i, e, i + 14)}
                                       ref={el => {
                                         if (!catInputRefs.current[columnIndex]) {
                                           catInputRefs.current[columnIndex] = Array(totalCatRows).fill(null);
                                         }
-                                        catInputRefs.current[columnIndex][i + 25] = el; // Adjust index for SH Champions rows
-                                      }}
-                                      onKeyDown={(e) => handleCatInputKeyDown(e, columnIndex, i + 25)}
-                                      onFocus={(e) => {
-                                        e.target.select();
-                                        handleCatInputFocus(e, columnIndex);
+                                        catInputRefs.current[columnIndex][i + 14] = el; // Adjust index for SH Champions rows
                                       }}
                                     />
-                                    {/* CustomSelect for status, lavender theme */}
-                                    <CustomSelect
-                                      options={['GC', 'CH', 'NOV']}
-                                      value={getFinalsValue('shChampions', columnIndex, i) || 'GC'}
-                                      onChange={val => updateFinals('shChampions', columnIndex, i, val)}
-                                      className="min-w-[70px]"
-                                      ariaLabel="Status"
-                                    />
-                                    {/* Void toggle: minimal, crisp, circular, lavender border, gold/purple gradient on check */}
-                                    {getFinalsValue('shChampions', columnIndex, i) && getFinalsValue('shChampions', columnIndex, i).trim() && (
-                                    <div className="relative group/void">
-                                        <input
-                                          type="checkbox"
-                                        className="sr-only peer"
-                                          checked={getVoidState('shChampionsFinals', columnIndex, i)}
-                                          onChange={(e) => updateVoidStateColumnWide('shChampionsFinals', columnIndex, i, e.target.checked)}
-                                          onFocus={() => setFocusedColumnIndex(columnIndex)}
-                                          tabIndex={-1}
-                                        id={`void-toggle-shChampions-${columnIndex}-${i}`}
-                                      />
-                                      <label htmlFor={`void-toggle-shChampions-${columnIndex}-${i}`} className="w-5 h-5 flex items-center justify-center rounded-full border border-red-500 bg-white shadow-sm transition-all duration-200 cursor-pointer peer-checked:bg-white peer-checked:border-red-500 peer-checked:ring-2 peer-checked:ring-red-200 hover:ring-2 hover:ring-red-200 focus:ring-2 focus:ring-red-200">
-                                        {getVoidState('shChampionsFinals', columnIndex, i) && (
-                                          <svg className="w-3 h-3 text-red-500 font-bold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-                                          </svg>
-                                        )}
-                                      </label>
-                                        {/* Modern premium tooltip for void */}
-                                        <span className="absolute left-8 top-1/2 -translate-y-1/2 z-20 hidden group-hover/void:flex flex-row items-center">
-                                          {/* Arrow */}
-                                          <span className="w-0 h-0 mr-1 border-t-8 border-t-transparent border-b-8 border-b-transparent border-r-8 border-r-teal-300"></span>
-                                          {/* Tooltip Box */}
-                                          <span className="bg-white border border-teal-300 shadow-lg rounded-lg px-3 py-2 flex items-start gap-2 transition-all duration-200">
-                                            <svg className="w-4 h-4 text-teal-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                              <circle cx="12" cy="12" r="10" strokeWidth="2" />
-                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01" />
-                                        </svg>
-                                              <span className="text-sm font-medium text-teal-800 leading-snug">Mark this placement void.</span>
-                                          </span>
-                                        </span>
-                                      </div>
-                                    )}
                                   </div>
-                                  {/* Error message */}
                                   {errors[errorKey] && (
                                     <div
                                       className="mt-1 rounded-lg bg-red-50 border border-red-300 px-3 py-2 shadow text-xs text-red-700 font-semibold flex items-center gap-2 whitespace-normal break-words w-full"
@@ -1466,10 +1331,9 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                                     </div>
                                   )}
                                 </div>
+                              ) : null}
                               </td>
                             );
-                          }
-                          return <td key={`shChampions-${i}-${columnIndex}`} className="py-2 px-2 border-r border-gray-200"></td>;
                         })}
                       </tr>
                     );

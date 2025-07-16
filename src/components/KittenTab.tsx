@@ -406,14 +406,11 @@ export default function KittenTab({
             }}
             className="w-[220px] font-semibold text-base rounded-full px-4 py-2 bg-white border-2 border-green-200 shadow-md hover:shadow-lg focus:border-green-400 focus:shadow-lg text-green-700 transition-all duration-200"
             ariaLabel="Jump to Ring"
-            selectedIcon="🐱"
+            selectedIcon="🐾"
             dropdownMenuClassName="w-[220px] rounded-xl bg-gradient-to-b from-white via-green-50 to-white shadow-xl border-2 border-green-200 text-base font-semibold text-green-800 transition-all duration-200"
-            highlightBg="bg-green-50"
-            highlightText="text-green-900"
-            selectedBg="bg-green-100"
-            selectedText="text-green-800"
-            hoverBg="bg-green-50"
-            hoverText="text-green-900"
+            borderColor="border-green-300" // Green border
+            focusBorderColor="focus:border-green-500" // Green border on focus
+            textColor="text-green-700" // Green text
           />
         </div>
         {/* Table scroll container with sticky header */}
@@ -464,7 +461,7 @@ export default function KittenTab({
                       // Only show input if this row is within the breakpoint for this column
                       if (i < maxRowsForThisColumn) {
                         return (
-                          <td key={`kitten-final-${i}-${colIdx}`} className={`py-2 px-2 border-r border-gray-200 align-top transition-all duration-150 ${focusedColumnIndex === colIdx ? ' bg-green-50 border-l-4 border-r-4 border-green-300 z-10' : ''} hover:bg-green-100/30 whitespace-nowrap overflow-x-visible`}
+                          <td key={`kitten-final-${i}-${colIdx}`} className={`py-2 px-2 border-r border-gray-200 align-top transition-all duration-150 ${focusedColumnIndex === colIdx ? ' border-l-4 border-r-4 border-green-300 z-10' : ''} hover:bg-gray-50 whitespace-nowrap overflow-x-visible`}
                             style={{
                               width: (cell.catNumber && cell.catNumber.trim()) ? 110 : 90,
                               minWidth: (cell.catNumber && cell.catNumber.trim()) ? 110 : 90,
@@ -499,14 +496,16 @@ export default function KittenTab({
                                     }
                                   }}
                                 />
-                                {/* Status select: green theme, disabled when VOID */}
-                                <CustomSelect
-                                  options={['KIT']}
-                                  value="KIT"
-                                  onChange={() => {}}
-                                  className={`min-w-[70px] ${voided ? 'opacity-50 grayscale line-through' : 'opacity-80'}`}
-                                  ariaLabel="Status"
-                                />
+                                {/* Status label: static span, green theme, uniform design - HIDE if VOID */}
+                                {!voided && (
+                                  <span
+                                    className="min-w-[70px] inline-flex items-center justify-center rounded-full px-3 py-1.5 border border-green-300 text-green-700 text-xs font-semibold shadow-sm opacity-80 bg-white"
+                                    aria-label="Status"
+                                    style={{ fontFamily: 'Inter, Montserrat, Arial, Helvetica Neue, sans-serif', fontSize: '15px', fontWeight: 500 }}
+                                  >
+                                    KIT
+                                  </span>
+                                )}
                               </div>
                               {/* Error message */}
                               {errors[errorKey] && (
@@ -526,7 +525,7 @@ export default function KittenTab({
                       } else {
                         // Show empty cell for rows beyond this column's breakpoint
                         return (
-                          <td key={`kitten-final-${i}-${colIdx}`} className={`py-2 px-2 border-r border-gray-200 align-top transition-all duration-150 ${focusedColumnIndex === colIdx ? ' bg-green-50 border-l-4 border-r-4 border-green-300 z-10' : ''} hover:bg-green-100/30`}>
+                          <td key={`kitten-final-${i}-${colIdx}`} className={`py-2 px-2 border-r border-gray-200 align-top transition-all duration-150 ${focusedColumnIndex === colIdx ? ' border-l-4 border-r-4 border-green-300 z-10' : ''} hover:bg-gray-50`}>
                             &nbsp;
                           </td>
                         );

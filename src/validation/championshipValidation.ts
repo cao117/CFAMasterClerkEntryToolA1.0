@@ -185,15 +185,20 @@ export function checkDuplicateCatNumbersInSHChampionsFinals(
 export function getTop15CHCats(input: ChampionshipValidationInput, columnIndex: number): string[] {
   const { showAwards } = input;
   const chCats: string[] = [];
-  
+  // VOID placements are always ignored for all validation and ordering (see KittenTab parity)
   for (let position = 0; position < 15; position++) {
     const key = `${columnIndex}-${position}`;
     const award = showAwards[key];
-    if (award && award.status === 'CH' && award.catNumber && award.catNumber.trim() !== '') {
+    if (
+      award &&
+      award.status === 'CH' &&
+      award.catNumber &&
+      award.catNumber.trim() !== '' &&
+      !isVoidInput(award.catNumber)
+    ) {
       chCats.push(award.catNumber.trim());
     }
   }
-  
   return chCats;
 }
 
@@ -203,24 +208,33 @@ export function getTop15CHCats(input: ChampionshipValidationInput, columnIndex: 
  * This check is column-specific and does not consider other columns' Show Awards.
  */
 export function validateBestCHWithTop15AndGetFirstError(input: ChampionshipValidationInput, columnIndex: number): { isValid: boolean; firstErrorPosition: number; errorMessage: string } {
+  /**
+   * VOID placements are always ignored for all validation and ordering (KittenTab parity).
+   * This applies to all required lists, order checks, and error assignment.
+   */
   const { columns, championsFinals, championshipTotal, showAwards } = input;
   const column = columns[columnIndex];
   if (!column || column.specialty !== 'Allbreed') {
     return { isValid: true, firstErrorPosition: -1, errorMessage: '' };
   }
   const numPositions = championshipTotal >= 85 ? 5 : 3;
-  // Collect championship final cats (in order) - this is the "top 10/15" section
   const numAwardRows = championshipTotal >= 85 ? 15 : 10;
+  // Build list of all non-VOID placements in the championship final
   const championshipFinalCats: {catNumber: string, status: string}[] = [];
   for (let i = 0; i < numAwardRows; i++) {
     const award = showAwards[`${columnIndex}-${i}`];
-    if (award && award.catNumber && award.catNumber.trim() !== '') {
+    if (
+      award &&
+      award.catNumber &&
+      award.catNumber.trim() !== '' &&
+      !isVoidInput(award.catNumber)
+    ) {
       championshipFinalCats.push({catNumber: award.catNumber.trim(), status: award.status});
     }
   }
-  // Find CHs in championship final
+  // Find CHs in championship final, skipping VOID
   const chInChampionshipFinal = championshipFinalCats.filter(c => c.status === 'CH').map(c => c.catNumber);
-  // Build required Best AB CH list
+  // Build required Best AB CH list, skipping VOID
   let requiredBestCH: string[] = [];
   if (chInChampionshipFinal.length > 0) {
     requiredBestCH = [...chInChampionshipFinal];
@@ -231,31 +245,30 @@ export function validateBestCHWithTop15AndGetFirstError(input: ChampionshipValid
       }
     }
   } else {
-    // No CHs in championship final - Best AB CH can be filled with any CH cats entered in the show (not in the final)
+    // No CHs in championship final - Best AB CH can be filled with any CH cats entered in the show (not in the final), skipping VOID
     const allCHs = new Set<string>();
     for (let i = 0; i < numAwardRows; i++) {
       const key = `${columnIndex}-${i}`;
       const award = showAwards[key];
-      if (award && award.status === 'CH' && award.catNumber && award.catNumber.trim() !== '') {
+      if (
+        award &&
+        award.status === 'CH' &&
+        award.catNumber &&
+        award.catNumber.trim() !== '' &&
+        !isVoidInput(award.catNumber)
+      ) {
         allCHs.add(award.catNumber.trim());
       }
     }
     requiredBestCH = Array.from(allCHs).slice(0, numPositions);
   }
-  // Validate Best AB CH
+  // Validate Best AB CH, skipping VOID in all order/placement logic
   for (let position = 0; position < numPositions; position++) {
     const key = `${columnIndex}-${position}`;
     const finalsValue = championsFinals[key];
-    if (!finalsValue || finalsValue.trim() === '') {
-      if (position < requiredBestCH.length) {
-        return {
-          isValid: false,
-          firstErrorPosition: position,
-          errorMessage: `Must be ${requiredBestCH[position]} (${position + 1}${getOrdinalSuffix(position + 1)} CH required by CFA rules)`
-        };
-      } else {
+    // Only check order if the cell is filled (not empty/VOID), matching PremiershipTab logic
+    if (!finalsValue || finalsValue.trim() === '' || isVoidInput(finalsValue)) {
         continue;
-      }
     }
     // Check if this cat is a GC or NOV in the current column's Show Awards only
     let isGC = false;
@@ -263,7 +276,11 @@ export function validateBestCHWithTop15AndGetFirstError(input: ChampionshipValid
     for (let i = 0; i < numAwardRows; i++) {
       const key = `${columnIndex}-${i}`;
       const award = showAwards[key];
-      if (award && award.catNumber.trim() === finalsValue.trim()) {
+      if (
+        award &&
+        award.catNumber.trim() === finalsValue.trim() &&
+        !isVoidInput(award.catNumber)
+      ) {
         if (award.status === 'GC') isGC = true;
         if (award.status === 'NOV') isNOV = true;
         break;
@@ -276,7 +293,7 @@ export function validateBestCHWithTop15AndGetFirstError(input: ChampionshipValid
         errorMessage: `${finalsValue.trim()} is listed as a ${isGC ? 'GC' : 'NOV'} in Show Awards and cannot be awarded CH final.`
       };
     }
-    // If there are CHs in championship final, check order requirements
+    // If there are CHs in championship final, check order requirements, skipping VOID
     if (chInChampionshipFinal.length > 0 && position < requiredBestCH.length && finalsValue.trim() !== requiredBestCH[position]) {
       return {
         isValid: false,
@@ -319,14 +336,17 @@ export function validateBestCHWithTop15(input: ChampionshipValidationInput, colu
  * Returns the first position with an error, or -1 if valid
  */
 export function validateBestLHCHWithTop15AndGetFirstError(input: ChampionshipValidationInput, columnIndex: number): { isValid: boolean, errorIndex: number, errorMessage: string } {
-  const chCats = getTop15CHCats(input, columnIndex);
+  /**
+   * VOID placements are always ignored for all validation and ordering (KittenTab parity).
+   */
+  const chCats = getTop15CHCats(input, columnIndex); // Now skips VOID
   const numPositions = input.championshipTotal >= 85 ? 5 : 3;
   const N = chCats.length;
   const seen = new Set<string>();
   for (let position = 0; position < numPositions; position++) {
     const key = `${columnIndex}-${position}`;
     const value = input.lhChampionsFinals[key];
-    if (!value || value.trim() === '') continue;
+    if (!value || value.trim() === '' || isVoidInput(value)) continue;
     if (seen.has(value.trim())) {
       return { isValid: false, errorIndex: position, errorMessage: `${value.trim()} is a duplicate in LH CH.` };
     }
@@ -380,14 +400,17 @@ export function validateBestLHCHWithTop15(input: ChampionshipValidationInput, co
  * Returns the first position with an error, or -1 if valid
  */
 export function validateBestSHCHWithTop15AndGetFirstError(input: ChampionshipValidationInput, columnIndex: number): { isValid: boolean, errorIndex: number, errorMessage: string } {
-  const chCats = getTop15CHCats(input, columnIndex);
+  /**
+   * VOID placements are always ignored for all validation and ordering (KittenTab parity).
+   */
+  const chCats = getTop15CHCats(input, columnIndex); // Now skips VOID
   const numPositions = input.championshipTotal >= 85 ? 5 : 3;
   const N = chCats.length;
   const seen = new Set<string>();
   for (let position = 0; position < numPositions; position++) {
     const key = `${columnIndex}-${position}`;
     const value = input.shChampionsFinals[key];
-    if (!value || value.trim() === '') continue;
+    if (!value || value.trim() === '' || isVoidInput(value)) continue;
     if (seen.has(value.trim())) {
       return { isValid: false, errorIndex: position, errorMessage: `${value.trim()} is a duplicate in SH CH.` };
     }
@@ -440,24 +463,18 @@ export function validateLHSHWithBestCHAndGetFirstError(input: ChampionshipValida
   // For each Best AB CH cat, check if assigned to LH or SH
   for (let i = 0; i < numPositions; i++) {
     const abValue = championsFinals[`${columnIndex}-${i}`];
-    if (abValue && abValue.trim() !== '') {
+    if (abValue && abValue.trim() !== '' && !isVoidInput(abValue)) {
       let foundInLH = false;
       let foundInSH = false;
       // Check if this cat appears in LH section
       for (let j = 0; j < numPositions; j++) {
         const lhValue = lhChampionsFinals[`${columnIndex}-${j}`];
-        if (lhValue && lhValue.trim() === abValue.trim()) {
-          foundInLH = true;
-          break;
-        }
+        if (lhValue && lhValue.trim() === abValue.trim() && !isVoidInput(lhValue)) foundInLH = true;
       }
       // Check if this cat appears in SH section
       for (let j = 0; j < numPositions; j++) {
         const shValue = shChampionsFinals[`${columnIndex}-${j}`];
-        if (shValue && shValue.trim() === abValue.trim()) {
-          foundInSH = true;
-          break;
-        }
+        if (shValue && shValue.trim() === abValue.trim() && !isVoidInput(shValue)) foundInSH = true;
       }
       // If cat is not assigned to either LH or SH, set reminder in this cell
       if (!foundInLH && !foundInSH) {
@@ -500,7 +517,7 @@ function validateBestHairCHOrder(input: ChampionshipValidationInput, columnIndex
   for (let i = 0; i < numPositions; i++) {
     const key = `${columnIndex}-${i}`;
     const value = championsFinals[key];
-    if (value && value.trim() !== '') {
+    if (value && value.trim() !== '' && !isVoidInput(value)) {
       abCats.push(value.trim());
     }
   }
@@ -511,7 +528,7 @@ function validateBestHairCHOrder(input: ChampionshipValidationInput, columnIndex
   for (let i = 0; i < numPositions; i++) {
     const key = `${columnIndex}-${i}`;
     const value = sectionFinals[key];
-    if (value && value.trim() !== '') {
+    if (value && value.trim() !== '' && !isVoidInput(value)) {
       hairCats.push(value.trim());
     }
   }
@@ -602,7 +619,7 @@ export function validateColumnRelationships(input: ChampionshipValidationInput, 
     for (let i = 0; i < numPositions; i++) {
       const finalsKey = `champions-${columnIndex}-${i}`;
       const value = championsFinals[`${columnIndex}-${i}`];
-      if (value && value.trim() !== '') {
+      if (value && value.trim() !== '' && !isVoidInput(value)) {
         // Skip if duplicate error already set (duplicates handled elsewhere)
         if (errors[finalsKey]) continue;
         
@@ -624,7 +641,7 @@ export function validateColumnRelationships(input: ChampionshipValidationInput, 
     for (let i = 0; i < numPositions; i++) {
       const finalsKey = `champions-${columnIndex}-${i}`;
       const value = championsFinals[`${columnIndex}-${i}`];
-      if (value && value.trim() !== '') {
+      if (value && value.trim() !== '' && !isVoidInput(value)) {
         // Skip if higher-priority error already set
         if (errors[finalsKey]) continue;
         
@@ -661,7 +678,7 @@ export function validateColumnRelationships(input: ChampionshipValidationInput, 
     for (let i = 0; i < numPositions; i++) {
       const finalsKey = `lhChampions-${columnIndex}-${i}`;
       const value = lhChampionsFinals[`${columnIndex}-${i}`];
-      if (value && value.trim() !== '') {
+      if (value && value.trim() !== '' && !isVoidInput(value)) {
         const status = getShowAwardStatus(value.trim());
         if (status === 'GC' || status === 'NOV') {
           errors[finalsKey] = `${value.trim()} is listed as a ${status} in Show Awards and cannot be awarded CH final.`;
@@ -679,7 +696,7 @@ export function validateColumnRelationships(input: ChampionshipValidationInput, 
     for (let i = 0; i < numPositions; i++) {
       const finalsKey = `shChampions-${columnIndex}-${i}`;
       const value = shChampionsFinals[`${columnIndex}-${i}`];
-      if (value && value.trim() !== '') {
+      if (value && value.trim() !== '' && !isVoidInput(value)) {
         const status = getShowAwardStatus(value.trim());
         if (status === 'GC' || status === 'NOV') {
           errors[finalsKey] = `${value.trim()} is listed as a ${status} in Show Awards and cannot be awarded CH final.`;
@@ -812,11 +829,19 @@ export function validateSequentialEntry(
 }
 
 /**
- * Finals validation: enforce duplicate error precedence and section-prefixed keys, matching PremiershipTab
- * - Always use section-prefixed keys (e.g., 'champions-0-0')
- * - When a duplicate is found, assign the duplicate error to all involved cells
- * - If a duplicate error is present for a cell, skip all other error assignments
- * - Never overwrite a duplicate error when merging
+ * Checks if a cat number input is VOID (case-insensitive)
+ * @param {string} catNumber - The cat number to check
+ * @returns {boolean} True if the input is VOID
+ */
+function isVoidInput(catNumber: string): boolean {
+  return typeof catNumber === 'string' && catNumber.trim().toUpperCase() === 'VOID';
+}
+
+/**
+ * Validates the Championship tab, skipping all validation for any cat number that is 'VOID' (case-insensitive).
+ * This ensures that voided placements are always ignored for all checks, matching KittenTab behavior.
+ * @param input ChampionshipValidationInput
+ * @returns { [key: string]: string } errors object with section-prefixed keys
  */
 export function validateChampionshipTab(input: ChampionshipValidationInput): { [key: string]: string } {
   const errors: { [key: string]: string } = {};
@@ -824,59 +849,54 @@ export function validateChampionshipTab(input: ChampionshipValidationInput): { [
   // --- Top 10/15 (Show Awards) Section ---
   for (let colIdx = 0; colIdx < input.columns.length; colIdx++) {
     const numAwardRows = input.championshipTotal >= 85 ? 15 : 10;
-    // Collect all cat numbers for this column
-    const catNumbers: { [pos: number]: string } = {};
+    // Build a filtered list of non-VOID, non-empty placements for sequential and duplicate logic
+    const placements: { pos: number, catNumber: string, status: string }[] = [];
     for (let pos = 0; pos < numAwardRows; pos++) {
       const key = `${colIdx}-${pos}`;
       const cell = input.showAwards[key];
-      if (cell && cell.catNumber && cell.catNumber.trim()) {
-        catNumbers[pos] = cell.catNumber.trim();
+      if (cell && cell.catNumber && cell.catNumber.trim() && !isVoidInput(cell.catNumber)) {
+        placements.push({ pos, catNumber: cell.catNumber.trim(), status: cell.status });
       }
     }
-    // 1. Range error: assign first
+    // Range validation (still applies to all non-empty, non-VOID cells)
     for (let pos = 0; pos < numAwardRows; pos++) {
-      const errorKey = `${colIdx}-${pos}`;
-      const cell = input.showAwards[errorKey];
-      if (cell && cell.catNumber && cell.catNumber.trim() && !validateCatNumber(cell.catNumber)) {
-        errors[errorKey] = 'Cat number must be between 1-450.';
+      const key = `${colIdx}-${pos}`;
+      const cell = input.showAwards[key];
+      if (cell && cell.catNumber && cell.catNumber.trim() && !isVoidInput(cell.catNumber) && !validateCatNumber(cell.catNumber)) {
+        errors[key] = 'Cat number must be between 1-450 or VOID.';
       }
     }
-    // 2. Duplicate error: merge with range if both
-    const seen: { [cat: string]: number[] } = {};
-    Object.entries(catNumbers).forEach(([pos, cat]) => {
-      if (!seen[cat]) seen[cat] = [];
-      seen[cat].push(Number(pos));
+    // Duplicate detection: only non-VOID, non-empty cat numbers
+    const catNumberToPositions: { [cat: string]: number[] } = {};
+    placements.forEach(({ pos, catNumber }) => {
+      if (!catNumberToPositions[catNumber]) catNumberToPositions[catNumber] = [];
+      catNumberToPositions[catNumber].push(pos);
     });
-    Object.entries(seen).forEach(([, positions]) => {
+    Object.entries(catNumberToPositions).forEach(([, positions]) => {
       if (positions.length > 1) {
         positions.forEach(pos => {
           const errorKey = `${colIdx}-${pos}`;
           if (errors[errorKey]) {
-            errors[errorKey] = 'Cat number must be between 1-450. Duplicate: This cat is already placed in another position.';
+            errors[errorKey] = 'Cat number must be between 1-450 or VOID. Duplicate: This cat is already placed in another position.';
           } else {
             errors[errorKey] = 'Duplicate: This cat is already placed in another position.';
           }
         });
       }
     });
-    // 3. Sequential entry error: only if no range or duplicate error
+    // Sequential entry: treat VOID as non-existent (skip them)
+    let firstEmpty = -1;
     for (let pos = 0; pos < numAwardRows; pos++) {
-      const errorKey = `${colIdx}-${pos}`;
-      if (errors[errorKey]) continue; // skip if range or duplicate error present
-      const cell = input.showAwards[errorKey];
-      if (cell && cell.catNumber && cell.catNumber.trim()) {
-        let sequentialError = false;
-        for (let i = 0; i < pos; i++) {
-          const prevKey = `${colIdx}-${i}`;
-          const prevCell = input.showAwards[prevKey];
-          if (!prevCell || !prevCell.catNumber || !prevCell.catNumber.trim()) {
-            sequentialError = true;
-            break;
-          }
-        }
-        if (sequentialError) {
-          errors[errorKey] = 'You must fill previous placements before entering this position.';
-        }
+      const key = `${colIdx}-${pos}`;
+      const cell = input.showAwards[key];
+      // Only set sequential error if there is no range or duplicate error present (matches PremiershipTab)
+      if (errors[key]) continue;
+      if (!cell || isVoidInput(cell.catNumber)) continue; // VOID rows are skipped for sequential logic
+      if (cell.catNumber === '' && firstEmpty === -1) {
+        firstEmpty = pos;
+      }
+      if (cell.catNumber !== '' && firstEmpty !== -1 && pos > firstEmpty) {
+        errors[key] = 'You must fill previous placements before entering this position.';
       }
     }
   }
@@ -891,19 +911,20 @@ export function validateChampionshipTab(input: ChampionshipValidationInput): { [
   for (const section of finalsSections) {
     for (let colIdx = 0; colIdx < input.columns.length; colIdx++) {
       const finals = (input as any)[section.key] as { [key: string]: string };
-      const numPositions = getFinalsPositionsForRingType(input, input.columns[colIdx].specialty);
+      const column = input.columns[colIdx];
+      const numPositions = getFinalsPositionsForRingType(input, column.specialty);
       const catNumbers: { [pos: number]: string } = {};
       for (let pos = 0; pos < numPositions; pos++) {
         const dataKey = `${colIdx}-${pos}`;
         const value = finals ? finals[dataKey] : '';
-        if (value && value.trim()) catNumbers[pos] = value.trim();
+        if (value && value.trim() && !isVoidInput(value)) catNumbers[pos] = value.trim();
       }
       // 1. Range error: assign first
       for (let pos = 0; pos < numPositions; pos++) {
         const errorKey = `${section.prefix}-${colIdx}-${pos}`;
         const value = finals ? finals[`${colIdx}-${pos}`] : '';
-        if (value && value.trim() && !validateCatNumber(value)) {
-          errors[errorKey] = 'Cat number must be between 1-450.';
+        if (value && value.trim() && !isVoidInput(value) && !validateCatNumber(value)) {
+          errors[errorKey] = 'Cat number must be between 1-450 or VOID.';
         }
       }
       // 2. Duplicate error: merge with range if both
@@ -917,28 +938,25 @@ export function validateChampionshipTab(input: ChampionshipValidationInput): { [
           positions.forEach(pos => {
             const errorKey = `${section.prefix}-${colIdx}-${pos}`;
             if (errors[errorKey]) {
-              errors[errorKey] = 'Cat number must be between 1-450. Duplicate: This cat is already placed in another finals position.';
+              errors[errorKey] = 'Cat number must be between 1-450 or VOID. Duplicate: This cat is already placed in another finals position.';
             } else {
-            errors[errorKey] = 'Duplicate: This cat is already placed in another finals position.';
+              errors[errorKey] = 'Duplicate: This cat is already placed in another finals position.';
             }
           });
         }
       });
       // 2.5. Cross-section duplicate error: LH CH and SH CH cannot contain the same cat number
       if (section.prefix === 'lhChampions' || section.prefix === 'shChampions') {
-      Object.entries(catNumbers).forEach(([pos, cat]) => {
-        const errorKey = `${section.prefix}-${colIdx}-${pos}`;
+        Object.entries(catNumbers).forEach(([pos, cat]) => {
+          const errorKey = `${section.prefix}-${colIdx}-${pos}`;
           if (errors[errorKey]) return; // skip if range or duplicate error present
-          
-          // Check if this cat appears in the other hair section (LH vs SH)
           const otherSection = section.prefix === 'lhChampions' ? 'shChampions' : 'lhChampions';
           const otherFinals = (input as any)[`${otherSection}Finals`] as { [key: string]: string };
-          const otherNumPositions = getFinalsPositionsForRingType(input, input.columns[colIdx].specialty);
-          
+          const otherNumPositions = getFinalsPositionsForRingType(input, column.specialty);
           for (let otherPos = 0; otherPos < otherNumPositions; otherPos++) {
             const otherKey = `${colIdx}-${otherPos}`;
             const otherValue = otherFinals ? otherFinals[otherKey] : '';
-            if (otherValue && otherValue.trim() === cat) {
+            if (otherValue && otherValue.trim() === cat && !isVoidInput(otherValue)) {
               errors[errorKey] = 'Duplicate: a cat cannot be both longhair and shorthair';
               break;
             }
@@ -949,14 +967,10 @@ export function validateChampionshipTab(input: ChampionshipValidationInput): { [
       Object.entries(catNumbers).forEach(([pos, cat]) => {
         const errorKey = `${section.prefix}-${colIdx}-${pos}`;
         if (errors[errorKey]) return; // skip if range, duplicate, or cross-section duplicate error present
-        
-        // Status error: Only CH eligible for finals (no GC/NOV)
-        // CFA rule: Must search ONLY the current column's Show Awards for this cat number
         let status: string | undefined = undefined;
-        // Only check the current column's Show Awards, not all columns
         for (let i = 0; i < 15; i++) {
           const showAward = input.showAwards[`${colIdx}-${i}`];
-          if (showAward && showAward.catNumber && showAward.catNumber.trim() === cat) {
+          if (showAward && showAward.catNumber && showAward.catNumber.trim() === cat && !isVoidInput(showAward.catNumber)) {
             status = showAward.status;
             break;
           }
@@ -964,7 +978,11 @@ export function validateChampionshipTab(input: ChampionshipValidationInput): { [
         if (status === 'GC' || status === 'NOV') {
           errors[errorKey] = `${cat} is listed as a ${status} in Show Awards and cannot be awarded CH final.`;
         }
-        // 4. Sequential entry error: only if no range, duplicate, cross-section duplicate, or status error
+      });
+      // 4. Sequential error: only if no range, duplicate, or status error
+      Object.entries(catNumbers).forEach(([pos, cat]) => {
+        const errorKey = `${section.prefix}-${colIdx}-${pos}`;
+        if (errors[errorKey]) return; // skip if range, duplicate, or status error present
         let sequentialError = false;
         for (let i = 0; i < Number(pos); i++) {
           const prevKey = `${colIdx}-${i}`;
@@ -977,25 +995,45 @@ export function validateChampionshipTab(input: ChampionshipValidationInput): { [
         if (sequentialError) {
           errors[errorKey] = 'You must fill previous placements before entering this position.';
           return;
-        }
+      }
         // 5. Order error: only for Best AB CH, LH CH, SH CH, and only if no higher error
         if (!errors[errorKey]) {
-          let orderError: string | undefined;
-          if (section.prefix === 'champions') {
-            const orderResult = validateBestCHWithTop15AndGetFirstError(input, colIdx);
-            if (!orderResult.isValid && Number(pos) === orderResult.firstErrorPosition) {
-              orderError = orderResult.errorMessage;
-            }
-          } else if (section.prefix === 'lhChampions' || section.prefix === 'shChampions') {
-            const hair = section.prefix === 'lhChampions' ? 'LH' : 'SH';
-            const orderErrors = validateBestHairCHOrder(input, colIdx, hair);
-            orderError = orderErrors[Number(pos)];
+        let orderError: string | undefined;
+        if (section.prefix === 'champions') {
+          const orderResult = validateBestCHWithTop15AndGetFirstError(input, colIdx);
+          if (!orderResult.isValid && Number(pos) === orderResult.firstErrorPosition) {
+            orderError = orderResult.errorMessage;
           }
-          if (orderError) {
-            errors[errorKey] = orderError;
+        } else if (section.prefix === 'lhChampions' || section.prefix === 'shChampions') {
+          const hair = section.prefix === 'lhChampions' ? 'LH' : 'SH';
+          const orderErrors = validateBestHairCHOrder(input, colIdx, hair);
+          orderError = orderErrors[Number(pos)];
+        }
+        if (orderError) {
+          errors[errorKey] = orderError;
+        }
+      }
+        // 6. Assignment reminder for Best AB CH (champions section)
+        if (!errors[errorKey] && section.prefix === 'champions' && column.specialty === 'Allbreed') {
+          let foundInLH = false, foundInSH = false;
+          const lhFinals = input.lhChampionsFinals || {};
+          const shFinals = input.shChampionsFinals || {};
+          for (let j = 0; j < numPositions; j++) {
+            if (lhFinals[`${colIdx}-${j}`] && lhFinals[`${colIdx}-${j}`].trim() === cat && !isVoidInput(lhFinals[`${colIdx}-${j}`])) {
+              foundInLH = true;
+              break;
+            }
+          }
+          for (let j = 0; j < numPositions; j++) {
+            if (shFinals[`${colIdx}-${j}`] && shFinals[`${colIdx}-${j}`].trim() === cat && !isVoidInput(shFinals[`${colIdx}-${j}`])) {
+              foundInSH = true;
+              break;
+            }
+          }
+          if (!foundInLH && !foundInSH) {
+            errors[errorKey] = `${cat} needs to be assigned to either LH or SH CH final.`;
           }
         }
-        // 6. Assignment reminder handled after all other errors
       });
     }
   }
@@ -1007,13 +1045,13 @@ export function validateChampionshipTab(input: ChampionshipValidationInput): { [
       const errorKey = `champions-${colIdx}-${pos}`;
       if (errors[errorKey]) continue;
       const cat = (input.championsFinals && input.championsFinals[`${colIdx}-${pos}`]) ? input.championsFinals[`${colIdx}-${pos}`].trim() : '';
-      if (!cat) continue;
+      if (!cat || isVoidInput(cat)) continue;
       let foundInLH = false, foundInSH = false;
       const lhFinals = input.lhChampionsFinals || {};
       const shFinals = input.shChampionsFinals || {};
       for (let i = 0; i < numPositions; i++) {
-        if (lhFinals[`${colIdx}-${i}`] && lhFinals[`${colIdx}-${i}`].trim() === cat) foundInLH = true;
-        if (shFinals[`${colIdx}-${i}`] && shFinals[`${colIdx}-${i}`].trim() === cat) foundInSH = true;
+        if (lhFinals[`${colIdx}-${i}`] && lhFinals[`${colIdx}-${i}`].trim() === cat && !isVoidInput(lhFinals[`${colIdx}-${i}`])) foundInLH = true;
+        if (shFinals[`${colIdx}-${i}`] && shFinals[`${colIdx}-${i}`].trim() === cat && !isVoidInput(shFinals[`${colIdx}-${i}`])) foundInSH = true;
       }
       if (!foundInLH && !foundInSH) {
         errors[errorKey] = `${cat} needs to be assigned to either LH or SH CH final.`;
@@ -1080,7 +1118,7 @@ export function validateBestHairCHWithFiller(input: ChampionshipValidationInput,
   const abCHSet = new Set<string>([]);
   for (let i = 0; i < numPositions; i++) {
     const abCat = input.championsFinals[`${columnIndex}-${i}`];
-    if (abCat && abCat.trim()) abCHSet.add(abCat.trim());
+    if (abCat && abCat.trim() && !isVoidInput(abCat)) abCHSet.add(abCat.trim());
   }
   
   // Get all cats in the hair section (in order)
@@ -1088,7 +1126,7 @@ export function validateBestHairCHWithFiller(input: ChampionshipValidationInput,
   for (let position = 0; position < numPositions; position++) {
     const key = `${columnIndex}-${position}`;
     const value = sectionFinals[key];
-    if (value && value.trim() !== '') {
+    if (value && value.trim() !== '' && !isVoidInput(value)) {
       hairCats.push(value.trim());
     }
   }
@@ -1105,7 +1143,7 @@ export function validateBestHairCHWithFiller(input: ChampionshipValidationInput,
   for (let position = 0; position < numPositions; position++) {
     const key = `${columnIndex}-${position}`;
     const value = sectionFinals[key];
-    if (!value || value.trim() === '') continue;
+    if (!value || value.trim() === '' || isVoidInput(value)) continue;
     
     if (seen.has(value.trim())) {
       const errorKey = `${hair === 'LH' ? 'lhChampions' : 'shChampions'}-${columnIndex}-${position}`;
@@ -1171,7 +1209,7 @@ export function validateSingleSpecialtyCHWithTop15AndGetFirstError(input: Champi
   for (let position = 0; position < numPositions; position++) {
     const key = `${columnIndex}-${position}`;
     const value = sectionFinals[key];
-    if (!value || value.trim() === '') continue;
+    if (!value || value.trim() === '' || isVoidInput(value)) continue;
     if (seen.has(value.trim())) {
       return { isValid: false, firstErrorPosition: position, errorMessage: `${value.trim()} is a duplicate in ${hair} CH.` };
     }

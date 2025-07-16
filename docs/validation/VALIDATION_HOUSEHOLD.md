@@ -7,6 +7,7 @@ This document describes the **current validation rules** enforced in the Househo
   - Only one section: **Top 10/15 Household Pets** (no finals or sub-sections)
   - Columns are dynamically generated from the General tab judges/ring types (AB=1, LH=1, SH=1, Double Specialty=2)
   - Only one status: **HHP** (all caps), always selected in the dropdown
+  - **If a Cat # input is VOID (case-insensitive, trimmed), the status label is hidden (not rendered) for that cell, and only 'VOID' is saved/restored in the CSV.**
   - Three action buttons at the bottom: Save to CSV, Load from CSV, Reset (shared logic)
   - Voiding logic, error display, keyboard navigation, and all styling match the Kitten tab exactly
 
@@ -21,6 +22,7 @@ This document describes the **current validation rules** enforced in the Househo
 - **Sequential entry:** Must fill positions sequentially (no skipping)
 - **Duplicate check:** No duplicates within the same section of the final. If a duplicate is found, the error is shown on all cells with the same value in that section (not just the last entered cell). The error message is: 'Duplicate cat number within this section of the final'.
 - **Status validation:** Only HHP is allowed (always selected)
+- **If a Cat # input is VOID, the status label is hidden (not rendered) for that cell.**
 - **Voiding:** Voiding a cat number in any cell in a column voids all instances of that cat number in that column
 - **Error display:** Errors are shown inline, with the same styling and precedence as the Kitten tab
 
@@ -42,6 +44,7 @@ For each cell, only the highest-precedence error is shown:
 - If a cat number is voided anywhere in a column, all instances of that cat number in that column are voided (including new ones).
 - Unchecking void in any cell unvoids all instances in that column for that cat number.
 - This logic applies across the full column, matching Championship, Premiership, and Kitten tabs. 
+- **If a Cat # input is VOID, the status label is hidden (not rendered) for that cell, and only 'VOID' is saved/restored in the CSV.**
 
 ## Household Pet Tab Validation Rules
 

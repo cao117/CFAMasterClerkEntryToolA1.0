@@ -255,6 +255,7 @@ export function validateSequentialEntry(
 
 /**
  * Helper to get the list of PR cats from Top 10/15 (Show Awards) for a column, in order
+ * VOID placements are always skipped (parity with ChampionshipTab)
  */
 function getTop15PRCats(input: PremiershipValidationInput, columnIndex: number): string[] {
   const { showAwards } = input;
@@ -262,7 +263,14 @@ function getTop15PRCats(input: PremiershipValidationInput, columnIndex: number):
   for (let position = 0; position < 15; position++) {
     const key = `${columnIndex}-${position}`;
     const award = showAwards[key];
-    if (award && award.status === 'PR' && award.catNumber && award.catNumber.trim() !== '') {
+    // FIX: skip VOID placements for full parity with ChampionshipTab
+    if (
+      award &&
+      award.status === 'PR' &&
+      award.catNumber &&
+      award.catNumber.trim() !== '' &&
+      !isVoidInput(award.catNumber)
+    ) {
       prCats.push(award.catNumber.trim());
     }
   }
@@ -483,14 +491,14 @@ export function validatePremiershipTab(input: PremiershipValidationInput): { [ke
       for (let pos = 0; pos < numPositions; pos++) {
         const dataKey = `${colIdx}-${pos}`;
         const value = finals ? finals[dataKey] : '';
-        if (value && value.trim()) catNumbers[pos] = value.trim();
+        if (value && value.trim() && !isVoidInput(value)) catNumbers[pos] = value.trim();
       }
       // 1. Range error: assign first
       for (let pos = 0; pos < numPositions; pos++) {
         const errorKey = `${section.prefix}-${colIdx}-${pos}`;
         const value = finals ? finals[`${colIdx}-${pos}`] : '';
-        if (value && value.trim() && !validateCatNumber(value)) {
-          errors[errorKey] = 'Cat number must be between 1-450.';
+        if (value && value.trim() && !isVoidInput(value) && !validateCatNumber(value)) {
+          errors[errorKey] = 'Cat number must be between 1-450 or VOID.';
         }
       }
       // 2. Duplicate error: merge with range if both
@@ -504,7 +512,7 @@ export function validatePremiershipTab(input: PremiershipValidationInput): { [ke
           positions.forEach(pos => {
             const errorKey = `${section.prefix}-${colIdx}-${pos}`;
             if (errors[errorKey]) {
-              errors[errorKey] = 'Cat number must be between 1-450. Duplicate: This cat is already placed in another finals position.';
+              errors[errorKey] = 'Cat number must be between 1-450 or VOID. Duplicate: This cat is already placed in another finals position.';
             } else {
               errors[errorKey] = 'Duplicate: This cat is already placed in another finals position.';
             }
@@ -525,7 +533,7 @@ export function validatePremiershipTab(input: PremiershipValidationInput): { [ke
           for (let otherPos = 0; otherPos < otherNumPositions; otherPos++) {
             const otherKey = `${colIdx}-${otherPos}`;
             const otherValue = otherFinals ? otherFinals[otherKey] : '';
-            if (otherValue && otherValue.trim() === cat) {
+            if (otherValue && otherValue.trim() === cat && !isVoidInput(otherValue)) {
               errors[errorKey] = 'Duplicate: a cat cannot be both longhair and shorthair';
               break;
             }
@@ -542,7 +550,7 @@ export function validatePremiershipTab(input: PremiershipValidationInput): { [ke
         // Only check the current column's Show Awards, not all columns
         for (let i = 0; i < 15; i++) {
           const showAward = input.showAwards[`${colIdx}-${i}`];
-          if (showAward && showAward.catNumber && showAward.catNumber.trim() === cat) {
+          if (showAward && showAward.catNumber && showAward.catNumber.trim() === cat && !isVoidInput(showAward.catNumber)) {
             status = showAward.status;
             break;
           }
@@ -559,10 +567,12 @@ export function validatePremiershipTab(input: PremiershipValidationInput): { [ke
         for (let i = 0; i < Number(pos); i++) {
           const prevKey = `${colIdx}-${i}`;
           const prevValue = finals ? finals[prevKey] : '';
+          // FIX: Treat VOID as a valid skip (do NOT trigger sequential error if previous is VOID)
           if (!prevValue || prevValue.trim() === '') {
             sequentialError = true;
             break;
           }
+          // If prevValue is VOID, treat as a valid skip (do NOT set sequentialError)
         }
         if (sequentialError) {
           errors[errorKey] = 'You must fill previous placements before entering this position.';
@@ -606,13 +616,13 @@ export function validatePremiershipTab(input: PremiershipValidationInput): { [ke
           const lhFinals = (input as any)['lhPremiersFinals'] as { [key: string]: string };
           const shFinals = (input as any)['shPremiersFinals'] as { [key: string]: string };
           for (let j = 0; j < numPositions; j++) {
-            if (lhFinals && lhFinals[`${colIdx}-${j}`] && lhFinals[`${colIdx}-${j}`].trim() === cat) {
+            if (lhFinals && lhFinals[`${colIdx}-${j}`] && lhFinals[`${colIdx}-${j}`].trim() === cat && !isVoidInput(lhFinals[`${colIdx}-${j}`])) {
               foundInLH = true;
               break;
             }
           }
           for (let j = 0; j < numPositions; j++) {
-            if (shFinals && shFinals[`${colIdx}-${j}`] && shFinals[`${colIdx}-${j}`].trim() === cat) {
+            if (shFinals && shFinals[`${colIdx}-${j}`] && shFinals[`${colIdx}-${j}`].trim() === cat && !isVoidInput(shFinals[`${colIdx}-${j}`])) {
               foundInSH = true;
               break;
             }
@@ -632,7 +642,7 @@ export function validatePremiershipTab(input: PremiershipValidationInput): { [ke
     for (let pos = 0; pos < breakpoint; pos++) {
       const key = `${colIdx}-${pos}`;
       const award = input.showAwards[key];
-      if (award && award.catNumber && award.catNumber.trim() !== '') {
+      if (award && award.catNumber && award.catNumber.trim() !== '' && !isVoidInput(award.catNumber)) {
         const cat = award.catNumber.trim();
         if (!catNumToPositions[cat]) catNumToPositions[cat] = [];
         catNumToPositions[cat].push(pos);
@@ -642,8 +652,8 @@ export function validatePremiershipTab(input: PremiershipValidationInput): { [ke
     for (let pos = 0; pos < breakpoint; pos++) {
       const key = `${colIdx}-${pos}`;
       const award = input.showAwards[key];
-      if (award && award.catNumber && award.catNumber.trim() !== '' && !validateCatNumber(award.catNumber)) {
-        errors[key] = 'Cat number must be between 1-450.';
+      if (award && award.catNumber && award.catNumber.trim() !== '' && !isVoidInput(award.catNumber) && !validateCatNumber(award.catNumber)) {
+        errors[key] = 'Cat number must be between 1-450 or VOID.';
       }
     }
     // 2. Duplicate error: merge with range if both
@@ -652,7 +662,7 @@ export function validatePremiershipTab(input: PremiershipValidationInput): { [ke
         positions.forEach(pos => {
           const key = `${colIdx}-${pos}`;
           if (errors[key]) {
-            errors[key] = 'Cat number must be between 1-450. Duplicate: This cat is already placed in another position.';
+            errors[key] = 'Cat number must be between 1-450 or VOID. Duplicate: This cat is already placed in another position.';
           } else {
             errors[key] = 'Duplicate: This cat is already placed in another position.';
           }
@@ -663,7 +673,7 @@ export function validatePremiershipTab(input: PremiershipValidationInput): { [ke
     for (let pos = 0; pos < breakpoint; pos++) {
       const key = `${colIdx}-${pos}`;
       const award = input.showAwards[key];
-      if (award && award.catNumber && award.catNumber.trim() !== '') {
+      if (award && award.catNumber && award.catNumber.trim() !== '' && !isVoidInput(award.catNumber)) {
         if (errors[key]) continue; // skip if range or duplicate error present
         if (!validateSequentialEntry(input, 'showAwards', colIdx, pos, award.catNumber)) {
           errors[key] = 'You must fill previous placements before entering this position.';
@@ -678,6 +688,15 @@ export function validatePremiershipTab(input: PremiershipValidationInput): { [ke
 function ordinal(n: number) {
   const s = ["th", "st", "nd", "rd"], v = n % 100;
   return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+
+/**
+ * Helper to check if a cat number input is VOID (case-insensitive)
+ * @param {string} catNumber - The cat number to check
+ * @returns {boolean} True if the input is VOID
+ */
+function isVoidInput(catNumber: string): boolean {
+  return typeof catNumber === 'string' && catNumber.trim().toUpperCase() === 'VOID';
 }
 
 // ... (add any additional helper functions as needed for full parity with championshipValidation.ts)

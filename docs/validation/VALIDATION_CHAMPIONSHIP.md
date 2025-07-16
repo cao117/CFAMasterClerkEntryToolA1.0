@@ -1,6 +1,22 @@
 # Championship Tab Validation Rules
 
+> **2024-06-22: VOID Logic Refactor**
+> - Voided ("VOID") cat numbers are now always ignored for all validation and error assignment in the Championship tab, matching KittenTab.
+> - VOID cat numbers are never included in duplicate detection, sequential checks, status checks, or any other validation.
+> - **VOID placements are treated as if they do not exist for validation.** For sequential and duplicate checks, only non-empty, non-VOID placements are considered. If a VOID appears before a filled placement, it does not block sequential entry (i.e., it is as if the VOID row does not exist at all). This matches KittenTab and is now enforced in both tabs.
+> - This ensures full UI/UX and validation parity with KittenTab and prevents any errors from being shown for voided placements.
+
 This document describes the **current validation rules** enforced in the Championship tab of the CFA Master Clerk Entry Tool.
+
+## VOID Placement Handling (KittenTab Parity)
+
+- **VOID placements are always ignored for all validation and ordering in the Championship tab.**
+- This applies to:
+  - Top 10/15 Show Awards: VOID rows are skipped for all validation, duplicate, and sequential entry logic.
+  - Best AB CH, LH CH, SH CH finals: VOID placements are skipped for all required, order, and duplicate logic.
+  - If a VOID is present in any position, it is treated as if that cell does not exist for all validation purposes.
+- This matches the behavior in the KittenTab, ensuring full parity and user clarity.
+- Example: If VOID is entered as Top 1, it is not considered for any validation or required placements below, and does not block or affect order/required logic for Top 15 or finals.
 
 ## Hair-Specific Breakpoint Logic
 
@@ -29,10 +45,10 @@ The Championship tab uses **hair-specific breakpoints** based on ring type:
 The Championship tab validation follows this order:
 
 ### 1. Show Awards Section (Top 10/15)
-- **Cat number format**: Must be between 1-450
-- **Sequential entry**: Must fill positions sequentially (no skipping)
-- **Duplicate check**: No duplicates within the same column
-- **Status validation**: All three statuses (GC, CH, NOV) are allowed
+- **Cat number format**: Must be between 1-450 (except VOID, which is always ignored)
+- **Sequential entry**: Must fill positions sequentially (no skipping, except VOID, which is always ignored; VOID placements are treated as if they do not exist for validation)
+- **Duplicate check**: No duplicates within the same column (except VOID, which is always ignored; VOID placements are treated as if they do not exist for validation)
+- **Status validation**: All three statuses (GC, CH, NOV) are allowed (except VOID, which is always ignored)
 
 ### 2. Finals Sections (Best AB CH, Best LH CH, Best SH CH)
 - **Cat number format**: Must be between 1-450
@@ -129,6 +145,19 @@ _Last Updated: 2024-06-20_
 - This logic is now strictly enforced in code (see `validateColumnRelationships` in `championshipValidation.ts`).
 - This matches the Premiership tab logic and ensures full UI/UX parity.
 
+## Error Precedence and Validation Order (as of [DATE])
+
+| Error Type                | When is it set?                                                                                 |
+|--------------------------|-------------------------------------------------------------------------------------------------|
+| Range error               | Always checked first.                                                                            |
+| Duplicate error           | Set if duplicate found, merges with range error if both.                                         |
+| Cross-section duplicate   | (Finals only) Set if cat appears in both LH and SH finals, only if no range/duplicate error.     |
+| Status error              | (Finals only) Set if cat is not eligible for CH final, only if no range/duplicate/cross error.   |
+| Sequential error          | Set only if there is NO range, duplicate, or cross-section duplicate error for that cell.        |
+| Order error               | Set only if there is NO higher error for that cell.                                              |
+
+**Note:** This matches PremiershipTab error precedence exactly as of [DATE].
+
 ## 2024-06-20: Strict Error Precedence Enforcement (updated)
 - Assignment reminders are now only shown if there is no duplicate or GC/NOV error for that cell. This prevents multiple errors from appearing in the same cell and ensures clear, unambiguous UI feedback.
 
@@ -140,8 +169,18 @@ _Last Updated: 2024-06-20_
 - This logic matches the Premiership tab and is enforced in the validation code.
 
 ## Void Feature
-- Works exactly as in Championship tab: voiding a cat number only affects all instances of that cat number within the same column (judge/ring), not across all columns.
-- Voided inputs participate in validation normally.
+- **NEW (2024-06-22):** Voided ("VOID") cat numbers are now always ignored for all validation and error assignment in the Championship tab, matching KittenTab.
+- If a cat number is voided (entered as "VOID", case-insensitive) in any cell in a given column (ring), **all other cells in that column with the same cat number (across all CH award sections: Championship Final, Best AB CH, Best LH CH, Best SH CH) are also voided automatically**.
+- **Voided ("VOID") cat numbers are never included in duplicate detection, sequential checks, status checks, or any other validation.**
+- **VOID placements are treated as if they do not exist for validation.** For sequential and duplicate checks, only non-empty, non-VOID placements are considered. If a VOID appears before a filled placement, it does not block sequential entry (i.e., it is as if the VOID row does not exist at all). This matches KittenTab and is now enforced in both tabs.
+- **No errors will ever be shown for a voided ("VOID") cat number.**
+- If any of these voided checkboxes is unchecked, **all instances of that cat number in that column are unvoided**.
+- This ensures the void state is always synchronized for all matching cat numbers in the same column.
+- **This logic is now strictly enforced in the codebase (see `validateChampionshipTab` in `championshipValidation.ts`).**
+- **Example:**
+  - If you void cat #1 in Championship Final, Best AB CH, or Best LH CH in Ring 1, all other cells in Ring 1 with cat #1 will also be voided.
+  - If you unvoid any of them, all will be unvoided.
+- This logic is enforced in the UI and validation code.
 
 ## Duplicate Validation
 - No duplicate cat numbers allowed within the same section (Championship Final, Best AB CH, Best LH CH, Best SH CH).
@@ -229,3 +268,26 @@ This mismatch prevented duplicate error detection from working.
 ### Fix Applied
 Updated `validateChampionshipTab` and `validateColumnRelationships` functions to use the correct key format:
 - **Before**: `const key = \`champions-${columnIndex}-${position}\`;`
+
+## Cat # Validation Order by Section (as of [today's date])
+
+| Section         | Validation Order (Current)                                                                 |
+|----------------|--------------------------------------------------------------------------------------------|
+| Top 10/15      | VOID → format → duplicate (full-form) → sequential                                         |
+| AB/LH/SH CH    | VOID → format → duplicate (full-form) → sequential → status → order → assignment reminder  |
+
+- **Note:** In all sections, duplicate errors always take precedence over sequential errors. In finals sections, after sequential, status, order, and assignment checks are performed, but only the highest-precedence error is shown for each cell. This matches the current code and is strictly enforced in the validation logic. See the Error Precedence section below for details. See VALIDATION_CHANGELOG.md for rationale and history.
+
+> **2024-06-20:** AB/LH/SH CH finals validation logic now matches PremiershipTab finals logic exactly, including error precedence, sequential error logic, and assignment reminder. See table below for error order.
+
+| Error Type                | When is it set?                                                                                 |
+|--------------------------|-------------------------------------------------------------------------------------------------|
+| Range error               | Always checked first.                                                                            |
+| Duplicate error           | Set if duplicate found, merges with range error if both.                                         |
+| Cross-section duplicate   | (Finals only) Set if cat appears in both LH and SH finals, only if no range/duplicate error.     |
+| Status error              | (Finals only) Set if cat is not eligible for CH final, only if no range/duplicate/cross error.   |
+| Sequential error          | Set only if there is NO range, duplicate, or status error for that cell.                         |
+| Order error               | Set only if there is NO higher error for that cell.                                              |
+| Assignment reminder       | (AB only) Set only if there is NO higher error for that cell.                                    |
+
+> **2024-06-20:** Order errors for Best AB CH are now only set if the cell is filled and incorrect, not for empty cells, matching PremiershipTab logic. No order error is shown for empty Best AB CH cells.

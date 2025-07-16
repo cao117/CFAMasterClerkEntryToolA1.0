@@ -7,6 +7,7 @@ This document describes the **current validation rules** enforced in the Kitten 
   - Only one section: **Top 10/15 Kittens** (no finals or sub-sections)
   - Columns are dynamically generated from the General tab judges/ring types (AB=1, LH=1, SH=1, Double Specialty=2)
   - Only one status: **KIT** (all caps), always selected in the dropdown
+  - **If a Cat # input is VOID (case-insensitive, trimmed), the status label is hidden (not rendered) for that cell, and only 'VOID' is saved/restored in the CSV.**
   - Three action buttons at the bottom: Save to CSV, Load from CSV, Reset (shared logic)
   - Voiding logic, error display, keyboard navigation, and all styling match the Premiership tab exactly
 
@@ -31,9 +32,10 @@ The Kitten tab uses **hair-specific breakpoints** based on ring type:
 
 ## Validation Rules
 - **Cat number format:** Must be between 1-450
-- **Sequential entry:** Must fill positions sequentially (no skipping)
-- **Duplicate check:** No duplicates within the same section of the final. If a duplicate is found, the error is shown on all cells with the same value in that section (not just the last entered cell). The error message is: 'Duplicate cat number within this section of the final'.
+- **Sequential entry:** Must fill positions sequentially (no skipping; VOID placements are treated as if they do not exist for validation. If a VOID appears before a filled placement, it does not block sequential entry.)
+- **Duplicate check:** No duplicates within the same section of the final. VOID placements are treated as if they do not exist for validation. If a VOID appears in a row, it is ignored for duplicate checks. If a duplicate is found, the error is shown on all cells with the same value in that section (not just the last entered cell). The error message is: 'Duplicate cat number within this section of the final'.
 - **Status validation:** Only KIT is allowed (always selected)
+- **If a Cat # input is VOID, the status label is hidden (not rendered) for that cell.**
 - **Voiding:** Voiding a cat number in any cell in a column voids all instances of that cat number in that column
 - **Error display:** Errors are shown inline, with the same styling and precedence as the Premiership tab
 
@@ -66,6 +68,8 @@ Suppose you have 6 judges: 5 Shorthair rings and 1 Allbreed ring:
 ## Voiding Logic
 - If a cat number is voided anywhere in a column, all instances of that cat number in that column are voided (including new ones).
 - Unchecking void in any cell unvoids all instances in that column for that cat number.
+- **VOID placements are treated as if they do not exist for validation.** For sequential and duplicate checks, only non-empty, non-VOID placements are considered. If a VOID appears before a filled placement, it does not block sequential entry (i.e., it is as if the VOID row does not exist at all). This is enforced in both Kitten and Championship tabs for parity.
+- **If a Cat # input is VOID, the status label is hidden (not rendered) for that cell, and only 'VOID' is saved/restored in the CSV.**
 - This logic applies across the full column, matching Championship, Premiership, and Household Pet tabs. 
 
 - Only filled rows require status 'KIT'.

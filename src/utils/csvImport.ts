@@ -100,6 +100,14 @@ function safeTrim(val: string | undefined | null): string {
 }
 
 /**
+ * Robustly parse numbers from CSV, always returning 0 if NaN or invalid
+ */
+function parseNumber(val: any): number {
+  const n = parseInt(val, 10);
+  return isNaN(n) ? 0 : n;
+}
+
+/**
  * Parses CSV data and restores the complete application state
  * @param csvData - The CSV string data to parse
  * @param showSuccess - Success callback function
@@ -315,73 +323,73 @@ function parseGeneralSection(row: string[], general: ImportedShowState['general'
       general.masterClerk = value;
       break;
     case 'numberOfJudges':
-      general.numberOfJudges = parseInt(value) || 0;
+      general.numberOfJudges = parseNumber(value);
       break;
     case 'championshipCounts - gcs':
-      general.championshipCounts.gcs = parseInt(value) || 0;
+      general.championshipCounts.gcs = parseNumber(value);
       break;
     case 'championshipCounts - lhGcs':
-      general.championshipCounts.lhGcs = parseInt(value) || 0;
+      general.championshipCounts.lhGcs = parseNumber(value);
       break;
     case 'championshipCounts - shGcs':
-      general.championshipCounts.shGcs = parseInt(value) || 0;
+      general.championshipCounts.shGcs = parseNumber(value);
       break;
     case 'championshipCounts - lhChs':
-      general.championshipCounts.lhChs = parseInt(value) || 0;
+      general.championshipCounts.lhChs = parseNumber(value);
       break;
     case 'championshipCounts - shChs':
-      general.championshipCounts.shChs = parseInt(value) || 0;
+      general.championshipCounts.shChs = parseNumber(value);
       break;
     case 'championshipCounts - novs':
-      general.championshipCounts.novs = parseInt(value) || 0;
+      general.championshipCounts.novs = parseNumber(value);
       break;
     case 'championshipCounts - chs':
-      general.championshipCounts.chs = parseInt(value) || 0;
+      general.championshipCounts.chs = parseNumber(value);
       break;
     case 'championshipCounts - total':
-      general.championshipCounts.total = parseInt(value) || 0;
+      general.championshipCounts.total = parseNumber(value);
       break;
     case 'championshipCounts - lhNovs':
-      general.championshipCounts.lhNovs = parseInt(value) || 0;
+      general.championshipCounts.lhNovs = parseNumber(value);
       break;
     case 'championshipCounts - shNovs':
-      general.championshipCounts.shNovs = parseInt(value) || 0;
+      general.championshipCounts.shNovs = parseNumber(value);
       break;
     case 'kittenCounts - lhKittens':
-      general.kittenCounts.lhKittens = parseInt(value) || 0;
+      general.kittenCounts.lhKittens = parseNumber(value);
       break;
     case 'kittenCounts - shKittens':
-      general.kittenCounts.shKittens = parseInt(value) || 0;
+      general.kittenCounts.shKittens = parseNumber(value);
       break;
     case 'kittenCounts - total':
-      general.kittenCounts.total = parseInt(value) || 0;
+      general.kittenCounts.total = parseNumber(value);
       break;
     case 'premiershipCounts - gcs':
-      general.premiershipCounts.gcs = parseInt(value) || 0;
+      general.premiershipCounts.gcs = parseNumber(value);
       break;
     case 'premiershipCounts - lhPrs':
-      general.premiershipCounts.lhPrs = parseInt(value) || 0;
+      general.premiershipCounts.lhPrs = parseNumber(value);
       break;
     case 'premiershipCounts - shPrs':
-      general.premiershipCounts.shPrs = parseInt(value) || 0;
+      general.premiershipCounts.shPrs = parseNumber(value);
       break;
     case 'premiershipCounts - novs':
-      general.premiershipCounts.novs = parseInt(value) || 0;
+      general.premiershipCounts.novs = parseNumber(value);
       break;
     case 'premiershipCounts - prs':
-      general.premiershipCounts.prs = parseInt(value) || 0;
+      general.premiershipCounts.prs = parseNumber(value);
       break;
     case 'premiershipCounts - total':
-      general.premiershipCounts.total = parseInt(value) || 0;
+      general.premiershipCounts.total = parseNumber(value);
       break;
     case 'premiershipCounts - lhNovs':
-      general.premiershipCounts.lhNovs = parseInt(value) || 0;
+      general.premiershipCounts.lhNovs = parseNumber(value);
       break;
     case 'premiershipCounts - shNovs':
-      general.premiershipCounts.shNovs = parseInt(value) || 0;
+      general.premiershipCounts.shNovs = parseNumber(value);
       break;
     case 'householdPetCount':
-      general.householdPetCount = parseInt(value) || 0;
+      general.householdPetCount = parseNumber(value);
       break;
   }
 }
@@ -657,20 +665,14 @@ function parseHouseholdSection(row: string[], household: ImportedShowState['hous
  * @returns {{ catNumber: string, status: string, voided: boolean }}
  */
 function parseCellValue(cellValue: string): { catNumber: string; status: string; voided: boolean } {
-  const trimmed = cellValue.trim();
-  // Handle both '-v' and '- V' formats for voided cells
-  const isVoided = /-\s*[vV]$/.test(trimmed);
-  // Remove the voided suffix if present
-  const cleanValue = isVoided ? trimmed.replace(/-\s*[vV]$/, '') : trimmed;
-  // Split on dashes with or without spaces
-  const parts = cleanValue.split(/\s*-\s*/);
-  const catNumber = (parts[0] || '').trim();
-  const status = (parts[1] || '').trim();
-  return {
-    catNumber,
-    status,
-    voided: isVoided
-  };
+  const trimmed = (cellValue || '').trim();
+  if (trimmed.toUpperCase() === 'VOID') {
+    // If cell is VOID (case-insensitive), set catNumber to 'VOID', no status
+    return { catNumber: 'VOID', status: '', voided: true };
+  }
+  // Otherwise, parse as 'catNumber|status' or just catNumber
+  const [catNumber, status] = trimmed.split('|');
+  return { catNumber: catNumber || '', status: status || '', voided: false };
 }
 
 /**

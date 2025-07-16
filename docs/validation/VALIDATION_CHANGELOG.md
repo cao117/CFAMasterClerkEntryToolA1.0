@@ -801,3 +801,55 @@ This changelog records all changes, additions, and deletions to validation rules
 - **Household Pet Tab**: Validation now allows empty rows (no cat number) without error; only filled rows require status 'HHP'.
 - **CSV Import**: Importing a blank Household Pet section does not cause validation errors.
 - **Rationale**: Prevents false errors when no household pets are entered or imported.
+
+### [2024-06-22] Championship Tab: VOID Logic Refactor
+- **Tab:** Championship
+- **Change:** Voided ("VOID") cat numbers are now always ignored for all validation and error assignment in the Championship tab, matching KittenTab.
+- **Summary:**
+  - VOID cat numbers are never included in duplicate detection, sequential checks, status checks, or any other validation.
+  - No errors will ever be shown for a voided ("VOID") cat number.
+  - This ensures full UI/UX and validation parity with KittenTab and prevents any errors from being shown for voided placements.
+- **Rationale:** This change ensures that voided placements are always ignored for all checks, matching the intended user experience and validation logic of KittenTab. It prevents confusion and unnecessary error messages for voided entries.
+- **Impact:** Users will never see validation errors for voided placements in the Championship tab. All validation logic now matches KittenTab for voided entries.
+
+### [2024-06-22] Kitten & Championship Tabs: VOID-as-Nonexistent Logic for Validation
+- **Tabs:** Kitten, Championship
+- **Change:** VOID placements are now treated as if they do not exist for validation in both Kitten and Championship tabs.
+- **Summary:**
+  - For sequential and duplicate checks, only non-empty, non-VOID placements are considered.
+  - If a VOID appears before a filled placement, it does not block sequential entry (i.e., it is as if the VOID row does not exist at all).
+  - VOID placements are never included in duplicate detection, sequential checks, or any other validation.
+  - This is now documented and enforced for both tabs for strict parity.
+- **Rationale:** This ensures that voided placements do not interfere with validation logic, matching user expectations and KittenTab's established behavior. It also brings strict parity between Kitten and Championship tabs.
+- **Impact:** Users will never see sequential or duplicate errors caused by VOID placements in either tab. Documentation and code are now in full agreement for this logic.
+
+## [2024-06-09] PremiershipTab: VOID is a valid skip for sequential placement in all awards/finals sections
+- VOID is now treated as a valid skip for sequential placement validation in all awards/finals sections (Best AB PR, Best LH PR, Best SH PR) of the Premiership tab, matching the Top 10/15 logic.
+- Rationale: This ensures consistent user experience and allows users to skip placements with VOID without triggering a 'fill previous' error.
+
+### 2024-07-XX
+- [Championship Tab] VOID placements are now always ignored for all validation and ordering, matching KittenTab. This affects Top 10/15, Best AB CH, LH CH, SH CH, and all order/required/duplicate logic. Rationale: Full parity, user clarity, and bug prevention.
+
+### 2024-07-XX
+- [Premiership Tab] VOID placements are now always ignored for all validation and ordering, matching ChampionshipTab. This affects Top 10/15, Best AB PR, LH PR, SH PR, and all order/required/duplicate logic. Rationale: Full parity, user clarity, and bug prevention.
+
+### [2024-06-23] Kitten & Household Pet Tabs: Hide Status Label for VOID Cat #
+- **Tab:** Kitten, Household Pet
+- **Change:** Status label is now hidden (not rendered) for any cell where Cat # is VOID (case-insensitive, trimmed). Only 'VOID' is saved/restored in the CSV for that cell.
+- **Summary:**
+  - If a Cat # input is VOID, the status label is not shown in the UI for that cell.
+  - On CSV export/import, only 'VOID' (uppercase, no spaces) is saved/restored for that cell, with no status.
+  - This matches the logic already present in Premiership and Championship tabs.
+- **Rationale:** Ensures perfect parity and user experience across all tabs, and prevents confusion about status for VOID placements.
+- **Impact:** Users will see a clean, consistent UI and CSV export/import behavior for VOID placements in all tabs.
+
+### [2024-05-10] ChampionshipTab Validation Order Clarification
+- **Tab/Section:** ChampionshipTab (Top 10/15, AB/LH/SH CH)
+- **Summary:** Documented that Top 10/15 currently checks sequential error before duplicate, while finals sections (AB/LH/SH CH) check duplicate before sequential. This is different from PremiershipTab, where duplicate always takes precedence. An update is planned to make Top 10/15 match the finals sections for true parity.
+- **Rationale/Context:** To prevent future confusion and ensure code and documentation are always in sync, the explicit validation order for each section is now documented. This will guide future updates and maintenance.
+
+[DATE] - ChampionshipTab - Sequential error precedence updated to match PremiershipTab. Sequential errors ("You must fill previous placements before entering this position") are now only set if there is no range, duplicate, or cross-section duplicate error present for that cell. This ensures duplicate errors always take precedence, providing consistent user experience and error reporting across tabs.
+
+2024-06-20 - ChampionshipTab - AB/LH/SH CH finals validation logic now matches PremiershipTab finals logic exactly, including error precedence, sequential error logic, and assignment reminder. This ensures perfect parity and robust error handling across both tabs.
+
+2024-06-20 - ChampionshipTab - Order errors for Best AB CH are now only set if the cell is filled and incorrect, not for empty cells, matching PremiershipTab logic. This prevents premature error display and ensures perfect parity.

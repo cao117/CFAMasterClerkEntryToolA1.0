@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import ReactDOM from 'react-dom';
 
 interface ModalProps {
   isOpen: boolean;
@@ -118,21 +119,21 @@ export default function Modal({
     onClose();
   };
 
-  return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
+  // --- Modal centering and width fix: always center in viewport, robust max-width ---
+  // Use a fixed overlay with flexbox centering, and make dialog scrollable if needed
+  const modalJSX = (
+    <div className="cfa-modal-overlay">
       {/* Backdrop */}
       <div 
-        className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+        className="cfa-modal-backdrop"
         onClick={onClose}
       />
-      
-      {/* Modal */}
-      <div className="flex min-h-full items-center justify-center p-4">
+      {/* Modal Dialog */}
         <div
+        className="cfa-modal-dialog"
+        tabIndex={-1}
           ref={modalRef}
-          className="relative bg-white rounded-lg shadow-xl max-w-md w-full transform transition-all"
-          onClick={(e) => e.stopPropagation()}
-          tabIndex={-1}
+        onClick={e => e.stopPropagation()}
         >
           {/* Header */}
           <div className={`flex items-center p-6 border-b ${styles.border}`}>
@@ -147,14 +148,12 @@ export default function Modal({
               </h3>
             </div>
           </div>
-
           {/* Content */}
           <div className="p-6">
             <p className="text-sm text-gray-600 leading-relaxed">
               {message}
             </p>
           </div>
-
           {/* Footer */}
           <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200">
             {showCancel && (
@@ -171,9 +170,9 @@ export default function Modal({
             >
               {confirmText}
             </button>
-          </div>
         </div>
       </div>
     </div>
   );
+  return ReactDOM.createPortal(modalJSX, document.body);
 } 

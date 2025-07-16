@@ -118,19 +118,20 @@ export function exportShowToCSV(showState: any): { csv: string, filename: string
     return escaped;
   }
 
-  // PATCH: Helper to format a placement cell for CSV export with strict trimming and no spaces
+  // Update formatPlacementCell to handle VOID logic for PR/CH Top 10/15
   function formatPlacementCell(cell: any, voided: boolean): string {
-    // Only for non-general sections
-    const catNumber = (cell?.catNumber ?? '').toString().trim();
-    const status = (cell?.status ?? '').toString().trim();
-    // If voided, append '-v' (no spaces)
-    if (catNumber && status) {
-      return voided ? `${catNumber}-${status}-v` : `${catNumber}-${status}`;
-    } else if (catNumber) {
-      return catNumber; // fallback, should not happen
-    } else {
-      return '';
+    // If catNumber is VOID (case-insensitive, trimmed), output only 'VOID' (no status)
+    if (cell && typeof cell.catNumber === 'string' && cell.catNumber.trim().toUpperCase() === 'VOID') {
+      return 'VOID';
     }
+    // Otherwise, output as 'catNumber|status' (legacy logic)
+    if (cell && cell.catNumber && cell.status) {
+      return `${cell.catNumber}|${cell.status}`;
+    }
+    if (cell && cell.catNumber) {
+      return cell.catNumber;
+    }
+    return '';
   }
 
   // Helper: Section label row

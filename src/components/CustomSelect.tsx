@@ -2,20 +2,10 @@ import React, { useState, useRef, useEffect } from 'react';
 
 /**
  * CustomSelect - A modern, accessible, fully custom dropdown select component.
- * @param {string[]} options - List of string options to choose from
- * @param {string} value - Currently selected value
- * @param {(val: string) => void} onChange - Callback when value changes
- * @param {string} className - Additional classes for the select box
- * @param {string} placeholder - Placeholder text
- * @param {string} ariaLabel - ARIA label for accessibility
- * @param {React.ReactNode} selectedIcon - Icon to show in selected value
- * @param {string} dropdownMenuClassName - Additional classes for dropdown menu
- * @param {string} highlightBg - Background color class for highlighted items
- * @param {string} highlightText - Text color class for highlighted items
- * @param {string} selectedBg - Background color class for selected items
- * @param {string} selectedText - Text color class for selected items
- * @param {string} hoverBg - Background color class for hover states
- * @param {string} hoverText - Text color class for hover states
+ * Now supports theme border and text color for perfect parity across all tabs.
+ * @param {string} borderColor - Tailwind border color class for the select box (e.g., 'border-violet-300')
+ * @param {string} focusBorderColor - Tailwind border color class for focus state (e.g., 'focus:border-violet-500')
+ * @param {string} textColor - Tailwind text color class for the select value (e.g., 'text-violet-700')
  */
 const CustomSelect: React.FC<{
   options: string[];
@@ -32,6 +22,9 @@ const CustomSelect: React.FC<{
   selectedText?: string;
   hoverBg?: string;
   hoverText?: string;
+  borderColor?: string; // NEW: theme border
+  focusBorderColor?: string; // NEW: theme border on focus
+  textColor?: string; // NEW: theme text color for value
 }> = ({ 
   options, 
   value, 
@@ -46,7 +39,10 @@ const CustomSelect: React.FC<{
   selectedBg = 'bg-violet-100',
   selectedText = 'text-violet-800',
   hoverBg = 'bg-violet-50',
-  hoverText = 'text-violet-900'
+  hoverText = 'text-violet-900',
+  borderColor = 'border-violet-300', // Default: violet
+  focusBorderColor = 'focus:border-violet-500',
+  textColor = 'text-violet-700',
 }) => {
   const [open, setOpen] = useState(false);
   const [highlighted, setHighlighted] = useState(-1);
@@ -104,10 +100,11 @@ const CustomSelect: React.FC<{
     >
       <button
         type="button"
-        className={`w-full flex items-center justify-between rounded-full px-3 py-1.5 bg-white text-sm font-medium text-slate-800 transition-all duration-200 outline-none focus:outline-none ${open ? 'scale-[1.02]' : ''}`}
+        className={`w-full flex items-center justify-between rounded-full px-3 py-1.5 bg-white text-sm font-medium transition-all duration-200 outline-none focus:outline-none border ${borderColor} ${focusBorderColor} ${textColor} font-[Inter,Montserrat,Arial,Helvetica Neue,sans-serif] text-[15px] font-medium h-9 min-w-[70px] ${open ? 'scale-[1.02]' : ''}`}
         onClick={() => setOpen(o => !o)}
         aria-haspopup="listbox"
         aria-expanded={open}
+        style={{ boxShadow: open ? '0 0 0 2px rgba(0,0,0,0.04)' : undefined }}
       >
         <span className={value ? 'flex items-center' : 'text-zinc-400 flex items-center'}>
           {selectedIcon && <span className="mr-2 flex items-center">{selectedIcon}</span>}

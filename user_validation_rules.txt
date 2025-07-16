@@ -1,0 +1,52 @@
+// CFA Entry Tool: User-Friendly Validation Rules (All Tabs)
+
+============================
+GENERAL TAB VALIDATION RULES
+============================
+1. Show Date, Club Name, and Master Clerk Name are required fields.
+2. Club Name cannot exceed 255 characters; Master Clerk Name cannot exceed 120 characters.
+3. Number of Judges must be between 1 and 12 (inclusive).
+4. Each judge must have a unique name (max 120 chars) and acronym (max 6 chars), and a selected ring type.
+5. Household Pet Count must be a non-negative integer.
+
+===============================
+CHAMPIONSHIP TAB VALIDATION RULES
+===============================
+1. Each Cat # must be a number between 1 and 450, or the word VOID (case-insensitive).
+2. If Cat # is VOID, the cell is skipped for all validation and the status dropdown is hidden.
+3. Status for each placement (Show Awards) must be one of: GC, CH, or NOV. Status is not required for VOID.
+4. Placements must be filled sequentially from top to bottom—no skipping rows.
+5. No duplicate Cat #s are allowed within the same column and section (excluding VOID).
+6. Finals sections (Best AB CH, Best LH CH, Best SH CH) may only contain CH cats from Show Awards, in the same order as they appear there.
+7. All CH cats from Show Awards must be used in the finals sections, in order, with no extra or missing cats (other than VOID).
+8. For LH/SH split, all CH cats must appear in either LH or SH finals, never both, and in the same order as Show Awards.
+
+===============================
+PREMIERSHIP TAB VALIDATION RULES
+===============================
+1. Each Cat # must be a number between 1 and 450, or the word VOID (case-insensitive).
+2. If Cat # is VOID, the cell is skipped for all validation and the status dropdown is hidden.
+3. Status for each placement (Premiership Final) must be one of: GP, PR, or NOV. Status is not required for VOID.
+4. Placements must be filled sequentially from top to bottom—no skipping rows.
+5. No duplicate Cat #s are allowed within the same column and section (excluding VOID).
+6. Finals sections (Best AB PR, Best LH PR, Best SH PR) may only contain PR cats from the Premiership Final, in the same order as they appear there.
+7. All PR cats from the Premiership Final must be used in the finals sections, in order, with no extra or missing cats (other than VOID).
+8. For LH/SH split, all PR cats must appear in either LH or SH finals, never both, and in the same order as the Premiership Final.
+
+========================
+KITTEN TAB VALIDATION RULES
+========================
+1. Each Cat # must be a number between 1 and 450, or the word VOID (case-insensitive).
+2. If Cat # is VOID, the cell is skipped for all validation and the status label is hidden.
+3. Status is always KIT and is automatically set for all non-VOID placements.
+4. Placements must be filled sequentially from top to bottom—no skipping rows.
+5. No duplicate Cat #s are allowed within the same column and section (excluding VOID).
+
+===============================
+HOUSEHOLD PET TAB VALIDATION RULES
+===============================
+1. Each Cat # must be a number between 1 and 450, or the word VOID (case-insensitive).
+2. If Cat # is VOID, the cell is skipped for all validation and the status label is hidden.
+3. Status is always HHP and is automatically set for all non-VOID placements.
+4. Placements must be filled sequentially from top to bottom—no skipping rows.
+5. No duplicate Cat #s are allowed within the same column and section (excluding VOID). 

@@ -143,21 +143,21 @@ export default function HouseholdPetTab({
     }
   };
 
+  // Utility: Check if a cat number input is VOID (case-insensitive)
+  function isVoidInput(catNumber: string): boolean {
+    return typeof catNumber === 'string' && catNumber.trim().toUpperCase() === 'VOID';
+  }
+
   // --- Update placement (cat number) ---
   const updateShowAward = (colIdx: number, pos: number, value: string) => {
     const key = `${colIdx}-${pos}`;
-    
-    // --- Auto-void logic: if this cat number is already voided elsewhere in the column, void this cell too ---
-    let shouldBeVoided = false;
-    if (value && value.trim() !== '') {
-      shouldBeVoided = isCatNumberVoidedInColumn(colIdx, value);
-    }
-    
+    // Auto-complete VOID when user types 'v' or 'V'
+    const newValue = value.toLowerCase() === 'v' ? 'VOID' : value;
     setHouseholdPetTabData(prev => {
       const prevCell = prev.showAwards?.[key] || {};
       const newCell = {
         ...prevCell,
-        catNumber: value,
+        catNumber: newValue,
         status: 'HHP',
       };
       return {
@@ -168,22 +168,17 @@ export default function HouseholdPetTab({
         }
       };
     });
-    
-    // Set void state after updating the data (outside the callback for proper timing)
-    setTabDataVoidState(colIdx, pos, shouldBeVoided);
   };
 
-  // --- Voiding logic ---
-  function setTabDataVoidState(colIdx: number, pos: number, voided: boolean) {
-    const key = `${colIdx}-${pos}`;
-    setHouseholdPetTabData(prev => ({
-      ...prev,
-      voidedShowAwards: {
-        ...prev.voidedShowAwards,
-        [key]: voided
-      }
-    }));
-  }
+  // --- Handle cat number input (matches KittenTab pattern) ---
+  const handleCatNumberInput = (colIdx: number, pos: number, value: string) => {
+    // Auto-complete VOID when user types 'v' or 'V'
+    if (value.toLowerCase() === 'v') {
+      updateShowAward(colIdx, pos, 'VOID');
+    } else {
+      updateShowAward(colIdx, pos, value);
+    }
+  };
 
   // --- Getters ---
   const getShowAward = (colIdx: number, pos: number) => {
@@ -203,17 +198,13 @@ export default function HouseholdPetTab({
       voidedShowAwards: householdPetTabData.voidedShowAwards || {},
       householdPetCount
     };
-    setErrors(householdPetValidation.validateHouseholdPetTab(validationInput));
+    return householdPetValidation.validateHouseholdPetTab(validationInput);
   };
 
-  // --- Auto-validate when data changes (matches Championship tab behavior) ---
-  React.useEffect(() => {
-    validate();
-  }, [columns, householdPetTabData.showAwards, householdPetTabData.voidedShowAwards, householdPetCount]);
-
-  // --- Validate on blur ---
+  // --- Validate on blur (matches KittenTab pattern) ---
   const handleBlur = () => {
-    validate();
+    const errors = validate();
+    setErrors(errors);
   };
 
   // Add state for reset modal
@@ -245,11 +236,7 @@ export default function HouseholdPetTab({
 
   // Add hasFocusedOnActivation ref for autofocus logic
   const hasFocusedOnActivation = useRef(false);
-  React.useEffect(() => {
-    if (!isActive) {
-      hasFocusedOnActivation.current = false;
-    }
-  }, [isActive]);
+  // Remove the useEffect for auto-focus (lines 227-249)
 
   // Add Jump to Ring handler
   const handleRingJump = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -303,7 +290,23 @@ export default function HouseholdPetTab({
   };
 
   const handleResetClick = () => {
-    onTabReset();
+    setIsResetModalOpen(true);
+  };
+  const confirmReset = () => {
+    setIsResetModalOpen(false);
+    // Build initial showAwards for all visible cells (columns × rows)
+    const newShowAwards: { [key: string]: { catNumber: string; status: string } } = {};
+    for (let colIdx = 0; colIdx < columns.length; colIdx++) {
+      for (let i = 0; i < totalCatRows; i++) {
+        newShowAwards[`${colIdx}-${i}`] = { catNumber: '', status: 'HHP' };
+      }
+    }
+    setHouseholdPetTabData({ showAwards: newShowAwards, voidedShowAwards: {} });
+    setFocusedColumnIndex(null);
+    // Clear errors immediately (matches KittenTab behavior)
+    setErrors({});
+    // Show success message
+    showSuccess('Household Pet Tab Reset', 'Household Pet tab data has been reset successfully.');
   };
 
   return (
@@ -317,11 +320,7 @@ export default function HouseholdPetTab({
         type="warning"
         confirmText="Reset Household Pet Tab"
         cancelText="Cancel"
-        onConfirm={() => {
-          setIsResetModalOpen(false);
-          onTabReset();
-          showSuccess('Household Pet Tab Reset', 'Household Pet tab data has been reset successfully.');
-        }}
+        onConfirm={confirmReset}
         onCancel={() => setIsResetModalOpen(false)}
       />
 
@@ -373,14 +372,11 @@ export default function HouseholdPetTab({
             }}
             className="w-[220px] font-semibold text-base rounded-full px-4 py-2 bg-white border-2 border-orange-200 shadow-md hover:shadow-lg focus:border-orange-400 focus:shadow-lg text-orange-700 transition-all duration-200"
             ariaLabel="Jump to Ring"
-            selectedIcon="🧡"
+            selectedIcon="🐱"
             dropdownMenuClassName="w-[220px] rounded-xl bg-gradient-to-b from-white via-orange-50 to-white shadow-xl border-2 border-orange-200 text-base font-semibold text-orange-800 transition-all duration-200"
-            highlightBg="bg-orange-50"
-            highlightText="text-orange-900"
-            selectedBg="bg-orange-100"
-            selectedText="text-orange-800"
-            hoverBg="bg-orange-50"
-            hoverText="text-orange-900"
+            borderColor="border-orange-300" // Orange border
+            focusBorderColor="focus:border-orange-500" // Orange border on focus
+            textColor="text-orange-700" // Orange text
           />
         </div>
         {/* Table scroll container with sticky header */}
@@ -404,7 +400,8 @@ export default function HouseholdPetTab({
                       key={`header-modern-${index}`}
                       id={`ring-th-${index}`}
                       className={`cfa-table-header-cell-modern text-center align-bottom`}
-                      style={{ width: 190, minWidth: 190, maxWidth: 190, verticalAlign: 'top', borderTopRightRadius: 0, margin: 0, padding: 0 }}
+                      // Parity with KittenTab: width/minWidth/maxWidth 170px
+                      style={{ width: 170, minWidth: 170, maxWidth: 170, verticalAlign: 'top', borderTopRightRadius: 0, margin: 0, padding: 0 }}
                     >
                       <div className="flex flex-col items-center justify-center gap-0.5 relative">
                         <span className="header-main block">Ring {column.judge.id}</span>
@@ -418,68 +415,58 @@ export default function HouseholdPetTab({
               <tbody>
                 {/* Household Pet Final Section (Top 10/15) */}
                 {Array.from({ length: totalCatRows }, (_, i) => (
-                  <tr key={`hhp-final-${i}`} className="cfa-table-row">
+                  <tr key={`hhp-final-${i}`} className={`cfa-table-row transition-all duration-150 ${i % 2 === 0 ? 'bg-white' : 'bg-orange-50'} hover:bg-orange-100/40 hover:shadow-sm`}>
                     <td className="py-2 pl-4 font-medium text-sm border-r border-gray-300 bg-white frozen-column" style={{ width: '140px', minWidth: '140px' }}>
                       {i + 1}{i >= 10 ? '*' : ''}
                     </td>
                     {columns.map((_, colIdx) => {
                       const cell = getShowAward(colIdx, i) || { catNumber: '', status: 'HHP' };
-                      const voided = getVoidState(colIdx, i);
-                      const error = errors[`${colIdx}-${i}`];
+                      const voided = isVoidInput(cell.catNumber);
+                      const error = errors[`${colIdx}-${i}`]; // Fixed: complete error assignment
                       return (
-                        <td key={`hhp-final-${i}-${colIdx}`} className={`py-2 px-2 border-r border-gray-300 align-top${focusedColumnIndex === colIdx ? ' ring-glow' : ''}`}> 
+                        <td key={`hhp-final-cell-${colIdx}-${i}`} className={`py-2 px-2 border-r border-gray-300 align-top transition-all duration-150${focusedColumnIndex === colIdx ? ' border-l-4 border-r-4 border-orange-300 z-10' : ''} hover:bg-orange-50 whitespace-nowrap overflow-x-visible`} style={{ width: cell.catNumber ? 110 : 90, minWidth: cell.catNumber ? 110 : 90, maxWidth: cell.catNumber ? 110 : 90, transition: 'width 0.2s' }}>
                           <div className="flex flex-col items-start">
-                            <div className="flex gap-1 items-center">
+                            <div className="flex gap-2 items-center">
+                              {/* Cat # input: bulletproof editable */}
                               <input
                                 type="text"
-                                className={`w-14 h-7 text-xs text-center border rounded px-0.5 ${error ? 'cfa-input-error' : ''} ${voided ? 'voided-input' : ''} focus:outline-none focus:border-cfa-gold`}
+                                className={`w-16 h-9 text-sm text-center font-medium rounded-md px-3 bg-white/60 border border-orange-200 shadow focus:border-orange-400 focus:ring-2 focus:ring-orange-100 focus:bg-white/90 focus:shadow-lg transition-all duration-200 placeholder-zinc-300 ${error ? 'cfa-input-error' : ''} ${voided ? 'opacity-50 grayscale line-through' : ''}`}
                                 placeholder="Cat #"
-                                value={cell.catNumber ?? ''}
-                                onChange={e => updateShowAward(colIdx, i, e.target.value)}
-                                onFocus={e => handleCatInputFocus(e, colIdx)}
-                                onKeyDown={e => handleCatInputKeyDown(e, colIdx, i)}
+                                value={cell.catNumber}
+                                onChange={e => handleCatNumberInput(colIdx, i, e.target.value)}
                                 onBlur={handleBlur}
-                                disabled={voided}
                                 ref={el => {
                                   if (!catInputRefs.current[colIdx]) catInputRefs.current[colIdx] = [];
                                   catInputRefs.current[colIdx][i] = el;
-                                }}
-                              />
-                              <select
-                                className={`w-14 h-7 text-xs text-center border rounded px-0.5 ${error ? 'cfa-input-error' : ''} ${voided ? 'voided-input' : ''} focus:outline-none focus:border-cfa-gold`}
-                                value="HHP"
-                                disabled
-                              >
-                                <option value="HHP">HHP</option>
-                              </select>
-                              {cell.catNumber && (
-                                <input
-                                  type="checkbox"
-                                  className="void-checkbox"
-                                  checked={voided}
-                                  onChange={() => {
-                                    const newVoided = !voided;
-                                    const catNumber = cell.catNumber;
-                                    if (catNumber) {
-                                      for (let pos = 0; pos < totalCatRows; pos++) {
-                                        const otherCell = getShowAward(colIdx, pos);
-                                        if (otherCell.catNumber === catNumber) {
-                                          setTabDataVoidState(colIdx, pos, newVoided);
-                                        }
-                                      }
+                                  if (colIdx === 0 && i === 0) {
+                                    // Focus immediately when the ref is set (if tab is active and we haven't focused yet)
+                                    if (el && isActive && !hasFocusedOnActivation.current) {
+                                      setTimeout(() => {
+                                        el.focus();
+                                        setFocusedColumnIndex(0);
+                                        hasFocusedOnActivation.current = true; // Mark as focused
+                                      }, 0);
                                     }
-                                  }}
-                                  disabled={!cell.catNumber}
-                                />
+                                  }
+                                }}
+                                onKeyDown={e => handleCatInputKeyDown(e, colIdx, i)}
+                                onFocus={e => handleCatInputFocus(e, colIdx)}
+                                readOnly={false}
+                                tabIndex={0}
+                              />
+                              {/* Static status label for HHP, styled like dropdown - HIDE if VOID */}
+                              {!voided && (
+                                <span className="min-w-[70px] px-3 py-1 rounded-full border border-orange-200 text-orange-700 font-semibold text-sm text-center select-none bg-white" style={{ fontFamily: 'Inter, Arial, Helvetica Neue, sans-serif' }}>HHP</span>
                               )}
                             </div>
+                            {/* Error message */}
                             {error && (
                               <div className="mt-1 rounded-lg bg-red-50 border border-red-300 px-3 py-2 shadow text-xs text-red-700 font-semibold flex items-center gap-2 whitespace-normal break-words w-full">
                                 <svg className="w-4 h-4 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <circle cx="12" cy="12" r="10" strokeWidth="2" />
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01" />
                                 </svg>
-                                {error}
+                                {getCleanMessage(error)}
                               </div>
                             )}
                           </div>
@@ -492,20 +479,13 @@ export default function HouseholdPetTab({
             </table>
           </div>
         </div>
-        {/* Premium Action Buttons */}
+        {/* Premium Action Buttons - Centered, matches GeneralTab */}
         <ActionButtons
-          onSaveToCSV={() => {
-            if (Object.keys(errors).length > 0) {
-              showError('CSV Export Error', 'Cannot export CSV while there are validation errors. Please fix all errors first.');
-              return;
-            }
-            handleSaveToCSVClick();
-          }}
+          onSaveToCSV={handleSaveToCSVClick}
           onLoadFromCSV={handleRestoreFromCSVClick}
           onReset={handleResetClick}
-          resetButtonText="Reset Tab"
         />
       </div>
     </div>
   );
-} 
+}

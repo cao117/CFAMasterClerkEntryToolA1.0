@@ -68,11 +68,11 @@ export function validateKittenTab(input: KittenValidationInput): Record<string, 
 
   // For each column
   columns.forEach((col, colIdx) => {
-    let firstEmpty = -1;
     const maxRows = getBreakpointForRingType(col.specialty);
     // Map from catNumber to all row indices where it appears (excluding voided and empty)
     const catNumberToRows: Record<string, number[]> = {};
     
+    // First pass: collect all non-VOID cat numbers for duplicate detection
     for (let rowIdx = 0; rowIdx < maxRows; rowIdx++) {
       const key = `${colIdx}-${rowIdx}`;
       const cell = showAwards[key] || { catNumber: '', status: 'KIT' };
@@ -80,43 +80,62 @@ export function validateKittenTab(input: KittenValidationInput): Record<string, 
       // Skip VOIDED placements for validation (treat as if they don't exist)
       if (isVoidInput(cell.catNumber)) continue;
       
-      // Format validation
-      if (cell.catNumber && !validateCatNumberFormat(cell.catNumber)) {
-        errors[key] = 'Cat number must be between 1-450 or VOID';
-        continue;
-      }
-      
-      // Sequential entry check
-      if (cell.catNumber === '' && firstEmpty === -1) {
-        firstEmpty = rowIdx;
-      }
-      if (cell.catNumber !== '' && firstEmpty !== -1 && rowIdx > firstEmpty) {
-        errors[key] = 'You must fill previous placements before entering this position.';
-        continue;
-      }
-      
       // Build map for duplicate detection (only for non-VOID cat numbers)
       if (cell.catNumber && !isVoidInput(cell.catNumber)) {
         if (!catNumberToRows[cell.catNumber]) catNumberToRows[cell.catNumber] = [];
         catNumberToRows[cell.catNumber].push(rowIdx);
       }
+    }
+    
+    // Second pass: apply validation in order (matching PremiershipTab)
+    for (let rowIdx = 0; rowIdx < maxRows; rowIdx++) {
+      const key = `${colIdx}-${rowIdx}`;
+      const cell = showAwards[key] || { catNumber: '', status: 'KIT' };
       
-      // Status check: Only require status === 'KIT' if catNumber is present and not VOID
+      // Skip VOIDED placements for validation (treat as if they don't exist)
+      if (isVoidInput(cell.catNumber)) continue;
+      
+      // 1. Format validation (Range error) - assign first
+      if (cell.catNumber && !validateCatNumberFormat(cell.catNumber)) {
+        errors[key] = 'Cat number must be between 1-450 or VOID';
+        continue;
+      }
+      
+      // 2. Duplicate error - only if no format error
+      if (cell.catNumber && catNumberToRows[cell.catNumber] && catNumberToRows[cell.catNumber].length > 1) {
+        if (errors[key]) {
+          errors[key] = 'Cat number must be between 1-450 or VOID. Duplicate: This cat is already placed in another position.';
+        } else {
+          errors[key] = 'Duplicate: This cat is already placed in another position.';
+        }
+        continue;
+      }
+      
+      // 3. Sequential entry error - only if no format or duplicate error
+      if (cell.catNumber && !errors[key]) {
+        let sequentialError = false;
+        for (let i = 0; i < rowIdx; i++) {
+          const prevKey = `${colIdx}-${i}`;
+          const prevCell = showAwards[prevKey] || { catNumber: '', status: 'KIT' };
+          // FIX: Treat VOID as a valid skip (do NOT trigger sequential error if previous is VOID)
+          if (!prevCell.catNumber || prevCell.catNumber.trim() === '') {
+            sequentialError = true;
+            break;
+          }
+          // If prevCell.catNumber is VOID, treat as a valid skip (do NOT set sequentialError)
+        }
+        if (sequentialError) {
+          errors[key] = 'You must fill previous placements before entering this position.';
+          continue;
+        }
+      }
+      
+      // 4. Status check: Only require status === 'KIT' if catNumber is present and not VOID
       if (cell.catNumber && !isVoidInput(cell.catNumber) && cell.status !== 'KIT') {
         errors[key] = 'Status must be KIT';
         continue;
       }
     }
-    
-    // After collecting, set duplicate error for all rows with duplicate cat numbers
-    Object.entries(catNumberToRows).forEach(([catNum, rows]) => {
-      if (catNum && rows.length > 1) {
-        rows.forEach(rowIdx => {
-          const key = `${colIdx}-${rowIdx}`;
-          errors[key] = 'Duplicate cat number within this section of the final';
-        });
-      }
-    });
   });
   
   return errors;

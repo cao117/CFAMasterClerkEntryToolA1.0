@@ -540,6 +540,11 @@ export default function GeneralTab({
     showSuccess('Test Data Filled', 'General tab has been filled with randomized test data.');
   };
 
+  // Helper: Ensure all number inputs are always controlled (never undefined/NaN)
+  function safeNumberInput(val: any): number | string {
+    return typeof val === 'number' && !isNaN(val) ? val : '';
+  }
+
   return (
     <div ref={containerRef} className="p-8">
       {/* Reset Confirmation Modal */}
@@ -637,7 +642,7 @@ export default function GeneralTab({
                         type="number" 
                         min="0" 
                         max="12" 
-                        value={showData.numberOfJudges} 
+                        value={safeNumberInput(showData.numberOfJudges)} 
                         onChange={handleNumberOfJudgesChange}
                         onFocus={e => { e.target.select(); handleNumberFocus(e); handleFieldFocus('numberOfJudges'); }}
                         onBlur={e => { handleNumberBlur(e, 'numberOfJudges', 0); handleFieldBlur(); }}
@@ -750,7 +755,7 @@ export default function GeneralTab({
                         <input 
                           type="number" 
                           min="0" 
-                          value={showData.championshipCounts.lhGcs} 
+                          value={safeNumberInput(showData.championshipCounts.lhGcs)} 
                           onChange={e => updateChampionshipCount('lhGcs', parseInt(e.target.value) || 0)} 
                           onFocus={e => e.target.select()}
                           onBlur={e => handleNumberBlur(e, 'championshiplhGcs')} 
@@ -763,7 +768,7 @@ export default function GeneralTab({
                         <input 
                           type="number" 
                           min="0" 
-                          value={showData.championshipCounts.lhChs} 
+                          value={safeNumberInput(showData.championshipCounts.lhChs)} 
                           onChange={e => updateChampionshipCount('lhChs', parseInt(e.target.value) || 0)} 
                           onFocus={e => e.target.select()}
                           onBlur={e => handleNumberBlur(e, 'championshiplhChs')} 
@@ -776,7 +781,7 @@ export default function GeneralTab({
                         <input 
                           type="number" 
                           min="0" 
-                          value={showData.championshipCounts.lhNovs} 
+                          value={safeNumberInput(showData.championshipCounts.lhNovs)} 
                           onChange={e => updateChampionshipCount('lhNovs', parseInt(e.target.value) || 0)} 
                           onFocus={e => e.target.select()}
                           onBlur={e => handleNumberBlur(e, 'championshiplhNovs')} 
@@ -793,7 +798,7 @@ export default function GeneralTab({
                         <input 
                           type="number" 
                           min="0" 
-                          value={showData.championshipCounts.shGcs} 
+                          value={safeNumberInput(showData.championshipCounts.shGcs)} 
                           onChange={e => updateChampionshipCount('shGcs', parseInt(e.target.value) || 0)} 
                           onFocus={handleNumberFocus}
                           onBlur={e => handleNumberBlur(e, 'championshipshGcs')} 
@@ -806,7 +811,7 @@ export default function GeneralTab({
                         <input 
                           type="number" 
                           min="0" 
-                          value={showData.championshipCounts.shChs} 
+                          value={safeNumberInput(showData.championshipCounts.shChs)} 
                           onChange={e => updateChampionshipCount('shChs', parseInt(e.target.value) || 0)} 
                           onFocus={handleNumberFocus}
                           onBlur={e => handleNumberBlur(e, 'championshipshChs')} 
@@ -819,7 +824,7 @@ export default function GeneralTab({
                           <input
                           type="number" 
                           min="0" 
-                          value={showData.championshipCounts.shNovs} 
+                          value={safeNumberInput(showData.championshipCounts.shNovs)} 
                           onChange={e => updateChampionshipCount('shNovs', parseInt(e.target.value) || 0)} 
                           onFocus={handleNumberFocus}
                           onBlur={e => handleNumberBlur(e, 'championshipshNovs')} 
@@ -835,7 +840,7 @@ export default function GeneralTab({
                         <label className="text-sm font-semibold text-emerald-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of GCs:</label>
                           <input
                           type="number" 
-                          value={showData.championshipCounts.gcs} 
+                          value={safeNumberInput(showData.championshipCounts.gcs)} 
                           readOnly 
                           className="w-20 text-center text-sm font-semibold bg-emerald-50 border border-emerald-200 rounded-md py-1 px-2 text-emerald-800" 
                           style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
@@ -845,7 +850,7 @@ export default function GeneralTab({
                         <label className="text-sm font-semibold text-emerald-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of CHs:</label>
                         <input 
                           type="number" 
-                          value={showData.championshipCounts.chs} 
+                          value={safeNumberInput(showData.championshipCounts.chs)} 
                           readOnly 
                           className="w-20 text-center text-sm font-semibold bg-emerald-50 border border-emerald-200 rounded-md py-1 px-2 text-emerald-800" 
                           style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
@@ -855,7 +860,7 @@ export default function GeneralTab({
                         <label className="text-sm font-semibold text-emerald-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>Total Count:</label>
                         <input 
                           type="number" 
-                          value={showData.championshipCounts.total} 
+                          value={safeNumberInput(showData.championshipCounts.total)} 
                           readOnly 
                           className="w-20 text-center text-sm font-semibold bg-emerald-50 border border-emerald-200 rounded-md py-1 px-2 text-emerald-800" 
                           style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
@@ -880,7 +885,7 @@ export default function GeneralTab({
                       <input 
                         type="number" 
                         min="0" 
-                        value={showData.kittenCounts.lhKittens} 
+                        value={safeNumberInput(showData.kittenCounts.lhKittens)} 
                         onChange={e => updateKittenCount('lhKittens', parseInt(e.target.value) || 0)} 
                         onFocus={handleNumberFocus}
                         onBlur={e => handleNumberBlur(e, 'kittenCountslhKittens')} 
@@ -893,7 +898,7 @@ export default function GeneralTab({
                       <input 
                         type="number" 
                         min="0" 
-                        value={showData.kittenCounts.shKittens} 
+                        value={safeNumberInput(showData.kittenCounts.shKittens)} 
                         onChange={e => updateKittenCount('shKittens', parseInt(e.target.value) || 0)} 
                         onFocus={handleNumberFocus}
                         onBlur={e => handleNumberBlur(e, 'kittenCountsshKittens')} 
@@ -905,7 +910,7 @@ export default function GeneralTab({
                       <label className="text-sm font-semibold text-green-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>Total Kittens:</label>
                       <input 
                         type="number" 
-                        value={showData.kittenCounts.total} 
+                        value={safeNumberInput(showData.kittenCounts.total)} 
                         readOnly 
                         className="w-20 text-center text-sm font-semibold bg-green-50 border border-green-200 rounded-md py-1 px-2 text-green-800" 
                         style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
@@ -931,7 +936,7 @@ export default function GeneralTab({
                         <input 
                           type="number" 
                           min="0" 
-                          value={showData.premiershipCounts.lhGps} 
+                          value={safeNumberInput(showData.premiershipCounts.lhGps)} 
                           onChange={e => updatePremiershipCount('lhGps', parseInt(e.target.value) || 0)} 
                           onFocus={handleNumberFocus}
                           onBlur={e => handleNumberBlur(e, 'premiershiplhGps')} 
@@ -944,7 +949,7 @@ export default function GeneralTab({
                         <input 
                           type="number" 
                           min="0" 
-                          value={showData.premiershipCounts.lhPrs} 
+                          value={safeNumberInput(showData.premiershipCounts.lhPrs)} 
                           onChange={e => updatePremiershipCount('lhPrs', parseInt(e.target.value) || 0)} 
                           onFocus={handleNumberFocus}
                           onBlur={e => handleNumberBlur(e, 'premiershiplhPrs')} 
@@ -957,7 +962,7 @@ export default function GeneralTab({
                         <input 
                           type="number" 
                           min="0" 
-                          value={showData.premiershipCounts.lhNovs} 
+                          value={safeNumberInput(showData.premiershipCounts.lhNovs)} 
                           onChange={e => updatePremiershipCount('lhNovs', parseInt(e.target.value) || 0)} 
                           onFocus={handleNumberFocus}
                           onBlur={e => handleNumberBlur(e, 'premiershiplhNovs')} 
@@ -974,7 +979,7 @@ export default function GeneralTab({
                         <input 
                           type="number" 
                           min="0" 
-                          value={showData.premiershipCounts.shGps} 
+                          value={safeNumberInput(showData.premiershipCounts.shGps)} 
                           onChange={e => updatePremiershipCount('shGps', parseInt(e.target.value) || 0)} 
                           onFocus={handleNumberFocus}
                           onBlur={e => handleNumberBlur(e, 'premiershipshGps')} 
@@ -987,7 +992,7 @@ export default function GeneralTab({
                         <input 
                           type="number" 
                           min="0" 
-                          value={showData.premiershipCounts.shPrs} 
+                          value={safeNumberInput(showData.premiershipCounts.shPrs)} 
                           onChange={e => updatePremiershipCount('shPrs', parseInt(e.target.value) || 0)} 
                           onFocus={handleNumberFocus}
                           onBlur={e => handleNumberBlur(e, 'premiershipshPrs')} 
@@ -1000,7 +1005,7 @@ export default function GeneralTab({
                         <input 
                           type="number" 
                           min="0" 
-                          value={showData.premiershipCounts.shNovs} 
+                          value={safeNumberInput(showData.premiershipCounts.shNovs)} 
                           onChange={e => updatePremiershipCount('shNovs', parseInt(e.target.value) || 0)} 
                           onFocus={handleNumberFocus}
                           onBlur={e => handleNumberBlur(e, 'premiershipshNovs')} 
@@ -1016,7 +1021,7 @@ export default function GeneralTab({
                         <label className="text-sm font-semibold text-teal-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of GPs:</label>
                         <input 
                           type="number" 
-                          value={showData.premiershipCounts.gps} 
+                          value={safeNumberInput(showData.premiershipCounts.gps)} 
                           readOnly 
                           className="w-20 text-center text-sm font-semibold bg-teal-50 border border-teal-200 rounded-md py-1 px-2 text-teal-800" 
                           style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
@@ -1026,7 +1031,7 @@ export default function GeneralTab({
                         <label className="text-sm font-semibold text-teal-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of PRs:</label>
                         <input 
                           type="number" 
-                          value={showData.premiershipCounts.prs} 
+                          value={safeNumberInput(showData.premiershipCounts.prs)} 
                           readOnly 
                           className="w-20 text-center text-sm font-semibold bg-teal-50 border border-teal-200 rounded-md py-1 px-2 text-teal-800" 
                           style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
@@ -1036,7 +1041,7 @@ export default function GeneralTab({
                         <label className="text-sm font-semibold text-teal-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>Total Count:</label>
                         <input 
                           type="number" 
-                          value={showData.premiershipCounts.total} 
+                          value={safeNumberInput(showData.premiershipCounts.total)} 
                           readOnly 
                           className="w-20 text-center text-sm font-semibold bg-teal-50 border border-teal-200 rounded-md py-1 px-2 text-teal-800" 
                           style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
@@ -1060,7 +1065,7 @@ export default function GeneralTab({
                     <input 
                       type="number" 
                       min="0" 
-                      value={showData.householdPetCount} 
+                      value={safeNumberInput(showData.householdPetCount)} 
                       onChange={e => updateShowData('householdPetCount', parseInt(e.target.value) || 0)} 
                       onFocus={handleNumberFocus}
                       onBlur={e => handleNumberBlur(e, 'householdPetCount')} 

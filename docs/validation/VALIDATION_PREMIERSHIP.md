@@ -153,12 +153,37 @@ If the 1st PR in Show Awards is cat #402, but the 1st Best AB PR is cat #404, an
 - Works exactly as in Championship tab: voiding a cat number only affects all instances of that cat number within the same column (judge/ring), not across all columns.
 - Voided inputs participate in validation normally.
 
+## VOID Placement Handling (ChampionshipTab Parity)
+
+- **VOID placements are always ignored for all validation and ordering in the Premiership tab.**
+- This applies to:
+  - Top 10/15 Show Awards: VOID rows are skipped for all validation, duplicate, and sequential entry logic.
+  - Best AB PR, LH PR, SH PR finals: VOID placements are skipped for all required, order, and duplicate logic.
+  - If a VOID is present in any position, it is treated as if that cell does not exist for all validation purposes.
+- This matches the logic in the Championship tab for full parity and user clarity.
+
 ## Duplicate Validation
 - No duplicate cat numbers allowed within the same section (Premiership Final, Best AB PR, Best LH PR, Best SH PR).
 - Cross-section duplicates are allowed.
 
 ## Sequential Entry Validation
 - Must fill positions sequentially (no skipping positions).
+
+## Sequential Placement and VOID Handling
+
+- In all awards and finals sections (including Best AB PR, Best LH PR, Best SH PR), if a placement is marked as VOID, it is treated as a valid skip for sequential placement validation.
+- This means you can have, for example:
+
+  | 1st | 2nd  | 3rd |
+  |-----|------|------|
+  | #1  | VOID | #2   |
+
+  and this is valid. You will NOT get a 'fill previous placements' error for #2.
+- This matches the behavior in the Top 10/15 section, where VOID is also a valid skip.
+
+**Example:**
+- Valid: 1st: 101, 2nd: VOID, 3rd: 102
+- Invalid: 1st: (empty), 2nd: VOID, 3rd: 102 (error: must fill 1st before 3rd)
 
 ## Finals Validation
 - Best AB PR, Best LH PR, Best SH PR: Only cats not listed as GP or NOV in Top 10/15 are allowed.
@@ -266,3 +291,12 @@ Suppose Best AB PR (in order) is: 1, 2, 3
 
 The error message will appear on the first cell where the order is violated, e.g.,
 - "Order violation: 1 is out of order in LH PR. Must preserve AB PR order." 
+
+## Cat # Validation Order by Section (as of [today's date])
+
+| Section         | Validation Order (Current)                                                                 |
+|----------------|--------------------------------------------------------------------------------------------|
+| Top 10/15      | VOID → format → duplicate (full-form) → sequential                                         |
+| AB/LH/SH PR    | VOID → format → duplicate (full-form) → sequential → status → order → assignment reminder  |
+
+- **Note:** In all sections, duplicate errors always take precedence over sequential errors. In finals sections, after sequential, status, order, and assignment checks are performed, but only the highest-precedence error is shown for each cell. This matches the current code and is strictly enforced in the validation logic. See the Error Precedence section below for details. See VALIDATION_CHANGELOG.md for rationale and history. 

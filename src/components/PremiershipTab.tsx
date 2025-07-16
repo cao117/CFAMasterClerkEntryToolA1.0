@@ -49,25 +49,41 @@ type PremiershipTabData = {
   abPremiersFinals: { [key: string]: string };
   lhPremiersFinals: { [key: string]: string };
   shPremiersFinals: { [key: string]: string };
-  voidedShowAwards: { [key: string]: boolean };
-  voidedPremiersFinals: { [key: string]: boolean };
-  voidedABPremiersFinals: { [key: string]: boolean };
-  voidedLHPremiersFinals: { [key: string]: boolean };
-  voidedSHPremiersFinals: { [key: string]: boolean };
   errors: { [key: string]: string };
 };
 
 /**
  * PremiershipTab: Full UI and validation for CFA Premiership Finals
- * Closely mimics ChampionshipTab structure and logic
+ * Closely mimics ChampionshipTab and KittenTab structure and logic
  * - Renders columns for each judge
  * - Premiership Final (Top 10/15): GP, PR, NOV allowed
  * - Best AB PR, Best LH PR, Best SH PR: Only PR allowed
  * - Dynamic row/section enable/disable based on ring type and breakpoints
- * - Voiding, duplicate, sequential entry logic
+ * - Voiding is input-driven: typing 'VOID' (case-insensitive) or 'v' in any cat number input voids that cell and all matching cat numbers in the column (no checkbox)
+ * - Unvoiding: changing a 'VOID' cell to any other value unvoids all instances in the column
+ * - Voided state is determined solely by the input value
+ * - Voided cells are visually grayed out and struck through, but not disabled
+ * - Validation and CSV import/export skip or preserve 'VOID' cells as described
  * - Inline error messages per cell/row
  * - Shared action button handlers
  */
+
+// Add isVoidInput utility at the top for void logic parity with ChampionshipTab
+function isVoidInput(catNumber: string): boolean {
+  return typeof catNumber === 'string' && catNumber.trim().toUpperCase() === 'VOID';
+}
+
+// Helper: Build initial showAwards object for all visible cells (columns × rows)
+function buildInitialShowAwards(columns: Column[], getFinalsCount: (ringType: string) => number) {
+  const showAwards: { [key: string]: { catNumber: string; status: string } } = {};
+  for (let colIdx = 0; colIdx < columns.length; colIdx++) {
+    const rowCount = getFinalsCount(columns[colIdx].specialty);
+    for (let i = 0; i < rowCount; i++) {
+      showAwards[`${colIdx}-${i}`] = { catNumber: '', status: 'GP' };
+    }
+  }
+  return showAwards;
+}
 
 export default function PremiershipTab({
   judges,
@@ -91,8 +107,35 @@ export default function PremiershipTab({
   // Local errors state (like ChampionshipTab)
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
-  // --- Helper: Generate columns (one per judge, handle Double Specialty) ---
-  const generateColumns = (): Column[] => {
+  // Add localInputState for Cat # fields (Show Awards)
+  const [localInputState, setLocalInputState] = useState<{ [key: string]: string }>({});
+
+  // Add a ref to track last committed value for each Cat # input
+  const lastCommittedCatNumber = useRef<{ [key: string]: string }>({});
+
+  // Generalized handler for Cat # input blur/focusout
+  const handleCatNumberBlurOrFocusOut = (colIdx: number, rowIdx: number, section: 'showAwards' | 'ab' | 'lh' | 'sh', value: string) => {
+    const key =
+      section === 'showAwards'
+        ? `${colIdx}-${rowIdx}`
+        : section === 'ab'
+        ? `${colIdx}-${rowIdx}`
+        : section === 'lh'
+        ? `${colIdx}-${rowIdx}`
+        : `${colIdx}-${rowIdx}`;
+    if (lastCommittedCatNumber.current[key] !== value) {
+      // Only validate if value changed
+      if (section === 'showAwards') {
+        handleShowAwardBlur(colIdx, rowIdx, 'catNumber', value);
+      } else {
+        handleFinalsBlur(section, colIdx, rowIdx, value);
+      }
+      lastCommittedCatNumber.current[key] = value;
+    }
+  };
+
+  // Memoize columns for consistent reference
+  const columns: Column[] = useMemo(() => {
     const cols: Column[] = [];
     judges.forEach((judge: Judge) => {
       if (judge.ringType === 'Double Specialty') {
@@ -103,10 +146,7 @@ export default function PremiershipTab({
       }
     });
     return cols;
-  };
-
-  // Memoize columns for consistent reference
-  const columns: Column[] = useMemo(() => generateColumns(), [judges]);
+  }, [judges]);
 
   // --- Helper: Get finals/Best PR counts for a ring type ---
   const getFinalsCount = (ringType: string) => {
@@ -241,19 +281,14 @@ export default function PremiershipTab({
   // Add refs and state for parity with ChampionshipTab
   const tableContainerRef = useRef<HTMLDivElement>(null);
 
-  // --- Test Data Generation Function ---
-  // const fillTestData = useCallback(() => {
-  //   // Commented out unused function
-  // }, [columns, getFinalsCount, getFinalsPositionsForRingTypeLocal, showSuccess, setPremiershipTabData]);
-
   // --- Helper: Check if a cat number is voided anywhere in the column (all sections) ---
   const isCatNumberVoidedInColumn = (colIdx: number, catNumber: string): boolean => {
     if (!catNumber || !catNumber.trim()) return false;
     return (
-      Object.keys(premiershipTabData.voidedShowAwards).some(k => k.startsWith(`${colIdx}-`) && premiershipTabData.showAwards[k]?.catNumber === catNumber && premiershipTabData.voidedShowAwards[k]) ||
-      Object.keys(premiershipTabData.voidedABPremiersFinals).some(k => k.startsWith(`${colIdx}-`) && premiershipTabData.abPremiersFinals[k] === catNumber && premiershipTabData.voidedABPremiersFinals[k]) ||
-      Object.keys(premiershipTabData.voidedLHPremiersFinals).some(k => k.startsWith(`${colIdx}-`) && premiershipTabData.lhPremiersFinals[k] === catNumber && premiershipTabData.voidedLHPremiersFinals[k]) ||
-      Object.keys(premiershipTabData.voidedSHPremiersFinals).some(k => k.startsWith(`${colIdx}-`) && premiershipTabData.shPremiersFinals[k] === catNumber && premiershipTabData.voidedSHPremiersFinals[k])
+      Object.keys(premiershipTabData.showAwards).some(k => k.startsWith(`${colIdx}-`) && premiershipTabData.showAwards[k]?.catNumber === catNumber && isVoidInput(premiershipTabData.showAwards[k].catNumber)) ||
+      Object.keys(premiershipTabData.abPremiersFinals).some(k => k.startsWith(`${colIdx}-`) && premiershipTabData.abPremiersFinals[k] === catNumber && isVoidInput(premiershipTabData.abPremiersFinals[k])) ||
+      Object.keys(premiershipTabData.lhPremiersFinals).some(k => k.startsWith(`${colIdx}-`) && premiershipTabData.lhPremiersFinals[k] === catNumber && isVoidInput(premiershipTabData.lhPremiersFinals[k])) ||
+      Object.keys(premiershipTabData.shPremiersFinals).some(k => k.startsWith(`${colIdx}-`) && premiershipTabData.shPremiersFinals[k] === catNumber && isVoidInput(premiershipTabData.shPremiersFinals[k]))
     );
   };
 
@@ -277,10 +312,6 @@ export default function PremiershipTab({
         ...prev.showAwards,
           [key]: newCell
       },
-      voidedShowAwards: {
-        ...prev.voidedShowAwards,
-        [key]: shouldBeVoided ? true : false
-      }
       };
     });
   };
@@ -288,23 +319,20 @@ export default function PremiershipTab({
   // --- Handler: Update finals sections ---
   const updateFinals = (section: 'premiers' | 'ab' | 'lh' | 'sh', colIdx: number, pos: number, value: string) => {
     const key = `${colIdx}-${pos}`;
-    let shouldBeVoided = false;
-    if (value && value.trim() !== '') {
-      shouldBeVoided = isCatNumberVoidedInColumn(colIdx, value);
-    }
-    // Set voided state for the correct section
-    let voidedKey = '';
-    if (section === 'ab') voidedKey = 'voidedABPremiersFinals';
-    if (section === 'lh') voidedKey = 'voidedLHPremiersFinals';
-    if (section === 'sh') voidedKey = 'voidedSHPremiersFinals';
-    setPremiershipTabData((prev: any) => ({
-      ...prev,
-      ...(section === 'premiers' ? { premiersFinals: { ...prev.premiersFinals, [key]: value } } : {}),
-      ...(section === 'ab' ? { abPremiersFinals: { ...prev.abPremiersFinals, [key]: value } } : {}),
-      ...(section === 'lh' ? { lhPremiersFinals: { ...prev.lhPremiersFinals, [key]: value } } : {}),
-      ...(section === 'sh' ? { shPremiersFinals: { ...prev.shPremiersFinals, [key]: value } } : {}),
-      ...(voidedKey ? { [voidedKey]: { ...prev[voidedKey], [key]: shouldBeVoided ? true : false } } : {}),
-    }));
+    setPremiershipTabData(prev => {
+      // Defensive copy
+      const newState = { ...prev };
+      if (section === 'ab') {
+        newState.abPremiersFinals = { ...prev.abPremiersFinals, [key]: value };
+      } else if (section === 'lh') {
+        newState.lhPremiersFinals = { ...prev.lhPremiersFinals, [key]: value };
+      } else if (section === 'sh') {
+        newState.shPremiersFinals = { ...prev.shPremiersFinals, [key]: value };
+      } else if (section === 'premiers') {
+        newState.premiersFinals = { ...prev.premiersFinals, [key]: value };
+      }
+      return newState;
+    });
   };
 
   // --- Handler: Blur events for show awards - run validation here (like ChampionshipTab) ---
@@ -314,9 +342,20 @@ export default function PremiershipTab({
     
     // Run basic validation for this input
     if (field === 'catNumber' && value.trim() !== '') {
+      if (isVoidInput(value)) {
+        // VOID is always valid, clear any error
+        setErrors((prev: any) => {
+          const copy = { ...prev };
+          delete copy[errorKey];
+          return copy;
+        });
+        // Still run full validation to clear any stale errors
+        setErrors(premiershipValidation.validatePremiershipTab(createValidationInput()));
+        return;
+      }
       // Validate cat number format
       if (!premiershipValidation.validateCatNumber(value)) {
-        setErrors((prev: any) => ({ ...prev, [errorKey]: 'Cat number must be between 1-450' }));
+        setErrors((prev: any) => ({ ...prev, [errorKey]: 'Cat number must be between 1-450 or VOID' }));
         return;
       }
       // Sequential entry validation
@@ -335,22 +374,39 @@ export default function PremiershipTab({
   const handleFinalsBlur = (section: 'ab' | 'lh' | 'sh', colIdx: number, pos: number, value: string) => {
     const errorKey = `${section === 'ab' ? 'abPremiersFinals' : section === 'lh' ? 'lhPremiersFinals' : 'shPremiersFinals'}-${colIdx}-${pos}`;
     const input = createValidationInput();
-    
-    // Run basic validation for this input
-    if (value.trim() !== '') {
-      // Validate cat number format
-      if (!premiershipValidation.validateCatNumber(value)) {
-        setErrors((prev: any) => ({ ...prev, [errorKey]: 'Cat number must be between 1-450' }));
+    // VOID check
+      if (isVoidInput(value)) {
+        setErrors((prev: any) => {
+          const copy = { ...prev };
+          delete copy[errorKey];
+          return copy;
+        });
+        // Still run full validation to clear any stale errors
+        setErrors(premiershipValidation.validatePremiershipTab(createValidationInput()));
         return;
       }
-      // Sequential entry validation
+    // Range/Format check
+      if (!premiershipValidation.validateCatNumber(value)) {
+        setErrors((prev: any) => ({ ...prev, [errorKey]: 'Cat number must be between 1-450 or VOID' }));
+        return;
+      }
+    // Full-form validation (get all errors)
+    const allErrors = premiershipValidation.validatePremiershipTab(input);
+    if (allErrors[errorKey] && allErrors[errorKey].toLowerCase().includes('duplicate')) {
+      setErrors((prev: any) => ({ ...prev, [errorKey]: allErrors[errorKey] }));
+      return;
+    }
+    // Sequential entry check (only if no duplicate error)
       if (!premiershipValidation.validateSequentialEntry(input, section === 'ab' ? 'abPremiers' : section === 'lh' ? 'lhPremiers' : 'shPremiers', colIdx, pos, value)) {
         setErrors((prev: any) => ({ ...prev, [errorKey]: 'You must fill previous placements before entering this position.' }));
         return;
       }
-      // Full validation handles all checks including duplicates
-      setErrors(premiershipValidation.validatePremiershipTab(createValidationInput()));
-    }
+    // If no errors, clear error
+    setErrors((prev: any) => {
+      const copy = { ...prev };
+      delete copy[errorKey];
+      return copy;
+    });
   };
 
   // --- Handler: Update void state ---
@@ -376,10 +432,6 @@ export default function PremiershipTab({
       novs: premiershipCounts.novs,
       prs: premiershipCounts.prs
     },
-    voidedShowAwards: premiershipTabData.voidedShowAwards,
-    voidedABPremiersFinals: premiershipTabData.voidedABPremiersFinals,
-    voidedLHPremiersFinals: premiershipTabData.voidedLHPremiersFinals,
-    voidedSHPremiersFinals: premiershipTabData.voidedSHPremiersFinals
   });
 
   // --- Render Table UI ---
@@ -407,18 +459,14 @@ export default function PremiershipTab({
   };
   const confirmReset = () => {
     setIsResetModalOpen(false);
-    // Reset only Premiership tab data
+    // Reset only Premiership tab data, then immediately re-initialize showAwards for all visible cells
     setPremiershipTabData((prev: any) => ({
       ...prev,
-      showAwards: {},
+      showAwards: buildInitialShowAwards(columns, getFinalsCount),
       premiersFinals: {},
       abPremiersFinals: {},
       lhPremiersFinals: {},
       shPremiersFinals: {},
-      voidedShowAwards: {},
-      voidedABPremiersFinals: {},
-      voidedLHPremiersFinals: {},
-      voidedSHPremiersFinals: {}
     }));
     showSuccess('Premiership Tab Reset', 'Premiership tab data has been reset successfully.');
   };
@@ -449,11 +497,11 @@ export default function PremiershipTab({
   // Add getVoidState for parity
   const getVoidState = (section: string, colIdx: number, pos: number): boolean => {
     const key = `${colIdx}-${pos}`;
-    if (section === 'showAwards') return premiershipTabData.voidedShowAwards[key] || false;
-    if (section === 'premiers') return premiershipTabData.voidedPremiersFinals[key] || false;
-    if (section === 'ab') return premiershipTabData.voidedABPremiersFinals[key] || false;
-    if (section === 'lh') return premiershipTabData.voidedLHPremiersFinals[key] || false;
-    if (section === 'sh') return premiershipTabData.voidedSHPremiersFinals[key] || false;
+    if (section === 'showAwards') return isVoidInput(premiershipTabData.showAwards[key]?.catNumber || '');
+    if (section === 'premiers') return isVoidInput(premiershipTabData.premiersFinals[key] || '');
+    if (section === 'ab') return isVoidInput(premiershipTabData.abPremiersFinals[key] || '');
+    if (section === 'lh') return isVoidInput(premiershipTabData.lhPremiersFinals[key] || '');
+    if (section === 'sh') return isVoidInput(premiershipTabData.shPremiersFinals[key] || '');
     return false;
   };
 
@@ -484,21 +532,21 @@ export default function PremiershipTab({
     // Update all void state objects for all matching keys
     setPremiershipTabData((prev: any) => ({
       ...prev,
-      voidedShowAwards: {
-        ...prev.voidedShowAwards,
-        ...Object.fromEntries(matchingShowAwards.map(key => [key, voided]))
+      showAwards: {
+        ...prev.showAwards,
+        ...Object.fromEntries(matchingShowAwards.map(key => [key, voided ? 'VOID' : premiershipTabData.showAwards[key]?.catNumber]))
       },
-      voidedABPremiersFinals: {
-        ...prev.voidedABPremiersFinals,
-        ...Object.fromEntries(matchingAB.map(key => [key, voided]))
+      abPremiersFinals: {
+        ...prev.abPremiersFinals,
+        ...Object.fromEntries(matchingAB.map(key => [key, voided ? 'VOID' : premiershipTabData.abPremiersFinals[key]]))
       },
-      voidedLHPremiersFinals: {
-        ...prev.voidedLHPremiersFinals,
-        ...Object.fromEntries(matchingLH.map(key => [key, voided]))
+      lhPremiersFinals: {
+        ...prev.lhPremiersFinals,
+        ...Object.fromEntries(matchingLH.map(key => [key, voided ? 'VOID' : premiershipTabData.lhPremiersFinals[key]]))
       },
-      voidedSHPremiersFinals: {
-        ...prev.voidedSHPremiersFinals,
-        ...Object.fromEntries(matchingSH.map(key => [key, voided]))
+      shPremiersFinals: {
+        ...prev.shPremiersFinals,
+        ...Object.fromEntries(matchingSH.map(key => [key, voided ? 'VOID' : premiershipTabData.shPremiersFinals[key]]))
       }
     }));
   };
@@ -506,6 +554,62 @@ export default function PremiershipTab({
   useEffect(() => {
     setErrors(premiershipValidation.validatePremiershipTab(createValidationInput()));
   }, [premiershipTabData.showAwards, premiershipTabData.abPremiersFinals, premiershipTabData.lhPremiersFinals, premiershipTabData.shPremiersFinals]);
+
+  // Defensive getter for showAwards (Top 10/15)
+  const getShowAward = (colIdx: number, i: number) =>
+    premiershipTabData.showAwards[`${colIdx}-${i}`] || { catNumber: '', status: 'GP' };
+
+  // --- Cat # Input Handlers (Context-7, robust, decoupled) ---
+  // onChange: only update localInputState
+  // onBlur/onKeyDown (Tab/Enter): if value changed, update main data model and validate
+
+  // Helper to get the key for each input, now namespaced by section
+  const getCatInputKey = (section: 'showAwards' | 'ab' | 'lh' | 'sh', colIdx: number, rowIdx: number) => `${section}-${colIdx}-${rowIdx}`;
+
+  // Generalized onChange handler for Cat # input
+  const handleCatInputChange = (section: 'showAwards' | 'ab' | 'lh' | 'sh', colIdx: number, rowIdx: number, value: string) => {
+    const key = getCatInputKey(section, colIdx, rowIdx);
+    setLocalInputState(prev => ({ ...prev, [key]: value }));
+  };
+
+  // Generalized onBlur handler for Cat # input
+  const handleCatInputBlur = (section: 'showAwards' | 'ab' | 'lh' | 'sh', colIdx: number, rowIdx: number) => {
+    const key = getCatInputKey(section, colIdx, rowIdx);
+    const localValue = localInputState[key];
+    let modelValue = '';
+    if (section === 'showAwards') modelValue = premiershipTabData.showAwards[key]?.catNumber ?? '';
+    if (section === 'ab') modelValue = premiershipTabData.abPremiersFinals[key] ?? '';
+    if (section === 'lh') modelValue = premiershipTabData.lhPremiersFinals[key] ?? '';
+    if (section === 'sh') modelValue = premiershipTabData.shPremiersFinals[key] ?? '';
+    // Always update model with localValue (including empty string) if localValue is defined
+    if (localValue !== undefined) {
+      if (section === 'showAwards') {
+        updateShowAward(colIdx, rowIdx, 'catNumber', localValue); // allow ''
+        handleShowAwardBlur(colIdx, rowIdx, 'catNumber', localValue);
+      } else {
+        updateFinals(section, colIdx, rowIdx, localValue); // allow ''
+        handleFinalsBlur(section, colIdx, rowIdx, localValue);
+      }
+    }
+    // Clear local input state for this field
+    setLocalInputState(prev => { const copy = { ...prev }; delete copy[key]; return copy; });
+  };
+
+  // Generalized onFocus handler for Cat # input
+  const handleCatInputFocusLocal = (section: 'showAwards' | 'ab' | 'lh' | 'sh', colIdx: number, rowIdx: number, value: string, e: React.FocusEvent<HTMLInputElement>) => {
+    const key = getCatInputKey(section, colIdx, rowIdx);
+    setLocalInputState(prev => ({ ...prev, [key]: value }));
+    e.target.select();
+    setFocusedColumnIndex(colIdx);
+  };
+
+  // Generalized onKeyDown handler for Cat # input
+  const handleCatInputKeyDownLocal = (section: 'showAwards' | 'ab' | 'lh' | 'sh', colIdx: number, rowIdx: number, e: React.KeyboardEvent<HTMLInputElement>, tableRowIdx: number) => {
+    if (e.key === 'Tab' || e.key === 'Enter') {
+      handleCatInputBlur(section, colIdx, rowIdx);
+    }
+    handleCatInputKeyDown(e, colIdx, tableRowIdx);
+  };
 
   if (judges.length === 0) {
     return (
@@ -525,6 +629,116 @@ export default function PremiershipTab({
   // --- Table Structure: Sticky headers, frozen position column, columns = judges ---
   // Only render Premiership Final section for now
   const maxFinalRows = Math.max(...columns.map(col => getFinalsCount(col.specialty)));
+
+  // --- GUARD: Only render table if all visible showAwards keys are initialized ---
+  let allShowAwardsReady = true;
+  for (let colIdx = 0; colIdx < columns.length; colIdx++) {
+    const rowCount = getFinalsCount(columns[colIdx].specialty);
+    for (let i = 0; i < rowCount; i++) {
+      const key = `${colIdx}-${i}`;
+      if (!premiershipTabData.showAwards[key] || typeof premiershipTabData.showAwards[key].catNumber !== 'string') {
+        allShowAwardsReady = false;
+        break;
+      }
+    }
+    if (!allShowAwardsReady) break;
+  }
+
+  // Ensure showAwards is initialized for all visible cells (robust, merge missing keys)
+  useEffect(() => {
+    if (columns.length > 0 && maxFinalRows > 0) {
+      setPremiershipTabData(prev => {
+        // Build a new object with all required keys
+        const newShowAwards = { ...prev.showAwards };
+        let changed = false;
+      for (let colIdx = 0; colIdx < columns.length; colIdx++) {
+          const rowCount = getFinalsCount(columns[colIdx].specialty);
+          for (let i = 0; i < rowCount; i++) {
+            const key = `${colIdx}-${i}`;
+            if (!newShowAwards[key]) {
+              newShowAwards[key] = { catNumber: '', status: 'GP' };
+              changed = true;
+            }
+        }
+      }
+        // Only update if we added any missing keys
+        if (changed) {
+          // Always merge and preserve all finals sections
+          return {
+        ...prev,
+        showAwards: newShowAwards,
+            premiersFinals: { ...prev.premiersFinals },
+            abPremiersFinals: { ...prev.abPremiersFinals },
+            lhPremiersFinals: { ...prev.lhPremiersFinals },
+            shPremiersFinals: { ...prev.shPremiersFinals },
+          };
+        }
+        return prev;
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [columns.length, maxFinalRows]);
+
+  // Ensure finals sections are initialized for all visible cells (robust, merge missing keys)
+  useEffect(() => {
+    if (columns.length > 0 && maxFinalRows > 0) {
+      setPremiershipTabData(prev => {
+        let changed = false;
+        // AB PR
+        const newAB = { ...prev.abPremiersFinals };
+        columns.forEach((col, colIdx) => {
+          if (col.specialty === 'Allbreed') {
+            const rowCount = getFinalsPositionsForRingTypeLocal(col.specialty);
+            for (let i = 0; i < rowCount; i++) {
+              const key = `${colIdx}-${i}`;
+              if (!(key in newAB)) {
+                newAB[key] = '';
+                changed = true;
+              }
+            }
+          }
+        });
+        // LH PR
+        const newLH = { ...prev.lhPremiersFinals };
+        columns.forEach((col, colIdx) => {
+          if (col.specialty === 'Allbreed' || col.specialty === 'Longhair') {
+            const rowCount = getFinalsPositionsForRingTypeLocal(col.specialty);
+            for (let i = 0; i < rowCount; i++) {
+              const key = `${colIdx}-${i}`;
+              if (!(key in newLH)) {
+                newLH[key] = '';
+                changed = true;
+              }
+            }
+          }
+        });
+        // SH PR
+        const newSH = { ...prev.shPremiersFinals };
+        columns.forEach((col, colIdx) => {
+          if (col.specialty === 'Allbreed' || col.specialty === 'Shorthair') {
+            const rowCount = getFinalsPositionsForRingTypeLocal(col.specialty);
+            for (let i = 0; i < rowCount; i++) {
+              const key = `${colIdx}-${i}`;
+              if (!(key in newSH)) {
+                newSH[key] = '';
+                changed = true;
+              }
+            }
+          }
+        });
+        if (changed) {
+          return {
+            ...prev,
+            abPremiersFinals: newAB,
+            lhPremiersFinals: newLH,
+            shPremiersFinals: newSH,
+          };
+        }
+        return prev;
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [columns.length, maxFinalRows]);
 
   return (
     <div className="p-8 space-y-8">
@@ -570,13 +784,14 @@ export default function PremiershipTab({
           </div>
           {/* Right: Minimal Dropdown, inline blue icon in selected value only */}
           <CustomSelect
-            options={columns.map((col, idx) => `Ring ${col.judge.id} - ${col.judge.acronym}`)}
+            options={columns.map((col, idx) => `Judge ${col.judge.id} - ${col.judge.acronym}`)}
             value={
               focusedColumnIndex !== null && focusedColumnIndex >= 0 && focusedColumnIndex < columns.length
-                ? `Ring ${columns[focusedColumnIndex].judge.id} - ${columns[focusedColumnIndex].judge.acronym}`
-                : `Ring ${columns[0].judge.id} - ${columns[0].judge.acronym}`
+                ? `Judge ${columns[focusedColumnIndex].judge.id} - ${columns[focusedColumnIndex].judge.acronym}`
+                : `Judge ${columns[0].judge.id} - ${columns[0].judge.acronym}`
             }
             onChange={(val: string) => {
+              // Accept both 'Judge #' and 'Ring #' for backward compatibility in parsing
               const ringId = parseInt(val.split(" ")[1]);
               const colIdx = columns.findIndex(col => col.judge.id === ringId);
               if (colIdx === -1) return;
@@ -590,19 +805,22 @@ export default function PremiershipTab({
               }
             }}
             className="w-[220px] font-semibold text-base rounded-full px-4 py-2 bg-white border-2 border-blue-200 shadow-md hover:shadow-lg focus:border-blue-400 focus:shadow-lg text-blue-700 transition-all duration-200"
-            ariaLabel="Jump to Ring"
+            ariaLabel="Jump to Judge"
             selectedIcon="🎗️"
             dropdownMenuClassName="w-[220px] rounded-xl bg-gradient-to-b from-white via-blue-50 to-white shadow-xl border-2 border-blue-200 text-base font-semibold text-blue-800 transition-all duration-200"
-            highlightBg="bg-blue-50"
-            highlightText="text-blue-900"
-            selectedBg="bg-blue-100"
-            selectedText="text-blue-800"
-            hoverBg="bg-blue-50"
-            hoverText="text-blue-900"
+            borderColor="border-blue-300" // Blue border
+            focusBorderColor="focus:border-blue-500" // Blue border on focus
+            textColor="text-blue-700" // Blue text
           />
         </div>
         {/* Table scroll container with sticky header */}
         <div className="relative">
+          {/* GUARD: Only render table if all showAwards are ready */}
+          {!allShowAwardsReady ? (
+            <div className="flex items-center justify-center min-h-[300px]">
+              <span className="text-blue-600 text-lg font-semibold animate-pulse">Initializing awards table...</span>
+            </div>
+          ) : (
           <div
             className="outer-table-scroll-container overflow-x-auto border border-blue-200 bg-white shadow-lg"
             ref={tableContainerRef}
@@ -622,10 +840,11 @@ export default function PremiershipTab({
                       key={`header-modern-${index}`}
                       id={`ring-th-${index}`}
                       className={`cfa-table-header-cell-modern text-center align-bottom`}
-                      style={{ width: 190, minWidth: 190, maxWidth: 190, verticalAlign: 'top', borderTopRightRadius: 0, margin: 0, padding: 0 }}
+                      style={{ width: 170, minWidth: 170, maxWidth: 170, verticalAlign: 'top', borderTopRightRadius: 0, margin: 0, padding: 0 }}
                     >
                       <div className="flex flex-col items-center justify-center gap-0.5 relative">
-                        <span className="header-main block">Ring {column.judge.id}</span>
+                        {/* Changed from 'Ring #' to 'Judge #' for clarity, per user request. No logic affected. */}
+                        <span className="header-main block">Judge {column.judge.id}</span>
                         <span className="header-sub font-semibold block">{column.judge.acronym}</span>
                         <span className="header-sub italic block">{column.specialty}</span>
                       </div>
@@ -635,67 +854,95 @@ export default function PremiershipTab({
               </thead>
               <tbody>
                 {/* Premiership Final Section (Top 10/15) */}
+                  {maxFinalRows === 0 || columns.length === 0 ? (
+                    <tr><td colSpan={columns.length + 1} style={{ color: 'red', textAlign: 'center' }}>No awards rows rendered (maxFinalRows={maxFinalRows}, columns={columns.length})</td></tr>
+                  ) : null}
                 {Array.from({ length: maxFinalRows }, (_, i) => (
                   columns.some(col => i < getFinalsCount(col.specialty)) ? (
-                    <tr key={`final-${i}`} className="cfa-table-row">
-                      <td className="py-2 pl-4 font-medium text-sm border-r border-gray-300 bg-white frozen-column" style={{ width: '140px', minWidth: '140px' }}>
+                    <tr key={`final-row-${i}`} className="cfa-table-row">
+                      {/* Frozen position column: apply thick blue right border if first data column is focused */}
+                      <td
+                        className={`py-2 pl-4 font-medium text-sm bg-white frozen-column ${
+                          shouldApplyRingGlow(0) && focusedColumnIndex === 0 ? 'border-r-4 border-blue-300' : 'border-r border-gray-300'
+                        }`}
+                        style={{ width: '140px', minWidth: '140px' }}
+                      >
                         {i + 1}{i >= 10 ? '*' : ''}
                       </td>
                       {columns.map((col, colIdx) => {
-                        if (i < getFinalsCount(col.specialty)) {
-                          const cell = premiershipTabData.showAwards[`${colIdx}-${i}`] || { catNumber: '', status: 'GP' };
-                          const voided = getVoidState('showAwards', colIdx, i);
-                          const error = errors[`${colIdx}-${i}`];
+                          const cell = getShowAward(colIdx, i);
+                          const errorKey = `${colIdx}-${i}`;
+                          const catNumber = cell.catNumber;
+                          const status = cell.status;
+                          const hasCatNumber = catNumber?.trim();
+                          // Apply thick blue borders on both sides for focused column, thin blue border otherwise
+                          const cellBorderClass = shouldApplyRingGlow(colIdx)
+                            ? 'border-l-4 border-r-4 border-blue-300 z-10'
+                            : 'border-r border-blue-200';
+                          if (i < getFinalsCount(col.specialty)) {
                           return (
-                            <td key={`final-${i}-${colIdx}`} className={`py-2 px-2 border-r border-gray-300 align-top${shouldApplyRingGlow(colIdx) ? ' ring-glow' : ''}`}>
+                              <td
+                                key={`final-cell-${col.judge.id}-${col.specialty}-${i}`}
+                                className={`py-2 px-2 align-top transition-all duration-150 whitespace-nowrap overflow-x-visible ${cellBorderClass} hover:bg-gray-50`}
+                                style={{
+                                  width: hasCatNumber ? 110 : 90,
+                                  minWidth: hasCatNumber ? 110 : 90,
+                                  maxWidth: hasCatNumber ? 110 : 90,
+                                  transition: 'width 0.2s',
+                                }}
+                              >
                               <div className="flex flex-col items-start">
-                                <div className="flex gap-1 items-center">
+                                <div className="flex gap-2 items-center">
+                                    {/* Cat # input: bulletproof editable */}
                                   <input
-                                    data-testid={colIdx === 0 && i === 0 ? 'first-cat-input' : undefined}
                                     type="text"
-                                    className={`w-10 h-7 text-xs text-center border rounded px-0.5 ${error ? 'cfa-input-error' : ''} ${voided ? 'voided-input' : ''} focus:outline-none focus:border-cfa-gold`}
+                                      className={`w-16 h-9 text-sm text-center font-medium rounded-md px-3 bg-white/60 border border-blue-200 shadow focus:border-blue-400 focus:ring-2 focus:ring-blue-100 focus:bg-white/90 focus:shadow-lg transition-all duration-200 placeholder-zinc-300 ${errors[errorKey] ? 'cfa-input-error' : ''} ${isVoidInput(catNumber) ? 'opacity-50 grayscale line-through' : ''}`}
                                     placeholder="Cat #"
-                                    value={cell.catNumber ?? ''}
-                                    onChange={e => updateShowAward(colIdx, i, 'catNumber', e.target.value)}
-                                    onBlur={e => handleShowAwardBlur(colIdx, i, 'catNumber', e.target.value)}
-                                    onFocus={e => handleCatInputFocus(e, colIdx)}
-                                    onKeyDown={e => handleCatInputKeyDown(e, colIdx, i)}
+                                      value={localInputState[getCatInputKey('showAwards', colIdx, i)] ?? catNumber}
+                                    onChange={e => handleCatInputChange('showAwards', colIdx, i, e.target.value)}
+                                    onBlur={() => handleCatInputBlur('showAwards', colIdx, i)}
+                                    onFocus={e => handleCatInputFocusLocal('showAwards', colIdx, i, catNumber, e)}
+                                    onKeyDown={e => handleCatInputKeyDownLocal('showAwards', colIdx, i, e, i)}
                                     ref={el => {
                                       if (!catInputRefs.current[colIdx]) catInputRefs.current[colIdx] = [];
                                       catInputRefs.current[colIdx][i] = el;
                                     }}
-                                    maxLength={6}
-                                    disabled={voided}
                                   />
-                                  <select
-                                    className={`w-14 h-7 text-xs text-center border rounded px-0.5 ${error ? 'cfa-input-error' : ''} ${voided ? 'voided-input' : ''} focus:outline-none focus:border-cfa-gold`}
-                                    value={cell.status || 'GP'}
-                                    onChange={e => {
-                                      updateShowAward(colIdx, i, 'status', e.target.value);
-                                    }}
-                                    disabled={voided}
-                                  >
-                                    <option value="GP">GP</option>
-                                    <option value="PR">PR</option>
-                                    <option value="NOV">NOV</option>
-                                  </select>
-                                  {/* Only show void checkbox if Cat # is non-empty */}
-                                  {cell.catNumber && (
-                                    <input
-                                      type="checkbox"
-                                      className="void-checkbox"
-                                      checked={voided}
-                                      onChange={e => updateVoidStateColumnWide('showAwards', colIdx, i, e.target.checked)}
-                                      disabled={!cell.catNumber}
-                                    />
-                                  )}
+                                    {/* Only render status dropdown if not VOID */}
+                                    {!isVoidInput(catNumber) && (
+                                  <CustomSelect
+                                    options={['GP', 'PR', 'NOV']}
+                                        value={status || 'GP'} // Defensive: always default to 'GP' if missing
+                                    onChange={val => updateShowAward(colIdx, i, 'status', val)}
+                                        className="min-w-[70px]"
+                                    ariaLabel="Status"
+                                        borderColor="border-blue-300"
+                                        focusBorderColor="focus:border-blue-500"
+                                        textColor="text-blue-700"
+                                        highlightBg="bg-blue-50"
+                                        highlightText="text-blue-900"
+                                        selectedBg="bg-blue-100"
+                                        selectedText="text-blue-800"
+                                        hoverBg="bg-blue-50"
+                                        hoverText="text-blue-900"
+                                  />
+                                    )}
                                 </div>
-                                {error && <div className="text-xs mt-1 text-red-600">{error}</div>}
+                                  {/* Error message */}
+                                  {errors[errorKey] && (
+                                    <div className="mt-1 rounded-lg bg-red-50 border border-red-300 px-3 py-2 shadow text-xs text-red-700 font-semibold flex items-center gap-2 whitespace-normal break-words w-full">
+                                      <svg className="w-4 h-4 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <circle cx="12" cy="12" r="10" strokeWidth="2" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01" />
+                                      </svg>
+                                      {errors[errorKey]}
+                                    </div>
+                                  )}
                               </div>
                             </td>
                           );
                         } else {
-                          return <td key={`final-${i}-${colIdx}`} className={`py-2 px-2 border-r border-gray-300 align-top${shouldApplyRingGlow(colIdx) ? ' ring-glow' : ''}`}>&nbsp;</td>;
+                            return <td key={`final-cell-${col.judge.id}-${col.specialty}-${i}`} className={`py-2 px-2 border-r border-blue-200 align-top`}>&nbsp;</td>;
                         }
                       })}
                     </tr>
@@ -705,52 +952,54 @@ export default function PremiershipTab({
                         {Array.from({ length: Math.max(...columns.map(col => col.specialty === 'Allbreed' ? getFinalsPositionsForRingTypeLocal(col.specialty) : 0)) }, (_, i) => (
           columns.some(col => col.specialty === 'Allbreed' && i < getFinalsPositionsForRingTypeLocal(col.specialty)) ? (
                     <tr key={`abpr-${i}`} className="cfa-table-row">
-                      <td className="py-2 pl-4 font-medium text-sm border-r border-gray-300 bg-white frozen-column" style={{ width: '140px', minWidth: '140px' }}>
+                      {/* Frozen position column: apply thick blue right border if first data column is focused */}
+                      <td
+                        className={`py-2 pl-4 font-medium text-sm bg-white frozen-column ${shouldApplyRingGlow(0) && focusedColumnIndex === 0 ? 'border-r-4 border-blue-300' : 'border-r border-gray-300'}`}
+                        style={{ width: '140px', minWidth: '140px' }}
+                      >
                         {getOrdinalLabel(i, 'AB')}
                       </td>
                       {columns.map((col, colIdx) => {
-                        if (col.specialty === 'Allbreed' && i < getFinalsPositionsForRingTypeLocal(col.specialty)) {
+                        const isFocused = focusedColumnIndex === colIdx;
+                        const shouldRenderCell = col.specialty === 'Allbreed' && i < getFinalsPositionsForRingTypeLocal(col.specialty);
                           const key = `${colIdx}-${i}`;
                           const value = premiershipTabData.abPremiersFinals[key] || '';
                           const voided = getVoidState('ab', colIdx, i);
                           const errorKey = `abPremiersFinals-${colIdx}-${i}`;
                           const error = errors[errorKey];
                           return (
-                            <td key={`abpr-${i}-${colIdx}-${error || ''}`} className={`py-2 px-2 border-r border-gray-300 align-top${shouldApplyRingGlow(colIdx) ? ' ring-glow' : ''}`}>
+                          <td key={`abpr-${i}-${colIdx}-${error || ''}`} className={`py-2 px-2 align-top transition-all duration-150 whitespace-nowrap overflow-x-visible${isFocused ? ' border-l-4 border-r-4 border-blue-300 z-10' : ' border-r border-blue-200'} hover:bg-gray-50`}>
+                            {shouldRenderCell ? (
                               <div className="flex flex-col items-start">
                                 <div className="flex gap-1 items-center">
                                   <input
                                     type="text"
-                                    className={`w-14 h-7 text-xs text-center border rounded px-0.5 ${error ? 'cfa-input-error' : ''} ${voided ? 'voided-input' : ''} focus:outline-none focus:border-cfa-gold`}
+                                    className={`w-16 h-9 text-sm font-medium text-center rounded-md px-3 bg-white/60 border border-blue-200 shadow focus:border-blue-400 focus:ring-2 focus:ring-blue-100 focus:bg-white/90 focus:shadow-lg transition-all duration-200 placeholder-zinc-300 ${error ? 'cfa-input-error' : ''} ${voided ? 'voided-input' : ''}`}
                                     placeholder="Cat #"
-                                    value={value ?? ''}
-                                    onChange={e => updateFinals('ab', colIdx, i, e.target.value)}
-                                    onBlur={e => handleFinalsBlur('ab', colIdx, i, e.target.value)}
-                                    disabled={voided}
-                                    onFocus={e => handleCatInputFocus(e, colIdx)}
-                                    onKeyDown={e => handleCatInputKeyDown(e, colIdx, numAwardRows + i)}
+                                    value={localInputState[getCatInputKey('ab', colIdx, i)] ?? value}
+                                    onChange={e => handleCatInputChange('ab', colIdx, i, e.target.value)}
+                                    onBlur={() => handleCatInputBlur('ab', colIdx, i)}
+                                    onFocus={e => handleCatInputFocusLocal('ab', colIdx, i, value, e)}
+                                    onKeyDown={e => handleCatInputKeyDownLocal('ab', colIdx, i, e, numAwardRows + i)}
                                     ref={el => {
                                       if (!catInputRefs.current[colIdx]) catInputRefs.current[colIdx] = [];
                                       catInputRefs.current[colIdx][numAwardRows + i] = el;
                                     }}
                                   />
-                                  {value && (
-                                    <input
-                                      type="checkbox"
-                                      className="void-checkbox"
-                                      checked={voided}
-                                      onChange={e => updateVoidStateColumnWide('ab', colIdx, i, e.target.checked)}
-                                      disabled={!value}
-                                    />
-                                  )}
                                 </div>
-                                {error && <div className="text-xs mt-1 text-red-600">{error}</div>}
+                                  {error && (
+                                    <div className="mt-1 rounded-lg bg-red-50 border border-red-300 px-3 py-2 shadow text-xs text-red-700 font-semibold flex items-center gap-2 whitespace-normal break-words w-full">
+                                      <svg className="w-4 h-4 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <circle cx="12" cy="12" r="10" strokeWidth="2" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01" />
+                                      </svg>
+                                      {error}
+                                    </div>
+                                  )}
                               </div>
+                            ) : null}
                             </td>
                           );
-                        } else {
-                          return <td key={`abpr-${i}-${colIdx}`} className={`py-2 px-2 border-r border-gray-300 align-top${shouldApplyRingGlow(colIdx) ? ' ring-glow' : ''}`}>&nbsp;</td>;
-                        }
                       })}
                     </tr>
                   ) : null
@@ -759,52 +1008,54 @@ export default function PremiershipTab({
                         {Array.from({ length: Math.max(...columns.map(col => (col.specialty === 'Allbreed' || col.specialty === 'Longhair') ? getFinalsPositionsForRingTypeLocal(col.specialty) : 0)) }, (_, i) => (
           columns.some(col => (col.specialty === 'Allbreed' || col.specialty === 'Longhair') && i < getFinalsPositionsForRingTypeLocal(col.specialty)) ? (
                     <tr key={`lhpr-${i}`} className="cfa-table-row">
-                      <td className="py-2 pl-4 font-medium text-sm border-r border-gray-300 bg-white frozen-column" style={{ width: '140px', minWidth: '140px' }}>
+                      {/* Frozen position column: apply thick blue right border if first data column is focused */}
+                      <td
+                        className={`py-2 pl-4 font-medium text-sm bg-white frozen-column ${shouldApplyRingGlow(0) && focusedColumnIndex === 0 ? 'border-r-4 border-blue-300' : 'border-r border-gray-300'}`}
+                        style={{ width: '140px', minWidth: '140px' }}
+                      >
                         {getOrdinalLabel(i, 'LH')}
                       </td>
                       {columns.map((col, colIdx) => {
-                        if ((col.specialty === 'Allbreed' || col.specialty === 'Longhair') && i < getFinalsPositionsForRingTypeLocal(col.specialty)) {
+                        const isFocused = focusedColumnIndex === colIdx;
+                        const shouldRenderCell = (col.specialty === 'Allbreed' || col.specialty === 'Longhair') && i < getFinalsPositionsForRingTypeLocal(col.specialty);
                           const key = `${colIdx}-${i}`;
                           const value = premiershipTabData.lhPremiersFinals[key] || '';
                           const voided = getVoidState('lh', colIdx, i);
                           const errorKey = `lhPremiersFinals-${colIdx}-${i}`;
                           const error = errors[errorKey];
                           return (
-                            <td key={`lhpr-${i}-${colIdx}`} className={`py-2 px-2 border-r border-gray-300 align-top${shouldApplyRingGlow(colIdx) ? ' ring-glow' : ''}`}>
+                              <td key={`lhpr-${i}-${colIdx}`} className={`py-2 px-2 align-top transition-all duration-150 whitespace-nowrap overflow-x-visible ${shouldApplyRingGlow(colIdx) ? 'border-l-4 border-r-4 border-blue-300 z-10' : 'border-r border-blue-200'} hover:bg-gray-50`}> 
+                            {shouldRenderCell ? (
                               <div className="flex flex-col items-start">
                                 <div className="flex gap-1 items-center">
                                   <input
                                     type="text"
-                                    className={`w-14 h-7 text-xs text-center border rounded px-0.5 ${error ? 'cfa-input-error' : ''} ${voided ? 'voided-input' : ''} focus:outline-none focus:border-cfa-gold`}
+                                    className={`w-16 h-9 text-sm font-medium text-center rounded-md px-3 bg-white/60 border border-blue-200 shadow focus:border-blue-400 focus:ring-2 focus:ring-blue-100 focus:bg-white/90 focus:shadow-lg transition-all duration-200 placeholder-zinc-300 ${error ? 'cfa-input-error' : ''} ${voided ? 'voided-input' : ''}`}
                                     placeholder="Cat #"
-                                    value={value ?? ''}
-                                    onChange={e => updateFinals('lh', colIdx, i, e.target.value)}
-                                    onBlur={e => handleFinalsBlur('lh', colIdx, i, e.target.value)}
-                                    disabled={voided}
-                                    onFocus={e => handleCatInputFocus(e, colIdx)}
-                                    onKeyDown={e => handleCatInputKeyDown(e, colIdx, numAwardRows + maxFinalsRows + i)}
+                                    value={localInputState[getCatInputKey('lh', colIdx, i)] ?? value}
+                                    onChange={e => handleCatInputChange('lh', colIdx, i, e.target.value)}
+                                    onBlur={() => handleCatInputBlur('lh', colIdx, i)}
+                                    onFocus={e => handleCatInputFocusLocal('lh', colIdx, i, value, e)}
+                                    onKeyDown={e => handleCatInputKeyDownLocal('lh', colIdx, i, e, numAwardRows + maxFinalsRows + i)}
                                     ref={el => {
                                       if (!catInputRefs.current[colIdx]) catInputRefs.current[colIdx] = [];
                                       catInputRefs.current[colIdx][numAwardRows + maxFinalsRows + i] = el;
                                     }}
                                   />
-                                  {value && (
-                                    <input
-                                      type="checkbox"
-                                      className="void-checkbox"
-                                      checked={voided}
-                                      onChange={e => updateVoidStateColumnWide('lh', colIdx, i, e.target.checked)}
-                                      disabled={!value}
-                                    />
-                                  )}
                                 </div>
-                                {error && <div className="text-xs mt-1 text-red-600">{error}</div>}
+                                  {error && (
+                                    <div className="mt-1 rounded-lg bg-red-50 border border-red-300 px-3 py-2 shadow text-xs text-red-700 font-semibold flex items-center gap-2 whitespace-normal break-words w-full">
+                                      <svg className="w-4 h-4 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <circle cx="12" cy="12" r="10" strokeWidth="2" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01" />
+                                      </svg>
+                                      {error}
+                                    </div>
+                                  )}
                               </div>
+                            ) : null}
                             </td>
                           );
-                        } else {
-                          return <td key={`lhpr-${i}-${colIdx}`} className={`py-2 px-2 border-r border-gray-300 align-top${shouldApplyRingGlow(colIdx) ? ' ring-glow' : ''}`}>&nbsp;</td>;
-                        }
                       })}
                     </tr>
                   ) : null
@@ -813,52 +1064,54 @@ export default function PremiershipTab({
                         {Array.from({ length: Math.max(...columns.map(col => (col.specialty === 'Allbreed' || col.specialty === 'Shorthair') ? getFinalsPositionsForRingTypeLocal(col.specialty) : 0)) }, (_, i) => (
           columns.some(col => (col.specialty === 'Allbreed' || col.specialty === 'Shorthair') && i < getFinalsPositionsForRingTypeLocal(col.specialty)) ? (
                     <tr key={`shpr-${i}`} className="cfa-table-row">
-                      <td className="py-2 pl-4 font-medium text-sm border-r border-gray-300 bg-white frozen-column" style={{ width: '140px', minWidth: '140px' }}>
+                      {/* Frozen position column: apply thick blue right border if first data column is focused */}
+                      <td
+                        className={`py-2 pl-4 font-medium text-sm bg-white frozen-column ${shouldApplyRingGlow(0) && focusedColumnIndex === 0 ? 'border-r-4 border-blue-300' : 'border-r border-gray-300'}`}
+                        style={{ width: '140px', minWidth: '140px' }}
+                      >
                         {getOrdinalLabel(i, 'SH')}
                       </td>
                       {columns.map((col, colIdx) => {
-                        if ((col.specialty === 'Allbreed' || col.specialty === 'Shorthair') && i < getFinalsPositionsForRingTypeLocal(col.specialty)) {
+                        const isFocused = focusedColumnIndex === colIdx;
+                        const shouldRenderCell = (col.specialty === 'Allbreed' || col.specialty === 'Shorthair') && i < getFinalsPositionsForRingTypeLocal(col.specialty);
                           const key = `${colIdx}-${i}`;
                           const value = premiershipTabData.shPremiersFinals[key] || '';
                           const voided = getVoidState('sh', colIdx, i);
                           const errorKey = `shPremiersFinals-${colIdx}-${i}`;
                           const error = errors[errorKey];
                           return (
-                            <td key={`shpr-${i}-${colIdx}`} className={`py-2 px-2 border-r border-gray-300 align-top${shouldApplyRingGlow(colIdx) ? ' ring-glow' : ''}`}>
+                              <td key={`shpr-${i}-${colIdx}`} className={`py-2 px-2 align-top transition-all duration-150 whitespace-nowrap overflow-x-visible ${shouldApplyRingGlow(colIdx) ? 'border-l-4 border-r-4 border-blue-300 z-10' : 'border-r border-blue-200'} hover:bg-gray-50`}> 
+                            {shouldRenderCell ? (
                               <div className="flex flex-col items-start">
                                 <div className="flex gap-1 items-center">
                                   <input
                                     type="text"
-                                    className={`w-14 h-7 text-xs text-center border rounded px-0.5 ${error ? 'cfa-input-error' : ''} ${voided ? 'voided-input' : ''} focus:outline-none focus:border-cfa-gold`}
+                                    className={`w-16 h-9 text-sm font-medium text-center rounded-md px-3 bg-white/60 border border-blue-200 shadow focus:border-blue-400 focus:ring-2 focus:ring-blue-100 focus:bg-white/90 focus:shadow-lg transition-all duration-200 placeholder-zinc-300 ${error ? 'cfa-input-error' : ''} ${voided ? 'voided-input' : ''}`}
                                     placeholder="Cat #"
-                                    value={value ?? ''}
-                                    onChange={e => updateFinals('sh', colIdx, i, e.target.value)}
-                                    onBlur={e => handleFinalsBlur('sh', colIdx, i, e.target.value)}
-                                    disabled={voided}
-                                    onFocus={e => handleCatInputFocus(e, colIdx)}
-                                    onKeyDown={e => handleCatInputKeyDown(e, colIdx, numAwardRows + maxFinalsRows + maxFinalsRows + i)}
+                                    value={localInputState[getCatInputKey('sh', colIdx, i)] ?? value}
+                                    onChange={e => handleCatInputChange('sh', colIdx, i, e.target.value)}
+                                    onBlur={() => handleCatInputBlur('sh', colIdx, i)}
+                                    onFocus={e => handleCatInputFocusLocal('sh', colIdx, i, value, e)}
+                                    onKeyDown={e => handleCatInputKeyDownLocal('sh', colIdx, i, e, numAwardRows + maxFinalsRows + maxFinalsRows + i)}
                                     ref={el => {
                                       if (!catInputRefs.current[colIdx]) catInputRefs.current[colIdx] = [];
                                       catInputRefs.current[colIdx][numAwardRows + maxFinalsRows + maxFinalsRows + i] = el;
                                     }}
                                   />
-                                  {value && (
-                                    <input
-                                      type="checkbox"
-                                      className="void-checkbox"
-                                      checked={voided}
-                                      onChange={e => updateVoidStateColumnWide('sh', colIdx, i, e.target.checked)}
-                                      disabled={!value}
-                                    />
-                                  )}
                                 </div>
-                                {error && <div className="text-xs mt-1 text-red-600">{error}</div>}
+                                  {error && (
+                                    <div className="mt-1 rounded-lg bg-red-50 border border-red-300 px-3 py-2 shadow text-xs text-red-700 font-semibold flex items-center gap-2 whitespace-normal break-words w-full">
+                                      <svg className="w-4 h-4 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <circle cx="12" cy="12" r="10" strokeWidth="2" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01" />
+                                      </svg>
+                                      {error}
+                                    </div>
+                                  )}
                               </div>
+                            ) : null}
                             </td>
                           );
-                        } else {
-                          return <td key={`shpr-${i}-${colIdx}`} className={`py-2 px-2 border-r border-gray-300 align-top${shouldApplyRingGlow(colIdx) ? ' ring-glow' : ''}`}>&nbsp;</td>;
-                        }
                       })}
                     </tr>
                   ) : null
@@ -866,6 +1119,7 @@ export default function PremiershipTab({
               </tbody>
             </table>
           </div>
+          )}
         </div>
 
         {/* Premium Action Buttons */}

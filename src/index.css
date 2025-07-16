@@ -311,7 +311,6 @@
   text-decoration: line-through !important;
   color: #6b7280 !important;
   background-color: #f3f4f6 !important;
-  cursor: not-allowed !important;
 }
 
 .voided-input:focus {
@@ -462,6 +461,15 @@
   z-index: 30;
   background: #000 !important;
   color: #fff !important;
+}
+
+/* PremiershipTab blue ring-glow for focused column */
+.pr-ring-glow {
+  box-shadow: 0 0 0 3px #3b82f6, 0 2px 8px 0 #60a5fa33;
+  z-index: 2;
+  position: relative;
+  border-radius: 0.5rem;
+  transition: box-shadow 0.2s;
 }
 
 /* Stylish Ring Jump Dropdown */
@@ -677,4 +685,51 @@ button.disabled:hover, button.disabled:focus {
 .cfa-table-header-cell-modern .header-main,
 .cfa-table-header-cell-modern .header-sub {
   /* Proper spacing maintained */
+}
+
+/* Modal Overlay: always centered in viewport, robust to zoom/scroll */
+.cfa-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: all;
+  overflow: auto;
+}
+.cfa-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 10001;
+  transition: opacity 0.2s;
+}
+.cfa-modal-dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10002;
+  background: #fff;
+  border-radius: 1rem;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  max-width: 540px;
+  width: 100%;
+  min-width: 0;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 0;
+  margin: 0 1rem;
+  display: flex;
+  flex-direction: column;
+  outline: none;
+}
+
+/* Responsive: ensure modal dialog is usable on small screens */
+@media (max-width: 600px) {
+  .cfa-modal-dialog {
+    max-width: 99vw;
+    border-radius: 0.5rem;
+  }
 }
