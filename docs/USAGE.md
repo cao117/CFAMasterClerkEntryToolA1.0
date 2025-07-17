@@ -231,3 +231,4 @@ All four tab tables (Championship, Premiership, Kitten, Household Pet) now use a
 - All number inputs in the UI are always controlled (never undefined or NaN). If a value is missing or invalid, the input will show as empty until a valid number is entered. 
 
 - The Championship tab now uses dynamic validation for Cat # fields in all sections (Top 10/15, Best AB CH, Best LH CH, Best SH CH) that matches the Premiership tab. Cat # validation is only triggered on blur/tab/enter, not on every keystroke. Error order and logic are fully consistent with the Premiership tab. No validation rules or user-facing workflows changed; this is a timing and UX parity update. 
+- In the Championship tab, you can now type 'v' or 'V' in any Cat # input (showAwards section) and it will auto-complete to 'VOID', matching the Kitten and HHP tabs. 

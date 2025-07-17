@@ -797,10 +797,18 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
     // Helper to namespace Cat # input keys by section for local input state
     const getCatInputKey = (section: 'showAwards' | 'champions' | 'lhChampions' | 'shChampions', colIdx: number, rowIdx: number) => `${section}-${colIdx}-${rowIdx}`;
 
-    // Generalized onChange handler for Cat # input (only updates local input state)
+    /**
+     * Generalized onChange handler for Cat # input (only updates local input state)
+     * For showAwards section, auto-complete 'v' or 'V' (case-insensitive, single char only) to 'VOID' (KittenTab parity).
+     */
     const handleCatInputChange = (section: 'showAwards' | 'champions' | 'lhChampions' | 'shChampions', colIdx: number, rowIdx: number, value: string) => {
       const key = getCatInputKey(section, colIdx, rowIdx);
-      setLocalInputState(prev => ({ ...prev, [key]: value }));
+      // Only auto-complete for showAwards section, and only if value is exactly 'v' or 'V'
+      if (section === 'showAwards' && (value === 'v' || value === 'V')) {
+        setLocalInputState(prev => ({ ...prev, [key]: 'VOID' }));
+      } else {
+        setLocalInputState(prev => ({ ...prev, [key]: value }));
+      }
     };
 
     // --- CONTEXT-7: PremiershipTab-style Cat # input validation order for all sections ---
@@ -940,6 +948,19 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
 
     // Generalized onKeyDown handler for Cat # input (triggers blur on Tab/Enter, preserves navigation)
     const handleCatInputKeyDownLocal = (section: 'showAwards' | 'champions' | 'lhChampions' | 'shChampions', colIdx: number, rowIdx: number, e: React.KeyboardEvent<HTMLInputElement>, tableRowIdx: number) => {
+      // Custom: If showAwards, value is 'VOID', cursor at end, and Backspace pressed, clear input
+      if (
+        section === 'showAwards' &&
+        e.key === 'Backspace' &&
+        e.currentTarget.value === 'VOID' &&
+        e.currentTarget.selectionStart === 4 &&
+        e.currentTarget.selectionEnd === 4
+      ) {
+        const key = getCatInputKey(section, colIdx, rowIdx);
+        setLocalInputState(prev => ({ ...prev, [key]: '' }));
+        e.preventDefault();
+        return;
+      }
       if (e.key === 'Tab' || e.key === 'Enter') {
         handleCatInputBlur(section, colIdx, rowIdx);
       }
@@ -1112,7 +1133,7 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                                     {/* Cat # input: rounded-md, semi-transparent, focus ring, shadow */}
                                     <input
                                       type="text"
-                                      className={`w-16 h-9 text-sm text-center font-medium rounded-md px-3 bg-white/60 border border-violet-200 shadow focus:border-violet-400 focus:ring-2 focus:ring-violet-100 focus:bg-white/90 focus:shadow-lg transition-all duration-200 placeholder-zinc-300 ${getBorderStyle(errorKey)} ${isVoidInput(award.catNumber) ? 'opacity-50 grayscale line-through' : ''}`}
+                                      className={`w-16 h-9 text-sm text-center font-medium rounded-md px-3 bg-white/60 border border-violet-200 shadow focus:border-violet-400 focus:ring-2 focus:ring-violet-100 focus:bg-white/90 focus:shadow-lg transition-all duration-200 placeholder-zinc-300 ${getBorderStyle(errorKey)} ${(isVoidInput(getCatInputValue('showAwards', columnIndex, i, award.catNumber))) ? 'opacity-50 grayscale line-through' : ''}`}
                                       placeholder="Cat #"
                                       value={getCatInputValue('showAwards', columnIndex, i, award.catNumber)}
                                       onChange={e => handleCatInputChange('showAwards', columnIndex, i, e.target.value)}

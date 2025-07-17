@@ -567,9 +567,17 @@ export default function PremiershipTab({
   const getCatInputKey = (section: 'showAwards' | 'ab' | 'lh' | 'sh', colIdx: number, rowIdx: number) => `${section}-${colIdx}-${rowIdx}`;
 
   // Generalized onChange handler for Cat # input
+  /**
+   * For showAwards section, auto-complete 'v' or 'V' (case-insensitive, single char only) to 'VOID' (ChampionshipTab/KittenTab parity).
+   */
   const handleCatInputChange = (section: 'showAwards' | 'ab' | 'lh' | 'sh', colIdx: number, rowIdx: number, value: string) => {
     const key = getCatInputKey(section, colIdx, rowIdx);
-    setLocalInputState(prev => ({ ...prev, [key]: value }));
+    // Only auto-complete for showAwards section, and only if value is exactly 'v' or 'V'
+    if (section === 'showAwards' && (value === 'v' || value === 'V')) {
+      setLocalInputState(prev => ({ ...prev, [key]: 'VOID' }));
+    } else {
+      setLocalInputState(prev => ({ ...prev, [key]: value }));
+    }
   };
 
   // Generalized onBlur handler for Cat # input
@@ -605,6 +613,19 @@ export default function PremiershipTab({
 
   // Generalized onKeyDown handler for Cat # input
   const handleCatInputKeyDownLocal = (section: 'showAwards' | 'ab' | 'lh' | 'sh', colIdx: number, rowIdx: number, e: React.KeyboardEvent<HTMLInputElement>, tableRowIdx: number) => {
+    // Custom: If showAwards, value is 'VOID', cursor at end, and Backspace pressed, clear input
+    if (
+      section === 'showAwards' &&
+      e.key === 'Backspace' &&
+      e.currentTarget.value === 'VOID' &&
+      e.currentTarget.selectionStart === 4 &&
+      e.currentTarget.selectionEnd === 4
+    ) {
+      const key = getCatInputKey(section, colIdx, rowIdx);
+      setLocalInputState(prev => ({ ...prev, [key]: '' }));
+      e.preventDefault();
+      return;
+    }
     if (e.key === 'Tab' || e.key === 'Enter') {
       handleCatInputBlur(section, colIdx, rowIdx);
     }
@@ -896,7 +917,7 @@ export default function PremiershipTab({
                                     {/* Cat # input: bulletproof editable */}
                                   <input
                                     type="text"
-                                      className={`w-16 h-9 text-sm text-center font-medium rounded-md px-3 bg-white/60 border border-blue-200 shadow focus:border-blue-400 focus:ring-2 focus:ring-blue-100 focus:bg-white/90 focus:shadow-lg transition-all duration-200 placeholder-zinc-300 ${errors[errorKey] ? 'cfa-input-error' : ''} ${isVoidInput(catNumber) ? 'opacity-50 grayscale line-through' : ''}`}
+                                      className={`w-16 h-9 text-sm text-center font-medium rounded-md px-3 bg-white/60 border border-blue-200 shadow focus:border-blue-400 focus:ring-2 focus:ring-blue-100 focus:bg-white/90 focus:shadow-lg transition-all duration-200 placeholder-zinc-300 ${errors[errorKey] ? 'cfa-input-error' : ''} ${isVoidInput(localInputState[getCatInputKey('showAwards', colIdx, i)] ?? catNumber) ? 'opacity-50 grayscale line-through' : ''}`}
                                     placeholder="Cat #"
                                       value={localInputState[getCatInputKey('showAwards', colIdx, i)] ?? catNumber}
                                     onChange={e => handleCatInputChange('showAwards', colIdx, i, e.target.value)}

@@ -90,6 +90,17 @@ export default function HouseholdPetTab({
   };
 
   const handleCatInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, colIdx: number, rowIdx: number) => {
+    // Custom: If value is 'VOID', cursor at end, and Backspace pressed, clear input (KittenTab/PRTab parity)
+    if (
+      e.key === 'Backspace' &&
+      e.currentTarget.value === 'VOID' &&
+      e.currentTarget.selectionStart === 4 &&
+      e.currentTarget.selectionEnd === 4
+    ) {
+      updateShowAward(colIdx, rowIdx, '');
+      e.preventDefault();
+      return;
+    }
     if (e.key === 'Tab') {
       e.preventDefault();
       const lastRow = totalCatRows - 1;
