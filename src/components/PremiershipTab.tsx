@@ -494,9 +494,15 @@ export default function PremiershipTab({
   // Add shouldApplyRingGlow
   const shouldApplyRingGlow = (columnIndex: number): boolean => focusedColumnIndex === columnIndex;
 
-  // Add getVoidState for parity
+  // Add getVoidState for parity - now includes local input state for immediate feedback
   const getVoidState = (section: string, colIdx: number, pos: number): boolean => {
     const key = `${colIdx}-${pos}`;
+    // Check local input state first for immediate feedback, then fall back to model data
+    const localValue = localInputState[key];
+    if (localValue !== undefined) {
+      return isVoidInput(localValue);
+    }
+    // Fallback to model data
     if (section === 'showAwards') return isVoidInput(premiershipTabData.showAwards[key]?.catNumber || '');
     if (section === 'premiers') return isVoidInput(premiershipTabData.premiersFinals[key] || '');
     if (section === 'ab') return isVoidInput(premiershipTabData.abPremiersFinals[key] || '');
@@ -572,8 +578,8 @@ export default function PremiershipTab({
    */
   const handleCatInputChange = (section: 'showAwards' | 'ab' | 'lh' | 'sh', colIdx: number, rowIdx: number, value: string) => {
     const key = getCatInputKey(section, colIdx, rowIdx);
-    // Only auto-complete for showAwards section, and only if value is exactly 'v' or 'V'
-    if (section === 'showAwards' && (value === 'v' || value === 'V')) {
+    // Auto-complete 'v' or 'V' to 'VOID' for all sections
+    if (value === 'v' || value === 'V') {
       setLocalInputState(prev => ({ ...prev, [key]: 'VOID' }));
     } else {
       setLocalInputState(prev => ({ ...prev, [key]: value }));
@@ -613,9 +619,8 @@ export default function PremiershipTab({
 
   // Generalized onKeyDown handler for Cat # input
   const handleCatInputKeyDownLocal = (section: 'showAwards' | 'ab' | 'lh' | 'sh', colIdx: number, rowIdx: number, e: React.KeyboardEvent<HTMLInputElement>, tableRowIdx: number) => {
-    // Custom: If showAwards, value is 'VOID', cursor at end, and Backspace pressed, clear input
+    // Custom: If value is 'VOID', cursor at end, and Backspace pressed, clear input for ALL sections
     if (
-      section === 'showAwards' &&
       e.key === 'Backspace' &&
       e.currentTarget.value === 'VOID' &&
       e.currentTarget.selectionStart === 4 &&
@@ -788,8 +793,8 @@ export default function PremiershipTab({
        />
       {/* Premiership Finals - Premium Design */}
       <div className="group relative">
-        {/* Sticky header and dropdown - match ChampionshipTab layout */}
-        <div className="sticky top-0 z-30 bg-white flex items-center justify-between px-6 pt-4 pb-3 gap-4">
+        {/* Header */}
+        <div className="bg-white flex items-center justify-between px-6 pt-4 pb-3 gap-4 transition-all duration-200 border-b border-violet-200 shadow-sm">
           {/* Left: Icon, Title, Arrow (if present) */}
           <div className="flex items-center min-w-0">
             <span className="p-1.5 bg-gradient-to-br from-blue-500 to-blue-400 rounded-xl shadow flex-shrink-0">
@@ -985,7 +990,6 @@ export default function PremiershipTab({
                         const shouldRenderCell = col.specialty === 'Allbreed' && i < getFinalsPositionsForRingTypeLocal(col.specialty);
                           const key = `${colIdx}-${i}`;
                           const value = premiershipTabData.abPremiersFinals[key] || '';
-                          const voided = getVoidState('ab', colIdx, i);
                           const errorKey = `abPremiersFinals-${colIdx}-${i}`;
                           const error = errors[errorKey];
                           return (
@@ -995,7 +999,7 @@ export default function PremiershipTab({
                                 <div className="flex gap-1 items-center">
                                   <input
                                     type="text"
-                                    className={`w-16 h-9 text-sm font-medium text-center rounded-md px-3 bg-white/60 border border-blue-200 shadow focus:border-blue-400 focus:ring-2 focus:ring-blue-100 focus:bg-white/90 focus:shadow-lg transition-all duration-200 placeholder-zinc-300 ${error ? 'cfa-input-error' : ''} ${voided ? 'voided-input' : ''}`}
+                                    className={`w-16 h-9 text-sm font-medium text-center rounded-md px-3 bg-white/60 border border-blue-200 shadow focus:border-blue-400 focus:ring-2 focus:ring-blue-100 focus:bg-white/90 focus:shadow-lg transition-all duration-200 placeholder-zinc-300 ${error ? 'cfa-input-error' : ''} ${isVoidInput(localInputState[getCatInputKey('ab', colIdx, i)] ?? value) ? 'opacity-50 grayscale line-through' : ''}`}
                                     placeholder="Cat #"
                                     value={localInputState[getCatInputKey('ab', colIdx, i)] ?? value}
                                     onChange={e => handleCatInputChange('ab', colIdx, i, e.target.value)}
@@ -1041,7 +1045,6 @@ export default function PremiershipTab({
                         const shouldRenderCell = (col.specialty === 'Allbreed' || col.specialty === 'Longhair') && i < getFinalsPositionsForRingTypeLocal(col.specialty);
                           const key = `${colIdx}-${i}`;
                           const value = premiershipTabData.lhPremiersFinals[key] || '';
-                          const voided = getVoidState('lh', colIdx, i);
                           const errorKey = `lhPremiersFinals-${colIdx}-${i}`;
                           const error = errors[errorKey];
                           return (
@@ -1051,7 +1054,7 @@ export default function PremiershipTab({
                                 <div className="flex gap-1 items-center">
                                   <input
                                     type="text"
-                                    className={`w-16 h-9 text-sm font-medium text-center rounded-md px-3 bg-white/60 border border-blue-200 shadow focus:border-blue-400 focus:ring-2 focus:ring-blue-100 focus:bg-white/90 focus:shadow-lg transition-all duration-200 placeholder-zinc-300 ${error ? 'cfa-input-error' : ''} ${voided ? 'voided-input' : ''}`}
+                                    className={`w-16 h-9 text-sm font-medium text-center rounded-md px-3 bg-white/60 border border-blue-200 shadow focus:border-blue-400 focus:ring-2 focus:ring-blue-100 focus:bg-white/90 focus:shadow-lg transition-all duration-200 placeholder-zinc-300 ${error ? 'cfa-input-error' : ''} ${isVoidInput(localInputState[getCatInputKey('lh', colIdx, i)] ?? value) ? 'opacity-50 grayscale line-through' : ''}`}
                                     placeholder="Cat #"
                                     value={localInputState[getCatInputKey('lh', colIdx, i)] ?? value}
                                     onChange={e => handleCatInputChange('lh', colIdx, i, e.target.value)}
@@ -1097,7 +1100,6 @@ export default function PremiershipTab({
                         const shouldRenderCell = (col.specialty === 'Allbreed' || col.specialty === 'Shorthair') && i < getFinalsPositionsForRingTypeLocal(col.specialty);
                           const key = `${colIdx}-${i}`;
                           const value = premiershipTabData.shPremiersFinals[key] || '';
-                          const voided = getVoidState('sh', colIdx, i);
                           const errorKey = `shPremiersFinals-${colIdx}-${i}`;
                           const error = errors[errorKey];
                           return (
@@ -1107,7 +1109,7 @@ export default function PremiershipTab({
                                 <div className="flex gap-1 items-center">
                                   <input
                                     type="text"
-                                    className={`w-16 h-9 text-sm font-medium text-center rounded-md px-3 bg-white/60 border border-blue-200 shadow focus:border-blue-400 focus:ring-2 focus:ring-blue-100 focus:bg-white/90 focus:shadow-lg transition-all duration-200 placeholder-zinc-300 ${error ? 'cfa-input-error' : ''} ${voided ? 'voided-input' : ''}`}
+                                    className={`w-16 h-9 text-sm font-medium text-center rounded-md px-3 bg-white/60 border border-blue-200 shadow focus:border-blue-400 focus:ring-2 focus:ring-blue-100 focus:bg-white/90 focus:shadow-lg transition-all duration-200 placeholder-zinc-300 ${error ? 'cfa-input-error' : ''} ${isVoidInput(localInputState[getCatInputKey('sh', colIdx, i)] ?? value) ? 'opacity-50 grayscale line-through' : ''}`}
                                     placeholder="Cat #"
                                     value={localInputState[getCatInputKey('sh', colIdx, i)] ?? value}
                                     onChange={e => handleCatInputChange('sh', colIdx, i, e.target.value)}

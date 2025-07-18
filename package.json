@@ -16,7 +16,8 @@
     "@faker-js/faker": "^9.8.0",
     "papaparse": "^5.5.3",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "react-sticky-el": "^2.1.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.29.0",
@@ -24,6 +25,7 @@
     "@types/papaparse": "^5.3.16",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
+    "@types/react-sticky-el": "^1.0.7",
     "@vitejs/plugin-react": "^4.5.2",
     "autoprefixer": "^10.4.21",
     "eslint": "^9.29.0",

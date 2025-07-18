@@ -87,18 +87,7 @@ type ChampionshipTabData = {
 const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
   (props, ref) => {
     const { judges, championshipTotal, championshipCounts, showSuccess, showError, shouldFillTestData, onResetAllData, championshipTabData, setChampionshipTabData, getShowState, isActive, onCSVImport } = props;
-    // State for scroll icon direction (must be at the top, before any return)
-    const [scrollDown, setScrollDown] = useState(true);
-    // Handler for scroll button click (must be at the top, before any return)
-    const handleScrollButtonClick = () => {
-      if (scrollDown) {
-        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-        setScrollDown(false);
-      } else {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        setScrollDown(true);
-      }
-    };
+
     // State for dynamic table structure
     const [columns, setColumns] = useState<Column[]>([]);
     const [numAwardRows, setNumAwardRows] = useState(10);
@@ -803,8 +792,8 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
      */
     const handleCatInputChange = (section: 'showAwards' | 'champions' | 'lhChampions' | 'shChampions', colIdx: number, rowIdx: number, value: string) => {
       const key = getCatInputKey(section, colIdx, rowIdx);
-      // Only auto-complete for showAwards section, and only if value is exactly 'v' or 'V'
-      if (section === 'showAwards' && (value === 'v' || value === 'V')) {
+      // Auto-complete 'v' or 'V' to 'VOID' for all sections
+      if (value === 'v' || value === 'V') {
         setLocalInputState(prev => ({ ...prev, [key]: 'VOID' }));
       } else {
         setLocalInputState(prev => ({ ...prev, [key]: value }));
@@ -948,9 +937,8 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
 
     // Generalized onKeyDown handler for Cat # input (triggers blur on Tab/Enter, preserves navigation)
     const handleCatInputKeyDownLocal = (section: 'showAwards' | 'champions' | 'lhChampions' | 'shChampions', colIdx: number, rowIdx: number, e: React.KeyboardEvent<HTMLInputElement>, tableRowIdx: number) => {
-      // Custom: If showAwards, value is 'VOID', cursor at end, and Backspace pressed, clear input
+      // Custom: If value is 'VOID', cursor at end, and Backspace pressed, clear input for ALL sections
       if (
-        section === 'showAwards' &&
         e.key === 'Backspace' &&
         e.currentTarget.value === 'VOID' &&
         e.currentTarget.selectionStart === 4 &&
@@ -1014,8 +1002,8 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
 
         {/* Championship Finals - Premium Design */}
         <div className="group relative">
-          {/* Sticky header and dropdown */}
-          <div className="sticky top-0 z-30 bg-white flex items-center justify-between px-6 pt-4 pb-3 gap-4">
+                  {/* Header */}
+        <div className="bg-white flex items-center justify-between px-6 pt-4 pb-3 gap-4 transition-all duration-200 border-b border-violet-200 shadow-sm">
             {/* Left: Icon, Title, Arrow */}
             <div className="flex items-center min-w-0">
               <span className="p-1.5 bg-gradient-to-br from-violet-500 to-yellow-400 rounded-xl shadow flex-shrink-0">
@@ -1025,25 +1013,6 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                 </svg>
               </span>
               <span className="text-xl font-bold text-violet-700 ml-3">Championship Finals</span>
-              <button
-                onClick={handleScrollButtonClick}
-                className="ml-3 w-7 h-7 flex items-center justify-center rounded-lg border border-violet-400 bg-white shadow-sm transition-all duration-200 hover:border-violet-500 hover:bg-violet-50/70 hover:shadow-violet-200/60 focus:outline-none focus:ring-2 focus:ring-violet-300 group"
-                aria-label={scrollDown ? 'Scroll to Bottom' : 'Scroll to Top'}
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  fill="none"
-                  stroke="#a78bfa"
-                  strokeWidth="1.7"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className={`transition-colors duration-200 ${scrollDown ? '' : 'rotate-180'} group-hover:stroke-violet-500`}
-                  viewBox="0 0 24 24"
-                >
-                  <polyline points="6 9 12 15 18 9" />
-                </svg>
-              </button>
             </div>
             {/* Right: Minimal Dropdown, inline trophy icon in selected value only */}
             <CustomSelect
@@ -1211,7 +1180,7 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                                     <div className="flex gap-2 items-center">
                                     <input
                                       type="text"
-                                    className={`w-16 h-9 text-sm text-center font-medium rounded-md px-3 bg-white/60 border border-violet-200 shadow focus:border-violet-400 focus:ring-2 focus:ring-violet-100 focus:bg-white/90 focus:shadow-lg transition-all duration-200 placeholder-zinc-300 ${getBorderStyle(errorKey)} ${isVoidInput(getFinalsValue('champions', columnIndex, i)) ? 'opacity-50 grayscale line-through' : ''}`}
+                                                                          className={`w-16 h-9 text-sm text-center font-medium rounded-md px-3 bg-white/60 border border-violet-200 shadow focus:border-violet-400 focus:ring-2 focus:ring-violet-100 focus:bg-white/90 focus:shadow-lg transition-all duration-200 placeholder-zinc-300 ${getBorderStyle(errorKey)} ${isVoidInput(getCatInputValue('champions', columnIndex, i, getFinalsValue('champions', columnIndex, i))) ? 'opacity-50 grayscale line-through' : ''}`}
                                       placeholder="Cat #"
                                         value={getCatInputValue('champions', columnIndex, i, getFinalsValue('champions', columnIndex, i))}
                                         onChange={e => handleCatInputChange('champions', columnIndex, i, e.target.value)}
@@ -1268,7 +1237,7 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                                   <div className="flex gap-2 items-center">
                                     <input
                                       type="text"
-                                    className={`w-16 h-9 text-sm text-center font-medium rounded-md px-3 bg-white/60 border border-violet-200 shadow focus:border-violet-400 focus:ring-2 focus:ring-violet-100 focus:bg-white/90 focus:shadow-lg transition-all duration-200 placeholder-zinc-300 ${getBorderStyle(errorKey)} ${isVoidInput(getFinalsValue('lhChampions', columnIndex, i)) ? 'opacity-50 grayscale line-through' : ''}`}
+                                                                          className={`w-16 h-9 text-sm text-center font-medium rounded-md px-3 bg-white/60 border border-violet-200 shadow focus:border-violet-400 focus:ring-2 focus:ring-violet-100 focus:bg-white/90 focus:shadow-lg transition-all duration-200 placeholder-zinc-300 ${getBorderStyle(errorKey)} ${isVoidInput(getCatInputValue('lhChampions', columnIndex, i, getFinalsValue('lhChampions', columnIndex, i))) ? 'opacity-50 grayscale line-through' : ''}`}
                                       placeholder="Cat #"
                                       value={getCatInputValue('lhChampions', columnIndex, i, getFinalsValue('lhChampions', columnIndex, i))}
                                       onChange={e => handleCatInputChange('lhChampions', columnIndex, i, e.target.value)}
@@ -1325,7 +1294,7 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                                   <div className="flex gap-2 items-center">
                                     <input
                                       type="text"
-                                    className={`w-16 h-9 text-sm text-center font-medium rounded-md px-3 bg-white/60 border border-violet-200 shadow focus:border-violet-400 focus:ring-2 focus:ring-violet-100 focus:bg-white/90 focus:shadow-lg transition-all duration-200 placeholder-zinc-300 ${getBorderStyle(errorKey)} ${isVoidInput(getFinalsValue('shChampions', columnIndex, i)) ? 'opacity-50 grayscale line-through' : ''}`}
+                                                                          className={`w-16 h-9 text-sm text-center font-medium rounded-md px-3 bg-white/60 border border-violet-200 shadow focus:border-violet-400 focus:ring-2 focus:ring-violet-100 focus:bg-white/90 focus:shadow-lg transition-all duration-200 placeholder-zinc-300 ${getBorderStyle(errorKey)} ${isVoidInput(getCatInputValue('shChampions', columnIndex, i, getFinalsValue('shChampions', columnIndex, i))) ? 'opacity-50 grayscale line-through' : ''}`}
                                       placeholder="Cat #"
                                       value={getCatInputValue('shChampions', columnIndex, i, getFinalsValue('shChampions', columnIndex, i))}
                                       onChange={e => handleCatInputChange('shChampions', columnIndex, i, e.target.value)}

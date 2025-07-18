@@ -378,8 +378,8 @@ export default function KittenTab({
 
       {/* Kittens Finals - Premium Design */}
       <div className="group relative">
-        {/* Sticky header and dropdown - match ChampionshipTab layout */}
-        <div className="sticky top-0 z-30 bg-white flex items-center justify-between px-6 pt-4 pb-3 gap-4">
+        {/* Header */}
+        <div className="bg-white flex items-center justify-between px-6 pt-4 pb-3 gap-4 transition-all duration-200 border-b border-violet-200 shadow-sm">
           {/* Left: Icon, Title, Arrow (if present) */}
           <div className="flex items-center min-w-0">
             <span className="p-1.5 bg-gradient-to-br from-green-500 to-emerald-400 rounded-xl shadow flex-shrink-0">
