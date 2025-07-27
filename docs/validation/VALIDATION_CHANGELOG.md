@@ -4,6 +4,61 @@ This changelog records all changes, additions, and deletions to validation rules
 
 ---
 
+### [2024-12-19] Breed Sheets Tab: New Tab Implementation
+- **Tab:** Breed Sheets (New)
+- **Change:** Implemented new Breed Sheets tab with comprehensive validation rules and modern UI/UX
+- **Summary:** 
+  - **New tab structure**: Added Breed Sheets tab positioned after Household Pet Finals tab
+  - **Input fields**: Best of Breed (BoB), 2nd Best of Breed (2BoB), Best CH (Championship only), Best PR (Premiership only)
+  - **Group and hair length selection**: Switch-based navigation between Championship/Premiership/Kitten groups and Longhair/Shorthair sections
+  - **Visibility logic**: Groups and hair length sections shown based on show counts and judge ring type
+  - **NOV count inclusion**: NOV cats included in visibility calculations for Championship and Premiership groups
+  - **Input validation**: Cat numbers 1-450 or VOID, no duplicates within same judge-group-hair length combination
+  - **Breed list management**: Dynamic breed lists from Settings panel with automatic updates
+  - **Search functionality**: Real-time breed name filtering for improved usability
+  - **Input persistence**: Separate storage for each judge-group-hair length combination
+  - **Three-column layout**: Space-efficient grid layout with right-aligned inputs
+  - **Modern UI design**: Clean, professional interface with animated controls and responsive design
+- **Rationale:** Provides master clerks with a dedicated interface for entering breed-specific awards, improving workflow efficiency and data organization
+- **Impact:** Users can now efficiently enter and manage breed-specific awards with a modern, intuitive interface that integrates seamlessly with existing tab functionality
+
+---
+
+### [2024-12-19] Breed Sheets Tab: Comprehensive Validation Rules Implementation
+- **Tab:** Breed Sheets
+- **Change:** Implemented comprehensive validation rules matching other tabs with proper error precedence and styling
+- **Summary:** 
+  - **Sequential entry validation**: 2BoB cannot be filled before BoB, Best CH/PR cannot be filled before BoB
+  - **Duplicate prevention**: No duplicate cat numbers across all fields (BoB, 2BoB, Best CH, Best PR) within same view
+  - **BoB/2BoB validation**: BoB and 2BoB cannot be the same cat number
+  - **Format validation**: Cat numbers must be 1-450 or VOID, with auto-completion for "v"/"V" to "VOID"
+  - **Error precedence**: Format > Duplicate > Sequential > BoB/2BoB same cat
+  - **Error styling**: Red border and background for invalid inputs, matching other tabs
+  - **Error display**: Error messages shown below input fields in red text
+  - **VOID handling**: VOID inputs are grayed out with strikethrough styling
+  - **Blur-based validation**: Validation runs on input blur (when focus moves away) and view switch, matching other tabs
+  - **Validation file**: Created dedicated `breedSheetsValidation.ts` with comprehensive validation logic
+- **Rationale:** Ensures data integrity and provides consistent user experience with other tabs through proper validation rules and error handling
+- **Impact:** Users now receive immediate feedback on validation errors with clear, actionable messages and consistent styling across all tabs
+
+---
+
+### [2024-12-19] Breed Sheets Tab: Blur-Based Validation Implementation  
+- **Tab:** Breed Sheets
+- **Change:** Refactored validation from real-time to blur-based validation to match other tabs' behavior
+- **Summary:** 
+  - **Local input state**: Added local input state management to track temporary values during typing
+  - **Blur validation**: Validation only runs when focus moves away from input field (onBlur event)
+  - **Focus handling**: Input text is selected on focus, following other tabs' pattern
+  - **Dynamic input display**: Current input value prefers local state over model value during editing
+  - **Performance improvement**: Eliminates excessive validation calls during typing
+  - **Consistent UX**: Matches validation behavior of Championship, Premiership, and other tabs
+  - **Proper data flow**: Model is updated on blur, then validation runs with updated data
+- **Rationale:** Improves performance by eliminating excessive validation during typing and provides consistent user experience with other tabs
+- **Impact:** Users can type freely without validation interruption, with validation feedback appearing only when they finish editing a field
+
+---
+
 ### [2024-12-19] All Tabs: CSV Export File Save Dialog Enhancement
 - **Tab:** All (General, Championship, Premiership, Kitten, Household Pet)
 - **Change:** Enhanced CSV export functionality to use file save dialog instead of automatic download

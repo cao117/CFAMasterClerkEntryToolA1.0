@@ -10,6 +10,7 @@
    - [Judge Fields](#judge-fields)
    - [Championship Tab Fields](#championship-tab-fields)
    - [Premiership Tab Fields](#premiership-tab-fields)
+   - [Breed Sheets Tab Fields](#breed-sheets-tab-fields)
 5. [Award Assignment & Validation Rules](#award-assignment--validation-rules)
 6. [Validation Error Types & Logic](#validation-error-types--logic)
 7. [Voiding Logic](#voiding-logic)
@@ -33,6 +34,7 @@ The CFA Master Clerk Entry Tool is a professional data management application fo
 - **General Tab**: Enter show details (date, club, master clerk), judge information, and cat counts for each class.
 - **Championship Tab**: Enter and validate Championship Final (Top 10/15), Best AB CH, Best LH CH, and Best SH CH awards for each judge/ring.
 - **Premiership Tab**: Enter and validate Premiership Final (Top 10/15), Best AB PR, Best LH PR, and Best SH PR awards for each judge/ring.
+- **Breed Sheets Tab**: Enter Best of Breed (BoB), 2nd Best of Breed (2BoB), Best CH (Championship only), and Best PR (Premiership only) awards for each breed by judge, with dynamic breed list management and search functionality.
 - **Kitten Tab**: (Coming soon) For Kitten finals.
 
 Tabs are enabled only when all required information is entered in the General tab.
@@ -125,6 +127,16 @@ Suppose the General tab has the following judges:
 - **Show Awards (Top 10/15)**: Cat # and status (HHP) for each placement per judge/ring.
   - **Note:** Empty rows are allowed and do not trigger errors. Only filled rows require status 'HHP'.
 
+### Breed Sheets Tab Fields
+- **Best of Breed (BoB)**: Cat # for Best of Breed award for each breed per judge/ring.
+- **2nd Best of Breed (2BoB)**: Cat # for 2nd Best of Breed award for each breed per judge/ring.
+- **Best CH**: Cat # for Best Championship award (Championship group only).
+- **Best PR**: Cat # for Best Premiership award (Premiership group only).
+- **Breed List Management**: Dynamic breed lists from Settings panel, with automatic updates when breeds are added/removed.
+- **Search Functionality**: Real-time breed name filtering for improved usability.
+- **Group and Hair Length Selection**: Switch-based navigation between Championship/Premiership/Kitten groups and Longhair/Shorthair sections.
+- **Input Persistence**: Separate storage for each judge-group-hair length combination to maintain data when switching views.
+
 ---
 
 ## Award Assignment & Validation Rules
@@ -180,6 +192,24 @@ Suppose the General tab has the following judges:
   4. Order error
   5. Assignment reminder
 - **Voiding**: Voiding a cat number in any cell in a column voids all other cells in that column with the same cat number (across all sections).
+
+### Breed Sheets Tab Rules
+- **Visibility Logic**:
+  - **Group Visibility**: A group (Championship, Premiership, Kitten) is shown only if its total count (LH + SH) for that group is greater than 0.
+  - **Hair Length Visibility**: 
+    - For Allbreed (AB) and Double Specialty (DBSP) rings: Both LH and SH sections appear if their respective counts for the selected group are greater than 0.
+    - For Longhair (LH) rings: Only LH section appears if its count for the selected group is greater than 0.
+    - For Shorthair (SH) rings: Only SH section appears if its count for the selected group is greater than 0.
+  - **NOV Count Inclusion**: For Championship and Premiership groups, NOV cats are included in visibility calculations as they can receive BoB and 2BoB awards.
+- **Input Validation**:
+  - Cat # must be 1-450 or VOID.
+  - No duplicates within the same judge-group-hair length combination.
+  - Input values persist separately for each judge-group-hair length combination.
+- **Breed List Management**:
+  - Breed lists are dynamically loaded from Settings panel.
+  - Changes to breed lists in Settings are immediately reflected in Breed Sheets tab.
+  - Breeds are automatically sorted alphabetically.
+  - Existing input values are preserved when breeds are added/removed.
 
 ### General Validation Rules
 - All required fields in General tab must be filled before other tabs are enabled.

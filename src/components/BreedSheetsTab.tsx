@@ -3,6 +3,12 @@ import React from 'react';
 import Modal from './Modal';
 import ActionButtons from './ActionButtons';
 import { handleSaveToCSV } from '../utils/formActions';
+import { 
+  validateBreedSheetsTab, 
+  validateBreedSheetsField,
+  validateCatNumber,
+  isVoidInput
+} from '../validation/breedSheetsValidation';
 
 interface Judge {
   id: number;
@@ -126,6 +132,9 @@ const BreedSheetsTab: React.FC<BreedSheetsTabProps> = (props) => {
 
   // State for breed search
   const [breedSearchTerm, setBreedSearchTerm] = useState('');
+
+  // Local input state for blur-based validation
+  const [localInputState, setLocalInputState] = useState<{ [key: string]: string }>({});
 
   // Refs for scrolling
   const rightPanelRef = useRef<HTMLDivElement>(null);
@@ -344,22 +353,154 @@ const BreedSheetsTab: React.FC<BreedSheetsTabProps> = (props) => {
   };
 
   /**
-   * Validates numeric input (catalog numbers)
+   * Helper to create input key for local state
    */
-  const validateCatalogNumber = (value: string): boolean => {
-    if (!value.trim()) return true; // Empty is valid
-    const num = parseInt(value);
-    return !isNaN(num) && num >= 1 && num <= 450;
+  const getInputKey = (breedKey: string, field: 'bob' | 'secondBest' | 'bestCH' | 'bestPR'): string => {
+    return `${breedKey}-${field}`;
   };
 
   /**
-   * Handles input change with validation
+   * Handles input change (only updates local state)
    */
   const handleInputChange = (judgeId: number, breedKey: string, field: 'bob' | 'secondBest' | 'bestCH' | 'bestPR', value: string) => {
-    // Only allow numeric input
-    if (value && !/^\d+$/.test(value)) return;
+    const key = getInputKey(breedKey, field);
     
-    updateBreedEntry(judgeId, breedKey, field, value);
+    // Auto-complete 'v' or 'V' to 'VOID'
+    if (value === 'v' || value === 'V') {
+      setLocalInputState(prev => ({ ...prev, [key]: 'VOID' }));
+    } else {
+      // Only allow numeric input or VOID
+      if (value && value !== 'VOID' && !/^\d+$/.test(value)) return;
+      setLocalInputState(prev => ({ ...prev, [key]: value }));
+    }
+  };
+
+  /**
+   * Handles input blur (validation and model update)
+   */
+  const handleInputBlur = (judgeId: number, breedKey: string, field: 'bob' | 'secondBest' | 'bestCH' | 'bestPR') => {
+    const key = getInputKey(breedKey, field);
+    const localValue = localInputState[key];
+    
+    // Always update model with localValue if defined
+    if (localValue !== undefined) {
+      // Update model and run validation immediately with the new value
+      setBreedSheetsTabData(prev => {
+        const judgeIdStr = judgeId.toString();
+        const groupHairLengthKey = createGroupHairLengthKey(prev.selectedGroup, prev.selectedHairLength);
+        
+        const currentJudgeEntries = prev.breedEntries[judgeIdStr] || {};
+        const currentGroupHairLengthEntries = currentJudgeEntries[groupHairLengthKey] || {};
+        const currentBreedEntry = currentGroupHairLengthEntries[breedKey] || { bob: '', secondBest: '', bestCH: '', bestPR: '' };
+        
+        // Create updated entries with the new value
+        const updatedEntries = {
+          ...prev.breedEntries,
+          [judgeIdStr]: {
+            ...currentJudgeEntries,
+            [groupHairLengthKey]: {
+              ...currentGroupHairLengthEntries,
+              [breedKey]: {
+                ...currentBreedEntry,
+                [field]: localValue
+              }
+            }
+          }
+        };
+
+        // Run validation immediately with updated data
+        const validationInput = {
+          judgeId: prev.selectedJudgeId!,
+          groupHairLengthKey,
+          breedEntries: updatedEntries[judgeIdStr][groupHairLengthKey],
+          selectedGroup: prev.selectedGroup,
+          selectedHairLength: prev.selectedHairLength
+        };
+
+        const errorKey = `${breedKey}-${field}`;
+        
+        // 1. Validate current field for format, sequential, and BoB/2BoB same cat errors
+        const fieldError = validateBreedSheetsField(validationInput, breedKey, field, localValue);
+        
+        // 2. For duplicate validation, we need to re-validate all fields
+        const allErrors = validateBreedSheetsTab(validationInput);
+        
+        // 3. Merge: Use field-specific error for current field if it's not a duplicate error
+        const finalErrors = { ...allErrors };
+        if (fieldError && !fieldError.toLowerCase().includes('duplicate')) {
+          finalErrors[errorKey] = fieldError;
+        }
+
+        return {
+          ...prev,
+          breedEntries: updatedEntries,
+          errors: finalErrors
+        };
+      });
+    }
+    
+    // Clear local input state for this field
+    setLocalInputState(prev => { const copy = { ...prev }; delete copy[key]; return copy; });
+  };
+
+  /**
+   * Handles input focus (selects text and sets local state)
+   */
+  const handleInputFocus = (judgeId: number, breedKey: string, field: 'bob' | 'secondBest' | 'bestCH' | 'bestPR', value: string, e: React.FocusEvent<HTMLInputElement>) => {
+    const key = getInputKey(breedKey, field);
+    setLocalInputState(prev => ({ ...prev, [key]: value }));
+    e.target.select();
+  };
+
+  /**
+   * Gets current input value (prefers local state)
+   */
+  const getCurrentInputValue = (judgeId: number, breedKey: string, field: 'bob' | 'secondBest' | 'bestCH' | 'bestPR'): string => {
+    const key = getInputKey(breedKey, field);
+    return localInputState[key] !== undefined ? localInputState[key] : getBreedEntryValue(judgeId, breedKey, field);
+  };
+
+  /**
+   * Gets border style for inputs based on errors
+   */
+  const getBorderStyle = (errorKey: string): string => {
+    if (breedSheetsTabData.errors[errorKey]) {
+      return 'border-red-400 bg-red-50';
+    }
+    return 'border-orange-200/50';
+  };
+
+  /**
+   * Gets clean error message
+   */
+  const getCleanMessage = (message: string): string => {
+    // Remove any prefixes for display
+    return message.replace(/^\[.*?\]\s*/, '');
+  };
+
+  /**
+   * Runs validation when switching views
+   */
+  const runValidation = () => {
+    if (!breedSheetsTabData.selectedJudgeId) return;
+
+    const judgeIdStr = breedSheetsTabData.selectedJudgeId.toString();
+    const groupHairLengthKey = createGroupHairLengthKey(breedSheetsTabData.selectedGroup, breedSheetsTabData.selectedHairLength);
+    const currentEntries = breedSheetsTabData.breedEntries[judgeIdStr]?.[groupHairLengthKey] || {};
+
+    const validationInput = {
+      judgeId: breedSheetsTabData.selectedJudgeId,
+      groupHairLengthKey,
+      breedEntries: currentEntries,
+      selectedGroup: breedSheetsTabData.selectedGroup,
+      selectedHairLength: breedSheetsTabData.selectedHairLength
+    };
+
+    const errors = validateBreedSheetsTab(validationInput);
+    setBreedSheetsTabData(prev => ({
+      ...prev,
+      errors
+    }));
   };
 
   // Action button handlers
@@ -433,6 +574,11 @@ const BreedSheetsTab: React.FC<BreedSheetsTabProps> = (props) => {
       }));
     }
   }, [breedSheetsTabData.selectedGroup, breedSheetsTabData.selectedJudgeId]);
+
+  // Run validation when switching judge, group, or hair length
+  useEffect(() => {
+    runValidation();
+  }, [breedSheetsTabData.selectedJudgeId, breedSheetsTabData.selectedGroup, breedSheetsTabData.selectedHairLength]);
 
   // Loading guard
   if (!judges.length) {
@@ -704,7 +850,7 @@ const BreedSheetsTab: React.FC<BreedSheetsTabProps> = (props) => {
                     </div>
                     
                     <div className="p-4">
-                      <div className="grid grid-cols-3 gap-4">
+                      <div className="grid grid-cols-2 gap-4">
                         {(() => {
                           const breeds = getBreedsForJudge(selectedJudge);
                           const breedList = breedSheetsTabData.selectedHairLength === 'Longhair' ? breeds.lhBreeds : breeds.shBreeds;
@@ -712,59 +858,103 @@ const BreedSheetsTab: React.FC<BreedSheetsTabProps> = (props) => {
                           const breedPrefix = breedSheetsTabData.selectedHairLength === 'Longhair' ? 'lh' : 'sh';
                           
                           return filteredBreedList.map((breed) => (
-                                                        <div key={`${breedPrefix}-${breed}`} className="flex items-start justify-between py-1 px-4 border-b border-orange-100/40 hover:bg-orange-50/20 transition-all duration-200">
-                              <div className="flex-1 min-w-0 flex items-start">
-                                <div className="font-medium text-orange-800 text-xs tracking-wide uppercase leading-tight" style={{ fontFamily: "'Arial', 'Helvetica', sans-serif" }}>
+                            <div key={`${breedPrefix}-${breed}`} className="grid grid-cols-[140px_1fr] gap-2 py-1 px-4 border-b border-orange-100/40 hover:bg-orange-50/20 transition-all duration-200 items-start">
+                              <div className="flex items-start min-h-[28px] max-w-[140px]">
+                                <div className="font-medium text-orange-800 text-xs tracking-wide uppercase leading-tight break-words" style={{ fontFamily: "'Arial', 'Helvetica', sans-serif" }}>
                                   {breed}
                                 </div>
                               </div>
-                              <div className="flex items-start gap-2 justify-end flex-shrink-0">
-                                  <div className="flex flex-col items-center gap-0">
-                                    <label className="text-[10px] font-bold text-orange-600 uppercase tracking-widest" style={{ fontFamily: "'Arial', 'Helvetica', sans-serif" }}>BoB</label>
+                              <div className="flex gap-1 justify-end">
+                                  <div className="flex flex-col items-center w-[80px]">
+                                    <label className="text-[10px] font-bold text-orange-600 uppercase tracking-widest text-center" style={{ fontFamily: "'Arial', 'Helvetica', sans-serif" }}>BoB</label>
                                     <input
                                       type="text"
-                                      className="w-12 h-7 text-xs text-center font-semibold rounded-md border border-orange-200/50 bg-white/90 focus:border-orange-400 focus:ring-1 focus:ring-orange-100 focus:bg-white transition-all duration-200"
+                                      className={`w-12 h-7 text-xs text-center font-semibold rounded-md border bg-white/90 focus:border-orange-400 focus:ring-1 focus:ring-orange-100 focus:bg-white transition-all duration-200 ${getBorderStyle(`${breedPrefix}-${breed}-bob`)} ${isVoidInput(getCurrentInputValue(selectedJudge.id, `${breedPrefix}-${breed}`, 'bob')) ? 'opacity-50 grayscale line-through' : ''}`}
                                       placeholder="#"
-                                      value={getBreedEntryValue(selectedJudge.id, `${breedPrefix}-${breed}`, 'bob')}
+                                      value={getCurrentInputValue(selectedJudge.id, `${breedPrefix}-${breed}`, 'bob')}
                                       onChange={(e) => handleInputChange(selectedJudge.id, `${breedPrefix}-${breed}`, 'bob', e.target.value)}
+                                      onBlur={() => handleInputBlur(selectedJudge.id, `${breedPrefix}-${breed}`, 'bob')}
+                                      onFocus={(e) => handleInputFocus(selectedJudge.id, `${breedPrefix}-${breed}`, 'bob', getBreedEntryValue(selectedJudge.id, `${breedPrefix}-${breed}`, 'bob'), e)}
                                       style={{ fontFamily: "'Arial', 'Helvetica', sans-serif" }}
                                     />
+                                    {breedSheetsTabData.errors[`${breedPrefix}-${breed}-bob`] && (
+                                      <div className="mt-1 rounded-lg bg-red-50 border border-red-300 px-2 py-1 shadow text-xs text-red-700 font-semibold flex items-start gap-1 whitespace-normal break-words w-[80px] min-h-[100px]">
+                                        <svg className="w-3 h-3 text-red-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <circle cx="12" cy="12" r="10" strokeWidth="2" />
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01" />
+                                        </svg>
+                                        <span className="text-xs leading-tight">{getCleanMessage(breedSheetsTabData.errors[`${breedPrefix}-${breed}-bob`])}</span>
+                                      </div>
+                                    )}
                                   </div>
-                                  <div className="flex flex-col items-center gap-0">
-                                    <label className="text-[10px] font-bold text-orange-600 uppercase tracking-widest" style={{ fontFamily: "'Arial', 'Helvetica', sans-serif" }}>2BoB</label>
+                                  <div className="flex flex-col items-center w-[80px]">
+                                    <label className="text-[10px] font-bold text-orange-600 uppercase tracking-widest text-center" style={{ fontFamily: "'Arial', 'Helvetica', sans-serif" }}>2BoB</label>
                                     <input
                                       type="text"
-                                      className="w-12 h-7 text-xs text-center font-semibold rounded-md border border-orange-200/50 bg-white/90 focus:border-orange-400 focus:ring-1 focus:ring-orange-100 focus:bg-white transition-all duration-200"
+                                      className={`w-12 h-7 text-xs text-center font-semibold rounded-md border bg-white/90 focus:border-orange-400 focus:ring-1 focus:ring-orange-100 focus:bg-white transition-all duration-200 ${getBorderStyle(`${breedPrefix}-${breed}-secondBest`)} ${isVoidInput(getCurrentInputValue(selectedJudge.id, `${breedPrefix}-${breed}`, 'secondBest')) ? 'opacity-50 grayscale line-through' : ''}`}
                                       placeholder="#"
-                                      value={getBreedEntryValue(selectedJudge.id, `${breedPrefix}-${breed}`, 'secondBest')}
+                                      value={getCurrentInputValue(selectedJudge.id, `${breedPrefix}-${breed}`, 'secondBest')}
                                       onChange={(e) => handleInputChange(selectedJudge.id, `${breedPrefix}-${breed}`, 'secondBest', e.target.value)}
+                                      onBlur={() => handleInputBlur(selectedJudge.id, `${breedPrefix}-${breed}`, 'secondBest')}
+                                      onFocus={(e) => handleInputFocus(selectedJudge.id, `${breedPrefix}-${breed}`, 'secondBest', getBreedEntryValue(selectedJudge.id, `${breedPrefix}-${breed}`, 'secondBest'), e)}
                                       style={{ fontFamily: "'Arial', 'Helvetica', sans-serif" }}
                                     />
+                                    {breedSheetsTabData.errors[`${breedPrefix}-${breed}-secondBest`] && (
+                                      <div className="mt-1 rounded-lg bg-red-50 border border-red-300 px-2 py-1 shadow text-xs text-red-700 font-semibold flex items-start gap-1 whitespace-normal break-words w-[80px] min-h-[100px]">
+                                        <svg className="w-3 h-3 text-red-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <circle cx="12" cy="12" r="10" strokeWidth="2" />
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01" />
+                                        </svg>
+                                        <span className="text-xs leading-tight">{getCleanMessage(breedSheetsTabData.errors[`${breedPrefix}-${breed}-secondBest`])}</span>
+                                      </div>
+                                    )}
                                   </div>
                                 {breedSheetsTabData.selectedGroup === 'Championship' && (
-                                  <div className="flex flex-col items-center gap-0">
-                                    <label className="text-[10px] font-bold text-orange-600 uppercase tracking-widest" style={{ fontFamily: "'Arial', 'Helvetica', sans-serif" }}>CH</label>
+                                  <div className="flex flex-col items-center w-[80px]">
+                                    <label className="text-[10px] font-bold text-orange-600 uppercase tracking-widest text-center" style={{ fontFamily: "'Arial', 'Helvetica', sans-serif" }}>CH</label>
                                     <input
                                       type="text"
-                                      className="w-12 h-7 text-xs text-center font-semibold rounded-md border border-orange-200/50 bg-white/90 focus:border-orange-400 focus:ring-1 focus:ring-orange-100 focus:bg-white transition-all duration-200"
+                                      className={`w-12 h-7 text-xs text-center font-semibold rounded-md border bg-white/90 focus:border-orange-400 focus:ring-1 focus:ring-orange-100 focus:bg-white transition-all duration-200 ${getBorderStyle(`${breedPrefix}-${breed}-bestCH`)} ${isVoidInput(getCurrentInputValue(selectedJudge.id, `${breedPrefix}-${breed}`, 'bestCH')) ? 'opacity-50 grayscale line-through' : ''}`}
                                       placeholder="#"
-                                      value={getBreedEntryValue(selectedJudge.id, `${breedPrefix}-${breed}`, 'bestCH')}
+                                      value={getCurrentInputValue(selectedJudge.id, `${breedPrefix}-${breed}`, 'bestCH')}
                                       onChange={(e) => handleInputChange(selectedJudge.id, `${breedPrefix}-${breed}`, 'bestCH', e.target.value)}
+                                      onBlur={() => handleInputBlur(selectedJudge.id, `${breedPrefix}-${breed}`, 'bestCH')}
+                                      onFocus={(e) => handleInputFocus(selectedJudge.id, `${breedPrefix}-${breed}`, 'bestCH', getBreedEntryValue(selectedJudge.id, `${breedPrefix}-${breed}`, 'bestCH'), e)}
                                       style={{ fontFamily: "'Arial', 'Helvetica', sans-serif" }}
                                     />
+                                    {breedSheetsTabData.errors[`${breedPrefix}-${breed}-bestCH`] && (
+                                      <div className="mt-1 rounded-lg bg-red-50 border border-red-300 px-2 py-1 shadow text-xs text-red-700 font-semibold flex items-start gap-1 whitespace-normal break-words w-[80px] min-h-[100px]">
+                                        <svg className="w-3 h-3 text-red-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <circle cx="12" cy="12" r="10" strokeWidth="2" />
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01" />
+                                        </svg>
+                                        <span className="text-xs leading-tight">{getCleanMessage(breedSheetsTabData.errors[`${breedPrefix}-${breed}-bestCH`])}</span>
+                                      </div>
+                                    )}
                                   </div>
                                 )}
                                 {breedSheetsTabData.selectedGroup === 'Premiership' && (
-                                  <div className="flex flex-col items-center gap-0">
-                                    <label className="text-[10px] font-bold text-orange-600 uppercase tracking-widest" style={{ fontFamily: "'Arial', 'Helvetica', sans-serif" }}>PR</label>
+                                  <div className="flex flex-col items-center w-[80px]">
+                                    <label className="text-[10px] font-bold text-orange-600 uppercase tracking-widest text-center" style={{ fontFamily: "'Arial', 'Helvetica', sans-serif" }}>PR</label>
                                     <input
                                       type="text"
-                                      className="w-12 h-7 text-xs text-center font-semibold rounded-md border border-orange-200/50 bg-white/90 focus:border-orange-400 focus:ring-1 focus:ring-orange-100 focus:bg-white transition-all duration-200"
+                                      className={`w-12 h-7 text-xs text-center font-semibold rounded-md border bg-white/90 focus:border-orange-400 focus:ring-1 focus:ring-orange-100 focus:bg-white transition-all duration-200 ${getBorderStyle(`${breedPrefix}-${breed}-bestPR`)} ${isVoidInput(getCurrentInputValue(selectedJudge.id, `${breedPrefix}-${breed}`, 'bestPR')) ? 'opacity-50 grayscale line-through' : ''}`}
                                       placeholder="#"
-                                      value={getBreedEntryValue(selectedJudge.id, `${breedPrefix}-${breed}`, 'bestPR')}
+                                      value={getCurrentInputValue(selectedJudge.id, `${breedPrefix}-${breed}`, 'bestPR')}
                                       onChange={(e) => handleInputChange(selectedJudge.id, `${breedPrefix}-${breed}`, 'bestPR', e.target.value)}
+                                      onBlur={() => handleInputBlur(selectedJudge.id, `${breedPrefix}-${breed}`, 'bestPR')}
+                                      onFocus={(e) => handleInputFocus(selectedJudge.id, `${breedPrefix}-${breed}`, 'bestPR', getBreedEntryValue(selectedJudge.id, `${breedPrefix}-${breed}`, 'bestPR'), e)}
                                       style={{ fontFamily: "'Arial', 'Helvetica', sans-serif" }}
                                     />
+                                    {breedSheetsTabData.errors[`${breedPrefix}-${breed}-bestPR`] && (
+                                      <div className="mt-1 rounded-lg bg-red-50 border border-red-300 px-2 py-1 shadow text-xs text-red-700 font-semibold flex items-start gap-1 whitespace-normal break-words w-[80px] min-h-[100px]">
+                                        <svg className="w-3 h-3 text-red-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <circle cx="12" cy="12" r="10" strokeWidth="2" />
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01" />
+                                        </svg>
+                                        <span className="text-xs leading-tight">{getCleanMessage(breedSheetsTabData.errors[`${breedPrefix}-${breed}-bestPR`])}</span>
+                                      </div>
+                                    )}
                                   </div>
                                 )}
                               </div>

@@ -97,6 +97,13 @@ All tabular data (Championship, Premiership, Kitten, Household Pet) is exported 
 - The HouseholdPetTab component now receives its data and setter as props (`householdPetTabData`, `setHouseholdPetTabData`), ensuring all changes are reflected in the exported CSV.
 - All placements, voiding, and awards for Household Pet are exported and restoreable.
 
+**Breed Sheets Tab Data**
+- Breed Sheets tab data is fully included in the CSV export and import, with separate storage for each judge-group-hair length combination.
+- The BreedSheetsTab component receives its data and setter as props (`breedSheetsTabData`, `setBreedSheetsTabData`), ensuring all changes are reflected in the exported CSV.
+- All BoB, 2BoB, Best CH, and Best PR awards are exported and restoreable.
+- Breed list management is integrated with the Settings panel, with dynamic updates when breeds are added/removed.
+- Search functionality allows real-time filtering of breed names for improved usability.
+
 **Note:** All tab data is now lifted to the top-level App state for consistency and reliability in export/import. 
 
 #### Key Format for Placements and Voids
