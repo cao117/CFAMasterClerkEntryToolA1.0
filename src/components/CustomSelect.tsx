@@ -100,7 +100,7 @@ const CustomSelect: React.FC<{
     >
       <button
         type="button"
-        className={`w-full flex items-center justify-between rounded-full px-3 py-1.5 bg-white text-sm font-medium transition-all duration-200 outline-none focus:outline-none border ${borderColor} ${focusBorderColor} ${textColor} font-[Inter,Montserrat,Arial,Helvetica Neue,sans-serif] text-[15px] font-medium h-9 min-w-[70px] ${open ? 'scale-[1.02]' : ''}`}
+        className={`w-full flex items-center justify-between rounded-full px-3 py-1.5 bg-white text-sm font-medium transition-all duration-200 outline-none focus:outline-none border ${borderColor} ${focusBorderColor} ${textColor} text-[15px] font-medium h-9 min-w-[70px] ${open ? 'scale-[1.02]' : ''}`}
         onClick={() => setOpen(o => !o)}
         aria-haspopup="listbox"
         aria-expanded={open}
