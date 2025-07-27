@@ -51,13 +51,36 @@ interface SettingsPanelProps {
   isOpen: boolean;
   onClose: () => void;
   showSuccess: (title: string, message?: string, duration?: number) => void;
+  globalSettings: {
+    max_judges: number;
+    max_cats: number;
+    placement_thresholds: {
+      championship: number;
+      kitten: number;
+      premiership: number;
+      household_pet: number;
+    };
+    short_hair_breeds: string[];
+    long_hair_breeds: string[];
+  };
+  setGlobalSettings: React.Dispatch<React.SetStateAction<{
+    max_judges: number;
+    max_cats: number;
+    placement_thresholds: {
+      championship: number;
+      kitten: number;
+      premiership: number;
+      household_pet: number;
+    };
+    short_hair_breeds: string[];
+    long_hair_breeds: string[];
+  }>>;
 }
 
 type SettingsSection = 'general' | 'placement' | 'breed';
 
-export default function SettingsPanel({ isOpen, onClose, showSuccess }: SettingsPanelProps) {
+export default function SettingsPanel({ isOpen, onClose, showSuccess, globalSettings, setGlobalSettings }: SettingsPanelProps) {
   const [activeSection, setActiveSection] = useState<SettingsSection>('general');
-  const [settings, setSettings] = useState<SettingsData>(DEFAULT_SETTINGS);
   const [breedTab, setBreedTab] = useState<'SHORT HAIR' | 'LONG HAIR'>('SHORT HAIR');
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -84,7 +107,7 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess }: Settings
   // Update general settings
   const updateGeneralSetting = (field: 'max_judges' | 'max_cats', value: string) => {
     const numValue = handleNumericInput(value);
-    setSettings(prev => ({
+    setGlobalSettings(prev => ({
       ...prev,
       [field]: numValue
     }));
@@ -93,7 +116,7 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess }: Settings
   // Update placement threshold settings
   const updatePlacementThreshold = (field: keyof SettingsData['placement_thresholds'], value: string) => {
     const numValue = handleNumericInput(value);
-    setSettings(prev => ({
+    setGlobalSettings(prev => ({
       ...prev,
       placement_thresholds: {
         ...prev.placement_thresholds,
@@ -122,12 +145,12 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess }: Settings
       const targetList = breedTab === 'SHORT HAIR' ? 'short_hair_breeds' : 'long_hair_breeds';
       
       // Check if breed already exists
-      if (settings[targetList].includes(trimmedBreed)) {
+      if (globalSettings[targetList].includes(trimmedBreed)) {
       showSuccess('Breed Exists', `${trimmedBreed} already exists in the ${breedTab.toLowerCase()} breeds list.`);
         return;
       }
 
-      setSettings(prev => ({
+      setGlobalSettings(prev => ({
         ...prev,
         [targetList]: [...prev[targetList], trimmedBreed].sort()
       }));
@@ -190,12 +213,12 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess }: Settings
       const targetList = breedTab === 'SHORT HAIR' ? 'short_hair_breeds' : 'long_hair_breeds';
       
       // Check if new breed name already exists (excluding the current one)
-    if (settings[targetList].includes(trimmedBreed) && trimmedBreed !== editingBreed) {
+    if (globalSettings[targetList].includes(trimmedBreed) && trimmedBreed !== editingBreed) {
       showSuccess('Breed Exists', `${trimmedBreed} already exists in the ${breedTab.toLowerCase()} breeds list.`);
         return;
       }
 
-      setSettings(prev => ({
+      setGlobalSettings(prev => ({
         ...prev,
         [targetList]: prev[targetList].map(breed => 
         breed === editingBreed ? trimmedBreed : breed
@@ -228,15 +251,15 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess }: Settings
   };
 
   // Delete breed from the appropriate list with toast notification
-  const deleteBreed = () => {
+    const deleteBreed = () => {
     if (!breedToDelete) return;
     
-      const targetList = breedTab === 'SHORT HAIR' ? 'short_hair_breeds' : 'long_hair_breeds';
-      
-      setSettings(prev => ({
-        ...prev,
-        [targetList]: prev[targetList].filter(breed => breed !== breedToDelete)
-      }));
+    const targetList = breedTab === 'SHORT HAIR' ? 'short_hair_breeds' : 'long_hair_breeds';
+    
+    setGlobalSettings(prev => ({
+      ...prev,
+      [targetList]: prev[targetList].filter(breed => breed !== breedToDelete)
+    }));
     
     setShowDeleteModal(false);
     setBreedToDelete('');
@@ -252,7 +275,7 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess }: Settings
   // Save settings
   const handleSaveSettings = () => {
     // In a real implementation, this would save to localStorage or a file
-    console.log('Saving settings:', settings);
+    console.log('Saving settings:', globalSettings);
     showSuccess('Settings Saved', 'All settings have been saved successfully.');
     onClose();
   };
@@ -283,7 +306,7 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess }: Settings
                 type="number"
                 min="1"
                 max="999"
-                value={settings.max_judges}
+                value={globalSettings.max_judges}
                 onChange={(e) => updateGeneralSetting('max_judges', e.target.value)}
                 onFocus={(e) => e.target.select()}
                 className="w-full text-center text-lg font-bold text-gray-800 bg-gradient-to-r from-gray-50 to-white border-2 border-gray-300 rounded-xl py-3 px-4 focus:border-amber-400 focus:ring-4 focus:ring-amber-200/30 focus:outline-none transition-all duration-300 hover:border-amber-300 hover:shadow-lg"
@@ -321,7 +344,7 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess }: Settings
                 type="number"
                 min="1"
                 max="999"
-                value={settings.max_cats}
+                value={globalSettings.max_cats}
                 onChange={(e) => updateGeneralSetting('max_cats', e.target.value)}
                 onFocus={(e) => e.target.select()}
                 className="w-full text-center text-lg font-bold text-gray-800 bg-gradient-to-r from-gray-50 to-white border-2 border-gray-300 rounded-xl py-3 px-4 focus:border-teal-400 focus:ring-4 focus:ring-teal-200/30 focus:outline-none transition-all duration-300 hover:border-teal-300 hover:shadow-lg"
@@ -369,7 +392,7 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess }: Settings
                 type="number"
                 min="1"
                 max="999"
-                value={settings.placement_thresholds.championship}
+                value={globalSettings.placement_thresholds.championship}
                 onChange={(e) => updatePlacementThreshold('championship', e.target.value)}
                 onFocus={(e) => e.target.select()}
                 className="w-full text-center text-lg font-bold text-gray-800 bg-gradient-to-r from-gray-50 to-white border-2 border-gray-300 rounded-xl py-3 px-4 focus:border-purple-400 focus:ring-4 focus:ring-purple-200/30 focus:outline-none transition-all duration-300 hover:border-purple-300 hover:shadow-lg"
@@ -407,7 +430,7 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess }: Settings
                 type="number"
                 min="1"
                 max="999"
-                value={settings.placement_thresholds.kitten}
+                value={globalSettings.placement_thresholds.kitten}
                 onChange={(e) => updatePlacementThreshold('kitten', e.target.value)}
                 onFocus={(e) => e.target.select()}
                 className="w-full text-center text-lg font-bold text-gray-800 bg-gradient-to-r from-gray-50 to-white border-2 border-gray-300 rounded-xl py-3 px-4 focus:border-pink-400 focus:ring-4 focus:ring-pink-200/30 focus:outline-none transition-all duration-300 hover:border-pink-300 hover:shadow-lg"
@@ -445,7 +468,7 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess }: Settings
                 type="number"
                 min="1"
                 max="999"
-                value={settings.placement_thresholds.premiership}
+                value={globalSettings.placement_thresholds.premiership}
                 onChange={(e) => updatePlacementThreshold('premiership', e.target.value)}
                 onFocus={(e) => e.target.select()}
                 className="w-full text-center text-lg font-bold text-gray-800 bg-gradient-to-r from-gray-50 to-white border-2 border-gray-300 rounded-xl py-3 px-4 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-200/30 focus:outline-none transition-all duration-300 hover:border-emerald-300 hover:shadow-lg"
@@ -484,7 +507,7 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess }: Settings
                 type="number"
                 min="1"
                 max="999"
-                value={settings.placement_thresholds.household_pet}
+                value={globalSettings.placement_thresholds.household_pet}
                 onChange={(e) => updatePlacementThreshold('household_pet', e.target.value)}
                 onFocus={(e) => e.target.select()}
                 className="w-full text-center text-lg font-bold text-gray-800 bg-gradient-to-r from-gray-50 to-white border-2 border-gray-300 rounded-xl py-3 px-4 focus:border-orange-400 focus:ring-4 focus:ring-orange-200/30 focus:outline-none transition-all duration-300 hover:border-orange-300 hover:shadow-lg"
@@ -508,7 +531,7 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess }: Settings
 
   // Render Breed List section with table format and inline editing
   const renderBreedSection = () => {
-    const currentBreeds = breedTab === 'SHORT HAIR' ? settings.short_hair_breeds : settings.long_hair_breeds;
+    const currentBreeds = breedTab === 'SHORT HAIR' ? globalSettings.short_hair_breeds : globalSettings.long_hair_breeds;
     const totalBreeds = currentBreeds.length;
     return (
       <div className="space-y-3">
@@ -884,7 +907,7 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess }: Settings
               <button
                 onClick={() => {
                   if (confirm('Are you sure you want to restore all settings to default values?')) {
-                    setSettings(DEFAULT_SETTINGS);
+                    setGlobalSettings(DEFAULT_SETTINGS);
                     showSuccess('Defaults Restored', 'All settings have been restored to default values.');
                   }
                 }}
@@ -898,7 +921,7 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess }: Settings
               </button>
               <button
                 onClick={() => {
-                  const dataStr = JSON.stringify(settings, null, 2);
+                  const dataStr = JSON.stringify(globalSettings, null, 2);
                   const dataBlob = new Blob([dataStr], {type: 'application/json'});
                   const url = URL.createObjectURL(dataBlob);
                   const link = document.createElement('a');

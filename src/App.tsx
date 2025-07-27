@@ -8,6 +8,8 @@ import cfaLogo from './assets/cfa-logo-official.png';
 import PremiershipTab from './components/PremiershipTab'
 import KittenTab from './components/KittenTab'
 import HouseholdPetTab from './components/HouseholdPetTab'
+import BreedSheetsTab from './components/BreedSheetsTab'
+import type { BreedSheetsTabData } from './components/BreedSheetsTab'
 import SettingsPanel from './components/SettingsPanel'
 import Tooltip from './components/Tooltip'
 
@@ -60,6 +62,37 @@ function App() {
   const [judges, setJudges] = useState<Judge[]>([]);
   const [zoomLevel, setZoomLevel] = useState(100); // Zoom level in percentage
   const [isSettingsOpen, setIsSettingsOpen] = useState(false); // Settings panel state
+  
+  // Global settings state
+  const [globalSettings, setGlobalSettings] = useState({
+    max_judges: 12,
+    max_cats: 450,
+    placement_thresholds: {
+      championship: 85,
+      kitten: 75,
+      premiership: 50,
+      household_pet: 50,
+    },
+    short_hair_breeds: [
+      "ABYSSINIAN", "AMERICAN SH", "AMERICAN WH", "BALINESE", "BALINESE-JAVANESE",
+      "BENGAL", "BOMBAY", "BRITISH SH", "BURMESE", "BURMILLA - LH", "BURMILLA - SH",
+      "CHARTREUX", "COLORPOINT SH", "CORNISH REX", "DEVON REX", "EGYPTIAN MAU",
+      "EUROPEAN BURM", "HAVANA BROWN", "JAPANESE BOBTAIL - LH", "JAPANESE BOBTAIL - SH",
+      "KORAT", "LAPERM - LH", "LAPERM - SH", "LYKOI", "MANX - LH", "MANX - SH",
+      "OCICAT", "ORIENTAL - LH", "ORIENTAL - SH", "RUSSIAN BLUE", "SCOTTISH FOLD - LH",
+      "SCOTTISH FOLD - SH", "SCOTTISH STRAIGHT EAR - LH", "SCOTTISH STRAIGHT EAR - SH",
+      "SELKIRK REX - LH", "SELKIRK REX - SH", "SIAMESE", "SINGAPURA", "SOMALI",
+      "SPHYNX", "TONKINESE", "TOYBOB"
+    ],
+    long_hair_breeds: [
+      "AMERICAN BOBTAIL-LH", "AMERICAN BOBTAIL-SH", "AMERICAN CURL-LH", "AMERICAN CURL-SH",
+      "BIRMAN", "EXOTIC SOLID", "EXOTIC SILVER/GOLDEN", "EXOTIC SHADED/SMOKE",
+      "EXOTIC TABBY", "EXOTIC PARTI-COLOR", "EXOTIC CALICO/BI-COLOR", "EXOTIC POINTED",
+      "MAINE COON CAT", "NORWEGIAN FOREST CAT", "PERSIAN SOLID", "PERSIAN SILVER/GOLDEN",
+      "PERSIAN SHADED/SMOKE", "PERSIAN TABBY", "PERSIAN PARTI-COLOR", "PERSIAN CALICO/BI-COLOR",
+      "PERSIAN HIMALAYAN", "RAGAMUFFIN", "RAGDOLL", "SIBERIAN", "TURKISH ANGORA", "TURKISH VAN"
+    ]
+  });
   const [showData, setShowData] = useState<ShowData>({
     showDate: '',
     clubName: '',
@@ -119,6 +152,16 @@ function App() {
 
   // Household Pet tab state (LIFTED)
   const [householdPetTabData, setHouseholdPetTabData] = useState({ showAwards: {}, voidedShowAwards: {} });
+
+  // Breed Sheets tab state
+  const [breedSheetsTabData, setBreedSheetsTabData] = useState<BreedSheetsTabData>({
+    selectedJudgeId: null,
+    selectedGroup: 'Championship',
+    selectedHairLength: 'Longhair',
+    breedEntries: {},
+    errors: {},
+    pingTriggered: false
+  });
 
   // Auto-calculate championship counts
   useEffect(() => {
@@ -214,6 +257,14 @@ function App() {
       householdPetCount: 0
     });
     setJudges([]);
+    setBreedSheetsTabData({
+      selectedJudgeId: null,
+      selectedGroup: 'Championship',
+      selectedHairLength: 'Longhair',
+      breedEntries: {},
+      errors: {},
+      pingTriggered: false
+    });
     setActiveTab('general');
     
     showSuccess(
@@ -338,6 +389,10 @@ function App() {
       setPremiershipTabData(restoredState.premiership);
       setKittenTabData(restoredState.kitten);
       setHouseholdPetTabData(restoredState.household);
+      // Initialize breed sheets data if present in restored state
+      if (restoredState.breedSheets) {
+        setBreedSheetsTabData(restoredState.breedSheets);
+      }
     } catch (error) {
       showError('Import Error', 'An error occurred while importing the CSV file.');
     }
@@ -457,6 +512,53 @@ function App() {
         onCSVImport={handleCSVImport}
       />,
       disabled: showData.householdPetCount <= 0
+    },
+    { 
+      id: 'breedsheets', 
+      name: 'Breed Sheets',
+      component: <BreedSheetsTab
+        judges={judges}
+        showSuccess={showSuccess}
+        showError={showError}
+        onResetAllData={resetAllData}
+        breedSheetsTabData={breedSheetsTabData}
+        setBreedSheetsTabData={setBreedSheetsTabData}
+        onTabReset={() => setBreedSheetsTabData({
+          selectedJudgeId: null,
+          selectedGroup: 'Championship',
+          selectedHairLength: 'Longhair',
+          breedEntries: {},
+          errors: {},
+          pingTriggered: false
+        })}
+        getShowState={getShowState}
+        isActive={activeTab === 'breedsheets'}
+        onCSVImport={handleCSVImport}
+        globalSettings={globalSettings}
+        showCounts={{
+          championshipCounts: {
+            lhGcs: showData.championshipCounts.lhGcs,
+            shGcs: showData.championshipCounts.shGcs,
+            lhChs: showData.championshipCounts.lhChs,
+            shChs: showData.championshipCounts.shChs,
+            lhNovs: showData.championshipCounts.lhNovs,
+            shNovs: showData.championshipCounts.shNovs
+          },
+          premiershipCounts: {
+            lhGps: showData.premiershipCounts.lhGps,
+            shGps: showData.premiershipCounts.shGps,
+            lhPrs: showData.premiershipCounts.lhPrs,
+            shPrs: showData.premiershipCounts.shPrs,
+            lhNovs: showData.premiershipCounts.lhNovs,
+            shNovs: showData.premiershipCounts.shNovs
+          },
+          kittenCounts: {
+            lhKittens: showData.kittenCounts.lhKittens,
+            shKittens: showData.kittenCounts.shKittens
+          }
+        }}
+      />,
+      disabled: !isShowInfoValid(showData) || !areJudgesValid(judges)
     }
   ];
 
@@ -693,6 +795,29 @@ function App() {
               Household Pet
             </button>
           )}
+          {/* Breed Sheets Tab */}
+          {!isShowInfoValid(showData) || !areJudgesValid(judges) ? (
+            <Tooltip content="Complete General Info to unlock.">
+              <button
+                className={`flex items-center gap-2 px-5 py-2 rounded-full font-bold text-base transition-all duration-200 focus:outline-none modern-tab-font border-b-2 disabled`}
+                aria-disabled="true"
+                tabIndex={-1}
+              >
+                <svg width="18" height="18" fill="none" viewBox="0 0 20 20"><path d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" stroke="#C7B273" strokeWidth="2"/></svg>
+                Breed Sheets
+              </button>
+            </Tooltip>
+          ) : (
+            <button
+              className={`flex items-center gap-2 px-5 py-2 rounded-full font-bold text-base transition-all duration-200 focus:outline-none modern-tab-font border-b-2 ${activeTab === 'breedsheets' ? 'border-[#C7B273] text-[#C7B273] shadow-gold' : 'border-transparent text-gray-200 hover:border-[#C7B273] hover:text-[#C7B273]'}`}
+              onClick={() => setActiveTab('breedsheets')}
+              aria-disabled={false}
+              tabIndex={0}
+            >
+              <svg width="18" height="18" fill="none" viewBox="0 0 20 20"><path d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" stroke="#C7B273" strokeWidth="2"/></svg>
+              Breed Sheets
+            </button>
+          )}
         </div>
       </div>
 
@@ -715,6 +840,8 @@ function App() {
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
         showSuccess={showSuccess}
+        globalSettings={globalSettings}
+        setGlobalSettings={setGlobalSettings}
       />
       {/* App Version Badge Footer */}
       <footer className="fixed bottom-4 right-4 z-50">
