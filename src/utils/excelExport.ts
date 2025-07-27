@@ -87,40 +87,40 @@ export function exportShowToExcel(showState: any): { workbook: XLSX.WorkBook, fi
   const workbook = XLSX.utils.book_new();
 
   // --- General Info Sheet ---
-  const generalData = buildGeneralSection(showState.general, showState.judges);
-  const generalWS = XLSX.utils.aoa_to_sheet(generalData.map(row => row.split(',')));
+  const generalData = buildGeneralSectionForExcel(showState.general, showState.judges);
+  const generalWS = XLSX.utils.aoa_to_sheet(generalData);
   XLSX.utils.book_append_sheet(workbook, generalWS, 'General_Info');
 
   // --- Championship Sheet ---
-  const championshipData = buildTabularSection(
+  const championshipData = buildTabularSectionForExcel(
     transformTabData(showState.championship, showState.judges, 'championship', showState), 
     'Championship Awards'
   );
-  const championshipWS = XLSX.utils.aoa_to_sheet(championshipData.map(row => row.split(',')));
+  const championshipWS = XLSX.utils.aoa_to_sheet(championshipData);
   XLSX.utils.book_append_sheet(workbook, championshipWS, 'CH_Final');
 
   // --- Premiership Sheet ---
-  const premiershipData = buildTabularSection(
+  const premiershipData = buildTabularSectionForExcel(
     transformTabData(showState.premiership, showState.judges, 'premiership', showState), 
     'Premiership Awards'
   );
-  const premiershipWS = XLSX.utils.aoa_to_sheet(premiershipData.map(row => row.split(',')));
+  const premiershipWS = XLSX.utils.aoa_to_sheet(premiershipData);
   XLSX.utils.book_append_sheet(workbook, premiershipWS, 'PR_Final');
 
   // --- Kitten Sheet ---
-  const kittenData = buildTabularSection(
+  const kittenData = buildTabularSectionForExcel(
     transformTabData(showState.kitten, showState.judges, 'kitten', showState), 
     'Kitten Awards'
   );
-  const kittenWS = XLSX.utils.aoa_to_sheet(kittenData.map(row => row.split(',')));
+  const kittenWS = XLSX.utils.aoa_to_sheet(kittenData);
   XLSX.utils.book_append_sheet(workbook, kittenWS, 'Kitten_Final');
 
   // --- Household Pet Sheet ---
-  const householdData = buildTabularSection(
+  const householdData = buildTabularSectionForExcel(
     transformTabData(showState.household, showState.judges, 'household', showState), 
     'Household Pet Awards'
   );
-  const householdWS = XLSX.utils.aoa_to_sheet(householdData.map(row => row.split(',')));
+  const householdWS = XLSX.utils.aoa_to_sheet(householdData);
   XLSX.utils.book_append_sheet(workbook, householdWS, 'HHP_Final');
 
   // --- Breed Sheets Worksheets ---
@@ -203,6 +203,31 @@ function buildGeneralSection(general: any, judges: any[]): string[] {
   return rows;
 }
 
+// Helper: Build General Information section for Excel (returns array of arrays)
+function buildGeneralSectionForExcel(general: any, judges: any[]): any[][] {
+  const rows: any[][] = [];
+  rows.push(['General Information']);
+  for (const [key, value] of Object.entries(general)) {
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      // Flatten nested objects (e.g., championshipCounts, kittenCounts, premiershipCounts)
+      for (const [subKey, subValue] of Object.entries(value)) {
+        rows.push([`${key} - ${subKey}`, subValue]);
+      }
+    } else {
+      rows.push([key, value]);
+    }
+  }
+  // Add judge information as a table
+  if (judges && judges.length > 0) {
+    rows.push(['Judges']);
+    rows.push(['Judge Name', 'Acronym', 'Ring Type']);
+    for (const judge of judges) {
+      rows.push([judge.name, judge.acronym, judge.ringType]);
+    }
+  }
+  return rows;
+}
+
 // Helper: Build a tabular section (Championship, Premiership, Kitten, Household Pet)
 function buildTabularSection(tab: any, label: string): string[] {
   const rows: string[] = [];
@@ -224,6 +249,31 @@ function buildTabularSection(tab: any, label: string): string[] {
       row.push(formatPlacementCell(cell, cell.voided));
     }
     rows.push(row.join(','));
+  }
+  return rows;
+}
+
+// Helper: Build a tabular section for Excel (returns array of arrays instead of CSV strings)
+function buildTabularSectionForExcel(tab: any, label: string): any[][] {
+  const rows: any[][] = [];
+  // Section label row
+  rows.push([label]);
+  if (!tab || !tab.rings || !tab.placements) return rows;
+  // Header rows: Ring Numbers, Judge Acronyms, Ring Types
+  const ringNumbers = [''].concat(tab.rings.map((r: any) => r.number));
+  const judgeAcronyms = [''].concat(tab.rings.map((r: any) => r.acronym));
+  const ringTypes = [''].concat(tab.rings.map((r: any) => r.type));
+  rows.push(ringNumbers);
+  rows.push(judgeAcronyms);
+  rows.push(ringTypes);
+  // Placement rows
+  for (const placement of tab.placements) {
+    // Each placement row: label, then one cell per column
+    const row = [placement.label];
+    for (const cell of placement.columns) {
+      row.push(formatPlacementCell(cell, cell.voided));
+    }
+    rows.push(row);
   }
   return rows;
 }

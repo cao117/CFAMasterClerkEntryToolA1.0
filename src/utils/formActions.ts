@@ -29,7 +29,7 @@ export function handleSaveToCSV(
 }
 
 /**
- * Handles CSV import with file selection dialog
+ * Handles Excel import with file selection dialog (updated from CSV to support Excel format)
  * @param showSuccess - Success callback function
  * @param showError - Error callback function
  * @returns Promise that resolves to the restored state or null
@@ -41,7 +41,7 @@ export async function handleRestoreFromCSV(
   try {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.csv';
+    input.accept = '.xlsx,.csv'; // Accept both Excel and CSV for backward compatibility
     
     return new Promise((resolve) => {
       input.onchange = async (event) => {
@@ -51,15 +51,26 @@ export async function handleRestoreFromCSV(
           return;
         }
         
-        const text = await file.text();
-        const restoredState = parseCSVAndRestoreState(text, showSuccess, showError);
-        resolve(restoredState);
+        // Check file type and parse accordingly
+        if (file.name.toLowerCase().endsWith('.xlsx')) {
+          // Parse Excel file
+          const { parseExcelAndRestoreState } = await import('./excelImport');
+          const arrayBuffer = await file.arrayBuffer();
+          const restoredState = parseExcelAndRestoreState(arrayBuffer, showSuccess, showError);
+          resolve(restoredState);
+        } else {
+          // Parse CSV file (backward compatibility)
+          const { parseCSVAndRestoreState } = await import('./csvImport');
+          const text = await file.text();
+          const restoredState = parseCSVAndRestoreState(text, showSuccess, showError);
+          resolve(restoredState);
+        }
       };
       
       input.click();
     });
   } catch (error) {
-    showError('Import Error', 'An error occurred while importing the CSV file.');
+    showError('Import Error', 'An error occurred while importing the file.');
     return null;
   }
 }
