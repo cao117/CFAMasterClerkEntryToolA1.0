@@ -362,7 +362,7 @@ function App() {
     resetColumns(setKittenTabData as React.Dispatch<React.SetStateAction<unknown>>, 'kitten');
   };
 
-  // Function to return the full show state for CSV export
+  // Function to return the full show state for Excel export
   const getShowState = () => ({
     general: showData,
     judges,
@@ -373,6 +373,8 @@ function App() {
       householdPetCount: showData.householdPetCount,
       ...householdPetTabData,
     },
+    breedSheets: breedSheetsTabData,
+    globalSettings,
   });
 
   // Function to handle CSV import and restore application state

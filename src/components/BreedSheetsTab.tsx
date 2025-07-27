@@ -505,13 +505,54 @@ const BreedSheetsTab: React.FC<BreedSheetsTabProps> = (props) => {
 
   // Action button handlers
   const handleSaveToCSVClick = () => {
-    // Check for validation errors before CSV export
-    const hasErrors = Object.keys(breedSheetsTabData.errors).length > 0;
-    if (hasErrors) {
+    // Run comprehensive validation for all judges and all data before export
+    let allErrors: { [key: string]: string } = {};
+    let hasAnyErrors = false;
+
+    // Validate all judges and all group-hair length combinations
+    for (const judge of judges) {
+      const judgeIdStr = judge.id.toString();
+      const judgeEntries = breedSheetsTabData.breedEntries[judgeIdStr];
+      
+      if (judgeEntries) {
+        // Check all group-hair length combinations
+        Object.keys(judgeEntries).forEach(groupHairLengthKey => {
+          const entries = judgeEntries[groupHairLengthKey];
+          
+          // Parse group and hair length from key
+          const [group, hairLength] = groupHairLengthKey.split('-') as ['Championship' | 'Premiership' | 'Kitten', 'Longhair' | 'Shorthair'];
+          
+          const validationInput = {
+            judgeId: judge.id,
+            groupHairLengthKey,
+            breedEntries: entries,
+            selectedGroup: group,
+            selectedHairLength: hairLength
+          };
+
+          const errors = validateBreedSheetsTab(validationInput);
+          if (Object.keys(errors).length > 0) {
+            hasAnyErrors = true;
+            // Prefix errors with judge info for clarity
+            Object.keys(errors).forEach(key => {
+              allErrors[`Ring${judge.id}-${key}`] = `Ring ${judge.id} (${judge.acronym}): ${errors[key]}`;
+            });
+          }
+        });
+      }
+    }
+
+    if (hasAnyErrors) {
+      // Update current tab errors to show all validation errors
+      setBreedSheetsTabData(prev => ({
+        ...prev,
+        errors: allErrors
+      }));
       setIsCSVErrorModalOpen(true);
       return;
     }
-    // Export the full show state for CSV export
+
+    // Export the full show state for Excel export
     handleSaveToCSV(getShowState, showSuccess, showError);
   };
 

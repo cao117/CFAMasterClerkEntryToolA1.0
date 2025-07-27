@@ -1,5 +1,5 @@
 // Shared action button logic for General and Championship tabs
-import { handleSaveToCSV as csvExportHandleSaveToCSV } from './csvExport';
+import { handleSaveToExcel } from './excelExport';
 import { parseCSVAndRestoreState } from './csvImport';
 
 interface GetShowStateFunction {
@@ -15,7 +15,7 @@ interface ErrorCallback {
 }
 
 /**
- * Handles CSV export with file save dialog
+ * Handles Excel export with file save dialog (updated from CSV to Excel with multiple worksheets)
  * @param getShowState - Function to get current show state
  * @param showSuccess - Success callback function
  * @param showError - Error callback function
@@ -25,7 +25,7 @@ export function handleSaveToCSV(
   showSuccess: SuccessCallback,
   showError: ErrorCallback
 ) {
-  csvExportHandleSaveToCSV(getShowState, showSuccess, showError);
+  handleSaveToExcel(getShowState, showSuccess, showError);
 }
 
 /**
