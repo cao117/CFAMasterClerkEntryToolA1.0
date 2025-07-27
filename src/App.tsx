@@ -623,7 +623,7 @@ function App() {
                   backgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                   textShadow: '0 2px 8px #b7a97a33',
-                  fontFamily: 'Inter, Montserrat, Arial, Helvetica Neue, sans-serif',
+                  fontFamily: 'Inter, Arial, Helvetica Neue, sans-serif',
                   letterSpacing: '0.01em',
                   margin: 0,
                   padding: 0,
@@ -637,7 +637,7 @@ function App() {
                   color: '#d6d5ce', // soft platinum/muted gray
                   fontWeight: 400,
                   letterSpacing: '0.03em',
-                  fontFamily: 'Inter, Montserrat, Arial, Helvetica Neue, sans-serif',
+                  fontFamily: 'Inter, Arial, Helvetica Neue, sans-serif',
                   background: 'none',
                   border: 'none',
                   boxShadow: 'none',

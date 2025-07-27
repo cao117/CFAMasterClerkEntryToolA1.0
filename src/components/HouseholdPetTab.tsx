@@ -467,7 +467,7 @@ export default function HouseholdPetTab({
                               />
                               {/* Static status label for HHP, styled like dropdown - HIDE if VOID */}
                               {!voided && (
-                                <span className="min-w-[70px] px-3 py-1 rounded-full border border-orange-200 text-orange-700 font-semibold text-sm text-center select-none bg-white" style={{ fontFamily: 'Inter, Arial, Helvetica Neue, sans-serif' }}>HHP</span>
+                                <span className="min-w-[70px] px-3 py-1 rounded-full border border-orange-200 text-orange-700 font-semibold text-sm text-center select-none bg-white">HHP</span>
                               )}
                             </div>
                             {/* Error message */}

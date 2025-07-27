@@ -512,7 +512,6 @@ export default function KittenTab({
                                   <span
                                     className="min-w-[70px] inline-flex items-center justify-center rounded-full px-3 py-1.5 border border-green-300 text-green-700 text-xs font-semibold shadow-sm opacity-80 bg-white"
                                     aria-label="Status"
-                                    style={{ fontFamily: 'Inter, Montserrat, Arial, Helvetica Neue, sans-serif', fontSize: '15px', fontWeight: 500 }}
                                   >
                                     KIT
                                   </span>

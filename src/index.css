@@ -1,4 +1,4 @@
-@import './fonts.css';
+/* Inter Font - Using CDN to avoid local file issues */
 
 @tailwind base;
 @tailwind components;

@@ -33,7 +33,6 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
           type="button"
           onClick={onSaveToCSV}
           className="group relative px-5 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-medium modern-tab-font rounded-full border border-emerald-600/40 shadow-sm transition-all duration-250 focus:outline-none hover:scale-105 hover:shadow-green-200/30 hover:from-emerald-700 hover:to-green-500 hover:border-green-400 hover:text-emerald-50 mr-3"
-          style={{ fontFamily: 'Inter, Montserrat, Arial, Helvetica Neue, sans-serif', fontSize: '15px', fontWeight: 500, letterSpacing: '0.01em' }}
         >
           <span className="relative flex items-center space-x-2">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -47,7 +46,6 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
           type="button"
           onClick={onLoadFromCSV}
           className="group relative px-5 py-2.5 bg-gradient-to-r from-blue-400 to-blue-600 text-white font-medium modern-tab-font rounded-full border border-blue-600/40 shadow-sm transition-all duration-250 focus:outline-none hover:scale-105 hover:shadow-blue-200/30 hover:from-blue-700 hover:to-blue-400 hover:border-blue-400 hover:text-blue-50 mr-3"
-          style={{ fontFamily: 'Inter, Montserrat, Arial, Helvetica Neue, sans-serif', fontSize: '15px', fontWeight: 500, letterSpacing: '0.01em' }}
         >
           <span className="relative flex items-center space-x-2">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -61,7 +59,6 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
           type="button"
           onClick={onReset}
           className={`group relative px-5 py-2.5 bg-gradient-to-r from-gray-500 to-slate-600 text-white font-medium modern-tab-font rounded-full border border-slate-600/40 shadow-sm transition-all duration-250 focus:outline-none hover:scale-105 hover:shadow-gray-200/30 hover:from-slate-700 hover:to-gray-500 hover:border-gray-400 hover:text-gray-100${onFillTestData ? ' mr-3' : ''}`}
-          style={{ fontFamily: 'Inter, Montserrat, Arial, Helvetica Neue, sans-serif', fontSize: '15px', fontWeight: 500, letterSpacing: '0.01em' }}
         >
           <span className="relative flex items-center space-x-2">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -75,8 +72,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
           <button
             type="button"
             onClick={onFillTestData}
-            className="group relative px-5 py-2.5 bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-medium modern-tab-font rounded-full border border-orange-400/40 shadow-sm transition-all duration-250 focus:outline-none hover:scale-105 hover:shadow-yellow-200/30 hover:from-orange-600 hover:to-yellow-400 hover:border-yellow-400 hover:text-yellow-50"
-            style={{ fontFamily: 'Inter, Montserrat, Arial, Helvetica Neue, sans-serif', fontSize: '15px', fontWeight: 500, letterSpacing: '0.01em' }}
+                      className="group relative px-5 py-2.5 bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-medium modern-tab-font rounded-full border border-orange-400/40 shadow-sm transition-all duration-250 focus:outline-none hover:scale-105 hover:shadow-yellow-200/30 hover:from-orange-600 hover:to-yellow-400 hover:border-yellow-400 hover:text-yellow-50"
           >
             <span className="relative flex items-center space-x-2">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
