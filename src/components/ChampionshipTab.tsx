@@ -105,7 +105,9 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
 
     // Accessibility: refs for ALL Cat # input fields (Show Awards + Finals)
     // We'll build a 2D array: catInputRefs[columnIndex][verticalRowIndex]
-    const totalCatRows = numAwardRows + (championshipTotal >= 85 ? 5 : 3) + (championshipTotal >= 85 ? 5 : 3) + (championshipTotal >= 85 ? 5 : 3); // Show Awards + Best CH + LH CH + SH CH
+    // Calculate totalCatRows using consistent logic (like PremiershipTab approach but simplified)
+    const maxFinalsRows = championshipTotal >= 85 ? 5 : 3;
+    const totalCatRows = numAwardRows + maxFinalsRows + maxFinalsRows + maxFinalsRows; // Show Awards + Best CH + LH CH + SH CH
     const catInputRefs = useRef<(HTMLInputElement | null)[][]>([]);
     useEffect(() => {
       // Initialize refs 2D array to match columns and totalCatRows
@@ -1186,12 +1188,12 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                                         onChange={e => handleCatInputChange('champions', columnIndex, i, e.target.value)}
                                         onBlur={() => handleCatInputBlur('champions', columnIndex, i)}
                                         onFocus={e => handleCatInputFocusLocal('champions', columnIndex, i, getFinalsValue('champions', columnIndex, i), e)}
-                                        onKeyDown={e => handleCatInputKeyDownLocal('champions', columnIndex, i, e, i + 4)}
+                                        onKeyDown={e => handleCatInputKeyDownLocal('champions', columnIndex, i, e, getShowAwardsRowCount(columnIndex, col.specialty) + i)}
                                       ref={el => {
                                         if (!catInputRefs.current[columnIndex]) {
                                           catInputRefs.current[columnIndex] = Array(totalCatRows).fill(null);
                                         }
-                                          catInputRefs.current[columnIndex][i + 4] = el; // Adjust index for Finals rows
+                                          catInputRefs.current[columnIndex][getShowAwardsRowCount(columnIndex, col.specialty) + i] = el; // Adjust index based on actual Show Awards count
                                       }}
                                     />
                                   </div>
@@ -1243,12 +1245,12 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                                       onChange={e => handleCatInputChange('lhChampions', columnIndex, i, e.target.value)}
                                       onBlur={() => handleCatInputBlur('lhChampions', columnIndex, i)}
                                       onFocus={e => handleCatInputFocusLocal('lhChampions', columnIndex, i, getFinalsValue('lhChampions', columnIndex, i), e)}
-                                      onKeyDown={e => handleCatInputKeyDownLocal('lhChampions', columnIndex, i, e, i + 9)}
+                                      onKeyDown={e => handleCatInputKeyDownLocal('lhChampions', columnIndex, i, e, getShowAwardsRowCount(columnIndex, col.specialty) + getFinalsRowCount(columnIndex, col.specialty, 'champions') + i)}
                                       ref={el => {
                                         if (!catInputRefs.current[columnIndex]) {
                                           catInputRefs.current[columnIndex] = Array(totalCatRows).fill(null);
                                         }
-                                        catInputRefs.current[columnIndex][i + 9] = el; // Adjust index for LH Champions rows
+                                        catInputRefs.current[columnIndex][getShowAwardsRowCount(columnIndex, col.specialty) + getFinalsRowCount(columnIndex, col.specialty, 'champions') + i] = el; // Adjust index based on actual Show Awards + Best AB CH counts
                                       }}
                                     />
                                   </div>
@@ -1300,12 +1302,12 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                                       onChange={e => handleCatInputChange('shChampions', columnIndex, i, e.target.value)}
                                       onBlur={() => handleCatInputBlur('shChampions', columnIndex, i)}
                                       onFocus={e => handleCatInputFocusLocal('shChampions', columnIndex, i, getFinalsValue('shChampions', columnIndex, i), e)}
-                                      onKeyDown={e => handleCatInputKeyDownLocal('shChampions', columnIndex, i, e, i + 14)}
+                                      onKeyDown={e => handleCatInputKeyDownLocal('shChampions', columnIndex, i, e, getShowAwardsRowCount(columnIndex, col.specialty) + getFinalsRowCount(columnIndex, col.specialty, 'champions') + getFinalsRowCount(columnIndex, col.specialty, 'lhChampions') + i)}
                                       ref={el => {
                                         if (!catInputRefs.current[columnIndex]) {
                                           catInputRefs.current[columnIndex] = Array(totalCatRows).fill(null);
                                         }
-                                        catInputRefs.current[columnIndex][i + 14] = el; // Adjust index for SH Champions rows
+                                        catInputRefs.current[columnIndex][getShowAwardsRowCount(columnIndex, col.specialty) + getFinalsRowCount(columnIndex, col.specialty, 'champions') + getFinalsRowCount(columnIndex, col.specialty, 'lhChampions') + i] = el; // Adjust index based on actual Show Awards + Best AB CH + LH CH counts
                                       }}
                                     />
                                   </div>
