@@ -26,6 +26,8 @@ export interface ChampionshipValidationInput {
     shGcs: number;
     lhChs: number;
     shChs: number;
+    lhNovs: number;
+    shNovs: number;
   };
   voidedShowAwards?: { [key: string]: boolean };
   voidedChampionsFinals?: { [key: string]: boolean };
@@ -1082,16 +1084,16 @@ export function getFinalsPositionsForRingType(input: ChampionshipValidationInput
   let count = 0;
   switch (ringType) {
     case 'Allbreed':
-      count = input.championshipCounts.lhGcs + input.championshipCounts.shGcs + input.championshipCounts.lhChs + input.championshipCounts.shChs;
+      count = input.championshipCounts.lhGcs + input.championshipCounts.shGcs + input.championshipCounts.lhChs + input.championshipCounts.shChs + input.championshipCounts.lhNovs + input.championshipCounts.shNovs;
       break;
     case 'Longhair':
-      count = input.championshipCounts.lhGcs + input.championshipCounts.lhChs;
+      count = input.championshipCounts.lhGcs + input.championshipCounts.lhChs + input.championshipCounts.lhNovs;
       break;
     case 'Shorthair':
-      count = input.championshipCounts.shGcs + input.championshipCounts.shChs;
+      count = input.championshipCounts.shGcs + input.championshipCounts.shChs + input.championshipCounts.shNovs;
       break;
     default:
-      count = input.championshipCounts.lhGcs + input.championshipCounts.shGcs + input.championshipCounts.lhChs + input.championshipCounts.shChs;
+      count = input.championshipCounts.lhGcs + input.championshipCounts.shGcs + input.championshipCounts.lhChs + input.championshipCounts.shChs + input.championshipCounts.lhNovs + input.championshipCounts.shNovs;
       break;
   }
   return count >= 85 ? 5 : 3;

@@ -26,6 +26,8 @@ interface ChampionshipTabProps {
     shGcs: number;
     lhChs: number;
     shChs: number;
+    lhNovs: number;
+    shNovs: number;
   };
   showSuccess: (title: string, message?: string, duration?: number) => void;
   showError: (title: string, message?: string, duration?: number) => void;
@@ -143,62 +145,75 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
     const handleCatInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, colIdx: number, rowIdx: number) => {
       if (e.key === 'Tab') {
         e.preventDefault();
-        const lastRow = totalCatRows - 1;
-        let nextCol = colIdx;
-        let nextRow = rowIdx;
-        let found = false;
+        
         // Helper to check if input is enabled
         const isEnabled = (col: number, row: number) => {
           const ref = catInputRefs.current[col]?.[row];
           return ref && !ref.disabled;
         };
-        if (!e.shiftKey) {
-          // Tab: go down, then to next column
-          let tries = 0;
-          do {
-            if (nextRow < lastRow) {
+
+        // Helper to find the next logical position based on table structure
+        const findNextPosition = (currentCol: number, currentRow: number, forward: boolean) => {
+          const col = columns[currentCol];
+          if (!col) return null;
+
+          // Get the sections that should be shown for this ring type
+          const sections = getSectionsForRingType(col.specialty);
+          
+          // Calculate the total number of rows for this column
+          const showAwardsCount = getShowAwardsRowCount(currentCol, col.specialty);
+          const totalRows = showAwardsCount + sections.reduce((total, section) => {
+            return total + getFinalsRowCount(currentCol, col.specialty, section);
+          }, 0);
+
+          let nextCol = currentCol;
+          let nextRow = currentRow;
+
+          if (forward) {
+            // Move to next row in same column
+            if (nextRow < totalRows - 1) {
               nextRow++;
             } else {
-              nextRow = 0;
+              // Move to next column
               nextCol++;
-              if (nextCol >= columns.length) return; // Let default tab if at very end
+              if (nextCol >= columns.length) return null; // End of table
+              nextRow = 0;
             }
-            tries++;
-            if (isEnabled(nextCol, nextRow)) {
-              found = true;
-              break;
-            }
-          } while (tries < columns.length * totalCatRows);
-        } else {
-          // Shift+Tab: go up, then to previous column
-          let tries = 0;
-          do {
+          } else {
+            // Move to previous row in same column
             if (nextRow > 0) {
               nextRow--;
             } else {
+              // Move to previous column
               nextCol--;
-              if (nextCol < 0) return; // Let default shift+tab if at very start
-              nextRow = lastRow;
+              if (nextCol < 0) return null; // Beginning of table
+              const prevCol = columns[nextCol];
+              const prevSections = getSectionsForRingType(prevCol.specialty);
+              const prevShowAwardsCount = getShowAwardsRowCount(nextCol, prevCol.specialty);
+              nextRow = prevShowAwardsCount + prevSections.reduce((total, section) => {
+                return total + getFinalsRowCount(nextCol, prevCol.specialty, section);
+              }, 0) - 1;
             }
-            tries++;
-            if (isEnabled(nextCol, nextRow)) {
-              found = true;
-              break;
-            }
-          } while (tries < columns.length * totalCatRows);
-        }
-        if (found) {
-          const nextRef = catInputRefs.current[nextCol]?.[nextRow];
+          }
+
+          return { col: nextCol, row: nextRow };
+        };
+
+        // Find next position
+        const nextPos = findNextPosition(colIdx, rowIdx, !e.shiftKey);
+        
+        if (nextPos && isEnabled(nextPos.col, nextPos.row)) {
+          const nextRef = catInputRefs.current[nextPos.col]?.[nextPos.row];
           if (nextRef) {
             nextRef.focus();
-            setFocusedColumnIndex(nextCol);
+            setFocusedColumnIndex(nextPos.col);
           }
         }
       }
     };
 
     // Generate columns based on judges
-    const generateColumns = (): Column[] => {
+    const generateColumns = useCallback((): Column[] => {
       const columns: Column[] = [];
       
       judges.forEach(judge => {
@@ -222,7 +237,7 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
       });
       
       return columns;
-    };
+    }, [judges]);
 
     /**
      * Updates a Show Award cell (cat number or status) and auto-syncs void state.
@@ -689,13 +704,13 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
     const getChampionshipCountForRingType = (ringType: string): number => {
       switch (ringType) {
         case 'Allbreed':
-          return championshipCounts.lhGcs + championshipCounts.shGcs + championshipCounts.lhChs + championshipCounts.shChs;
+          return championshipCounts.lhGcs + championshipCounts.shGcs + championshipCounts.lhChs + championshipCounts.shChs + championshipCounts.lhNovs + championshipCounts.shNovs; // Championship cats + Novices
         case 'Longhair':
-          return championshipCounts.lhGcs + championshipCounts.lhChs;
+          return championshipCounts.lhGcs + championshipCounts.lhChs + championshipCounts.lhNovs;
         case 'Shorthair':
-          return championshipCounts.shGcs + championshipCounts.shChs;
+          return championshipCounts.shGcs + championshipCounts.shChs + championshipCounts.shNovs;
         default:
-          return championshipCounts.lhGcs + championshipCounts.shGcs + championshipCounts.lhChs + championshipCounts.shChs;
+          return championshipCounts.lhGcs + championshipCounts.shGcs + championshipCounts.lhChs + championshipCounts.shChs + championshipCounts.lhNovs + championshipCounts.shNovs; // Championship cats + Novices
       }
     };
 
@@ -707,16 +722,27 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
      * This ensures that after CSV import, if 15 rows are present, all are shown, even if the show count is not set before render.
      */
     const getShowAwardsRowCount = (colIdx: number, specialty: string): number => {
-      // Default: calculated breakpoint
-      const calculated = getChampionshipCountForRingType(specialty) >= 85 ? 15 : 10;
-      // Find max row index present in imported showAwards for this column
+      // Calculate the correct breakpoint based on ring type
+      const count = getChampionshipCountForRingType(specialty);
+      const calculated = count >= 85 ? 15 : 10;
+      
+      // Debug logging
+      console.log(`[DEBUG] getShowAwardsRowCount for col ${colIdx}, specialty ${specialty}:`);
+      console.log(`  - Count: ${count}`);
+      console.log(`  - Breakpoint: ${count >= 85 ? '85+' : '<85'}`);
+      console.log(`  - Calculated rows: ${calculated}`);
+      
+      // Only check for imported data if it's within the valid range for this ring type
       let maxIdx = -1;
       Object.keys(championshipTabData.showAwards).forEach(key => {
         const [col, row] = key.split('-').map(Number);
-        if (col === colIdx && row > maxIdx) maxIdx = row;
+        if (col === colIdx && row >= 0 && row < calculated) {
+          maxIdx = Math.max(maxIdx, row);
+        }
       });
-      // If imported data has more rows, use that
-      return Math.max(calculated, maxIdx + 1);
+      
+      // Return the calculated value (don't override with imported data that exceeds the breakpoint)
+      return calculated;
     };
     /**
      * Returns the number of Finals rows to render for a given column/section, based on:
@@ -736,6 +762,33 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
         if (col === colIdx && row > maxIdx) maxIdx = row;
       });
       return Math.max(calculated, maxIdx + 1);
+    };
+
+    // Helper functions to determine which sections should be shown for each ring type
+    const shouldShowSection = (specialty: string, section: 'champions' | 'lhChampions' | 'shChampions'): boolean => {
+      switch (specialty) {
+        case 'Allbreed':
+          return true; // Allbreed shows all sections
+        case 'Longhair':
+          return section === 'lhChampions'; // Longhair only shows LH CH
+        case 'Shorthair':
+          return section === 'shChampions'; // Shorthair only shows SH CH
+        default:
+          return false;
+      }
+    };
+
+    const getSectionsForRingType = (specialty: string): Array<'champions' | 'lhChampions' | 'shChampions'> => {
+      switch (specialty) {
+        case 'Allbreed':
+          return ['champions', 'lhChampions', 'shChampions'];
+        case 'Longhair':
+          return ['lhChampions'];
+        case 'Shorthair':
+          return ['shChampions'];
+        default:
+          return [];
+      }
     };
 
     // --- Handler: Blur events for finals - run validation here (like PremiershipTab) ---
@@ -964,6 +1017,42 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
     };
     // --- END CONTEXT-7 DYNAMIC VALIDATION PARITY ---
 
+    // Helper function to calculate the correct row index for ref assignments based on actual rendered sections
+    const getRowIndexForSection = (colIdx: number, specialty: string, section: 'showAwards' | 'champions' | 'lhChampions' | 'shChampions', position: number): number => {
+      const sections = getSectionsForRingType(specialty);
+      let rowIndex = 0;
+      
+      // Add Show Awards rows
+      if (section === 'showAwards') {
+        return position;
+      }
+      
+      rowIndex += getShowAwardsRowCount(colIdx, specialty);
+      
+      // Add rows for sections that come before the target section
+      if (section === 'champions') {
+        return rowIndex + position;
+      }
+      
+      if (sections.includes('champions')) {
+        rowIndex += getFinalsRowCount(colIdx, specialty, 'champions');
+      }
+      
+      if (section === 'lhChampions') {
+        return rowIndex + position;
+      }
+      
+      if (sections.includes('lhChampions')) {
+        rowIndex += getFinalsRowCount(colIdx, specialty, 'lhChampions');
+      }
+      
+      if (section === 'shChampions') {
+        return rowIndex + position;
+      }
+      
+      return rowIndex;
+    };
+
     return (
       <div className="p-8 space-y-8">
         {/* Reset Confirmation Modal */}
@@ -1076,7 +1165,10 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                 <tbody>
                   {/* Show Awards Section (Rows 4-18) */}
                 {Array.from({ length: 15 }, (_, i) => {
-                  if (columns.some(col => i < getShowAwardsRowCount(columns.indexOf(col), col.specialty))) {
+                  // Only render the row if at least one column needs this position
+                  const shouldRenderRow = columns.some(col => i < getShowAwardsRowCount(columns.indexOf(col), col.specialty));
+                  
+                  if (shouldRenderRow) {
                     return (
                       <tr key={`award-${i}`} className={`cfa-table-row transition-all duration-150 ${i % 2 === 0 ? 'bg-white' : ''} hover:shadow-sm`}>
                         <td className="py-2 pl-4 font-medium text-sm border-r border-gray-200 bg-transparent frozen-column" style={{ width: '140px', minWidth: '140px' }}>
@@ -1084,7 +1176,10 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                         </td>
                         {columns.map((_, columnIndex) => {
                           const col = columns[columnIndex];
-                          if (i < getShowAwardsRowCount(columnIndex, col.specialty)) {
+                          // Each column independently decides whether to show this position
+                          const shouldShowCell = i < getShowAwardsRowCount(columnIndex, col.specialty);
+                          
+                          if (shouldShowCell) {
                             const award = getShowAward(columnIndex, i);
                             const errorKey = `${columnIndex}-${i}`;
                             const hasCatNumber = (localInputState[errorKey] !== undefined ? localInputState[errorKey] : award.catNumber)?.trim();
@@ -1154,7 +1249,12 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                               </td>
                             );
                           }
-                            return <td key={`award-${i}-${columnIndex}`} className="py-2 px-2 border-r border-gray-200"></td>;
+                            return (
+                              <td 
+                                key={`award-${i}-${columnIndex}`} 
+                                className={`py-2 px-2 border-r border-gray-200 transition-all duration-150 ${focusedColumnIndex === columnIndex ? ' border-l-4 border-r-4 border-violet-300 z-10' : ''}`}
+                              ></td>
+                            );
                         })}
                       </tr>
                     );
@@ -1163,7 +1263,7 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                 })}
                     {/* Finals Sections (Rows 19-23) */}
                   {Array.from({ length: 5 }, (_, i) => {
-                    if (columns.some(col => i < getFinalsRowCount(columns.indexOf(col), col.specialty, 'champions'))) {
+                    if (columns.some(col => i < getFinalsRowCount(columns.indexOf(col), col.specialty, 'champions') && shouldShowSection(col.specialty, 'champions'))) {
                       const ordinals = ['Best', '2nd Best', '3rd Best', '4th Best', '5th Best'];
                       return (
                         <tr key={`champions-${i}`} className={`cfa-table-row transition-all duration-150 ${i % 2 === 0 ? 'bg-white' : ''} hover:shadow-sm`}>
@@ -1173,7 +1273,7 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                           {columns.map((_, columnIndex) => {
                             const col = columns[columnIndex];
                             const isFocused = focusedColumnIndex === columnIndex;
-                            const shouldRenderCell = i < getFinalsRowCount(columnIndex, col.specialty, 'champions');
+                            const shouldRenderCell = i < getFinalsRowCount(columnIndex, col.specialty, 'champions') && shouldShowSection(col.specialty, 'champions');
                             const errorKey = `champions-${columnIndex}-${i}`;
                             return (
                               <td key={`champions-${i}-${columnIndex}`} className={`py-2 px-2 border-r border-gray-200 align-top transition-all duration-150${isFocused ? ' border-l-4 border-r-4 border-violet-300 z-10' : ''} hover:bg-gray-50`}>
@@ -1188,12 +1288,12 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                                         onChange={e => handleCatInputChange('champions', columnIndex, i, e.target.value)}
                                         onBlur={() => handleCatInputBlur('champions', columnIndex, i)}
                                         onFocus={e => handleCatInputFocusLocal('champions', columnIndex, i, getFinalsValue('champions', columnIndex, i), e)}
-                                        onKeyDown={e => handleCatInputKeyDownLocal('champions', columnIndex, i, e, getShowAwardsRowCount(columnIndex, col.specialty) + i)}
+                                        onKeyDown={e => handleCatInputKeyDownLocal('champions', columnIndex, i, e, getRowIndexForSection(columnIndex, col.specialty, 'champions', i))}
                                       ref={el => {
                                         if (!catInputRefs.current[columnIndex]) {
                                           catInputRefs.current[columnIndex] = Array(totalCatRows).fill(null);
                                         }
-                                          catInputRefs.current[columnIndex][getShowAwardsRowCount(columnIndex, col.specialty) + i] = el; // Adjust index based on actual Show Awards count
+                                          catInputRefs.current[columnIndex][getRowIndexForSection(columnIndex, col.specialty, 'champions', i)] = el; // Adjust index based on actual Show Awards count
                                       }}
                                     />
                                   </div>
@@ -1230,7 +1330,7 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                         {columns.map((_, columnIndex) => {
                           const col = columns[columnIndex];
                           const isFocused = focusedColumnIndex === columnIndex;
-                          const shouldRenderCell = i < getFinalsRowCount(columnIndex, col.specialty, 'lhChampions');
+                          const shouldRenderCell = i < getFinalsRowCount(columnIndex, col.specialty, 'lhChampions') && shouldShowSection(col.specialty, 'lhChampions');
                             const errorKey = `lhChampions-${columnIndex}-${i}`;
                             return (
                             <td key={`lhChampions-${i}-${columnIndex}`} className={`py-2 px-2 border-r border-gray-200 align-top transition-all duration-150${isFocused ? ' border-l-4 border-r-4 border-violet-300 z-10' : ''} hover:bg-gray-50`}>
@@ -1245,12 +1345,12 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                                       onChange={e => handleCatInputChange('lhChampions', columnIndex, i, e.target.value)}
                                       onBlur={() => handleCatInputBlur('lhChampions', columnIndex, i)}
                                       onFocus={e => handleCatInputFocusLocal('lhChampions', columnIndex, i, getFinalsValue('lhChampions', columnIndex, i), e)}
-                                      onKeyDown={e => handleCatInputKeyDownLocal('lhChampions', columnIndex, i, e, getShowAwardsRowCount(columnIndex, col.specialty) + getFinalsRowCount(columnIndex, col.specialty, 'champions') + i)}
+                                      onKeyDown={e => handleCatInputKeyDownLocal('lhChampions', columnIndex, i, e, getRowIndexForSection(columnIndex, col.specialty, 'lhChampions', i))}
                                       ref={el => {
                                         if (!catInputRefs.current[columnIndex]) {
                                           catInputRefs.current[columnIndex] = Array(totalCatRows).fill(null);
                                         }
-                                        catInputRefs.current[columnIndex][getShowAwardsRowCount(columnIndex, col.specialty) + getFinalsRowCount(columnIndex, col.specialty, 'champions') + i] = el; // Adjust index based on actual Show Awards + Best AB CH counts
+                                        catInputRefs.current[columnIndex][getRowIndexForSection(columnIndex, col.specialty, 'lhChampions', i)] = el; // Adjust index based on actual Show Awards + Best AB CH counts
                                       }}
                                     />
                                   </div>
@@ -1287,7 +1387,7 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                         {columns.map((_, columnIndex) => {
                           const col = columns[columnIndex];
                           const isFocused = focusedColumnIndex === columnIndex;
-                          const shouldRenderCell = i < getFinalsRowCount(columnIndex, col.specialty, 'shChampions');
+                          const shouldRenderCell = i < getFinalsRowCount(columnIndex, col.specialty, 'shChampions') && shouldShowSection(col.specialty, 'shChampions');
                             const errorKey = `shChampions-${columnIndex}-${i}`;
                             return (
                             <td key={`shChampions-${i}-${columnIndex}`} className={`py-2 px-2 border-r border-gray-200 align-top transition-all duration-150${isFocused ? ' border-l-4 border-r-4 border-violet-300 z-10' : ''} hover:bg-gray-50`}>
@@ -1302,12 +1402,12 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                                       onChange={e => handleCatInputChange('shChampions', columnIndex, i, e.target.value)}
                                       onBlur={() => handleCatInputBlur('shChampions', columnIndex, i)}
                                       onFocus={e => handleCatInputFocusLocal('shChampions', columnIndex, i, getFinalsValue('shChampions', columnIndex, i), e)}
-                                      onKeyDown={e => handleCatInputKeyDownLocal('shChampions', columnIndex, i, e, getShowAwardsRowCount(columnIndex, col.specialty) + getFinalsRowCount(columnIndex, col.specialty, 'champions') + getFinalsRowCount(columnIndex, col.specialty, 'lhChampions') + i)}
+                                      onKeyDown={e => handleCatInputKeyDownLocal('shChampions', columnIndex, i, e, getRowIndexForSection(columnIndex, col.specialty, 'shChampions', i))}
                                       ref={el => {
                                         if (!catInputRefs.current[columnIndex]) {
                                           catInputRefs.current[columnIndex] = Array(totalCatRows).fill(null);
                                         }
-                                        catInputRefs.current[columnIndex][getShowAwardsRowCount(columnIndex, col.specialty) + getFinalsRowCount(columnIndex, col.specialty, 'champions') + getFinalsRowCount(columnIndex, col.specialty, 'lhChampions') + i] = el; // Adjust index based on actual Show Awards + Best AB CH + LH CH counts
+                                        catInputRefs.current[columnIndex][getRowIndexForSection(columnIndex, col.specialty, 'shChampions', i)] = el; // Adjust index based on actual Show Awards + Best AB CH + LH CH counts
                                       }}
                                     />
                                   </div>

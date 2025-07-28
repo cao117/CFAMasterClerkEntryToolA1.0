@@ -23,19 +23,21 @@ This document describes the **current validation rules** enforced in the Champio
 The Championship tab uses **hair-specific breakpoints** based on ring type:
 
 ### Allbreed Rings
-- **Breakpoint**: Championship cats only (LH GC + SH GC + LH CH + SH CH) ≥ 85
-- **Note**: Novices (NOV) are NOT included in the championship count for breakpoint calculation
+- **Breakpoint**: Championship cats + Novices (LH GC + SH GC + LH CH + SH CH + LH NOV + SH NOV) ≥ 85
+- **Note**: Novices (NOV) ARE included in the championship count for breakpoint calculation
 - **If ≥ 85**: Top 15 positions, 5 Best AB CH, 5 Best LH CH, 5 Best SH CH
 - **If < 85**: Top 10 positions, 3 Best AB CH, 3 Best LH CH, 3 Best SH CH
 
 ### Longhair Rings
-- **Breakpoint**: LH championship cats (LH GC + LH CH) ≥ 85
+- **Breakpoint**: LH championship cats + LH novices (LH GC + LH CH + LH NOV) ≥ 85
+- **Note**: LH novices ARE included in the longhair count for breakpoint calculation
 - **If ≥ 85**: Top 15 positions, 5 Best LH CH
 - **If < 85**: Top 10 positions, 3 Best LH CH
 - **Note**: Best AB CH and Best SH CH sections are disabled (not applicable)
 
 ### Shorthair Rings
-- **Breakpoint**: SH championship cats (SH GC + SH CH) ≥ 85
+- **Breakpoint**: SH championship cats + SH novices (SH GC + SH CH + SH NOV) ≥ 85
+- **Note**: SH novices ARE included in the shorthair count for breakpoint calculation
 - **If ≥ 85**: Top 15 positions, 5 Best SH CH
 - **If < 85**: Top 10 positions, 3 Best SH CH
 - **Note**: Best AB CH and Best LH CH sections are disabled (not applicable)

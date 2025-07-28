@@ -425,12 +425,14 @@ function App() {
       component: <ChampionshipTab 
         ref={championshipTabRef}
         judges={judges} 
-        championshipTotal={showData.championshipCounts.total}
+        championshipTotal={showData.championshipCounts.lhGcs + showData.championshipCounts.shGcs + showData.championshipCounts.lhChs + showData.championshipCounts.shChs + showData.championshipCounts.lhNovs + showData.championshipCounts.shNovs}
         championshipCounts={{
           lhGcs: showData.championshipCounts.lhGcs,
           shGcs: showData.championshipCounts.shGcs,
           lhChs: showData.championshipCounts.lhChs,
-          shChs: showData.championshipCounts.shChs
+          shChs: showData.championshipCounts.shChs,
+          lhNovs: showData.championshipCounts.lhNovs,
+          shNovs: showData.championshipCounts.shNovs
         }}
         showSuccess={showSuccess}
         showError={showError}

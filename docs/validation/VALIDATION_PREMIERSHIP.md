@@ -13,19 +13,21 @@
 The Premiership tab uses **hair-specific breakpoints** based on ring type:
 
 ### Allbreed Rings
-- **Breakpoint**: Premiership cats only (LH GP + SH GP + LH PR + SH PR) ≥ 50
-- **Note**: Novices (NOV) are NOT included in the premiership count for breakpoint calculation
+- **Breakpoint**: Premiership cats + Novices (LH GP + SH GP + LH PR + SH PR + LH NOV + SH NOV) ≥ 50
+- **Note**: Novices (NOV) ARE included in the premiership count for breakpoint calculation
 - **If ≥ 50**: Top 15 positions, 3 Best AB PR, 3 Best LH PR, 3 Best SH PR
 - **If < 50**: Top 10 positions, 2 Best AB PR, 2 Best LH PR, 2 Best SH PR
 
 ### Longhair Rings
-- **Breakpoint**: LH premiership cats (LH GP + LH PR) ≥ 50
+- **Breakpoint**: LH premiership cats + LH novices (LH GP + LH PR + LH NOV) ≥ 50
+- **Note**: LH novices ARE included in the longhair count for breakpoint calculation
 - **If ≥ 50**: Top 15 positions, 3 Best LH PR
 - **If < 50**: Top 10 positions, 2 Best LH PR
 - **Note**: Best AB PR and Best SH PR sections are disabled (not applicable)
 
 ### Shorthair Rings
-- **Breakpoint**: SH premiership cats (SH GP + SH PR) ≥ 50
+- **Breakpoint**: SH premiership cats + SH novices (SH GP + SH PR + SH NOV) ≥ 50
+- **Note**: SH novices ARE included in the shorthair count for breakpoint calculation
 - **If ≥ 50**: Top 15 positions, 3 Best SH PR
 - **If < 50**: Top 10 positions, 2 Best SH PR
 - **Note**: Best AB PR and Best LH PR sections are disabled (not applicable)

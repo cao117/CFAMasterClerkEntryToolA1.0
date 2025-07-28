@@ -159,6 +159,47 @@ export default function PremiershipTab({
     }
     return 10; // Default fallback
   };
+
+  // --- Helper: Get sections that should be shown for each ring type ---
+  const getSectionsForRingType = (specialty: string): Array<'ab' | 'lh' | 'sh'> => {
+    switch (specialty) {
+      case 'Allbreed':
+        return ['ab', 'lh', 'sh'];
+      case 'Longhair':
+        return ['lh'];
+      case 'Shorthair':
+        return ['sh'];
+      default:
+        return [];
+    }
+  };
+
+  // --- Helper: Get Show Awards row count for a column ---
+  const getShowAwardsRowCount = (colIdx: number, specialty: string): number => {
+    const calculated = getFinalsCount(specialty);
+    // Find max row index present in imported showAwards for this column
+    let maxIdx = -1;
+    Object.keys(premiershipTabData.showAwards).forEach(key => {
+      const [col, row] = key.split('-').map(Number);
+      if (col === colIdx && row > maxIdx) maxIdx = row;
+    });
+    return Math.max(calculated, maxIdx + 1);
+  };
+
+  // --- Helper: Get Finals row count for a column/section ---
+  const getFinalsRowCount = (colIdx: number, specialty: string, section: 'ab' | 'lh' | 'sh'): number => {
+    const calculated = getFinalsCount(specialty) >= 50 ? 5 : 3;
+    let finalsObj: Record<string, string> = {};
+    if (section === 'ab') finalsObj = premiershipTabData.abPremiersFinals;
+    if (section === 'lh') finalsObj = premiershipTabData.lhPremiersFinals;
+    if (section === 'sh') finalsObj = premiershipTabData.shPremiersFinals;
+    let maxIdx = -1;
+    Object.keys(finalsObj).forEach(key => {
+      const [col, row] = key.split('-').map(Number);
+      if (col === colIdx && row > maxIdx) maxIdx = row;
+    });
+    return Math.max(calculated, maxIdx + 1);
+  };
   const getFinalsPositionsForRingTypeLocal = (ringType: string) => {
     let count = 0;
     switch (ringType) {
@@ -219,55 +260,68 @@ export default function PremiershipTab({
   const handleCatInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, colIdx: number, rowIdx: number) => {
     if (e.key === 'Tab') {
       e.preventDefault();
-      const lastRow = totalCatRows - 1;
-      let nextCol = colIdx;
-      let nextRow = rowIdx;
-      let found = false;
+      
       // Helper to check if input is enabled
       const isEnabled = (col: number, row: number) => {
         const ref = catInputRefs.current[col]?.[row];
         return ref && !ref.disabled;
       };
-      if (!e.shiftKey) {
-        // Tab: go down, then to next column
-        let tries = 0;
-        do {
-          if (nextRow < lastRow) {
+
+      // Helper to find the next logical position based on table structure
+      const findNextPosition = (currentCol: number, currentRow: number, forward: boolean) => {
+        const col = columns[currentCol];
+        if (!col) return null;
+
+        // Get the sections that should be shown for this ring type
+        const sections = getSectionsForRingType(col.specialty);
+        
+        // Calculate the total number of rows for this column
+        const showAwardsCount = getShowAwardsRowCount(currentCol, col.specialty);
+        const totalRows = showAwardsCount + sections.reduce((total, section) => {
+          return total + getFinalsRowCount(currentCol, col.specialty, section);
+        }, 0);
+
+        let nextCol = currentCol;
+        let nextRow = currentRow;
+
+        if (forward) {
+          // Move to next row in same column
+          if (nextRow < totalRows - 1) {
             nextRow++;
           } else {
-            nextRow = 0;
+            // Move to next column
             nextCol++;
-            if (nextCol >= columns.length) return; // Let default tab if at very end
+            if (nextCol >= columns.length) return null; // End of table
+            nextRow = 0;
           }
-          tries++;
-          if (isEnabled(nextCol, nextRow)) {
-            found = true;
-            break;
-          }
-        } while (tries < columns.length * totalCatRows);
-      } else {
-        // Shift+Tab: go up, then to previous column
-        let tries = 0;
-        do {
+        } else {
+          // Move to previous row in same column
           if (nextRow > 0) {
             nextRow--;
           } else {
+            // Move to previous column
             nextCol--;
-            if (nextCol < 0) return; // Let default shift+tab if at very start
-            nextRow = lastRow;
+            if (nextCol < 0) return null; // Beginning of table
+            const prevCol = columns[nextCol];
+            const prevSections = getSectionsForRingType(prevCol.specialty);
+            const prevShowAwardsCount = getShowAwardsRowCount(nextCol, prevCol.specialty);
+            nextRow = prevShowAwardsCount + prevSections.reduce((total, section) => {
+              return total + getFinalsRowCount(nextCol, prevCol.specialty, section);
+            }, 0) - 1;
           }
-          tries++;
-          if (isEnabled(nextCol, nextRow)) {
-            found = true;
-            break;
-          }
-        } while (tries < columns.length * totalCatRows);
-      }
-      if (found) {
-        const nextRef = catInputRefs.current[nextCol]?.[nextRow];
+        }
+
+        return { col: nextCol, row: nextRow };
+      };
+
+      // Find next position
+      const nextPos = findNextPosition(colIdx, rowIdx, !e.shiftKey);
+      
+      if (nextPos && isEnabled(nextPos.col, nextPos.row)) {
+        const nextRef = catInputRefs.current[nextPos.col]?.[nextPos.row];
         if (nextRef) {
           nextRef.focus();
-          setFocusedColumnIndex(nextCol);
+          setFocusedColumnIndex(nextPos.col);
         }
       }
     }
