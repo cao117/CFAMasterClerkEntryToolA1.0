@@ -580,6 +580,8 @@ export default function GeneralTab({
         </div>
       </div>
 
+
+
       {/* --- Redesigned Show Information Section --- */}
       <div className="space-y-6">
         <div className="group relative">
@@ -1103,41 +1105,76 @@ export default function GeneralTab({
             
           {!isJudgeInfoCollapsed && (
               <div>
-                {/* Show explanation when no judges */}
+                {/* Show explanation when no judges - Updated to match working top section */}
                 {judges.length === 0 && (
-                  <div className="flex flex-col items-center justify-center p-8 my-8 bg-gradient-to-br from-amber-50 via-white to-yellow-50 rounded-2xl shadow-lg border border-amber-100 max-w-xl mx-auto animate-fade-in">
-                    {/* Animated Chubby Kitten SVG */}
-                    <div className="mb-4">
-                      <svg width="90" height="90" viewBox="0 0 90 90" fill="none" className="animate-bounce-slow">
-                        <ellipse cx="45" cy="80" rx="26" ry="7" fill="#FDE68A"/>
-                        {/* Body */}
-                        <ellipse cx="45" cy="54" rx="22" ry="20" fill="#FBBF24" stroke="#F59E0B" strokeWidth="2"/>
-                        {/* Head */}
-                        <ellipse cx="45" cy="36" rx="18" ry="16" fill="#FBBF24" stroke="#F59E0B" strokeWidth="2"/>
-                        {/* Cheeks */}
-                        <ellipse cx="33" cy="41" rx="4" ry="2.5" fill="#FDE68A"/>
-                        <ellipse cx="57" cy="41" rx="4" ry="2.5" fill="#FDE68A"/>
-                        {/* Ears */}
-                        <ellipse cx="30" cy="25" rx="3.5" ry="5" fill="#FBBF24" stroke="#F59E0B" strokeWidth="1"/>
-                        <ellipse cx="60" cy="25" rx="3.5" ry="5" fill="#FBBF24" stroke="#F59E0B" strokeWidth="1"/>
-                        {/* Eyes */}
-                        <ellipse cx="39" cy="36" rx="2.2" ry="3" fill="#fff"/>
-                        <ellipse cx="51" cy="36" rx="2.2" ry="3" fill="#fff"/>
-                        <ellipse cx="39" cy="37" rx="1.1" ry="1.7" fill="#444"/>
-                        <ellipse cx="51" cy="37" rx="1.1" ry="1.7" fill="#444"/>
-                        {/* Nose */}
-                        <ellipse cx="45" cy="41" rx="1.1" ry="0.7" fill="#F59E0B"/>
-                        {/* Smile */}
-                        <path d="M43.5 43 Q45 44.5 46.5 43" stroke="#F59E0B" strokeWidth="1.2" fill="none"/>
-                        {/* Paws */}
-                        <ellipse cx="36" cy="70" rx="3" ry="2" fill="#FBBF24" stroke="#F59E0B" strokeWidth="1"/>
-                        <ellipse cx="54" cy="70" rx="3" ry="2" fill="#FBBF24" stroke="#F59E0B" strokeWidth="1"/>
-                        {/* Fluffy Tail */}
-                        <g className="cat-tail">
-                          <path d="M67 68 Q82 70 75 58 Q72 54 67 62" stroke="#F59E0B" strokeWidth="4" fill="none"/>
-                          <ellipse cx="75" cy="58" rx="3.5" ry="6" fill="#FBBF24" stroke="#F59E0B" strokeWidth="1"/>
-                        </g>
-                      </svg>
+                  <div 
+                    className="flex flex-col items-center justify-center p-4 mb-6 bg-gradient-to-br from-amber-50 via-white to-yellow-50 rounded-2xl shadow-lg border border-amber-100 max-w-xl mx-auto"
+                  >
+                    {/* Expand the cat animation container - Same as top section */}
+                    <div 
+                      className="relative mb-4 flex items-end justify-center" 
+                      style={{ 
+                        overflow: 'visible',
+                        height: '160px',  // Increased from 130px
+                        width: '200px',   // Give it explicit width
+                      }}
+                    >
+                      
+                      {/* Cat Shadow - Keep current positioning */}
+                      <img
+                        src="/assets/cat_shadow.svg"
+                        alt="Cat shadow"
+                        className="animate-shadow-expand"
+                        style={{
+                          position: 'absolute',
+                          bottom: 0,
+                          left: 'calc(50% - 40px)',
+                          width: '80px',
+                          height: '24px',
+                          zIndex: 10,
+                          display: 'block',
+                        }}
+                      />
+                      
+                      {/* Cat Image - Keep current positioning */}
+                      <img 
+                        src="/assets/cat_top.png" 
+                        alt="Jumping cat" 
+                        className="animate-cat-jump"
+                        style={{
+                          position: 'absolute',
+                          bottom: '10px', // Start 10px higher than current position
+                          left: 'calc(50% - 90px)', // Adjusted for larger size
+                          width: '180px', // Increased by 1/6 (154 * 1.167)
+                          height: '114px', // Increased by 1/6 (98 * 1.167)
+                          zIndex: 20,
+                          display: 'block',
+                        }}
+                      />
+                      
+                      {/* Yellow Question Mark - Follows cat's head exactly */}
+                      <div 
+                        style={{
+                          position: 'absolute',
+                          bottom: '120px', // Position above cat's head
+                          left: 'calc(50% - 15px)', // Center above cat
+                          width: '30px',
+                          height: '30px',
+                          zIndex: 30,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          transform: 'rotate(15deg) translateY(-20px)', // Slightly tilted and move up with cat
+                          fontSize: '24px',
+                          fontWeight: 'bold',
+                          color: '#b45309', // Same color as "No Judges Assigned" text (amber-700)
+                          textShadow: '2px 2px 4px rgba(0,0,0,0.3)',
+                          animation: 'cat-jump 2.2s infinite ease-in-out, question-blink 2.5s infinite ease-in-out', // Jump animation + slower blink animation
+                          animationDelay: '0.05s, 0s', // Reduced jump delay to sync better with cat
+                        }}
+                      >
+                        ?
+                      </div>
                     </div>
                     <h3 className="text-2xl font-bold font-serif text-amber-700 mb-2 text-center">No Judges Assigned</h3>
                     <div className="h-1 w-16 bg-gradient-to-r from-amber-400 to-yellow-300 rounded-full mb-4 mx-auto"></div>
@@ -1155,12 +1192,6 @@ export default function GeneralTab({
                         <span>All fields marked with <span className="text-red-500 text-base align-middle">●</span> are required</span>
                       </li>
                     </ul>
-                    <style>{`
-                      @keyframes bounce-slow { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-                      .animate-bounce-slow { animation: bounce-slow 2.2s infinite cubic-bezier(.68,-0.55,.27,1.55); }
-                      .cat-tail { transform-origin: 67px 68px; animation: tail-wag 1.8s infinite alternate ease-in-out; }
-                      @keyframes tail-wag { 0% { transform: rotate(-12deg); } 100% { transform: rotate(20deg); } }
-                    `}</style>
                   </div>
                 )}
                 

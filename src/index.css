@@ -761,3 +761,57 @@ button.disabled:hover, button.disabled:focus {
   animation: dash-pulse 3s ease-in-out infinite;
 }
 
+/* Cat Animation Keyframes - Fixed positioning without transform conflicts */
+@keyframes cat-jump {
+  0%, 100% { 
+    transform: translateY(0); 
+  }
+  50% { 
+    transform: translateY(-20px); 
+  }
+}
+
+.animate-cat-jump {
+  animation: cat-jump 2.2s infinite ease-in-out;
+}
+
+@keyframes shadow-shrink {
+  0%, 100% { 
+    transform: scale(0.7); 
+  }
+  50% { 
+    transform: scale(1); 
+  }
+}
+
+.animate-shadow-shrink {
+  animation: shadow-shrink 2.2s infinite cubic-bezier(.68,-0.55,.27,1.55);
+}
+
+@keyframes shadow-expand {
+  0%, 100% { 
+    transform: scale(0.7); 
+  }
+  50% { 
+    transform: scale(1); 
+  }
+}
+
+.animate-shadow-expand {
+  animation: shadow-expand 2.2s infinite cubic-bezier(.68,-0.55,.27,1.55);
+  animation-delay: 0.25s; /* Reduced delay to sync better with cat jump */
+}
+
+@keyframes question-blink {
+  0%, 60% { 
+    opacity: 1; 
+  }
+  30%, 90% { 
+    opacity: 0.3; 
+  }
+}
+
+.animate-question-blink {
+  animation: question-blink 2.5s infinite ease-in-out;
+}
+

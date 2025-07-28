@@ -12,6 +12,7 @@ import BreedSheetsTab from './components/BreedSheetsTab'
 import type { BreedSheetsTabData } from './components/BreedSheetsTab'
 import SettingsPanel from './components/SettingsPanel'
 import Tooltip from './components/Tooltip'
+import { handleRestoreFromCSV } from './utils/formActions'
 
 interface Judge {
   id: number;
@@ -380,7 +381,6 @@ function App() {
   // Function to handle CSV import and restore application state
   const handleCSVImport = async () => {
     try {
-      const { handleRestoreFromCSV } = await import('./utils/formActions');
       const restoredState = await handleRestoreFromCSV(showSuccess, showError);
       if (!restoredState) return;
 

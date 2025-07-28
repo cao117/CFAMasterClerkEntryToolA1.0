@@ -22,6 +22,17 @@ export default {
       }
     },
   },
-  plugins: [],
+  plugins: [
+    function({ addComponents }) {
+      addComponents({
+        '.banner': {
+          '@apply bg-[url("/banner.svg")] bg-no-repeat w-full bg-cover bg-center h-full': {},
+        },
+        '.banner02': {
+          '@apply bg-[url("/banner02.svg")] bg-no-repeat w-full bg-cover bg-center h-full': {},
+        },
+      })
+    }
+  ],
 }
 
