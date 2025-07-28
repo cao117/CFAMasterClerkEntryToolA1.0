@@ -726,12 +726,6 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
       const count = getChampionshipCountForRingType(specialty);
       const calculated = count >= 85 ? 15 : 10;
       
-      // Debug logging
-      console.log(`[DEBUG] getShowAwardsRowCount for col ${colIdx}, specialty ${specialty}:`);
-      console.log(`  - Count: ${count}`);
-      console.log(`  - Breakpoint: ${count >= 85 ? '85+' : '<85'}`);
-      console.log(`  - Calculated rows: ${calculated}`);
-      
       // Only check for imported data if it's within the valid range for this ring type
       let maxIdx = -1;
       Object.keys(championshipTabData.showAwards).forEach(key => {
@@ -900,30 +894,25 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
         // Top 10/15: VOID → format → duplicate (full-form) → sequential → always run full-form validation for all cells
         // See VALIDATION_CHAMPIONSHIP.md for full validation order and rationale
         if (isVoidInput(localValue)) {
-          console.log('[CH Tab] VOID check:', { errorKey, localValue });
           setErrors((prev: any) => {
             const copy = { ...prev };
             delete copy[errorKey];
             return copy;
           });
           const allErrors = validateChampionshipTab(input);
-          console.log('[CH Tab] After VOID, allErrors:', allErrors);
           setErrors(allErrors);
           setLocalInputState(prev => { const copy = { ...prev }; delete copy[key]; return copy; });
           return;
         }
         if (localValue && !validateCatNumber(localValue)) {
-          console.log('[CH Tab] Format error:', { errorKey, localValue });
           setErrors((prev: any) => ({ ...prev, [errorKey]: 'Cat number must be between 1-450 or VOID' }));
           const allErrors = validateChampionshipTab(input);
-          console.log('[CH Tab] After format, allErrors:', allErrors);
           setErrors(allErrors); // Always set all errors after any check
           setLocalInputState(prev => { const copy = { ...prev }; delete copy[key]; return copy; });
           return;
         }
         // Duplicate check (full-form): show duplicate error if present before sequential
         const allErrors = validateChampionshipTab(input);
-        console.log('[CH Tab] After full-form validation:', { errorKey, errorForCell: allErrors[errorKey], allErrors });
         if (allErrors[errorKey] && allErrors[errorKey].toLowerCase().includes('duplicate')) {
           setErrors(allErrors); // Set all errors for all cells, not just this one
           setLocalInputState(prev => { const copy = { ...prev }; delete copy[key]; return copy; });
@@ -931,16 +920,13 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
         }
         // Sequential entry check (only if no duplicate error)
         if (!validateSequentialEntry(input, section, colIdx, rowIdx, localValue)) {
-          console.log('[CH Tab] Sequential error:', { errorKey, localValue });
           setErrors((prev: any) => ({ ...prev, [errorKey]: 'You must fill previous placements before entering this position.' }));
           const allErrorsSeq = validateChampionshipTab(input);
-          console.log('[CH Tab] After sequential, allErrorsSeq:', allErrorsSeq);
           setErrors(allErrorsSeq); // Always set all errors after any check
           setLocalInputState(prev => { const copy = { ...prev }; delete copy[key]; return copy; });
           return;
         }
         // If no errors, always run full-form validation for all cells
-        console.log('[CH Tab] No errors, setting all errors:', validateChampionshipTab(input));
         setErrors(validateChampionshipTab(input));
         setLocalInputState(prev => { const copy = { ...prev }; delete copy[key]; return copy; });
         return;

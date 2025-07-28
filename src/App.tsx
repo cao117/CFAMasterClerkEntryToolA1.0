@@ -487,6 +487,8 @@ function App() {
           shGps: showData.premiershipCounts.shGps,
           lhPrs: showData.premiershipCounts.lhPrs,
           shPrs: showData.premiershipCounts.shPrs,
+          lhNovs: showData.premiershipCounts.lhNovs,
+          shNovs: showData.premiershipCounts.shNovs,
           novs: showData.premiershipCounts.novs,
           prs: showData.premiershipCounts.prs
         }}

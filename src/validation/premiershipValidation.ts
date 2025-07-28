@@ -33,6 +33,8 @@ export interface PremiershipValidationInput {
     shGps: number;
     lhPrs: number;
     shPrs: number;
+    lhNovs: number;
+    shNovs: number;
     novs: number;
     prs: number;
   };
@@ -178,16 +180,16 @@ export function getPremiershipCountForRingType(input: PremiershipValidationInput
   let count = 0;
   switch (ringType) {
     case 'Allbreed':
-      count = premiershipCounts.gps + premiershipCounts.prs; // Total GPs + Total PRs
+      count = premiershipCounts.gps + premiershipCounts.prs + premiershipCounts.lhNovs + premiershipCounts.shNovs; // Total GPs + Total PRs + Novices
       break;
     case 'Longhair':
-      count = premiershipCounts.lhGps + premiershipCounts.lhPrs; // LH GPs + LH PRs
+      count = premiershipCounts.lhGps + premiershipCounts.lhPrs + premiershipCounts.lhNovs; // LH GPs + LH PRs + LH Novices
       break;
     case 'Shorthair':
-      count = premiershipCounts.shGps + premiershipCounts.shPrs; // SH GPs + SH PRs
+      count = premiershipCounts.shGps + premiershipCounts.shPrs + premiershipCounts.shNovs; // SH GPs + SH PRs + SH Novices
       break;
     default:
-      count = premiershipCounts.gps + premiershipCounts.prs; // Default to total
+      count = premiershipCounts.gps + premiershipCounts.prs + premiershipCounts.lhNovs + premiershipCounts.shNovs; // Default to total including novices
       break;
   }
   

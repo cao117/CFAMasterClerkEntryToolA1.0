@@ -28,6 +28,8 @@ interface PremiershipTabProps {
     shGps: number;
     lhPrs: number;
     shPrs: number;
+    lhNovs: number;
+    shNovs: number;
     novs: number;
     prs: number;
   };
@@ -98,7 +100,7 @@ export default function PremiershipTab({
   onCSVImport
 }: PremiershipTabProps) {
   // State for dynamic table structure
-  const [numAwardRows] = useState(10);
+  const [numAwardRows, setNumAwardRows] = useState(10);
   
   // State for validation errors and modal
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
@@ -148,14 +150,23 @@ export default function PremiershipTab({
     return cols;
   }, [judges]);
 
+  // Update numAwardRows based on breakpoint (like Championship tab)
+  useEffect(() => {
+    if (premiershipTotal >= 50) {
+      setNumAwardRows(15);
+    } else {
+      setNumAwardRows(10);
+    }
+  }, [premiershipTotal]);
+
   // --- Helper: Get finals/Best PR counts for a ring type ---
   const getFinalsCount = (ringType: string) => {
     if (ringType === 'Allbreed') {
-      return premiershipCounts.gps + premiershipCounts.prs >= 50 ? 15 : 10;
+      return premiershipCounts.gps + premiershipCounts.prs + premiershipCounts.lhNovs + premiershipCounts.shNovs >= 50 ? 15 : 10;
     } else if (ringType === 'Longhair') {
-      return premiershipCounts.lhGps + premiershipCounts.lhPrs >= 50 ? 15 : 10;
+      return premiershipCounts.lhGps + premiershipCounts.lhPrs + premiershipCounts.lhNovs >= 50 ? 15 : 10;
     } else if (ringType === 'Shorthair') {
-      return premiershipCounts.shGps + premiershipCounts.shPrs >= 50 ? 15 : 10;
+      return premiershipCounts.shGps + premiershipCounts.shPrs + premiershipCounts.shNovs >= 50 ? 15 : 10;
     }
     return 10; // Default fallback
   };
@@ -176,19 +187,25 @@ export default function PremiershipTab({
 
   // --- Helper: Get Show Awards row count for a column ---
   const getShowAwardsRowCount = (colIdx: number, specialty: string): number => {
-    const calculated = getFinalsCount(specialty);
-    // Find max row index present in imported showAwards for this column
+    // Calculate the correct breakpoint based on ring type
+    const count = getFinalsCount(specialty);
+    
+    // Only check for imported data if it's within the valid range for this ring type
     let maxIdx = -1;
     Object.keys(premiershipTabData.showAwards).forEach(key => {
       const [col, row] = key.split('-').map(Number);
-      if (col === colIdx && row > maxIdx) maxIdx = row;
+      if (col === colIdx && row >= 0 && row < count) {
+        maxIdx = Math.max(maxIdx, row);
+      }
     });
-    return Math.max(calculated, maxIdx + 1);
+    
+    // Return the calculated value (don't override with imported data that exceeds the breakpoint)
+    return count;
   };
 
   // --- Helper: Get Finals row count for a column/section ---
   const getFinalsRowCount = (colIdx: number, specialty: string, section: 'ab' | 'lh' | 'sh'): number => {
-    const calculated = getFinalsCount(specialty) >= 50 ? 5 : 3;
+    const calculated = getFinalsCount(specialty) >= 50 ? 3 : 2;
     let finalsObj: Record<string, string> = {};
     if (section === 'ab') finalsObj = premiershipTabData.abPremiersFinals;
     if (section === 'lh') finalsObj = premiershipTabData.lhPremiersFinals;
@@ -196,7 +213,9 @@ export default function PremiershipTab({
     let maxIdx = -1;
     Object.keys(finalsObj).forEach(key => {
       const [col, row] = key.split('-').map(Number);
-      if (col === colIdx && row > maxIdx) maxIdx = row;
+      if (col === colIdx && row > maxIdx) {
+        maxIdx = row;
+      }
     });
     return Math.max(calculated, maxIdx + 1);
   };
@@ -204,25 +223,61 @@ export default function PremiershipTab({
     let count = 0;
     switch (ringType) {
       case 'Allbreed':
-        count = premiershipCounts.gps + premiershipCounts.prs;
+        count = premiershipCounts.gps + premiershipCounts.prs + premiershipCounts.lhNovs + premiershipCounts.shNovs;
         break;
       case 'Longhair':
-        count = premiershipCounts.lhGps + premiershipCounts.lhPrs;
+        count = premiershipCounts.lhGps + premiershipCounts.lhPrs + premiershipCounts.lhNovs;
         break;
       case 'Shorthair':
-        count = premiershipCounts.shGps + premiershipCounts.shPrs;
+        count = premiershipCounts.shGps + premiershipCounts.shPrs + premiershipCounts.shNovs;
         break;
       default:
-        count = premiershipCounts.gps + premiershipCounts.prs;
+        count = premiershipCounts.gps + premiershipCounts.prs + premiershipCounts.lhNovs + premiershipCounts.shNovs;
         break;
     }
     return count >= 50 ? 3 : 2; // 3 positions if 15 awards, 2 if 10 awards
   };
 
+  // Helper function to calculate row index for each section (like Championship tab)
+  const getRowIndexForSection = (colIdx: number, specialty: string, section: 'showAwards' | 'ab' | 'lh' | 'sh', position: number): number => {
+    const sections = getSectionsForRingType(specialty);
+    let rowIndex = 0;
+    
+    // Add Show Awards rows
+    if (section === 'showAwards') {
+      return position;
+    }
+    
+    rowIndex += getShowAwardsRowCount(colIdx, specialty);
+    
+    // Add rows for sections that come before the target section
+    if (section === 'ab') {
+      return rowIndex + position;
+    }
+    
+    if (sections.includes('ab')) {
+      rowIndex += getFinalsRowCount(colIdx, specialty, 'ab');
+    }
+    
+    if (section === 'lh') {
+      return rowIndex + position;
+    }
+    
+    if (sections.includes('lh')) {
+      rowIndex += getFinalsRowCount(colIdx, specialty, 'lh');
+    }
+    
+    if (section === 'sh') {
+      return rowIndex + position;
+    }
+    
+    return rowIndex;
+  };
+
   // Accessibility: refs for ALL Cat # input fields (Show Awards + Finals)
   // We'll build a 2D array: catInputRefs[columnIndex][verticalRowIndex]
-  // Calculate total rows: Show Awards + Best AB PR + Best LH PR + Best SH PR
-  const maxFinalsRows = Math.max(...columns.map(col => getFinalsPositionsForRingTypeLocal(col.specialty)));
+  // Calculate totalCatRows using consistent logic (like ChampionshipTab approach)
+  const maxFinalsRows = premiershipTotal >= 50 ? 3 : 2;
   const totalCatRows = numAwardRows + maxFinalsRows + maxFinalsRows + maxFinalsRows; // Show Awards + AB + LH + SH
   const catInputRefs = useRef<(HTMLInputElement | null)[][]>([]);
   useEffect(() => {
@@ -291,7 +346,9 @@ export default function PremiershipTab({
           } else {
             // Move to next column
             nextCol++;
-            if (nextCol >= columns.length) return null; // End of table
+            if (nextCol >= columns.length) {
+              return null; // End of table
+            }
             nextRow = 0;
           }
         } else {
@@ -301,7 +358,9 @@ export default function PremiershipTab({
           } else {
             // Move to previous column
             nextCol--;
-            if (nextCol < 0) return null; // Beginning of table
+            if (nextCol < 0) {
+              return null; // Beginning of table
+            }
             const prevCol = columns[nextCol];
             const prevSections = getSectionsForRingType(prevCol.specialty);
             const prevShowAwardsCount = getShowAwardsRowCount(nextCol, prevCol.specialty);
@@ -483,6 +542,8 @@ export default function PremiershipTab({
       shGps: premiershipCounts.shGps,
       lhPrs: premiershipCounts.lhPrs,
       shPrs: premiershipCounts.shPrs,
+      lhNovs: premiershipCounts.lhNovs,
+      shNovs: premiershipCounts.shNovs,
       novs: premiershipCounts.novs,
       prs: premiershipCounts.prs
     },
@@ -937,19 +998,23 @@ export default function PremiershipTab({
                   {maxFinalRows === 0 || columns.length === 0 ? (
                     <tr><td colSpan={columns.length + 1} style={{ color: 'red', textAlign: 'center' }}>No awards rows rendered (maxFinalRows={maxFinalRows}, columns={columns.length})</td></tr>
                   ) : null}
-                {Array.from({ length: maxFinalRows }, (_, i) => (
-                  columns.some(col => i < getFinalsCount(col.specialty)) ? (
-                    <tr key={`final-row-${i}`} className="cfa-table-row">
-                      {/* Frozen position column: apply thick blue right border if first data column is focused */}
-                      <td
-                        className={`py-2 pl-4 font-medium text-sm bg-white frozen-column ${
-                          shouldApplyRingGlow(0) && focusedColumnIndex === 0 ? 'border-r-4 border-blue-300' : 'border-r border-gray-300'
-                        }`}
-                        style={{ width: '140px', minWidth: '140px' }}
-                      >
-                        {i + 1}{i >= 10 ? '*' : ''}
-                      </td>
-                      {columns.map((col, colIdx) => {
+                {Array.from({ length: 15 }, (_, i) => {
+                  // Only render the row if at least one column needs this position
+                  const shouldRenderRow = columns.some(col => i < getShowAwardsRowCount(columns.indexOf(col), col.specialty));
+                  
+                  if (shouldRenderRow) {
+                    return (
+                      <tr key={`final-row-${i}`} className="cfa-table-row">
+                        {/* Frozen position column: apply thick blue right border if first data column is focused */}
+                        <td
+                          className={`py-2 pl-4 font-medium text-sm bg-white frozen-column ${
+                            shouldApplyRingGlow(0) && focusedColumnIndex === 0 ? 'border-r-4 border-blue-300' : 'border-r border-gray-300'
+                          }`}
+                          style={{ width: '140px', minWidth: '140px' }}
+                        >
+                          {i + 1}{i >= 10 ? '*' : ''}
+                        </td>
+                        {columns.map((col, colIdx) => {
                           const cell = getShowAward(colIdx, i);
                           const errorKey = `${colIdx}-${i}`;
                           const catNumber = cell.catNumber;
@@ -959,8 +1024,11 @@ export default function PremiershipTab({
                           const cellBorderClass = shouldApplyRingGlow(colIdx)
                             ? 'border-l-4 border-r-4 border-blue-300 z-10'
                             : 'border-r border-blue-200';
-                          if (i < getFinalsCount(col.specialty)) {
-                          return (
+                          // Each column independently decides whether to show this position
+                          const shouldShowCell = i < getShowAwardsRowCount(colIdx, col.specialty);
+                          
+                          if (shouldShowCell) {
+                            return (
                               <td
                                 key={`final-cell-${col.judge.id}-${col.specialty}-${i}`}
                                 className={`py-2 px-2 align-top transition-all duration-150 whitespace-nowrap overflow-x-visible ${cellBorderClass} hover:bg-gray-50`}
@@ -971,31 +1039,31 @@ export default function PremiershipTab({
                                   transition: 'width 0.2s',
                                 }}
                               >
-                              <div className="flex flex-col items-start">
-                                <div className="flex gap-2 items-center">
+                                <div className="flex flex-col items-start">
+                                  <div className="flex gap-2 items-center">
                                     {/* Cat # input: bulletproof editable */}
-                                  <input
-                                    type="text"
+                                    <input
+                                      type="text"
                                       className={`w-16 h-9 text-sm text-center font-medium rounded-md px-3 bg-white/60 border border-blue-200 shadow focus:border-blue-400 focus:ring-2 focus:ring-blue-100 focus:bg-white/90 focus:shadow-lg transition-all duration-200 placeholder-zinc-300 ${errors[errorKey] ? 'cfa-input-error' : ''} ${isVoidInput(localInputState[getCatInputKey('showAwards', colIdx, i)] ?? catNumber) ? 'opacity-50 grayscale line-through' : ''}`}
-                                    placeholder="Cat #"
+                                      placeholder="Cat #"
                                       value={localInputState[getCatInputKey('showAwards', colIdx, i)] ?? catNumber}
-                                    onChange={e => handleCatInputChange('showAwards', colIdx, i, e.target.value)}
-                                    onBlur={() => handleCatInputBlur('showAwards', colIdx, i)}
-                                    onFocus={e => handleCatInputFocusLocal('showAwards', colIdx, i, catNumber, e)}
-                                    onKeyDown={e => handleCatInputKeyDownLocal('showAwards', colIdx, i, e, i)}
-                                    ref={el => {
-                                      if (!catInputRefs.current[colIdx]) catInputRefs.current[colIdx] = [];
-                                      catInputRefs.current[colIdx][i] = el;
-                                    }}
-                                  />
+                                      onChange={e => handleCatInputChange('showAwards', colIdx, i, e.target.value)}
+                                      onBlur={() => handleCatInputBlur('showAwards', colIdx, i)}
+                                      onFocus={e => handleCatInputFocusLocal('showAwards', colIdx, i, catNumber, e)}
+                                      onKeyDown={e => handleCatInputKeyDownLocal('showAwards', colIdx, i, e, i)}
+                                      ref={el => {
+                                        if (!catInputRefs.current[colIdx]) catInputRefs.current[colIdx] = [];
+                                        catInputRefs.current[colIdx][getRowIndexForSection(colIdx, col.specialty, 'showAwards', i)] = el;
+                                      }}
+                                    />
                                     {/* Only render status dropdown if not VOID */}
                                     {!isVoidInput(catNumber) && (
-                                  <CustomSelect
-                                    options={['GP', 'PR', 'NOV']}
+                                      <CustomSelect
+                                        options={['GP', 'PR', 'NOV']}
                                         value={status || 'GP'} // Defensive: always default to 'GP' if missing
-                                    onChange={val => updateShowAward(colIdx, i, 'status', val)}
+                                        onChange={val => updateShowAward(colIdx, i, 'status', val)}
                                         className="min-w-[70px]"
-                                    ariaLabel="Status"
+                                        ariaLabel="Status"
                                         borderColor="border-blue-300"
                                         focusBorderColor="focus:border-blue-500"
                                         textColor="text-blue-700"
@@ -1005,9 +1073,9 @@ export default function PremiershipTab({
                                         selectedText="text-blue-800"
                                         hoverBg="bg-blue-50"
                                         hoverText="text-blue-900"
-                                  />
+                                      />
                                     )}
-                                </div>
+                                  </div>
                                   {/* Error message */}
                                   {errors[errorKey] && (
                                     <div className="mt-1 rounded-lg bg-red-50 border border-red-300 px-3 py-2 shadow text-xs text-red-700 font-semibold flex items-center gap-2 whitespace-normal break-words w-full">
@@ -1018,16 +1086,23 @@ export default function PremiershipTab({
                                       {errors[errorKey]}
                                     </div>
                                   )}
-                              </div>
-                            </td>
-                          );
-                        } else {
-                            return <td key={`final-cell-${col.judge.id}-${col.specialty}-${i}`} className={`py-2 px-2 border-r border-blue-200 align-top`}>&nbsp;</td>;
-                        }
-                      })}
-                    </tr>
-                  ) : null
-                ))}
+                                </div>
+                              </td>
+                            );
+                          } else {
+                            return (
+                              <td 
+                                key={`final-cell-${col.judge.id}-${col.specialty}-${i}`} 
+                                className={`py-2 px-2 border-r border-blue-200 align-top transition-all duration-150 ${shouldApplyRingGlow(colIdx) ? ' border-l-4 border-r-4 border-blue-300 z-10' : ''}`}
+                              >&nbsp;</td>
+                            );
+                          }
+                        })}
+                      </tr>
+                    );
+                  }
+                  return null;
+                })}
                 {/* Best AB PR Section (Allbreed only) */}
                         {Array.from({ length: Math.max(...columns.map(col => col.specialty === 'Allbreed' ? getFinalsPositionsForRingTypeLocal(col.specialty) : 0)) }, (_, i) => (
           columns.some(col => col.specialty === 'Allbreed' && i < getFinalsPositionsForRingTypeLocal(col.specialty)) ? (
@@ -1059,10 +1134,10 @@ export default function PremiershipTab({
                                     onChange={e => handleCatInputChange('ab', colIdx, i, e.target.value)}
                                     onBlur={() => handleCatInputBlur('ab', colIdx, i)}
                                     onFocus={e => handleCatInputFocusLocal('ab', colIdx, i, value, e)}
-                                    onKeyDown={e => handleCatInputKeyDownLocal('ab', colIdx, i, e, numAwardRows + i)}
+                                    onKeyDown={e => handleCatInputKeyDownLocal('ab', colIdx, i, e, getRowIndexForSection(colIdx, col.specialty, 'ab', i))}
                                     ref={el => {
                                       if (!catInputRefs.current[colIdx]) catInputRefs.current[colIdx] = [];
-                                      catInputRefs.current[colIdx][numAwardRows + i] = el;
+                                      catInputRefs.current[colIdx][getRowIndexForSection(colIdx, col.specialty, 'ab', i)] = el;
                                     }}
                                   />
                                 </div>
@@ -1114,10 +1189,10 @@ export default function PremiershipTab({
                                     onChange={e => handleCatInputChange('lh', colIdx, i, e.target.value)}
                                     onBlur={() => handleCatInputBlur('lh', colIdx, i)}
                                     onFocus={e => handleCatInputFocusLocal('lh', colIdx, i, value, e)}
-                                    onKeyDown={e => handleCatInputKeyDownLocal('lh', colIdx, i, e, numAwardRows + maxFinalsRows + i)}
+                                    onKeyDown={e => handleCatInputKeyDownLocal('lh', colIdx, i, e, getRowIndexForSection(colIdx, col.specialty, 'lh', i))}
                                     ref={el => {
                                       if (!catInputRefs.current[colIdx]) catInputRefs.current[colIdx] = [];
-                                      catInputRefs.current[colIdx][numAwardRows + maxFinalsRows + i] = el;
+                                      catInputRefs.current[colIdx][getRowIndexForSection(colIdx, col.specialty, 'lh', i)] = el;
                                     }}
                                   />
                                 </div>
@@ -1169,10 +1244,10 @@ export default function PremiershipTab({
                                     onChange={e => handleCatInputChange('sh', colIdx, i, e.target.value)}
                                     onBlur={() => handleCatInputBlur('sh', colIdx, i)}
                                     onFocus={e => handleCatInputFocusLocal('sh', colIdx, i, value, e)}
-                                    onKeyDown={e => handleCatInputKeyDownLocal('sh', colIdx, i, e, numAwardRows + maxFinalsRows + maxFinalsRows + i)}
+                                    onKeyDown={e => handleCatInputKeyDownLocal('sh', colIdx, i, e, getRowIndexForSection(colIdx, col.specialty, 'sh', i))}
                                     ref={el => {
                                       if (!catInputRefs.current[colIdx]) catInputRefs.current[colIdx] = [];
-                                      catInputRefs.current[colIdx][numAwardRows + maxFinalsRows + maxFinalsRows + i] = el;
+                                      catInputRefs.current[colIdx][getRowIndexForSection(colIdx, col.specialty, 'sh', i)] = el;
                                     }}
                                   />
                                 </div>

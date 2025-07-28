@@ -4,16 +4,20 @@ This changelog records all changes, additions, and deletions to validation rules
 
 ---
 
-### [2024-12-19] Championship Tab: Breakpoint Rule Update - Novices Now Included
-- **Tabs:** Championship
+### [2024-12-19] Championship & Premiership Tabs: Breakpoint Rule Update - Novices Now Included
+- **Tabs:** Championship, Premiership
 - **Change:** Updated breakpoint calculations to include novices (NOV) in the count for all ring types
 - **Summary:** 
   - **Championship Tab**:
     - **Allbreed Rings**: Breakpoint now includes LH NOV + SH NOV (LH GC + SH GC + LH CH + SH CH + LH NOV + SH NOV ≥ 85)
     - **Longhair Rings**: Breakpoint now includes LH NOV (LH GC + LH CH + LH NOV ≥ 85)
     - **Shorthair Rings**: Breakpoint now includes SH NOV (SH GC + SH CH + SH NOV ≥ 85)
-  - **Documentation Updated**: VALIDATION_CHAMPIONSHIP.md updated to reflect new breakpoint rules
-  - **Code Implementation**: Updated App.tsx, ChampionshipTab.tsx, and championshipValidation.ts to include novices in calculations
+  - **Premiership Tab**:
+    - **Allbreed Rings**: Breakpoint now includes LH NOV + SH NOV (LH GP + SH GP + LH PR + SH PR + LH NOV + SH NOV ≥ 50)
+    - **Longhair Rings**: Breakpoint now includes LH NOV (LH GP + LH PR + LH NOV ≥ 50)
+    - **Shorthair Rings**: Breakpoint now includes SH NOV (SH GP + SH PR + SH NOV ≥ 50)
+  - **Documentation Updated**: VALIDATION_CHAMPIONSHIP.md and VALIDATION_PREMIERSHIP.md updated to reflect new breakpoint rules
+  - **Code Implementation**: Updated App.tsx, ChampionshipTab.tsx, PremiershipTab.tsx, championshipValidation.ts, and premiershipValidation.ts to include novices in calculations
 - **Rationale:** Novices should count towards the total cat count for determining breakpoints, as they are part of the overall show population that affects position availability
 - **Impact:** More shows will now qualify for Top 15 positions and additional finals positions, as novices are included in breakpoint calculations
 

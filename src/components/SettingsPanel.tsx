@@ -275,7 +275,6 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess, globalSett
   // Save settings
   const handleSaveSettings = () => {
     // In a real implementation, this would save to localStorage or a file
-    console.log('Saving settings:', globalSettings);
     showSuccess('Settings Saved', 'All settings have been saved successfully.');
     onClose();
   };
