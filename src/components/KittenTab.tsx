@@ -5,6 +5,7 @@ import * as kittenValidation from '../validation/kittenValidation';
 import type { KittenValidationInput } from '../validation/kittenValidation';
 import { handleSaveToCSV } from '../utils/formActions';
 import CustomSelect from './CustomSelect';
+import { formatJumpToMenuOptions, formatJumpToMenuValue, getRoomTypeAbbreviation } from '../utils/jumpToMenuUtils';
 
 interface Judge {
   id: number;
@@ -396,29 +397,30 @@ export default function KittenTab({
           </div>
           {/* Right: Minimal Dropdown, inline cat icon in selected value only */}
           <CustomSelect
-            options={columns.map((col, idx) => `Ring ${col.judge.id} - ${col.judge.acronym}`)}
-            value={
-              focusedColumnIndex !== null && focusedColumnIndex >= 0 && focusedColumnIndex < columns.length
-                ? `Ring ${columns[focusedColumnIndex].judge.id} - ${columns[focusedColumnIndex].judge.acronym}`
-                : `Ring ${columns[0].judge.id} - ${columns[0].judge.acronym}`
-            }
-            onChange={(val: string) => {
-              const ringId = parseInt(val.split(" ")[1]);
-              const colIdx = columns.findIndex(col => col.judge.id === ringId);
-              if (colIdx === -1) return;
-              setFocusedColumnIndex(colIdx);
-              const th = document.getElementById(`ring-th-${colIdx}`);
-              const container = tableContainerRef.current;
-              if (th && container) {
-                const frozenWidth = 140;
-                const scrollLeft = th.offsetLeft - frozenWidth;
-                container.scrollTo({ left: scrollLeft, behavior: 'smooth' });
+            options={formatJumpToMenuOptions(columns)}
+            value={formatJumpToMenuValue(columns, focusedColumnIndex)}
+            onChange={(selectedValue) => {
+              const selectedIndex = columns.findIndex((col) => {
+                const ringNumber = col.judge.id.toString().padStart(2, '0');
+                const judgeAcronym = col.judge.acronym.padEnd(3, '\u00A0');
+                const formattedOption = `Ring ${ringNumber} - ${judgeAcronym} - ${getRoomTypeAbbreviation(col.specialty)}`;
+                return formattedOption === selectedValue;
+              });
+              if (selectedIndex !== -1) {
+                setFocusedColumnIndex(selectedIndex);
+                const th = document.getElementById(`ring-th-${selectedIndex}`);
+                const container = tableContainerRef.current;
+                if (th && container) {
+                  const frozenWidth = 140;
+                  const scrollLeft = th.offsetLeft - frozenWidth;
+                  container.scrollTo({ left: scrollLeft, behavior: 'smooth' });
+                }
               }
             }}
-            className="w-[220px] font-semibold text-base rounded-full px-4 py-2 bg-white border-2 border-green-200 shadow-md hover:shadow-lg focus:border-green-400 focus:shadow-lg text-green-700 transition-all duration-200"
+            className="w-[240px] font-semibold text-base rounded-full px-4 py-2 bg-white border-2 border-green-200 shadow-md hover:shadow-lg focus:border-green-400 focus:shadow-lg text-green-700 transition-all duration-200 font-mono"
             ariaLabel="Jump to Ring"
             selectedIcon="🐾"
-            dropdownMenuClassName="w-[220px] rounded-xl bg-gradient-to-b from-white via-green-50 to-white shadow-xl border-2 border-green-200 text-base font-semibold text-green-800 transition-all duration-200"
+            dropdownMenuClassName="w-[240px] rounded-xl bg-gradient-to-b from-white via-green-50 to-white shadow-xl border-2 border-green-200 text-base font-semibold text-green-800 transition-all duration-200 font-mono whitespace-pre"
             borderColor="border-green-300" // Green border
             focusBorderColor="focus:border-green-500" // Green border on focus
             textColor="text-green-700" // Green text
