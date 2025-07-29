@@ -38,7 +38,7 @@ const key = `${colIdx}_${pos}`;  // WRONG
 **All key generation MUST use hyphens because CSV export logic expects hyphen-separated keys**
 
 #### Critical Areas:
-- `src/utils/csvExport.ts` - All key generation uses hyphens
+- `src/utils/excelExport.ts` - All key generation uses hyphens
 - `src/validation/*.ts` - All validation functions must use hyphens
 - `src/components/*Tab.tsx` - All component key generation must use hyphens
 

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import React from 'react';
 import Modal from './Modal';
 import ActionButtons from './ActionButtons';
-import { handleSaveToCSV } from '../utils/formActions';
+import { handleSaveToExcel } from '../utils/excelExport';
 import { 
   validateBreedSheetsTab, 
   validateBreedSheetsField,
@@ -553,7 +553,7 @@ const BreedSheetsTab: React.FC<BreedSheetsTabProps> = (props) => {
     }
 
     // Export the full show state for Excel export
-    handleSaveToCSV(getShowState, showSuccess, showError);
+    handleSaveToExcel(getShowState, showSuccess, showError);
   };
 
   const handleRestoreFromCSVClick = () => {
@@ -1024,8 +1024,8 @@ const BreedSheetsTab: React.FC<BreedSheetsTabProps> = (props) => {
 
       {/* Premium Action Buttons - Centered, matches other tabs */}
       <ActionButtons
-        onSaveToCSV={handleSaveToCSVClick}
-        onLoadFromCSV={handleRestoreFromCSVClick}
+        onSaveToExcel={handleSaveToCSVClick}
+        onLoadFromExcel={handleRestoreFromCSVClick}
         onReset={handleResetClick}
       />
     </div>

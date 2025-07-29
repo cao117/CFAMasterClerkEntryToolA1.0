@@ -6,6 +6,7 @@ export interface Judge {
   name: string;
   acronym: string;
   ringType: string;
+  ringNumber: number;
 }
 
 export interface ShowData {
@@ -62,10 +63,25 @@ export function validateGeneralForm(showData: ShowData, judges: Judge[]): { [key
 
   // Judges
   judges.forEach((judge, index) => {
-    if (!judge.name) newErrors[`judge${index}Name`] = `Judge ${index + 1} name is required`;
-    if (judge.name.length > 120) newErrors[`judge${index}Name`] = `Judge ${index + 1} name cannot exceed 120 characters`;
-    if (!judge.acronym) newErrors[`judge${index}Acronym`] = `Judge ${index + 1} acronym is required`;
-    if (judge.acronym.length > 6) newErrors[`judge${index}Acronym`] = `Judge ${index + 1} acronym cannot exceed 6 characters`;
+    if (!judge.name) {
+      newErrors[`judge${judge.id}Name`] = `Judge ${judge.id} name is required`;
+    }
+    if (judge.name.length > 120) {
+      newErrors[`judge${judge.id}Name`] = `Judge ${judge.id} name cannot exceed 120 characters`;
+    }
+    if (!judge.acronym) {
+      newErrors[`judge${judge.id}Acronym`] = `Judge ${judge.id} acronym is required`;
+    }
+    if (judge.acronym.length > 6) {
+      newErrors[`judge${judge.id}Acronym`] = `Judge ${judge.id} acronym cannot exceed 6 characters`;
+    }
+    
+    // Ring Number validation - should be between 1 and max_judges (12)
+    if (!judge.ringNumber || judge.ringNumber < 1) {
+      newErrors[`judge${judge.id}RingNumber`] = `Judge ${judge.id} ring number must be between 1 and 12`;
+    } else if (judge.ringNumber > 12) {
+      newErrors[`judge${judge.id}RingNumber`] = `Judge ${judge.id} ring number cannot exceed 12 (max 12)`;
+    }
   });
 
   // Duplicate judge names
@@ -74,6 +90,9 @@ export function validateGeneralForm(showData: ShowData, judges: Judge[]): { [key
   if (judgeNames.length !== uniqueNames.size) {
     newErrors.judgeNames = 'Judge names must be unique';
   }
+
+  // Ring numbers don't need to be unique - users can assign any valid ring number
+  // No duplicate validation needed
 
   // Household Pet Count validation
   if (showData.householdPetCount < 0 || isNaN(showData.householdPetCount)) {

@@ -220,9 +220,9 @@ function buildGeneralSectionForExcel(general: any, judges: any[]): any[][] {
   // Add judge information as a table
   if (judges && judges.length > 0) {
     rows.push(['Judges']);
-    rows.push(['Judge Name', 'Acronym', 'Ring Type']);
+    rows.push(['Judge Name', 'Ring Number', 'Acronym', 'Ring Type']);
     for (const judge of judges) {
-      rows.push([judge.name, judge.acronym, judge.ringType]);
+      rows.push([judge.name, judge.ringNumber, judge.acronym, judge.ringType]);
     }
   }
   return rows;

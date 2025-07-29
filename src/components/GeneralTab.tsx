@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Modal from './Modal';
 import ActionButtons from './ActionButtons';
 import { validateGeneralForm } from '../validation/generalValidation';
-import { handleSaveToCSV, handleReset } from '../utils/formActions';
+import { handleSaveToExcel } from '../utils/excelExport';
 import CustomSelect from './CustomSelect';
 
 interface Judge {
@@ -10,6 +10,7 @@ interface Judge {
   name: string;
   acronym: string;
   ringType: string;
+  ringNumber: number;
 }
 
 interface ShowData {
@@ -182,7 +183,8 @@ export default function GeneralTab({
         id: currentCount + i + 1,
         name: '',
         acronym: '',
-        ringType: 'Allbreed'
+        ringType: 'Allbreed',
+        ringNumber: currentCount + i + 1
       }));
       setJudges([...judges, ...newJudges]);
     } else if (targetCount < currentCount) {
@@ -191,19 +193,52 @@ export default function GeneralTab({
     }
   }, [showData.numberOfJudges, judges.length]);
 
-  const updateJudge = (id: number, field: keyof Judge, value: string) => {
+  const updateJudge = (id: number, field: keyof Judge, value: string | number) => {
     let oldType = undefined;
     if (field === 'ringType') {
       const judge = judges.find(j => j.id === id);
       if (judge) oldType = judge.ringType;
     }
-    const updatedJudges = judges.map(judge =>
+    
+    let updatedJudges = judges.map(judge =>
       judge.id === id ? { ...judge, [field]: value } : judge
     );
+    
+    // Ring numbers don't need to be unique - allow any valid ring number
+    
     setJudges(updatedJudges);
-    if (field === 'ringType' && oldType && oldType !== value && typeof onJudgeRingTypeChange === 'function') {
-      onJudgeRingTypeChange(id, oldType, value);
+    
+    // Real-time validation for judge name and acronym fields
+    if (field === 'name' || field === 'acronym') {
+      const judge = updatedJudges.find(j => j.id === id);
+      if (judge) {
+        const fieldName = `judge${judge.id}${field.charAt(0).toUpperCase() + field.slice(1)}`;
+        
+        // Clear error if field is now valid
+        if (typeof value === 'string' && value.trim()) {
+          setErrors(prev => {
+            const newErrors = { ...prev };
+            delete newErrors[fieldName];
+            return newErrors;
+          });
+        }
+      }
     }
+    
+    if (field === 'ringType' && oldType && oldType !== value && typeof onJudgeRingTypeChange === 'function') {
+      onJudgeRingTypeChange(id, oldType, value as string);
+    }
+  };
+
+  // Function to reorder judges by ring number when ring number changes
+  const reorderJudgesByRingNumber = () => {
+    const sortedJudges = [...judges].sort((a, b) => a.ringNumber - b.ringNumber);
+    // Update judge IDs to match their new positions
+    const reindexedJudges = sortedJudges.map((judge, index) => ({
+      ...judge,
+      id: index + 1
+    }));
+    setJudges(reindexedJudges);
   };
 
   // Function to re-index judges after deletion
@@ -368,14 +403,25 @@ export default function GeneralTab({
   };
 
   const handleSaveToCSVClick = () => {
-    const errors = validateGeneralForm(showData, judges);
+    // Ensure judges are properly ordered before validation and export
+    const sortedJudges = [...judges].sort((a, b) => a.ringNumber - b.ringNumber);
+    const reindexedJudges = sortedJudges.map((judge, index) => ({
+      ...judge,
+      id: index + 1
+    }));
+    
+    // Update the judges state with properly ordered judges
+    setJudges(reindexedJudges);
+    
+    // Use the properly ordered judges for validation
+    const errors = validateGeneralForm(showData, reindexedJudges);
     setErrors(errors);
     if (Object.keys(errors).length > 0) {
       setIsCSVErrorModalOpen(true);
       return;
     }
-    // Export the full show state for CSV export
-    handleSaveToCSV(getShowState, showSuccess, showError);
+    // Export the full show state for Excel export
+    handleSaveToExcel(getShowState, showSuccess, showError);
   };
 
   const handleRestoreFromCSVClick = () => {
@@ -383,7 +429,7 @@ export default function GeneralTab({
   };
 
   const handleResetClick = () => {
-    handleReset(setIsResetModalOpen);
+    setIsResetModalOpen(true);
   };
 
   const confirmReset = () => {
@@ -531,7 +577,8 @@ export default function GeneralTab({
         id: i,
         name: judgeName,
         acronym: acronym,
-        ringType: 'Allbreed'
+        ringType: 'Allbreed',
+        ringNumber: i
       });
     }
 
@@ -728,13 +775,13 @@ export default function GeneralTab({
             
           {!isShowCountCollapsed && (
               <div className="space-y-4">
-                                {/* Championship Count Section */}
+                {/* Championship Count Section */}
                 <section className="bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl border border-emerald-200 p-4 shadow-sm">
                   <header className="flex items-center mb-3">
                     <div className="w-1 h-5 bg-gradient-to-b from-emerald-400 to-green-500 rounded-full mr-3"></div>
                     <div>
                       <h3 className="text-base font-semibold text-emerald-800 tracking-wide" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>Championship Count</h3>
-                    </div>
+            </div>
                   </header>
                   
                   <div className="space-y-3">
@@ -1082,8 +1129,8 @@ export default function GeneralTab({
                 <div className="p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg">
                   <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                </div>
+                            </svg>
+                        </div>
                 <div>
                   <span className="text-2xl font-bold text-gray-900 tracking-tight" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>Judge Information</span>
                 </div>
@@ -1173,7 +1220,7 @@ export default function GeneralTab({
                       </li>
                       <li className="flex items-start space-x-3">
                         <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-amber-100 text-amber-700 font-bold text-lg shadow-sm">2</span>
-                        <span>Fill in the <span className="font-semibold text-amber-600">judge name</span>, <span className="font-semibold text-amber-600">acronym</span>, and <span className="font-semibold text-amber-600">ring type</span> for each judge</span>
+                        <span>Fill in the <span className="font-semibold text-amber-600">judge name</span>, <span className="font-semibold text-amber-600">acronym</span>, <span className="font-semibold text-amber-600">ring number</span>, and <span className="font-semibold text-amber-600">ring type</span> for each judge</span>
                       </li>
                       <li className="flex items-start space-x-3">
                         <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-amber-100 text-amber-700 font-bold text-lg shadow-sm">3</span>
@@ -1187,64 +1234,93 @@ export default function GeneralTab({
                 {judges.length > 0 && (
                   <div className="overflow-x-auto">
                     <table className="min-w-full rounded-2xl bg-white shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300">
-                      <thead>
+                <thead>
                         <tr className="bg-gradient-to-r from-indigo-50 via-purple-50 to-blue-50 border-b border-indigo-200">
                           <th className="uppercase text-xs font-bold tracking-wider text-indigo-800 py-3 px-4 text-left" style={{ fontFamily: 'Inter, Arial, Helvetica, sans-serif' }}>Judge #</th>
+                          <th className="uppercase text-xs font-bold tracking-wider text-indigo-800 py-3 px-4 text-left" style={{ fontFamily: 'Inter, Arial, Helvetica, sans-serif' }}>Ring Number <span className="text-red-500 text-base">●</span></th>
                           <th className="uppercase text-xs font-bold tracking-wider text-indigo-800 py-3 px-4 text-left" style={{ fontFamily: 'Inter, Arial, Helvetica, sans-serif' }}>Judge Name <span className="text-red-500 text-base">●</span></th>
                           <th className="uppercase text-xs font-bold tracking-wider text-indigo-800 py-3 px-4 text-left" style={{ fontFamily: 'Inter, Arial, Helvetica, sans-serif' }}>Acronym <span className="text-red-500 text-base">●</span></th>
                           <th className="uppercase text-xs font-bold tracking-wider text-indigo-800 py-3 px-4 text-left" style={{ fontFamily: 'Inter, Arial, Helvetica, sans-serif' }}>Ring Type <span className="text-red-500 text-base">●</span></th>
                           <th className="bg-gradient-to-r from-indigo-50 via-purple-50 to-blue-50 border-b border-indigo-200 py-3 px-4 w-12"></th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {judges.map((judge, index) => (
+                  </tr>
+                </thead>
+                <tbody>
+                  {judges.map((judge, index) => (
                           <tr key={judge.id} className={`${index % 2 === 0 ? "bg-white" : "bg-indigo-50/30"} hover:bg-indigo-100/30 transition-all duration-200`} style={{ height: 48 }}>
                             <td className="px-4 py-3 align-middle">
+                              {/* Judge number badge - displays sequential judge number */}
                               <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-amber-200 to-orange-200 text-gray-800 font-bold text-sm text-center shadow-md border border-amber-300/50 hover:shadow-lg hover:from-amber-300 hover:to-orange-300 transition-all duration-200" style={{ fontFamily: 'Inter, Arial, Helvetica, sans-serif' }}>
                                 {index + 1}
                               </span>
                             </td>
                             <td className="px-4 py-3 align-middle">
+                              {/* Ring number input - compact width for two-digit numbers */}
+                              <input 
+                                type="number" 
+                                min="1" 
+                                max="12"
+                                value={judge.ringNumber} 
+                                onChange={e => {
+                                  const value = parseInt(e.target.value) || 1;
+                                  // Auto-cap at maximum value (12)
+                                  const cappedValue = Math.min(value, 12);
+                                  updateJudge(judge.id, 'ringNumber', cappedValue);
+                                }} 
+                                onFocus={() => handleFieldFocus(`judge${judge.id}RingNumber`)} 
+                                onBlur={(e) => {
+                                  handleFieldBlur();
+                                  // Reorder judges by ring number when focus is lost
+                                  setTimeout(() => reorderJudgesByRingNumber(), 0);
+                                }} 
+                                className={`w-20 text-center text-sm font-medium rounded-md py-1 px-2 focus:outline-none transition-all duration-300 shadow-sm ${errors[`judge${judge.id}RingNumber`] ? 'border-2 border-red-300 bg-red-50/80 focus:border-red-400 focus:ring-2 focus:ring-red-100' : 'border border-indigo-200 bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100'}`}
+                                placeholder="Ring #" 
+                                style={{ fontFamily: 'Inter, Arial, Helvetica, sans-serif' }} 
+                              />
+                            </td>
+                            <td className="px-4 py-3 align-middle">
+                              {/* Judge name input - full width for longer names */}
                               <input 
                                 type="text" 
                                 value={judge.name} 
                                 onChange={e => updateJudge(judge.id, 'name', e.target.value)} 
-                                onFocus={() => handleFieldFocus(`judge${index}Name`)} 
+                                onFocus={() => handleFieldFocus(`judge${judge.id}Name`)} 
                                 onBlur={handleFieldBlur} 
-                                className={`w-full rounded-lg px-3 py-2 text-sm font-medium transition-all duration-300 shadow-sm ${errors[`judge${index}Name`] ? 'border-2 border-red-300 bg-red-50/80 focus:border-red-400 focus:ring-2 focus:ring-red-100 placeholder-red-400' : 'border border-indigo-200 bg-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 placeholder-indigo-400 hover:border-indigo-300'}`}
+                                className={`w-full rounded-lg px-3 py-2 text-sm font-medium transition-all duration-300 shadow-sm ${errors[`judge${judge.id}Name`] ? 'border-2 border-red-300 bg-red-50/80 focus:border-red-400 focus:ring-2 focus:ring-red-100 placeholder-red-400' : 'border border-indigo-200 bg-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 placeholder-indigo-400 hover:border-indigo-300'}`}
                                 placeholder="Enter judge name" 
                                 style={{ fontFamily: 'Inter, Arial, Helvetica, sans-serif' }} 
                               />
                             </td>
                             <td className="px-4 py-3 align-middle">
+                              {/* Acronym input - compact width for max 5 characters, auto-converts to uppercase */}
                               <input 
                                 type="text" 
                                 value={judge.acronym} 
-                                onChange={e => updateJudge(judge.id, 'acronym', e.target.value)} 
-                                onFocus={() => handleFieldFocus(`judge${index}Acronym`)} 
+                                onChange={e => updateJudge(judge.id, 'acronym', e.target.value.toUpperCase())} 
+                                onFocus={() => handleFieldFocus(`judge${judge.id}Acronym`)} 
                                 onBlur={handleFieldBlur} 
-                                className={`w-full rounded-lg px-3 py-2 text-sm font-medium transition-all duration-300 shadow-sm ${errors[`judge${index}Acronym`] ? 'border-2 border-red-300 bg-red-50/80 focus:border-red-400 focus:ring-2 focus:ring-red-100 placeholder-red-400' : 'border border-indigo-200 bg-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 placeholder-indigo-400 hover:border-indigo-300'}`}
-                                placeholder="Enter Judge Acronym" 
+                                className={`w-24 text-center text-sm font-medium rounded-md py-1 px-2 focus:outline-none transition-all duration-300 shadow-sm ${errors[`judge${judge.id}Acronym`] ? 'border-2 border-red-300 bg-red-50/80 focus:border-red-400 focus:ring-2 focus:ring-red-100' : 'border border-indigo-200 bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100'}`}
+                                placeholder="Acronym" 
                                 maxLength={5} 
                                 style={{ fontFamily: 'Inter, Arial, Helvetica, sans-serif' }} 
                               />
                             </td>
                             <td className="px-4 py-3 align-middle">
+                              {/* Ring type dropdown - custom select component for specialty types */}
                               <CustomSelect 
                                 options={["Longhair", "Shorthair", "Allbreed", "Double Specialty"]} 
                                 value={judge.ringType} 
                                 onChange={val => updateJudge(judge.id, 'ringType', val)} 
                                 ariaLabel="Ring Type" 
                                 className="min-w-[140px] rounded-lg transition-all duration-300 shadow-sm"
-                                borderColor={errors[`judge${index}RingType`] ? "border-red-300" : "border-indigo-300"}
-                                focusBorderColor={errors[`judge${index}RingType`] ? "focus:border-red-500" : "focus:border-indigo-500"}
-                                textColor={errors[`judge${index}RingType`] ? "text-red-700" : "text-indigo-700"}
-                                highlightBg={errors[`judge${index}RingType`] ? "bg-red-50" : "bg-indigo-50"}
-                                highlightText={errors[`judge${index}RingType`] ? "text-red-900" : "text-indigo-900"}
-                                selectedBg={errors[`judge${index}RingType`] ? "bg-red-100" : "bg-indigo-100"}
-                                selectedText={errors[`judge${index}RingType`] ? "text-red-800" : "text-indigo-800"}
-                                hoverBg={errors[`judge${index}RingType`] ? "bg-red-50" : "bg-indigo-50"}
-                                hoverText={errors[`judge${index}RingType`] ? "text-red-900" : "text-indigo-900"}
+                                borderColor={errors[`judge${judge.id}RingType`] ? "border-red-300" : "border-indigo-300"}
+                                focusBorderColor={errors[`judge${judge.id}RingType`] ? "focus:border-red-500" : "focus:border-indigo-500"}
+                                textColor={errors[`judge${judge.id}RingType`] ? "text-red-700" : "text-indigo-700"}
+                                highlightBg={errors[`judge${judge.id}RingType`] ? "bg-red-50" : "bg-indigo-50"}
+                                highlightText={errors[`judge${judge.id}RingType`] ? "text-red-900" : "text-indigo-900"}
+                                selectedBg={errors[`judge${judge.id}RingType`] ? "bg-red-100" : "bg-indigo-100"}
+                                selectedText={errors[`judge${judge.id}RingType`] ? "text-red-800" : "text-indigo-800"}
+                                hoverBg={errors[`judge${judge.id}RingType`] ? "bg-red-50" : "bg-indigo-50"}
+                                hoverText={errors[`judge${judge.id}RingType`] ? "text-red-900" : "text-indigo-900"}
                               />
                             </td>
                             <td className="px-4 py-3 align-middle text-center">
@@ -1274,12 +1350,12 @@ export default function GeneralTab({
                                 </div>
                               </div>
                             </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+                </div>
+              )}
             </div>
           )}
           </div>
@@ -1287,8 +1363,8 @@ export default function GeneralTab({
 
         {/* Premium Action Buttons */}
         <ActionButtons
-          onSaveToCSV={handleSaveToCSVClick}
-          onLoadFromCSV={handleRestoreFromCSVClick}
+          onSaveToExcel={handleSaveToCSVClick}
+          onLoadFromExcel={handleRestoreFromCSVClick}
           onReset={handleResetClick}
           onFillTestData={handleFillTestData}
         />

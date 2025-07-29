@@ -43,6 +43,7 @@ interface ImportedShowState {
     id: number;
     name: string;
     acronym: string;
+    ringNumber: number;
     ringType: string;
   }>;
   championship: {
@@ -404,13 +405,15 @@ function parseJudgeSection(row: string[], judges: ImportedShowState['judges']) {
   }
 
   const judgeName = row[0]?.trim() || '';
-  const acronym = row[1]?.trim() || '';
-  const ringType = row[2]?.trim() || '';
+  const ringNumber = row[1]?.trim() || '';
+  const acronym = row[2]?.trim() || '';
+  const ringType = row[3]?.trim() || '';
 
   if (judgeName && acronym && ringType) {
     judges.push({
       id: judges.length + 1,
       name: judgeName,
+      ringNumber: parseNumber(ringNumber) || judges.length + 1, // Default to judge ID if not provided
       acronym: acronym,
       ringType: ringType
     });

@@ -4,6 +4,10 @@ This changelog records all changes, additions, and deletions to validation rules
 
 ---
 
+
+
+---
+
 ### [2024-12-19] Championship & Premiership Tabs: Breakpoint Rule Update - Novices Now Included
 - **Tabs:** Championship, Premiership
 - **Change:** Updated breakpoint calculations to include novices (NOV) in the count for all ring types

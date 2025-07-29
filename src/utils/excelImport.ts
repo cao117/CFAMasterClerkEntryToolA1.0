@@ -46,6 +46,7 @@ interface ImportedShowState {
     id: number;
     name: string;
     acronym: string;
+    ringNumber: number;
     ringType: string;
   }>;
   championship: {
@@ -317,8 +318,9 @@ function parseGeneralInfoWorksheet(data: string[][], general: ImportedShowState[
       judges.push({
         id: judges.length + 1,
         name: firstCell,
-        acronym: row[1]?.toString().trim() || '',
-        ringType: row[2]?.toString().trim() || ''
+        ringNumber: parseNumber(row[1]) || judges.length + 1, // Default to judge ID if not provided
+        acronym: row[2]?.toString().trim() || '',
+        ringType: row[3]?.toString().trim() || ''
       });
       continue;
     }
@@ -722,4 +724,82 @@ function validateRestoredState(state: ImportedShowState): boolean {
   const hasJudges = state.judges.length > 0;
   
   return !!(hasShowDate && hasClubName && hasMasterClerk && hasJudges);
+} 
+
+/**
+ * Handles file selection and Excel import
+ * @param file - The selected Excel file
+ * @param showSuccess - Success callback function
+ * @param showError - Error callback function
+ * @returns Promise that resolves to the restored state or null
+ */
+export async function handleExcelFileImport(
+  file: File,
+  showSuccess: SuccessCallback,
+  showError: ErrorCallback
+): Promise<ImportedShowState | null> {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    
+    reader.onload = (event) => {
+      const excelBuffer = event.target?.result as ArrayBuffer;
+      if (!excelBuffer) {
+        showError('File Read Error', 'Unable to read the selected file.');
+        resolve(null);
+        return;
+      }
+      
+      const restoredState = parseExcelAndRestoreState(excelBuffer, showSuccess, showError);
+      resolve(restoredState);
+    };
+    
+    reader.onerror = () => {
+      showError('File Read Error', 'An error occurred while reading the file.');
+      resolve(null);
+    };
+    
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+/**
+ * Handles Excel file selection dialog and import
+ * @param showSuccess - Success callback function
+ * @param showError - Error callback function
+ * @returns Promise that resolves to the restored state or null
+ */
+export async function handleRestoreFromExcel(
+  showSuccess: SuccessCallback,
+  showError: ErrorCallback
+): Promise<ImportedShowState | null> {
+  return new Promise((resolve) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.xlsx,.xls';
+    input.style.display = 'none';
+    
+    input.onchange = async (event) => {
+      const file = (event.target as HTMLInputElement).files?.[0];
+      if (!file) {
+        resolve(null);
+        return;
+      }
+      
+      try {
+        const restoredState = await handleExcelFileImport(file, showSuccess, showError);
+        resolve(restoredState);
+      } catch (error) {
+        showError('Import Error', 'An error occurred while importing the Excel file.');
+        resolve(null);
+      }
+    };
+    
+    input.oncancel = () => {
+      resolve(null);
+    };
+    
+    document.body.appendChild(input);
+    input.click();
+    document.body.removeChild(input);
+  });
 } 

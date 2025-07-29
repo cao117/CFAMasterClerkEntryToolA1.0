@@ -8,7 +8,7 @@ import {
   validateSequentialEntry,
 } from '../validation/championshipValidation';
 import type { CellData } from '../validation/championshipValidation';
-import { handleSaveToCSV } from '../utils/formActions';
+import { handleSaveToExcel } from '../utils/excelExport';
 import CustomSelect from './CustomSelect';
 import { formatJumpToMenuOptions, formatJumpToMenuValue, getRoomTypeAbbreviation } from '../utils/jumpToMenuUtils';
 
@@ -17,6 +17,7 @@ interface Judge {
   name: string;
   acronym: string;
   ringType: string;
+  ringNumber: number;
 }
 
 interface ChampionshipTabProps {
@@ -596,8 +597,8 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
         setIsCSVErrorModalOpen(true);
         return;
       }
-      // Export the full show state for CSV export
-      handleSaveToCSV(getShowState, showSuccess, showError);
+      // Export the full show state for Excel export
+      handleSaveToExcel(getShowState, showSuccess, showError);
     };
 
     const handleRestoreFromCSVClick = () => {
@@ -1098,7 +1099,7 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
               value={formatJumpToMenuValue(columns, focusedColumnIndex)}
               onChange={(selectedValue) => {
                 const selectedIndex = columns.findIndex((col) => {
-                  const ringNumber = col.judge.id.toString().padStart(2, '0');
+                  const ringNumber = col.judge.ringNumber.toString().padStart(2, '0');
                   const judgeAcronym = col.judge.acronym.padEnd(3, '\u00A0');
                   const formattedOption = `Ring ${ringNumber} - ${judgeAcronym} - ${getRoomTypeAbbreviation(col.specialty)}`;
                   return formattedOption === selectedValue;
@@ -1131,7 +1132,6 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                     <th className="cfa-table-header-cell-modern text-left pl-6 align-bottom" style={{ minWidth: 140, maxWidth: 140, verticalAlign: 'top', borderTopLeftRadius: 0, margin: 0, padding: 0 }}>
                       <div className="flex flex-col justify-start items-start gap-0.5 relative">
         
-                        <span className="header-sub block">Placement</span>
                       </div>
                     </th>
                     {columns.map((column, index) => (
@@ -1142,9 +1142,9 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                         style={{ width: 170, minWidth: 170, maxWidth: 170, verticalAlign: 'top', borderTopRightRadius: 0, margin: 0, padding: 0 }}
                       >
                         <div className="flex flex-col items-center justify-center gap-0.5 relative">
-                          <span className="header-main block">Judge {column.judge.id}</span>
-                          <span className="header-sub font-semibold block">{column.judge.acronym}</span>
-                          <span className="header-sub italic block">{column.specialty}</span>
+                          <span className="header-main block text-center">Ring #{column.judge.ringNumber}</span>
+                          <span className="header-sub font-semibold block text-center">{column.judge.acronym}</span>
+                          <span className="header-sub italic block text-center">{column.specialty}</span>
                         </div>
                       </th>
                     ))}
@@ -1428,8 +1428,8 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
 
         {/* Premium Action Buttons - Centered, matches GeneralTab */}
         <ActionButtons
-          onSaveToCSV={handleSaveToCSVClick}
-          onLoadFromCSV={handleRestoreFromCSVClick}
+          onSaveToExcel={handleSaveToCSVClick}
+          onLoadFromExcel={handleRestoreFromCSVClick}
           onReset={handleResetClick}
         />
       </div>

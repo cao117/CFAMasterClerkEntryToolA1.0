@@ -5,8 +5,8 @@ import React from 'react';
  * Only handlers and a flag for Fill Test Data are needed.
  */
 interface ActionButtonsProps {
-  onSaveToCSV: () => void;
-  onLoadFromCSV: () => void;
+  onSaveToExcel: () => void;
+  onLoadFromExcel: () => void;
   onReset: () => void;
   onFillTestData?: () => void;
   resetButtonText?: string; // e.g., "Reset Tab"
@@ -19,8 +19,8 @@ interface ActionButtonsProps {
  * @param props ActionButtonsProps
  */
 const ActionButtons: React.FC<ActionButtonsProps> = ({
-  onSaveToCSV,
-  onLoadFromCSV,
+  onSaveToExcel,
+  onLoadFromExcel,
   onReset,
   onFillTestData,
   resetButtonText = 'Reset',
@@ -28,30 +28,30 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
   return (
     <div className="flex flex-wrap gap-3 justify-center mt-12">
       <div className="flex gap-3">
-        {/* Save to CSV Button */}
+        {/* Save to Excel Button */}
         <button
           type="button"
-          onClick={onSaveToCSV}
+          onClick={onSaveToExcel}
           className="group relative px-5 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-medium modern-tab-font rounded-full border border-emerald-600/40 shadow-sm transition-all duration-250 focus:outline-none hover:scale-105 hover:shadow-green-200/30 hover:from-emerald-700 hover:to-green-500 hover:border-green-400 hover:text-emerald-50 mr-3"
         >
           <span className="relative flex items-center space-x-2">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            <span>Save to CSV</span>
+            <span>Save to Excel</span>
           </span>
         </button>
-        {/* Load from CSV Button */}
+        {/* Load from Excel Button */}
         <button
           type="button"
-          onClick={onLoadFromCSV}
+          onClick={onLoadFromExcel}
           className="group relative px-5 py-2.5 bg-gradient-to-r from-blue-400 to-blue-600 text-white font-medium modern-tab-font rounded-full border border-blue-600/40 shadow-sm transition-all duration-250 focus:outline-none hover:scale-105 hover:shadow-blue-200/30 hover:from-blue-700 hover:to-blue-400 hover:border-blue-400 hover:text-blue-50 mr-3"
         >
           <span className="relative flex items-center space-x-2">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
             </svg>
-            <span>Load from CSV</span>
+            <span>Load from Excel</span>
           </span>
         </button>
         {/* Reset Button */}

@@ -60,11 +60,11 @@ The columns in the Championship and Premiership tabs are generated dynamically b
 
 Suppose the General tab has the following judges:
 
-| Judge Name | Acronym | Ring Type         |
+| Judge Name | Ring Number | Acronym | Ring Type         |
 |------------|---------|-------------------|
-| Smith      | SM      | Allbreed          |
-| Jones      | JN      | Double Specialty  |
-| Lee        | LE      | Shorthair         |
+| Smith      | 1       | SM      | Allbreed          |
+| Jones      | 2       | JN      | Double Specialty  |
+| Lee        | 3       | LE      | Shorthair         |
 
 **Resulting columns in Championship/Premiership tabs:**
 
@@ -97,8 +97,9 @@ Suppose the General tab has the following judges:
 - **Master Clerk**: Name of the master clerk (max 120 chars).
 - **Number of Judges**: Total number of judges/rings.
 - **Championship Counts**: Number of GCs, CHs, NOVs, and totals (auto-calculated).
-- **Kitten Count**: Number of kittens (future use).
+- **Kitten Counts**: Number of LH kittens, SH kittens, and totals (auto-calculated).
 - **Premiership Counts**: Number of GPs, PRs, NOVs, and totals (auto-calculated).
+- **Household Pet Count**: Number of household pets (auto-calculated).
 
 ### Judge Fields
 - **Name**: Judge's full name (max 120 chars, unique).
@@ -387,19 +388,31 @@ The main navigation tab bar (General, Championship, Kittens, Premiership, Househ
 
 This design matches the premium style of the SettingsPanel and ensures a cohesive, high-class user experience throughout the application.
 
+## UI/UX: Show Count Section Redesign (2024-12-19)
+
+The Show Count section in the General tab has been redesigned with a clean two-color alternating system:
+- **Two-color system**: Alternating emerald/green and purple/pink color themes across all four sections
+- **Championship Count**: Emerald/Green theme (professional, growth-oriented) - avoids conflict with Show Information section above
+- **Kitten Count**: Purple/Pink theme (vibrant, engaging design)
+- **Premiership Count**: Emerald/Green theme (alternating back to first color)
+- **Household Pet Count**: Purple/Pink theme (alternating back to second color)
+- **Label consistency**: All sections use "Total Count:" label for uniform appearance
+- **Perfect alignment**: Standardized label width ensures horizontal alignment across all sections
+- **Professional appearance**: Reduces visual noise while maintaining clear section distinction
+
 ## Action Buttons & Workflow
 
 The following action buttons are present in the Championship and Premiership tabs (and, where relevant, the General tab). These buttons are essential for data management, validation, and workflow completion:
 
 ### Championship & Premiership Tabs
 
-- **Save to CSV**
-  - **Purpose:** Exports the current tab's data to a CSV file for backup, review, or official submission.
+- **Save to Excel**
+  - **Purpose:** Exports the current tab's data to an Excel file for backup, review, or official submission.
   - **Validation:** Runs full validation before export. If any errors are present, export is blocked and the user is notified to fix errors.
   - **Location:** Bottom of Championship and Premiership tabs.
 
-- **Load from CSV**
-  - **Purpose:** Imports data from a previously saved CSV file, restoring all fields and voids for the current tab.
+- **Load from Excel**
+  - **Purpose:** Imports data from a previously saved Excel file, restoring all fields and voids for the current tab.
   - **Validation:** Imported data is validated upon load. Any errors are shown inline.
   - **Location:** Bottom of Championship and Premiership tabs.
 
@@ -410,15 +423,15 @@ The following action buttons are present in the Championship and Premiership tab
 
 ### General Tab
 
-- **Save to CSV**: Exports validated data for submission.
-- **Load from CSV**: Imports data from a previously saved CSV file.
+- **Save to Excel**: Exports validated data for submission.
+- **Load from Excel**: Imports data from a previously saved Excel file.
 - **Reset**: Clears all form data and returns to default values.
 - **Fill Test Data**: Populates the form with realistic test data for development and testing purposes.
 
 ### Workflow Notes
 
-- **Save to CSV**: Exports validated data for submission.
-- **Load from CSV**: Imports data from a previously saved CSV file.
+- **Save to Excel**: Exports validated data for submission.
+- **Load from Excel**: Imports data from a previously saved Excel file.
 - **Reset**: Clears all form data and returns to default values.
 - **Fill Test Data**: Populates the form with realistic test data for development and testing purposes.
 
@@ -430,9 +443,9 @@ The following action buttons are present in the Championship and Premiership tab
 
 ---
 
-## CSV Export/Import
-- **Save to CSV**: Exports validated data for submission.
-- **Load from CSV**: Imports data from a CSV file, restoring all fields and voids.
+## Excel Export/Import
+- **Save to Excel**: Exports validated data for submission.
+- **Load from Excel**: Imports data from an Excel file, restoring all fields and voids.
 - CSV schema and voiding logic are documented in `docs/specs/CSV_SCHEMA.md` and `docs/specs/CSV_EXPORT_VOID_QUESTION.md`.
 
 ---
@@ -461,4 +474,4 @@ The following action buttons are present in the Championship and Premiership tab
 
 ---
 
-_Last updated: 2024-06-21_ 
+_Last updated: 2024-12-19_ 

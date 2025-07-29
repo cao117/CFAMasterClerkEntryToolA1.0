@@ -1,6 +1,22 @@
 # Project Changelog
 
-This changelog records major changes to the CFA Master Clerk Entry Tool, including validation rule changes, documentation restructuring, and feature additions.
+This changelog records major changes to the CFA Master Clerk Entry Tool, including validation rule changes, documentation restructuring, feature additions, and UI/UX improvements.
+
+### [2024-12-19] General Tab: Show Count Section UI Redesign - Two-Color Alternating System
+- **Area:** src/components/GeneralTab.tsx
+- **Change:** Redesigned Show Count section with clean two-color alternating system and improved visual hierarchy
+- **Summary:** 
+  - **Two-color system**: Implemented alternating emerald/green and purple/pink color themes across all four sections
+  - **Championship Count**: Emerald/Green theme (first color) - avoids conflict with Show Information section above
+  - **Kitten Count**: Purple/Pink theme (second color) - vibrant, engaging design
+  - **Premiership Count**: Emerald/Green theme (first color, alternating back) - professional, growth-oriented
+  - **Household Pet Count**: Purple/Pink theme (second color, alternating back) - consistent with second color
+  - **Label consistency**: All sections now use "Total Count:" label for uniform appearance
+  - **Alignment fixes**: Standardized label width to `w-32` across all sections for perfect horizontal alignment
+  - **Color coordination**: All inputs, labels, borders, and accents follow consistent color schemes within each section
+  - **Professional appearance**: Emerald/green theme is more subdued and professional, purple/pink adds personality without being overwhelming
+- **Rationale:** Reduces visual noise from previous four-color system while maintaining clear section distinction and avoiding color conflicts with adjacent UI elements
+- **Impact:** Creates a clean, organized, and professional appearance that's easier on the eyes while maintaining clear visual hierarchy and section identification
 
 ## Validation Rule Change Log
 
@@ -51,7 +67,7 @@ This changelog records major changes to the CFA Master Clerk Entry Tool, includi
 - See git history for code-level changes and feature additions.
 
 ## Last Updated
-- 2024-06-09 
+- 2024-12-19 
 
 ## 2024-06-19
 - UI/UX: Championship tab now renders only the number of rows needed for each column/section, per ring type and championship count. No extra rows are shown for columns that do not need them (e.g., SH ring with <85 cats only shows 10 Show Awards rows and 3 Best SH CH rows). This ensures the UI always matches the correct CFA logic and prevents user confusion.
@@ -225,3 +241,39 @@ This changelog records major changes to the CFA Master Clerk Entry Tool, includi
 
 ## Last Updated
 - 2024-06-20 
+
+## [Unreleased]
+
+### Added
+- **Ring Number Field**: Added new "Ring Number" input field for each judge in General Information tab
+- **Judge Reordering**: Automatic reordering of judges by Ring Number when field loses focus
+- **Acronym Auto-Uppercase**: Automatic conversion of judge acronym input to uppercase
+- **Excel Export/Import**: Ring Number field now correctly saved to and loaded from Excel files
+- **Jump to Menu Enhancement**: Updated dropdown to show "Ring Number - Judge Acronym - Room Type" format
+- **Judge Table Redesign**: Modern, professional styling for judge information table
+- **Error Display Redesign**: Replaced text errors with visual indicators (red border, pink background)
+- **Show Count Section Redesign**: Two-color alternating system for consistent design
+- **Excel Import Wrapper**: Added `handleRestoreFromExcel` function for file dialog and import
+
+### Changed
+- **UI Labels**: Changed "Ring #" to "Judge #" in all table headers and navigation
+- **Excel Export**: Ring Number now saved in correct column order (after Judge Name, before Acronym)
+- **Excel Import**: Ring Number now loaded from correct column position
+- **CSV Import**: Updated to match new Excel column order for backward compatibility
+- **Action Buttons**: Updated prop names from CSV to Excel (onSaveToExcel, onLoadFromExcel)
+- **Documentation**: Updated all references from CSV to Excel export/import
+- **Import Function**: App.tsx now uses `handleRestoreFromExcel` instead of `handleRestoreFromCSV`
+
+### Removed
+- **Unused Files**: Removed `src/utils/csvExport.ts` and `src/utils/formActions.ts` (consolidated into Excel functionality)
+- **Duplicate Validation**: Removed ring number uniqueness validation (not required)
+- **CSV Wrapper**: Removed `handleSaveToCSV` wrapper function (direct Excel export now)
+- **Form Actions**: Removed `handleReset` and `handleRestoreFromCSV` functions (replaced with direct calls and Excel import)
+
+### Fixed
+- **Import Errors**: Fixed all component imports to use `handleSaveToExcel` from `excelExport.ts`
+- **Action Buttons Props**: Updated all components to use correct Excel prop names
+- **Column Order**: Fixed Ring Number column position in Excel export/import
+- **Backward Compatibility**: Maintained support for loading older CSV files
+- **Build Errors**: Resolved all import errors and build now completes successfully
+- **Function References**: Replaced all references to removed `formActions.ts` functions 

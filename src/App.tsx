@@ -12,13 +12,14 @@ import BreedSheetsTab from './components/BreedSheetsTab'
 import type { BreedSheetsTabData } from './components/BreedSheetsTab'
 import SettingsPanel from './components/SettingsPanel'
 import Tooltip from './components/Tooltip'
-import { handleRestoreFromCSV } from './utils/formActions'
+import { handleRestoreFromExcel } from './utils/excelImport'
 
 interface Judge {
   id: number;
   name: string;
   acronym: string;
   ringType: string;
+  ringNumber: number;
 }
 
 interface ShowData {
@@ -378,10 +379,10 @@ function App() {
     globalSettings,
   });
 
-  // Function to handle CSV import and restore application state
+  // Function to handle Excel import and restore application state
   const handleCSVImport = async () => {
     try {
-      const restoredState = await handleRestoreFromCSV(showSuccess, showError);
+      const restoredState = await handleRestoreFromExcel(showSuccess, showError);
       if (!restoredState) return;
 
       // Update all state with restored data
@@ -396,7 +397,7 @@ function App() {
         setBreedSheetsTabData(restoredState.breedSheets);
       }
     } catch (error) {
-      showError('Import Error', 'An error occurred while importing the CSV file.');
+      showError('Import Error', 'An error occurred while importing the Excel file.');
     }
   };
 
@@ -857,7 +858,7 @@ function App() {
           style={{ boxShadow: '0 2px 12px 0 #C7B27355, 0 0 8px 2px #C7B27322' }}
         >
           <svg width="10" height="10" fill="#C7B273" className="mr-2" viewBox="0 0 10 10"><circle cx="5" cy="5" r="5"/></svg>
-          Version 0.1.0
+          Version 0.2.0
         </div>
       </footer>
     </div>

@@ -48,4 +48,4 @@ All placement and finals cells are now exported using a defensive extractCell lo
 When a placement cell has no cat number input, the CSV exports just "-" instead of "- [status]" because the status is meaningless without a cat number. This applies to all tabular sections (Championship, Premiership, Kitten, Household Pet).
 
 ## Developer Note
-See csvExport.ts for the extractCell function, which prevents blank or missing data in the export. 
+See excelExport.ts for the extractCell function, which prevents blank or missing data in the export. 
