@@ -438,7 +438,7 @@ export default function KittenTab({
                 <tr className="cfa-table-header-modern" style={{ margin: 0, padding: 0, borderTopLeftRadius: 0, borderTopRightRadius: 0, background: 'linear-gradient(90deg, #22c55e 0%, #16a34a 100%)', color: '#fff', boxShadow: '0 6px 24px 0 rgba(34,197,94,0.12), 0 1.5px 0 0 #C7B273', borderBottom: '4px solid #C7B273' }}>
                   <th className="cfa-table-header-cell-modern text-left pl-6 align-bottom" style={{ minWidth: 140, maxWidth: 140, verticalAlign: 'top', borderTopLeftRadius: 0, margin: 0, padding: 0 }}>
                     <div className="flex flex-col justify-start items-start gap-0.5 relative">
-                      <span className="header-main block">Position</span>
+      
                       <span className="header-sub block">Placement</span>
                     </div>
                   </th>
@@ -450,7 +450,7 @@ export default function KittenTab({
                       style={{ width: 170, minWidth: 170, maxWidth: 170, verticalAlign: 'top', borderTopRightRadius: 0, margin: 0, padding: 0 }}
                     >
                       <div className="flex flex-col items-center justify-center gap-0.5 relative">
-                        <span className="header-main block">Ring {column.judge.id}</span>
+                        <span className="header-main block">Judge {column.judge.id}</span>
                         <span className="header-sub font-semibold block">{column.judge.acronym}</span>
                         <span className="header-sub italic block">{column.specialty}</span>
                       </div>

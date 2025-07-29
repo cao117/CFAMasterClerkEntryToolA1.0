@@ -627,12 +627,9 @@ export default function GeneralTab({
                         value={showData.showDate}
                         onChange={e => updateShowData('showDate', e.target.value)}
                         onFocus={e => e.target.select()}
-                        className="text-sm font-medium bg-white border border-blue-200 rounded-md py-1 px-2 focus:border-blue-400 focus:ring-1 focus:ring-blue-100 focus:outline-none transition-all duration-200 shadow-sm"
+                        className={`text-sm font-medium rounded-md py-1 px-2 focus:outline-none transition-all duration-300 shadow-sm ${errors.showDate ? 'border-2 border-red-300 bg-red-50/80 focus:border-red-400 focus:ring-2 focus:ring-red-100' : 'border border-blue-200 bg-white focus:border-blue-400 focus:ring-1 focus:ring-blue-100'}`}
                         style={{ fontFamily: 'Arial, Helvetica, sans-serif', width: '150px' }}
                       />
-                      {errors.showDate && (
-                        <div className="text-red-500 text-xs font-medium" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>{errors.showDate}</div>
-                      )}
                     </div>
                     <div className="flex items-center space-x-3 h-8">
                       <label className="text-sm font-semibold text-gray-700 min-w-[120px]" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>
@@ -648,12 +645,9 @@ export default function GeneralTab({
                         onChange={handleNumberOfJudgesChange}
                         onFocus={e => { e.target.select(); handleNumberFocus(e); handleFieldFocus('numberOfJudges'); }}
                         onBlur={e => { handleNumberBlur(e, 'numberOfJudges', 0); handleFieldBlur(); }}
-                        className="text-center text-sm font-medium bg-white border border-blue-200 rounded-md py-1 px-2 focus:border-blue-400 focus:ring-1 focus:ring-blue-100 focus:outline-none transition-all duration-200 shadow-sm"
+                        className={`text-center text-sm font-medium rounded-md py-1 px-2 focus:outline-none transition-all duration-300 shadow-sm ${errors.numberOfJudges ? 'border-2 border-red-300 bg-red-50/80 focus:border-red-400 focus:ring-2 focus:ring-red-100' : 'border border-blue-200 bg-white focus:border-blue-400 focus:ring-1 focus:ring-blue-100'}`}
                         style={{ fontFamily: 'Arial, Helvetica, sans-serif', width: '80px' }}
                       />
-                      {errors.numberOfJudges && (
-                        <div className="text-red-500 text-xs font-medium" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>{errors.numberOfJudges}</div>
-                      )}
                       </div>
                     </div>
                   
@@ -671,13 +665,10 @@ export default function GeneralTab({
                         onChange={handleClubNameChange}
                         onFocus={e => { e.target.select(); handleFieldFocus('clubName'); }}
                         onBlur={handleFieldBlur}
-                        className="text-sm font-medium bg-white border border-blue-200 rounded-md py-1 px-2 focus:border-blue-400 focus:ring-1 focus:ring-blue-100 focus:outline-none transition-all duration-200 shadow-sm" 
+                        className={`text-sm font-medium rounded-md py-1 px-2 focus:outline-none transition-all duration-300 shadow-sm ${errors.clubName ? 'border-2 border-red-300 bg-red-50/80 focus:border-red-400 focus:ring-2 focus:ring-red-100 placeholder-red-400' : 'border border-blue-200 bg-white focus:border-blue-400 focus:ring-1 focus:ring-blue-100 placeholder-gray-400'}`}
                         placeholder="Enter club name"
                         style={{ fontFamily: 'Arial, Helvetica, sans-serif', width: '260px' }}
                       />
-                      {errors.clubName && (
-                        <div className="text-red-500 text-xs font-medium" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>{errors.clubName}</div>
-                      )}
                       </div>
                     <div className="flex items-center space-x-3 h-8">
                       <label className="text-sm font-semibold text-gray-700 min-w-[120px]" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>
@@ -691,13 +682,10 @@ export default function GeneralTab({
                         onChange={handleMasterClerkChange}
                         onFocus={e => { e.target.select(); handleFieldFocus('masterClerk'); }}
                         onBlur={handleFieldBlur}
-                        className="text-sm font-medium bg-white border border-blue-200 rounded-md py-1 px-2 focus:border-blue-400 focus:ring-1 focus:ring-blue-100 focus:outline-none transition-all duration-200 shadow-sm" 
+                        className={`text-sm font-medium rounded-md py-1 px-2 focus:outline-none transition-all duration-300 shadow-sm ${errors.masterClerk ? 'border-2 border-red-300 bg-red-50/80 focus:border-red-400 focus:ring-2 focus:ring-red-100 placeholder-red-400' : 'border border-blue-200 bg-white focus:border-blue-400 focus:ring-1 focus:ring-blue-100 placeholder-gray-400'}`}
                         placeholder="Enter master clerk name"
                         style={{ fontFamily: 'Arial, Helvetica, sans-serif', width: '260px' }}
                       />
-                      {errors.masterClerk && (
-                        <div className="text-red-500 text-xs font-medium" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>{errors.masterClerk}</div>
-                      )}
                       </div>
                     </div>
                 </div>
@@ -740,20 +728,20 @@ export default function GeneralTab({
             
           {!isShowCountCollapsed && (
               <div className="space-y-4">
-                {/* Championship Count Section */}
-                <section className="bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl border border-emerald-100 p-4 shadow-sm">
+                                {/* Championship Count Section */}
+                <section className="bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl border border-emerald-200 p-4 shadow-sm">
                   <header className="flex items-center mb-3">
                     <div className="w-1 h-5 bg-gradient-to-b from-emerald-400 to-green-500 rounded-full mr-3"></div>
                     <div>
-                      <h3 className="text-base font-semibold text-emerald-900 tracking-wide" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>Championship Count</h3>
-            </div>
+                      <h3 className="text-base font-semibold text-emerald-800 tracking-wide" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>Championship Count</h3>
+                    </div>
                   </header>
                   
                   <div className="space-y-3">
                     {/* Longhair Row */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                       <div className="flex items-center space-x-3 h-8">
-                        <label className="text-sm font-semibold text-gray-700 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of LH GCs:</label>
+                        <label className="text-sm font-semibold text-emerald-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of LH GCs:</label>
                         <input 
                           type="number" 
                           min="0" 
@@ -761,12 +749,12 @@ export default function GeneralTab({
                           onChange={e => updateChampionshipCount('lhGcs', parseInt(e.target.value) || 0)} 
                           onFocus={e => e.target.select()}
                           onBlur={e => handleNumberBlur(e, 'championshiplhGcs')} 
-                          className="w-20 text-center text-sm font-medium bg-white border border-emerald-200 rounded-md py-1 px-2 focus:border-emerald-400 focus:ring-1 focus:ring-emerald-100 focus:outline-none transition-all duration-200 shadow-sm" 
+                          className="w-20 text-center text-sm font-medium bg-white border border-emerald-300 rounded-md py-1 px-2 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-100 focus:outline-none transition-all duration-200 shadow-sm" 
                           style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
                         />
                       </div>
                       <div className="flex items-center space-x-3 h-8">
-                        <label className="text-sm font-semibold text-gray-700 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of LH CHs:</label>
+                        <label className="text-sm font-semibold text-emerald-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of LH CHs:</label>
                         <input 
                           type="number" 
                           min="0" 
@@ -774,12 +762,12 @@ export default function GeneralTab({
                           onChange={e => updateChampionshipCount('lhChs', parseInt(e.target.value) || 0)} 
                           onFocus={e => e.target.select()}
                           onBlur={e => handleNumberBlur(e, 'championshiplhChs')} 
-                          className="w-20 text-center text-sm font-medium bg-white border border-emerald-200 rounded-md py-1 px-2 focus:border-emerald-400 focus:ring-1 focus:ring-emerald-100 focus:outline-none transition-all duration-200 shadow-sm" 
+                          className="w-20 text-center text-sm font-medium bg-white border border-emerald-300 rounded-md py-1 px-2 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-100 focus:outline-none transition-all duration-200 shadow-sm" 
                           style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
                         />
                       </div>
                       <div className="flex items-center space-x-3 h-8">
-                        <label className="text-sm font-semibold text-gray-700 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of LH NOVs:</label>
+                        <label className="text-sm font-semibold text-emerald-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of LH NOVs:</label>
                         <input 
                           type="number" 
                           min="0" 
@@ -787,7 +775,7 @@ export default function GeneralTab({
                           onChange={e => updateChampionshipCount('lhNovs', parseInt(e.target.value) || 0)} 
                           onFocus={e => e.target.select()}
                           onBlur={e => handleNumberBlur(e, 'championshiplhNovs')} 
-                          className="w-20 text-center text-sm font-medium bg-white border border-emerald-200 rounded-md py-1 px-2 focus:border-emerald-400 focus:ring-1 focus:ring-emerald-100 focus:outline-none transition-all duration-200 shadow-sm" 
+                          className="w-20 text-center text-sm font-medium bg-white border border-emerald-300 rounded-md py-1 px-2 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-100 focus:outline-none transition-all duration-200 shadow-sm" 
                           style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
                         />
                       </div>
@@ -796,7 +784,7 @@ export default function GeneralTab({
                     {/* Shorthair Row */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                       <div className="flex items-center space-x-3 h-8">
-                        <label className="text-sm font-semibold text-gray-700 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of SH GCs:</label>
+                        <label className="text-sm font-semibold text-emerald-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of SH GCs:</label>
                         <input 
                           type="number" 
                           min="0" 
@@ -804,12 +792,12 @@ export default function GeneralTab({
                           onChange={e => updateChampionshipCount('shGcs', parseInt(e.target.value) || 0)} 
                           onFocus={handleNumberFocus}
                           onBlur={e => handleNumberBlur(e, 'championshipshGcs')} 
-                          className="w-20 text-center text-sm font-medium bg-white border border-emerald-200 rounded-md py-1 px-2 focus:border-emerald-400 focus:ring-1 focus:ring-emerald-100 focus:outline-none transition-all duration-200 shadow-sm" 
+                          className="w-20 text-center text-sm font-medium bg-white border border-emerald-300 rounded-md py-1 px-2 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-100 focus:outline-none transition-all duration-200 shadow-sm" 
                           style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
                         />
                           </div>
                       <div className="flex items-center space-x-3 h-8">
-                        <label className="text-sm font-semibold text-gray-700 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of SH CHs:</label>
+                        <label className="text-sm font-semibold text-emerald-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of SH CHs:</label>
                         <input 
                           type="number" 
                           min="0" 
@@ -817,12 +805,12 @@ export default function GeneralTab({
                           onChange={e => updateChampionshipCount('shChs', parseInt(e.target.value) || 0)} 
                           onFocus={handleNumberFocus}
                           onBlur={e => handleNumberBlur(e, 'championshipshChs')} 
-                          className="w-20 text-center text-sm font-medium bg-white border border-emerald-200 rounded-md py-1 px-2 focus:border-emerald-400 focus:ring-1 focus:ring-emerald-100 focus:outline-none transition-all duration-200 shadow-sm" 
+                          className="w-20 text-center text-sm font-medium bg-white border border-emerald-300 rounded-md py-1 px-2 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-100 focus:outline-none transition-all duration-200 shadow-sm" 
                           style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
                         />
                         </div>
                       <div className="flex items-center space-x-3 h-8">
-                        <label className="text-sm font-semibold text-gray-700 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of SH NOVs:</label>
+                        <label className="text-sm font-semibold text-emerald-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of SH NOVs:</label>
                           <input
                           type="number" 
                           min="0" 
@@ -830,14 +818,14 @@ export default function GeneralTab({
                           onChange={e => updateChampionshipCount('shNovs', parseInt(e.target.value) || 0)} 
                           onFocus={handleNumberFocus}
                           onBlur={e => handleNumberBlur(e, 'championshipshNovs')} 
-                          className="w-20 text-center text-sm font-medium bg-white border border-emerald-200 rounded-md py-1 px-2 focus:border-emerald-400 focus:ring-1 focus:ring-emerald-100 focus:outline-none transition-all duration-200 shadow-sm" 
+                          className="w-20 text-center text-sm font-medium bg-white border border-emerald-300 rounded-md py-1 px-2 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-100 focus:outline-none transition-all duration-200 shadow-sm" 
                           style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
                         />
                           </div>
                         </div>
                     
                     {/* Totals Row - Fixed Alignment */}
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 pt-3 border-t border-emerald-100">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 pt-3 border-t border-emerald-200">
                       <div className="flex items-center space-x-3 h-8">
                         <label className="text-sm font-semibold text-emerald-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of GCs:</label>
                           <input
@@ -873,17 +861,17 @@ export default function GeneralTab({
                 </section>
 
                 {/* Kitten Count Section */}
-                <section className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100 p-4 shadow-sm">
+                <section className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-200 p-4 shadow-sm">
                   <header className="flex items-center mb-3">
-                    <div className="w-1 h-5 bg-gradient-to-b from-green-400 to-emerald-500 rounded-full mr-3"></div>
+                    <div className="w-1 h-5 bg-gradient-to-b from-purple-400 to-pink-500 rounded-full mr-3"></div>
                     <div>
-                      <h3 className="text-base font-semibold text-green-900 tracking-wide" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>Kitten Count</h3>
+                      <h3 className="text-base font-semibold text-purple-900 tracking-wide" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>Kitten Count</h3>
                     </div>
                   </header>
                   
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                     <div className="flex items-center space-x-3 h-8">
-                      <label className="text-sm font-semibold text-gray-700 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of LH Kittens:</label>
+                      <label className="text-sm font-semibold text-purple-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of LH Kittens:</label>
                       <input 
                         type="number" 
                         min="0" 
@@ -891,12 +879,12 @@ export default function GeneralTab({
                         onChange={e => updateKittenCount('lhKittens', parseInt(e.target.value) || 0)} 
                         onFocus={handleNumberFocus}
                         onBlur={e => handleNumberBlur(e, 'kittenCountslhKittens')} 
-                        className="w-20 text-center text-sm font-medium bg-white border border-green-200 rounded-md py-1 px-2 focus:border-green-400 focus:ring-1 focus:ring-green-100 focus:outline-none transition-all duration-200 shadow-sm" 
+                        className="w-20 text-center text-sm font-medium bg-white border border-purple-300 rounded-md py-1 px-2 focus:border-purple-500 focus:ring-1 focus:ring-purple-100 focus:outline-none transition-all duration-200 shadow-sm" 
                         style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
                       />
                     </div>
                     <div className="flex items-center space-x-3 h-8">
-                      <label className="text-sm font-semibold text-gray-700 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of SH Kittens:</label>
+                      <label className="text-sm font-semibold text-purple-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of SH Kittens:</label>
                       <input 
                         type="number" 
                         min="0" 
@@ -904,17 +892,17 @@ export default function GeneralTab({
                         onChange={e => updateKittenCount('shKittens', parseInt(e.target.value) || 0)} 
                         onFocus={handleNumberFocus}
                         onBlur={e => handleNumberBlur(e, 'kittenCountsshKittens')} 
-                        className="w-20 text-center text-sm font-medium bg-white border border-green-200 rounded-md py-1 px-2 focus:border-green-400 focus:ring-1 focus:ring-green-100 focus:outline-none transition-all duration-200 shadow-sm" 
+                        className="w-20 text-center text-sm font-medium bg-white border border-purple-300 rounded-md py-1 px-2 focus:border-purple-500 focus:ring-1 focus:ring-purple-100 focus:outline-none transition-all duration-200 shadow-sm" 
                         style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
                       />
                     </div>
                     <div className="flex items-center space-x-3 h-8">
-                      <label className="text-sm font-semibold text-green-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>Total Kittens:</label>
+                      <label className="text-sm font-semibold text-purple-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>Total Count:</label>
                       <input 
                         type="number" 
                         value={safeNumberInput(showData.kittenCounts.total)} 
                         readOnly 
-                        className="w-20 text-center text-sm font-semibold bg-green-50 border border-green-200 rounded-md py-1 px-2 text-green-800" 
+                        className="w-20 text-center text-sm font-semibold bg-purple-50 border border-purple-200 rounded-md py-1 px-2 text-purple-800" 
                         style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
                       />
                     </div>
@@ -922,11 +910,11 @@ export default function GeneralTab({
                 </section>
 
                 {/* Premiership Count Section */}
-                <section className="bg-gradient-to-r from-teal-50 to-blue-50 rounded-xl border border-teal-100 p-4 shadow-sm">
+                <section className="bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl border border-emerald-200 p-4 shadow-sm">
                   <header className="flex items-center mb-3">
-                    <div className="w-1 h-5 bg-gradient-to-b from-teal-400 to-blue-500 rounded-full mr-3"></div>
+                    <div className="w-1 h-5 bg-gradient-to-b from-emerald-400 to-green-500 rounded-full mr-3"></div>
                     <div>
-                      <h3 className="text-base font-semibold text-teal-900 tracking-wide" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>Premiership Count</h3>
+                      <h3 className="text-base font-semibold text-emerald-800 tracking-wide" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>Premiership Count</h3>
                     </div>
                   </header>
                   
@@ -934,7 +922,7 @@ export default function GeneralTab({
                     {/* Longhair Row */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                       <div className="flex items-center space-x-3 h-8">
-                        <label className="text-sm font-semibold text-gray-700 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of LH GPs:</label>
+                        <label className="text-sm font-semibold text-emerald-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of LH GPs:</label>
                         <input 
                           type="number" 
                           min="0" 
@@ -942,12 +930,12 @@ export default function GeneralTab({
                           onChange={e => updatePremiershipCount('lhGps', parseInt(e.target.value) || 0)} 
                           onFocus={handleNumberFocus}
                           onBlur={e => handleNumberBlur(e, 'premiershiplhGps')} 
-                          className="w-20 text-center text-sm font-medium bg-white border border-teal-200 rounded-md py-1 px-2 focus:border-teal-400 focus:ring-1 focus:ring-teal-100 focus:outline-none transition-all duration-200 shadow-sm" 
+                          className="w-20 text-center text-sm font-medium bg-white border border-emerald-300 rounded-md py-1 px-2 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-100 focus:outline-none transition-all duration-200 shadow-sm" 
                           style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
                         />
                       </div>
                       <div className="flex items-center space-x-3 h-8">
-                        <label className="text-sm font-semibold text-gray-700 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of LH PRs:</label>
+                        <label className="text-sm font-semibold text-emerald-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of LH PRs:</label>
                         <input 
                           type="number" 
                           min="0" 
@@ -955,12 +943,12 @@ export default function GeneralTab({
                           onChange={e => updatePremiershipCount('lhPrs', parseInt(e.target.value) || 0)} 
                           onFocus={handleNumberFocus}
                           onBlur={e => handleNumberBlur(e, 'premiershiplhPrs')} 
-                          className="w-20 text-center text-sm font-medium bg-white border border-teal-200 rounded-md py-1 px-2 focus:border-teal-400 focus:ring-1 focus:ring-teal-100 focus:outline-none transition-all duration-200 shadow-sm" 
+                          className="w-20 text-center text-sm font-medium bg-white border border-emerald-300 rounded-md py-1 px-2 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-100 focus:outline-none transition-all duration-200 shadow-sm" 
                           style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
                         />
                       </div>
                       <div className="flex items-center space-x-3 h-8">
-                        <label className="text-sm font-semibold text-gray-700 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of LH NOVs:</label>
+                        <label className="text-sm font-semibold text-emerald-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of LH NOVs:</label>
                         <input 
                           type="number" 
                           min="0" 
@@ -968,7 +956,7 @@ export default function GeneralTab({
                           onChange={e => updatePremiershipCount('lhNovs', parseInt(e.target.value) || 0)} 
                           onFocus={handleNumberFocus}
                           onBlur={e => handleNumberBlur(e, 'premiershiplhNovs')} 
-                          className="w-20 text-center text-sm font-medium bg-white border border-teal-200 rounded-md py-1 px-2 focus:border-teal-400 focus:ring-1 focus:ring-teal-100 focus:outline-none transition-all duration-200 shadow-sm" 
+                          className="w-20 text-center text-sm font-medium bg-white border border-emerald-300 rounded-md py-1 px-2 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-100 focus:outline-none transition-all duration-200 shadow-sm" 
                           style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
                         />
                       </div>
@@ -977,7 +965,7 @@ export default function GeneralTab({
                     {/* Shorthair Row */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                       <div className="flex items-center space-x-3 h-8">
-                        <label className="text-sm font-semibold text-gray-700 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of SH GPs:</label>
+                        <label className="text-sm font-semibold text-emerald-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of SH GPs:</label>
                         <input 
                           type="number" 
                           min="0" 
@@ -985,12 +973,12 @@ export default function GeneralTab({
                           onChange={e => updatePremiershipCount('shGps', parseInt(e.target.value) || 0)} 
                           onFocus={handleNumberFocus}
                           onBlur={e => handleNumberBlur(e, 'premiershipshGps')} 
-                          className="w-20 text-center text-sm font-medium bg-white border border-teal-200 rounded-md py-1 px-2 focus:border-teal-400 focus:ring-1 focus:ring-teal-100 focus:outline-none transition-all duration-200 shadow-sm" 
+                          className="w-20 text-center text-sm font-medium bg-white border border-emerald-300 rounded-md py-1 px-2 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-100 focus:outline-none transition-all duration-200 shadow-sm" 
                           style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
                         />
                       </div>
                       <div className="flex items-center space-x-3 h-8">
-                        <label className="text-sm font-semibold text-gray-700 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of SH PRs:</label>
+                        <label className="text-sm font-semibold text-emerald-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of SH PRs:</label>
                         <input 
                           type="number" 
                           min="0" 
@@ -998,12 +986,12 @@ export default function GeneralTab({
                           onChange={e => updatePremiershipCount('shPrs', parseInt(e.target.value) || 0)} 
                           onFocus={handleNumberFocus}
                           onBlur={e => handleNumberBlur(e, 'premiershipshPrs')} 
-                          className="w-20 text-center text-sm font-medium bg-white border border-teal-200 rounded-md py-1 px-2 focus:border-teal-400 focus:ring-1 focus:ring-teal-100 focus:outline-none transition-all duration-200 shadow-sm" 
+                          className="w-20 text-center text-sm font-medium bg-white border border-emerald-300 rounded-md py-1 px-2 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-100 focus:outline-none transition-all duration-200 shadow-sm" 
                           style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
                         />
                       </div>
                       <div className="flex items-center space-x-3 h-8">
-                        <label className="text-sm font-semibold text-gray-700 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of SH NOVs:</label>
+                        <label className="text-sm font-semibold text-emerald-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of SH NOVs:</label>
                         <input 
                           type="number" 
                           min="0" 
@@ -1011,41 +999,41 @@ export default function GeneralTab({
                           onChange={e => updatePremiershipCount('shNovs', parseInt(e.target.value) || 0)} 
                           onFocus={handleNumberFocus}
                           onBlur={e => handleNumberBlur(e, 'premiershipshNovs')} 
-                          className="w-20 text-center text-sm font-medium bg-white border border-teal-200 rounded-md py-1 px-2 focus:border-teal-400 focus:ring-1 focus:ring-teal-100 focus:outline-none transition-all duration-200 shadow-sm" 
+                          className="w-20 text-center text-sm font-medium bg-white border border-emerald-300 rounded-md py-1 px-2 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-100 focus:outline-none transition-all duration-200 shadow-sm" 
                           style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
                         />
                       </div>
                     </div>
                     
                     {/* Totals Row - Fixed Alignment */}
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 pt-3 border-t border-teal-100">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 pt-3 border-t border-emerald-200">
                       <div className="flex items-center space-x-3 h-8">
-                        <label className="text-sm font-semibold text-teal-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of GPs:</label>
+                        <label className="text-sm font-semibold text-emerald-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of GPs:</label>
                         <input 
                           type="number" 
                           value={safeNumberInput(showData.premiershipCounts.gps)} 
                           readOnly 
-                          className="w-20 text-center text-sm font-semibold bg-teal-50 border border-teal-200 rounded-md py-1 px-2 text-teal-800" 
+                          className="w-20 text-center text-sm font-semibold bg-emerald-50 border border-emerald-200 rounded-md py-1 px-2 text-emerald-800" 
                           style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
                         />
                       </div>
                       <div className="flex items-center space-x-3 h-8">
-                        <label className="text-sm font-semibold text-teal-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of PRs:</label>
+                        <label className="text-sm font-semibold text-emerald-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of PRs:</label>
                         <input 
                           type="number" 
                           value={safeNumberInput(showData.premiershipCounts.prs)} 
                           readOnly 
-                          className="w-20 text-center text-sm font-semibold bg-teal-50 border border-teal-200 rounded-md py-1 px-2 text-teal-800" 
+                          className="w-20 text-center text-sm font-semibold bg-emerald-50 border border-emerald-200 rounded-md py-1 px-2 text-emerald-800" 
                           style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
                         />
                       </div>
                       <div className="flex items-center space-x-3 h-8">
-                        <label className="text-sm font-semibold text-teal-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>Total Count:</label>
+                        <label className="text-sm font-semibold text-emerald-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>Total Count:</label>
                         <input 
                           type="number" 
                           value={safeNumberInput(showData.premiershipCounts.total)} 
                           readOnly 
-                          className="w-20 text-center text-sm font-semibold bg-teal-50 border border-teal-200 rounded-md py-1 px-2 text-teal-800" 
+                          className="w-20 text-center text-sm font-semibold bg-emerald-50 border border-emerald-200 rounded-md py-1 px-2 text-emerald-800" 
                           style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
                         />
                       </div>
@@ -1054,16 +1042,16 @@ export default function GeneralTab({
                 </section>
 
                 {/* Household Pet Count Section */}
-                <section className="bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl border border-emerald-100 p-4 shadow-sm">
+                <section className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-200 p-4 shadow-sm">
                   <header className="flex items-center mb-3">
-                    <div className="w-1 h-5 bg-gradient-to-b from-emerald-400 to-green-500 rounded-full mr-3"></div>
+                    <div className="w-1 h-5 bg-gradient-to-b from-purple-400 to-pink-500 rounded-full mr-3"></div>
                     <div>
-                      <h3 className="text-base font-semibold text-emerald-900 tracking-wide" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>Household Pet Count</h3>
+                      <h3 className="text-base font-semibold text-purple-900 tracking-wide" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>Household Pet Count</h3>
                     </div>
                   </header>
                   
                   <div className="flex items-center space-x-3 h-8">
-                    <label className="text-sm font-semibold text-gray-700 w-40" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of Household Pets:</label>
+                    <label className="text-sm font-semibold text-purple-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>Total Count:</label>
                     <input 
                       type="number" 
                       min="0" 
@@ -1071,7 +1059,7 @@ export default function GeneralTab({
                       onChange={e => updateShowData('householdPetCount', parseInt(e.target.value) || 0)} 
                       onFocus={handleNumberFocus}
                       onBlur={e => handleNumberBlur(e, 'householdPetCount')} 
-                      className="w-20 text-center text-sm font-medium bg-white border border-emerald-200 rounded-md py-1 px-2 focus:border-emerald-400 focus:ring-1 focus:ring-emerald-100 focus:outline-none transition-all duration-200 shadow-sm" 
+                      className={`w-20 text-center text-sm font-medium rounded-md py-1 px-2 focus:outline-none transition-all duration-300 shadow-sm ${errors.householdPetCount ? 'border-2 border-red-300 bg-red-50/80 focus:border-red-400 focus:ring-2 focus:ring-red-100' : 'border border-purple-300 bg-white focus:border-purple-500 focus:ring-1 focus:ring-purple-100'}`}
                       style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
                     />
                   </div>
@@ -1083,24 +1071,24 @@ export default function GeneralTab({
 
         {/* Judge Information - Modern Design */}
         <div className="group relative">
-          {/* Subtle background glow */}
-          <div className="absolute inset-0 bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-500 blur-xl pointer-events-none"></div>
-          <div className="relative bg-white border border-gray-200 rounded-2xl p-8 shadow-sm hover:shadow-lg hover:shadow-amber-100/50 transition-all duration-300 transform hover:scale-[1.005] group-hover:border-amber-200">
+          {/* Sophisticated background glow */}
+          <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 via-purple-50 to-blue-50 rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-500 blur-xl pointer-events-none"></div>
+          <div className="relative bg-white border border-gray-200 rounded-2xl p-8 shadow-lg hover:shadow-xl hover:shadow-indigo-100/30 transition-all duration-300 transform hover:scale-[1.005] group-hover:border-indigo-200">
             {/* Decorative accent */}
-            <div className="absolute top-0 right-0 w-6 h-6 bg-gradient-to-br from-amber-400 to-orange-500 rounded-bl-2xl opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
+            <div className="absolute top-0 right-0 w-6 h-6 bg-gradient-to-br from-indigo-400 to-purple-500 rounded-bl-2xl opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
             
             <h2 className="flex items-center justify-between mb-8">
               <div className="flex items-center space-x-4">
-                <div className="p-3 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl shadow-lg">
+                <div className="p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg">
                   <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                            </svg>
-                        </div>
+                  </svg>
+                </div>
                 <div>
                   <span className="text-2xl font-bold text-gray-900 tracking-tight" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>Judge Information</span>
                 </div>
               </div>
-              <CornerCollapseIcon expanded={!isJudgeInfoCollapsed} onClick={() => setIsJudgeInfoCollapsed(v => !v)} label={isJudgeInfoCollapsed ? 'Expand section' : 'Collapse section'} gradient="linear-gradient(135deg, #f59e0b 60%, #d97706 100%)" />
+              <CornerCollapseIcon expanded={!isJudgeInfoCollapsed} onClick={() => setIsJudgeInfoCollapsed(v => !v)} label={isJudgeInfoCollapsed ? 'Expand section' : 'Collapse section'} gradient="linear-gradient(135deg, #6366f1 60%, #8b5cf6 100%)" />
           </h2>
             
           {!isJudgeInfoCollapsed && (
@@ -1195,33 +1183,103 @@ export default function GeneralTab({
                   </div>
                 )}
                 
-                {/* Judge table */}
+                {/* Judge table - Sophisticated indigo/purple theme */}
                 {judges.length > 0 && (
                   <div className="overflow-x-auto">
-                    <table className="min-w-full rounded-2xl bg-white/95 shadow border border-gray-200">
-                <thead>
-                        <tr>
-                          <th className="uppercase text-xs font-bold tracking-wider text-slate-700 bg-white border-b border-zinc-200 py-2 px-3 text-left font-serif w-20">Ring #</th>
-                          <th className="uppercase text-xs font-bold tracking-wider text-slate-700 bg-white border-b border-zinc-200 py-2 px-3 text-left font-serif w-48">Judge Name <span className="text-red-500 text-base">●</span></th>
-                          <th className="uppercase text-xs font-bold tracking-wider text-slate-700 bg-white border-b border-zinc-200 py-2 px-3 text-left font-serif w-28">Acronym <span className="text-red-500 text-base">●</span></th>
-                          <th className="uppercase text-xs font-bold tracking-wider text-slate-700 bg-white border-b border-zinc-200 py-2 px-3 text-left font-serif w-40">Ring Type <span className="text-red-500 text-base">●</span></th>
-                          <th className="bg-white border-b border-zinc-200 py-2 px-3 w-12"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {judges.map((judge, index) => (
-                    <tr key={judge.id} className={index % 2 === 0 ? "bg-white" : "bg-zinc-50"} style={{ height: 40 }}>
-                      <td className="px-3 py-2 align-middle"><span className="inline-block min-w-[2rem] px-2 py-1 rounded-full bg-gradient-to-r from-amber-300 to-amber-200 text-slate-800 font-bold text-xs shadow font-mono text-center border border-amber-100">{index + 1}</span></td>
-                      <td className="px-3 py-2 align-middle"><input type="text" value={judge.name} onChange={e => updateJudge(judge.id, 'name', e.target.value)} onFocus={() => handleFieldFocus(`judge${index}Name`)} onBlur={handleFieldBlur} className="w-full rounded-full px-3 py-1.5 text-sm font-medium border border-zinc-200 focus:border-amber-400 focus:ring-2 focus:ring-amber-100 !focus:border-amber-400 !focus:ring-amber-100 transition-all duration-200 shadow-sm bg-white placeholder-zinc-300" placeholder="Enter judge name" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }} /></td>
-                      <td className="px-3 py-2 align-middle"><input type="text" value={judge.acronym} onChange={e => updateJudge(judge.id, 'acronym', e.target.value)} onFocus={() => handleFieldFocus(`judge${index}Acronym`)} onBlur={handleFieldBlur} className="w-full rounded-full px-3 py-1.5 text-sm font-medium border border-zinc-200 focus:border-amber-400 focus:ring-2 focus:ring-amber-100 !focus:border-amber-400 !focus:ring-amber-100 transition-all duration-200 shadow-sm bg-white placeholder-zinc-300" placeholder="Acronym" maxLength={5} style={{ fontFamily: 'Arial, Helvetica, sans-serif' }} /></td>
-                      <td className="px-3 py-2 align-middle"><CustomSelect options={["Longhair", "Shorthair", "Allbreed", "Double Specialty"]} value={judge.ringType} onChange={val => updateJudge(judge.id, 'ringType', val)} ariaLabel="Ring Type" className="min-w-[120px] focus:border-amber-400 focus:ring-2 focus:ring-amber-100 !focus:border-amber-400 !focus:ring-amber-100" /></td>
-                      <td className="px-3 py-2 align-middle text-center"><div className="flex items-center justify-center"><div className="relative group"><button type="button" onClick={() => { const newJudges = judges.filter(j => j.id !== judge.id); const reindexedJudges = reindexJudges(newJudges); setJudges(reindexedJudges); setShowData(prev => ({ ...prev, numberOfJudges: reindexedJudges.length })); }} className="p-1.5 rounded-full bg-gradient-to-br from-zinc-100 to-zinc-200 hover:from-amber-200 hover:to-amber-300 shadow hover:shadow-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-amber-400" title="Remove judge" onMouseEnter={e => e.currentTarget.parentElement?.classList.add('show-tooltip')} onMouseLeave={e => e.currentTarget.parentElement?.classList.remove('show-tooltip')}><svg className="w-4 h-4 text-amber-700 group-hover:text-red-600 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg><span className="sr-only">Remove judge</span><span className="absolute -top-7 left-1/2 -translate-x-1/2 scale-0 group-[.show-tooltip]:scale-100 transition-transform duration-200 bg-amber-700 text-white text-xs rounded px-2 py-1 shadow-lg pointer-events-none z-10">Remove judge</span></button></div></div></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-                </div>
-              )}
+                    <table className="min-w-full rounded-2xl bg-white shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300">
+                      <thead>
+                        <tr className="bg-gradient-to-r from-indigo-50 via-purple-50 to-blue-50 border-b border-indigo-200">
+                          <th className="uppercase text-xs font-bold tracking-wider text-indigo-800 py-3 px-4 text-left" style={{ fontFamily: 'Inter, Arial, Helvetica, sans-serif' }}>Judge #</th>
+                          <th className="uppercase text-xs font-bold tracking-wider text-indigo-800 py-3 px-4 text-left" style={{ fontFamily: 'Inter, Arial, Helvetica, sans-serif' }}>Judge Name <span className="text-red-500 text-base">●</span></th>
+                          <th className="uppercase text-xs font-bold tracking-wider text-indigo-800 py-3 px-4 text-left" style={{ fontFamily: 'Inter, Arial, Helvetica, sans-serif' }}>Acronym <span className="text-red-500 text-base">●</span></th>
+                          <th className="uppercase text-xs font-bold tracking-wider text-indigo-800 py-3 px-4 text-left" style={{ fontFamily: 'Inter, Arial, Helvetica, sans-serif' }}>Ring Type <span className="text-red-500 text-base">●</span></th>
+                          <th className="bg-gradient-to-r from-indigo-50 via-purple-50 to-blue-50 border-b border-indigo-200 py-3 px-4 w-12"></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {judges.map((judge, index) => (
+                          <tr key={judge.id} className={`${index % 2 === 0 ? "bg-white" : "bg-indigo-50/30"} hover:bg-indigo-100/30 transition-all duration-200`} style={{ height: 48 }}>
+                            <td className="px-4 py-3 align-middle">
+                              <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-amber-200 to-orange-200 text-gray-800 font-bold text-sm text-center shadow-md border border-amber-300/50 hover:shadow-lg hover:from-amber-300 hover:to-orange-300 transition-all duration-200" style={{ fontFamily: 'Inter, Arial, Helvetica, sans-serif' }}>
+                                {index + 1}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 align-middle">
+                              <input 
+                                type="text" 
+                                value={judge.name} 
+                                onChange={e => updateJudge(judge.id, 'name', e.target.value)} 
+                                onFocus={() => handleFieldFocus(`judge${index}Name`)} 
+                                onBlur={handleFieldBlur} 
+                                className={`w-full rounded-lg px-3 py-2 text-sm font-medium transition-all duration-300 shadow-sm ${errors[`judge${index}Name`] ? 'border-2 border-red-300 bg-red-50/80 focus:border-red-400 focus:ring-2 focus:ring-red-100 placeholder-red-400' : 'border border-indigo-200 bg-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 placeholder-indigo-400 hover:border-indigo-300'}`}
+                                placeholder="Enter judge name" 
+                                style={{ fontFamily: 'Inter, Arial, Helvetica, sans-serif' }} 
+                              />
+                            </td>
+                            <td className="px-4 py-3 align-middle">
+                              <input 
+                                type="text" 
+                                value={judge.acronym} 
+                                onChange={e => updateJudge(judge.id, 'acronym', e.target.value)} 
+                                onFocus={() => handleFieldFocus(`judge${index}Acronym`)} 
+                                onBlur={handleFieldBlur} 
+                                className={`w-full rounded-lg px-3 py-2 text-sm font-medium transition-all duration-300 shadow-sm ${errors[`judge${index}Acronym`] ? 'border-2 border-red-300 bg-red-50/80 focus:border-red-400 focus:ring-2 focus:ring-red-100 placeholder-red-400' : 'border border-indigo-200 bg-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 placeholder-indigo-400 hover:border-indigo-300'}`}
+                                placeholder="Enter Judge Acronym" 
+                                maxLength={5} 
+                                style={{ fontFamily: 'Inter, Arial, Helvetica, sans-serif' }} 
+                              />
+                            </td>
+                            <td className="px-4 py-3 align-middle">
+                              <CustomSelect 
+                                options={["Longhair", "Shorthair", "Allbreed", "Double Specialty"]} 
+                                value={judge.ringType} 
+                                onChange={val => updateJudge(judge.id, 'ringType', val)} 
+                                ariaLabel="Ring Type" 
+                                className="min-w-[140px] rounded-lg transition-all duration-300 shadow-sm"
+                                borderColor={errors[`judge${index}RingType`] ? "border-red-300" : "border-indigo-300"}
+                                focusBorderColor={errors[`judge${index}RingType`] ? "focus:border-red-500" : "focus:border-indigo-500"}
+                                textColor={errors[`judge${index}RingType`] ? "text-red-700" : "text-indigo-700"}
+                                highlightBg={errors[`judge${index}RingType`] ? "bg-red-50" : "bg-indigo-50"}
+                                highlightText={errors[`judge${index}RingType`] ? "text-red-900" : "text-indigo-900"}
+                                selectedBg={errors[`judge${index}RingType`] ? "bg-red-100" : "bg-indigo-100"}
+                                selectedText={errors[`judge${index}RingType`] ? "text-red-800" : "text-indigo-800"}
+                                hoverBg={errors[`judge${index}RingType`] ? "bg-red-50" : "bg-indigo-50"}
+                                hoverText={errors[`judge${index}RingType`] ? "text-red-900" : "text-indigo-900"}
+                              />
+                            </td>
+                            <td className="px-4 py-3 align-middle text-center">
+                              <div className="flex items-center justify-center">
+                                <div className="relative group">
+                                  <button 
+                                    type="button" 
+                                    onClick={() => { 
+                                      const newJudges = judges.filter(j => j.id !== judge.id); 
+                                      const reindexedJudges = reindexJudges(newJudges); 
+                                      setJudges(reindexedJudges); 
+                                      setShowData(prev => ({ ...prev, numberOfJudges: reindexedJudges.length })); 
+                                    }} 
+                                    className="p-1.5 text-indigo-500 hover:text-red-500 transition-all duration-200 rounded-lg hover:bg-red-100/50 hover:shadow-sm" 
+                                    title="Remove judge" 
+                                    onMouseEnter={e => e.currentTarget.parentElement?.classList.add('show-tooltip')} 
+                                    onMouseLeave={e => e.currentTarget.parentElement?.classList.remove('show-tooltip')}
+                                  >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                    <span className="sr-only">Remove judge</span>
+                                    <span className="absolute -top-8 left-1/2 -translate-x-1/2 scale-0 group-[.show-tooltip]:scale-100 transition-transform duration-200 bg-red-600 text-white text-xs rounded-lg px-2 py-1 shadow-lg pointer-events-none z-10" style={{ fontFamily: 'Inter, Arial, Helvetica, sans-serif' }}>
+                                      Remove judge
+                                    </span>
+                                  </button>
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
             </div>
           )}
           </div>

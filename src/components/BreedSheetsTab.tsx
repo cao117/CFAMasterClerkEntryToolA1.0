@@ -535,7 +535,7 @@ const BreedSheetsTab: React.FC<BreedSheetsTabProps> = (props) => {
             hasAnyErrors = true;
             // Prefix errors with judge info for clarity
             Object.keys(errors).forEach(key => {
-              allErrors[`Ring${judge.id}-${key}`] = `Ring ${judge.id} (${judge.acronym}): ${errors[key]}`;
+              allErrors[`Judge${judge.id}-${key}`] = `Judge ${judge.id} (${judge.acronym}): ${errors[key]}`;
             });
           }
         });
@@ -688,7 +688,7 @@ const BreedSheetsTab: React.FC<BreedSheetsTabProps> = (props) => {
           {/* Right: Selected Judge Info */}
           {selectedJudge && (
             <div className="flex items-center gap-2 text-sm text-orange-600 font-medium" style={{ fontFamily: "'Arial', 'Helvetica', sans-serif" }}>
-              <span className="font-bold">Ring {selectedJudge.id}</span>
+              <span className="font-bold">Judge {selectedJudge.id}</span>
               <span className="text-orange-400">•</span>
               <span className="font-semibold">{selectedJudge.name}</span>
               <span className="text-orange-400">•</span>
@@ -743,7 +743,7 @@ const BreedSheetsTab: React.FC<BreedSheetsTabProps> = (props) => {
                               ? 'text-orange-800'
                               : 'text-gray-700 group-hover:text-gray-900'
                           }`}>
-                            Ring {judge.id.toString().padStart(2, '0')} • {judge.name.split(' ').map(n => n[0]).join('.')} • {judge.ringType === 'Allbreed' ? 'AB' : judge.ringType === 'Double Specialty' ? 'DSP' : judge.ringType === 'Longhair' ? 'LH' : 'SH'}
+                            Judge {judge.id.toString().padStart(2, '0')} • {judge.name.split(' ').map(n => n[0]).join('.')} • {judge.ringType === 'Allbreed' ? 'AB' : judge.ringType === 'Double Specialty' ? 'DSP' : judge.ringType === 'Longhair' ? 'LH' : 'SH'}
                           </span>
                           
                           {/* Check Icon - Only for Selected */}

@@ -517,7 +517,7 @@ function App() {
         onTabReset={() => setHouseholdPetTabData({ showAwards: {}, voidedShowAwards: {} })}
         onCSVImport={handleCSVImport}
       />,
-      disabled: showData.householdPetCount <= 0
+      disabled: showData.householdPetCount <= 0 || !isShowInfoValid(showData) || !areJudgesValid(judges)
     },
     { 
       id: 'breedsheets', 

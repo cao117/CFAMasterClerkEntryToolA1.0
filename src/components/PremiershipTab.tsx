@@ -973,7 +973,7 @@ export default function PremiershipTab({
                 <tr className="cfa-table-header-modern" style={{ margin: 0, padding: 0, borderTopLeftRadius: 0, borderTopRightRadius: 0, background: 'linear-gradient(90deg, #3b82f6 0%, #60a5fa 100%)', color: '#fff', boxShadow: '0 6px 24px 0 rgba(59,130,246,0.12), 0 1.5px 0 0 #C7B273', borderBottom: '4px solid #C7B273' }}>
                   <th className="cfa-table-header-cell-modern text-left pl-6 align-bottom" style={{ minWidth: 140, maxWidth: 140, verticalAlign: 'top', borderTopLeftRadius: 0, margin: 0, padding: 0 }}>
                     <div className="flex flex-col justify-start items-start gap-0.5 relative">
-                      <span className="header-main block">Position</span>
+      
                       <span className="header-sub block">Placement</span>
                     </div>
                   </th>
