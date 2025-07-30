@@ -14,10 +14,11 @@ This document describes the **current validation rules** enforced in the General
 
 ## Number of Judges
 - **# of Judges**
-  - Required. Must be between 1 and 12 (inclusive).
+  - Required. Must be between 1 and the maximum set in Settings Panel (default: 12).
   - Setting to 0 clears all judges.
-  - Setting above 12 is capped at 12.
+  - Setting above the maximum is capped at the maximum.
   - Setting below 0 is capped at 0.
+  - **Dynamic Maximum**: The maximum is configurable in Settings Panel → General Settings → "Maximum Number of Judges"
 
 ## Judge Information
 - **Judge Name**
@@ -31,22 +32,40 @@ This document describes the **current validation rules** enforced in the General
 - **Ring Type**
   - Required for each judge.
   - Must be one of: Longhair, Shorthair, Allbreed, Double Specialty.
+- **Ring Number**
+  - Required for each judge.
+  - Must be between 1 and the maximum set in Settings Panel (default: 12).
+  - Must be unique among all judges.
+  - **Dynamic Maximum**: The maximum is configurable in Settings Panel → General Settings → "Maximum Number of Judges"
 
 ## Championship, Kitten, and Premiership Counts
 - **Championship Counts**
-  - # of GCs, LH CHs, SH CHs, NOVs: Each must be a non-negative integer.
-  - # of CHs and Total Count: Auto-calculated, read-only.
+  - # of LH GCs, SH GCs, LH CHs, SH CHs, LH NOVs, SH NOVs: Each must be a non-negative integer.
+  - Each count is automatically capped at the maximum cats setting (default: 450).
+  - When the maximum cats setting changes, existing values exceeding the new maximum are automatically capped.
+  - # of GCs, CHs, and Total Count: Auto-calculated, read-only.
+  - **Dynamic Maximum**: The maximum is configurable in Settings Panel → General Settings → "Maximum Number of Cats"
 - **Kitten Count**
-  - Must be a non-negative integer.
+  - # of LH Kittens, SH Kittens: Each must be a non-negative integer.
+  - Each count is automatically capped at the maximum cats setting (default: 450).
+  - When the maximum cats setting changes, existing values exceeding the new maximum are automatically capped.
+  - Total Count: Auto-calculated, read-only.
+  - **Dynamic Maximum**: The maximum is configurable in Settings Panel → General Settings → "Maximum Number of Cats"
 - **Premiership Counts**
-  - # of GCs, LH PRs, SH PRs, NOVs: Each must be a non-negative integer.
-  - # of PRs and Total Count: Auto-calculated, read-only.
+  - # of LH GPs, SH GPs, LH PRs, SH PRs, LH NOVs, SH NOVs: Each must be a non-negative integer.
+  - Each count is automatically capped at the maximum cats setting (default: 450).
+  - When the maximum cats setting changes, existing values exceeding the new maximum are automatically capped.
+  - # of GPs, PRs, and Total Count: Auto-calculated, read-only.
+  - **Dynamic Maximum**: The maximum is configurable in Settings Panel → General Settings → "Maximum Number of Cats"
 
 ## Household Pet Count
 - **# of Household Pets**
   - Required. Must be a non-negative integer.
+  - Automatically capped at the maximum cats setting (default: 450).
+  - When the maximum cats setting changes, existing values exceeding the new maximum are automatically capped.
   - No longhair/shorthair split; single total only.
   - Default is 0.
+  - **Dynamic Maximum**: The maximum is configurable in Settings Panel → General Settings → "Maximum Number of Cats"
 
 ## Additional Rules
 - **Required Field Indicators**
@@ -57,9 +76,13 @@ This document describes the **current validation rules** enforced in the General
   - Helper text appears when focusing on a field, if there is no error.
 - **Auto-Indexing**
   - Judge numbers are automatically re-indexed when judges are added or removed.
+- **Dynamic Validation**
+  - When the maximum cats setting changes, all show count fields are automatically re-validated.
+  - Values exceeding the new maximum are automatically capped to the new maximum.
+  - Only values that exceed the new maximum are modified; values within the new limit remain unchanged.
 
 ## Last Updated
-- 2024-06-09
+- 2024-12-19
 
 ## Shared CSV Action Buttons
 

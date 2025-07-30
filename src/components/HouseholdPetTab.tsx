@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useMemo, useRef, useState, useEffect } from 'react';
 import * as householdPetValidation from '../validation/householdPetValidation';
 import { handleSaveToExcel } from '../utils/excelExport';
 import Modal from './Modal';
@@ -42,6 +42,21 @@ interface HouseholdPetTabProps {
    * Handler for CSV import functionality
    */
   onCSVImport: () => Promise<void>;
+  /**
+   * Global settings including max_cats for validation
+   */
+  globalSettings: {
+    max_judges: number;
+    max_cats: number;
+    placement_thresholds: {
+      championship: number;
+      kitten: number;
+      premiership: number;
+      household_pet: number;
+    };
+    short_hair_breeds: string[];
+    long_hair_breeds: string[];
+  };
 }
 
 /**
@@ -57,7 +72,8 @@ export default function HouseholdPetTab({
   householdPetTabData,
   setHouseholdPetTabData,
   onTabReset,
-  onCSVImport
+  onCSVImport,
+  globalSettings
 }: HouseholdPetTabProps) {
   // --- Generate columns (one per judge, regardless of ring type) ---
   const generateColumns = (): Column[] => {
@@ -211,7 +227,7 @@ export default function HouseholdPetTab({
       voidedShowAwards: householdPetTabData.voidedShowAwards || {},
       householdPetCount
     };
-    return householdPetValidation.validateHouseholdPetTab(validationInput);
+    return householdPetValidation.validateHouseholdPetTab(validationInput, globalSettings.max_cats);
   };
 
   // --- Validate on blur (matches KittenTab pattern) ---
@@ -250,6 +266,12 @@ export default function HouseholdPetTab({
   // Add hasFocusedOnActivation ref for autofocus logic
   const hasFocusedOnActivation = useRef(false);
   // Remove the useEffect for auto-focus (lines 227-249)
+
+  // Add useEffect to run validation after any relevant state change
+  useEffect(() => {
+    const errors = validate();
+    setErrors(errors);
+  }, [householdPetTabData.showAwards, globalSettings.max_cats]);
 
   // Add Jump to Ring handler
   const handleRingJump = (e: React.ChangeEvent<HTMLSelectElement>) => {

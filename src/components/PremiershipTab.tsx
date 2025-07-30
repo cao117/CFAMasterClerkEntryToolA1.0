@@ -45,6 +45,21 @@ interface PremiershipTabProps {
    * Handler for CSV import functionality
    */
   onCSVImport: () => Promise<void>;
+  /**
+   * Global settings including max_cats for validation
+   */
+  globalSettings: {
+    max_judges: number;
+    max_cats: number;
+    placement_thresholds: {
+      championship: number;
+      kitten: number;
+      premiership: number;
+      household_pet: number;
+    };
+    short_hair_breeds: string[];
+    long_hair_breeds: string[];
+  };
 }
 
 type PremiershipTabData = {
@@ -99,7 +114,8 @@ export default function PremiershipTab({
   setPremiershipTabData,
   getShowState,
   isActive,
-  onCSVImport
+  onCSVImport,
+  globalSettings
 }: PremiershipTabProps) {
   // State for dynamic table structure
   const [numAwardRows, setNumAwardRows] = useState(10);
@@ -465,12 +481,12 @@ export default function PremiershipTab({
           return copy;
         });
         // Still run full validation to clear any stale errors
-        setErrors(premiershipValidation.validatePremiershipTab(createValidationInput()));
+        setErrors(premiershipValidation.validatePremiershipTab(createValidationInput(), globalSettings.max_cats));
         return;
       }
       // Validate cat number format
-      if (!premiershipValidation.validateCatNumber(value)) {
-        setErrors((prev: any) => ({ ...prev, [errorKey]: 'Cat number must be between 1-450 or VOID' }));
+      if (!premiershipValidation.validateCatNumber(value, globalSettings.max_cats)) {
+        setErrors((prev: any) => ({ ...prev, [errorKey]: `Cat number must be between 1-${globalSettings.max_cats} or VOID` }));
         return;
       }
       // Sequential entry validation
@@ -482,7 +498,7 @@ export default function PremiershipTab({
     }
     
     // Always trigger full validation after any blur to ensure all relationship-based errors are applied
-    setErrors(premiershipValidation.validatePremiershipTab(createValidationInput()));
+    setErrors(premiershipValidation.validatePremiershipTab(createValidationInput(), globalSettings.max_cats));
   };
 
   // --- Handler: Blur events for finals - run validation here (like ChampionshipTab) ---
@@ -497,16 +513,16 @@ export default function PremiershipTab({
           return copy;
         });
         // Still run full validation to clear any stale errors
-        setErrors(premiershipValidation.validatePremiershipTab(createValidationInput()));
+        setErrors(premiershipValidation.validatePremiershipTab(createValidationInput(), globalSettings.max_cats));
         return;
       }
     // Range/Format check
-      if (!premiershipValidation.validateCatNumber(value)) {
-        setErrors((prev: any) => ({ ...prev, [errorKey]: 'Cat number must be between 1-450 or VOID' }));
+      if (!premiershipValidation.validateCatNumber(value, globalSettings.max_cats)) {
+        setErrors((prev: any) => ({ ...prev, [errorKey]: `Cat number must be between 1-${globalSettings.max_cats} or VOID` }));
         return;
       }
     // Full-form validation (get all errors)
-    const allErrors = premiershipValidation.validatePremiershipTab(input);
+    const allErrors = premiershipValidation.validatePremiershipTab(input, globalSettings.max_cats);
     if (allErrors[errorKey] && allErrors[errorKey].toLowerCase().includes('duplicate')) {
       setErrors((prev: any) => ({ ...prev, [errorKey]: allErrors[errorKey] }));
       return;
@@ -675,8 +691,8 @@ export default function PremiershipTab({
   };
 
   useEffect(() => {
-    setErrors(premiershipValidation.validatePremiershipTab(createValidationInput()));
-  }, [premiershipTabData.showAwards, premiershipTabData.abPremiersFinals, premiershipTabData.lhPremiersFinals, premiershipTabData.shPremiersFinals]);
+    setErrors(premiershipValidation.validatePremiershipTab(createValidationInput(), globalSettings.max_cats));
+  }, [premiershipTabData.showAwards, premiershipTabData.abPremiersFinals, premiershipTabData.lhPremiersFinals, premiershipTabData.shPremiersFinals, globalSettings.max_cats]);
 
   // Defensive getter for showAwards (Top 10/15)
   const getShowAward = (colIdx: number, i: number) =>

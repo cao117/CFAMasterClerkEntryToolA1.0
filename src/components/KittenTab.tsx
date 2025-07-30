@@ -39,6 +39,21 @@ interface KittenTabProps {
    * Handler for CSV import functionality
    */
   onCSVImport: () => Promise<void>;
+  /**
+   * Global settings including max_cats for validation
+   */
+  globalSettings: {
+    max_judges: number;
+    max_cats: number;
+    placement_thresholds: {
+      championship: number;
+      kitten: number;
+      premiership: number;
+      household_pet: number;
+    };
+    short_hair_breeds: string[];
+    long_hair_breeds: string[];
+  };
 }
 
 type KittenTabData = {
@@ -62,7 +77,8 @@ export default function KittenTab({
   setKittenTabData,
   onTabReset,
   getShowState,
-  onCSVImport
+  onCSVImport,
+  globalSettings
 }: KittenTabProps) {
   // --- Helper: Generate columns (one per judge, handle Double Specialty) ---
   const generateColumns = (): Column[] => {
@@ -256,7 +272,7 @@ export default function KittenTab({
       voidedShowAwards: {}, // Empty object since we no longer use voidedShowAwards
       kittenCounts
     };
-    return kittenValidation.validateKittenTab(validationInput);
+    return kittenValidation.validateKittenTab(validationInput, globalSettings.max_cats);
   };
 
   // --- Validate on blur ---
@@ -311,6 +327,12 @@ export default function KittenTab({
       hasFocusedOnActivation.current = false;
     }
   }, [isActive]);
+
+  // Add useEffect to run validation after any relevant state change
+  useEffect(() => {
+    const errors = validate();
+    setErrors(errors);
+  }, [kittenTabData.showAwards, globalSettings.max_cats]);
 
   // Add Jump to Ring handler
   const handleRingJump = (e: React.ChangeEvent<HTMLSelectElement>) => {

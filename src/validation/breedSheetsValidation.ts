@@ -15,16 +15,17 @@ export interface BreedSheetsValidationInput {
   selectedHairLength: 'Longhair' | 'Shorthair';
 }
 
+import { validateCatNumber as validateCatNumberHelper, getCatNumberValidationMessage } from '../utils/validationHelpers';
+
 /**
- * Validates if a cat number is in the correct format (1-450, must be all digits, no letters or symbols)
+ * Validates if a cat number is in the correct format (1-maxCats, must be all digits, no letters or symbols)
  * Returns false if the value is not a valid integer string or out of range.
+ * @param value - The cat number string to validate
+ * @param maxCats - The maximum number of cats allowed (from globalSettings.max_cats)
+ * @returns True if valid
  */
-export function validateCatNumber(value: string): boolean {
-  if (!value || value.trim() === '') return true;
-  const trimmed = value.trim();
-  if (!/^[0-9]+$/.test(trimmed)) return false; // Only allow digits
-  const num = Number(trimmed);
-  return num >= 1 && num <= 450;
+export function validateCatNumber(value: string, maxCats: number): boolean {
+  return validateCatNumberHelper(value, maxCats);
 }
 
 /**
@@ -163,7 +164,7 @@ export function validateBoB2BoBDifferent(
  * Main validation function for Breed Sheets tab
  * Returns an object with error keys and messages
  */
-export function validateBreedSheetsTab(input: BreedSheetsValidationInput): { [key: string]: string } {
+export function validateBreedSheetsTab(input: BreedSheetsValidationInput, maxCats: number): { [key: string]: string } {
   const errors: { [key: string]: string } = {};
 
   Object.keys(input.breedEntries).forEach(breedKey => {
@@ -192,8 +193,8 @@ export function validateBreedSheetsTab(input: BreedSheetsValidationInput): { [ke
       }
 
       // 1. Format validation (cat number range)
-      if (!validateCatNumber(value)) {
-        errors[errorKey] = 'Cat number must be between 1-450 or VOID';
+      if (!validateCatNumber(value, maxCats)) {
+        errors[errorKey] = getCatNumberValidationMessage(maxCats);
         return;
       }
 
@@ -232,7 +233,8 @@ export function validateBreedSheetsField(
   input: BreedSheetsValidationInput,
   breedKey: string,
   field: 'bob' | 'secondBest' | 'bestCH' | 'bestPR',
-  value: string
+  value: string,
+  maxCats: number
 ): string | null {
   // Skip validation for empty or VOID values
   if (!value || value.trim() === '' || isVoidInput(value)) {
@@ -240,8 +242,8 @@ export function validateBreedSheetsField(
   }
 
   // 1. Format validation (highest precedence)
-  if (!validateCatNumber(value)) {
-    return 'Cat number must be between 1-450 or VOID';
+  if (!validateCatNumber(value, maxCats)) {
+    return getCatNumberValidationMessage(maxCats);
   }
 
   // 2. Duplicate validation

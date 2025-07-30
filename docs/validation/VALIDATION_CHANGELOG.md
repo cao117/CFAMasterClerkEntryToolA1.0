@@ -4,6 +4,32 @@ This changelog records all changes, additions, and deletions to validation rules
 
 ---
 
+### [2024-12-19] All Tabs: Dynamic Max Cats Implementation
+- **Tabs:** Championship, Kitten, Premiership, Household Pet, Breed Sheets
+- **Change:** Replaced hard-coded cat number limit (450) with dynamic `max_cats` setting from General Settings
+- **Summary:** 
+  - **Dynamic validation**: All validation functions now accept `max_cats` parameter from `globalSettings.max_cats`
+  - **Error message updates**: Error messages now dynamically show the current `max_cats` value (e.g., "Cat number must be between 1-500 or VOID")
+  - **Component interfaces**: Updated all tab component interfaces to include `globalSettings` prop
+  - **App.tsx updates**: All tab components now receive `globalSettings` prop from App.tsx
+  - **Validation function signatures**: Updated all validation functions to accept `max_cats` parameter:
+    - `validateChampionshipTab(input, maxCats)`
+    - `validateKittenTab(input, maxCats)`
+    - `validatePremiershipTab(input, maxCats)`
+    - `validateHouseholdPetTab(input, maxCats)`
+    - `validateBreedSheetsTab(input, maxCats)`
+    - `validateCatNumber(value, maxCats)`
+  - **Shared validation helpers**: Created `src/utils/validationHelpers.ts` with reusable functions:
+    - `validateCatNumber(value, maxCats)` - validates cat number format and range
+    - `getCatNumberValidationMessage(maxCats)` - generates consistent error messages
+  - **Test data generation**: Updated test data generation to use dynamic `max_cats` value
+  - **Documentation updates**: All validation documentation updated to reflect dynamic limits
+  - **Validation triggering**: Fixed validation useEffect hooks to include `globalSettings.max_cats` in dependency arrays, ensuring validation re-runs when max_cats setting changes
+- **Rationale:** Users can now adjust the maximum cat number limit in General Settings, and all validation rules and error messages automatically reflect this change across all tabs
+- **Impact:** Provides flexibility for different show sizes and eliminates the need to hard-code cat number limits throughout the application
+
+---
+
 
 
 ---
@@ -36,7 +62,7 @@ This changelog records all changes, additions, and deletions to validation rules
   - **Group and hair length selection**: Switch-based navigation between Championship/Premiership/Kitten groups and Longhair/Shorthair sections
   - **Visibility logic**: Groups and hair length sections shown based on show counts and judge ring type
   - **NOV count inclusion**: NOV cats included in visibility calculations for Championship and Premiership groups
-  - **Input validation**: Cat numbers 1-450 or VOID, no duplicates within same judge-group-hair length combination
+  - **Input validation**: Cat numbers 1-{max_cats} or VOID, no duplicates within same judge-group-hair length combination
   - **Breed list management**: Dynamic breed lists from Settings panel with automatic updates
   - **Search functionality**: Real-time breed name filtering for improved usability
   - **Input persistence**: Separate storage for each judge-group-hair length combination
@@ -54,7 +80,7 @@ This changelog records all changes, additions, and deletions to validation rules
   - **Sequential entry validation**: 2BoB cannot be filled before BoB, Best CH/PR cannot be filled before BoB
   - **Duplicate prevention**: No duplicate cat numbers across all fields (BoB, 2BoB, Best CH, Best PR) within same view
   - **BoB/2BoB validation**: BoB and 2BoB cannot be the same cat number
-  - **Format validation**: Cat numbers must be 1-450 or VOID, with auto-completion for "v"/"V" to "VOID"
+  - **Format validation**: Cat numbers must be 1-{max_cats} or VOID, with auto-completion for "v"/"V" to "VOID"
   - **Error precedence**: Format > Duplicate > Sequential > BoB/2BoB same cat
   - **Error styling**: Red border and background for invalid inputs, matching other tabs
   - **Error display**: Error messages shown below input fields in red text

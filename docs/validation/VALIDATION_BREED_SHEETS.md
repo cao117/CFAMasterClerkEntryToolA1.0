@@ -46,7 +46,7 @@ For Championship and Premiership groups, NOV cats are included in visibility cal
 ## Input Validation Rules
 
 ### Cat Number Validation
-- **Valid Range**: 1-450
+- **Valid Range**: 1-{max_cats}
 - **VOID Support**: Input can be "VOID" (case-insensitive)
 - **Format**: Numeric only (except for VOID)
 - **Auto-completion**: Typing "v" or "V" auto-completes to "VOID"
@@ -90,8 +90,8 @@ For Championship and Premiership groups, NOV cats are included in visibility cal
 ## Error Types and Messages
 
 ### Format Error
-- **Trigger**: Cat number outside 1-450 range (excluding VOID)
-- **Message**: "Cat number must be between 1-450 or VOID"
+- **Trigger**: Cat number outside 1-{max_cats} range (excluding VOID)
+- **Message**: "Cat number must be between 1-{max_cats} or VOID"
 - **Precedence**: Highest priority
 
 ### Duplicate Error

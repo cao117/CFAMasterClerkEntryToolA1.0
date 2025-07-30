@@ -35,16 +35,17 @@ export interface ChampionshipValidationInput {
   voidedSHChampionsFinals?: { [key: string]: boolean };
 }
 
+import { validateCatNumber as validateCatNumberHelper, getCatNumberValidationMessage } from '../utils/validationHelpers';
+
 /**
- * Validates if a cat number is in the correct format (1-450, must be all digits, no letters or symbols)
+ * Validates if a cat number is in the correct format (1-maxCats, must be all digits, no letters or symbols)
  * Returns false if the value is not a valid integer string or out of range.
+ * @param value - The cat number string to validate
+ * @param maxCats - The maximum number of cats allowed (from globalSettings.max_cats)
+ * @returns True if valid
  */
-export function validateCatNumber(value: string): boolean {
-  if (!value || value.trim() === '') return true;
-  const trimmed = value.trim();
-  if (!/^[0-9]+$/.test(trimmed)) return false; // Only allow digits
-  const num = Number(trimmed);
-  return num >= 1 && num <= 450;
+export function validateCatNumber(value: string, maxCats: number): boolean {
+  return validateCatNumberHelper(value, maxCats);
 }
 
 /**
@@ -845,7 +846,7 @@ function isVoidInput(catNumber: string): boolean {
  * @param input ChampionshipValidationInput
  * @returns { [key: string]: string } errors object with section-prefixed keys
  */
-export function validateChampionshipTab(input: ChampionshipValidationInput): { [key: string]: string } {
+export function validateChampionshipTab(input: ChampionshipValidationInput, maxCats: number): { [key: string]: string } {
   const errors: { [key: string]: string } = {};
 
   // --- Top 10/15 (Show Awards) Section ---
@@ -864,8 +865,8 @@ export function validateChampionshipTab(input: ChampionshipValidationInput): { [
     for (let pos = 0; pos < numAwardRows; pos++) {
       const key = `${colIdx}-${pos}`;
       const cell = input.showAwards[key];
-      if (cell && cell.catNumber && cell.catNumber.trim() && !isVoidInput(cell.catNumber) && !validateCatNumber(cell.catNumber)) {
-        errors[key] = 'Cat number must be between 1-450 or VOID.';
+      if (cell && cell.catNumber && cell.catNumber.trim() && !isVoidInput(cell.catNumber) && !validateCatNumber(cell.catNumber, maxCats)) {
+        errors[key] = getCatNumberValidationMessage(maxCats);
       }
     }
     // Duplicate detection: only non-VOID, non-empty cat numbers
@@ -879,7 +880,7 @@ export function validateChampionshipTab(input: ChampionshipValidationInput): { [
         positions.forEach(pos => {
           const errorKey = `${colIdx}-${pos}`;
           if (errors[errorKey]) {
-            errors[errorKey] = 'Cat number must be between 1-450 or VOID. Duplicate: This cat is already placed in another position.';
+            errors[errorKey] = `${getCatNumberValidationMessage(maxCats)} Duplicate: This cat is already placed in another position.`;
           } else {
             errors[errorKey] = 'Duplicate: This cat is already placed in another position.';
           }
@@ -925,8 +926,8 @@ export function validateChampionshipTab(input: ChampionshipValidationInput): { [
       for (let pos = 0; pos < numPositions; pos++) {
         const errorKey = `${section.prefix}-${colIdx}-${pos}`;
         const value = finals ? finals[`${colIdx}-${pos}`] : '';
-        if (value && value.trim() && !isVoidInput(value) && !validateCatNumber(value)) {
-          errors[errorKey] = 'Cat number must be between 1-450 or VOID.';
+        if (value && value.trim() && !isVoidInput(value) && !validateCatNumber(value, maxCats)) {
+          errors[errorKey] = getCatNumberValidationMessage(maxCats);
         }
       }
       // 2. Duplicate error: merge with range if both
@@ -940,7 +941,7 @@ export function validateChampionshipTab(input: ChampionshipValidationInput): { [
           positions.forEach(pos => {
             const errorKey = `${section.prefix}-${colIdx}-${pos}`;
             if (errors[errorKey]) {
-              errors[errorKey] = 'Cat number must be between 1-450 or VOID. Duplicate: This cat is already placed in another finals position.';
+              errors[errorKey] = `${getCatNumberValidationMessage(maxCats)} Duplicate: This cat is already placed in another finals position.`;
             } else {
               errors[errorKey] = 'Duplicate: This cat is already placed in another finals position.';
             }

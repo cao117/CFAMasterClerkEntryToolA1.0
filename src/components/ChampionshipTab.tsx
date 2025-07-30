@@ -57,6 +57,21 @@ interface ChampionshipTabProps {
    * Handler for CSV import functionality
    */
   onCSVImport: () => Promise<void>;
+  /**
+   * Global settings including max_cats for validation
+   */
+  globalSettings: {
+    max_judges: number;
+    max_cats: number;
+    placement_thresholds: {
+      championship: number;
+      kitten: number;
+      premiership: number;
+      household_pet: number;
+    };
+    short_hair_breeds: string[];
+    long_hair_breeds: string[];
+  };
 }
 
 interface Column {
@@ -90,7 +105,7 @@ type ChampionshipTabData = {
  */
 const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProps>(
   (props, ref) => {
-    const { judges, championshipTotal, championshipCounts, showSuccess, showError, shouldFillTestData, onResetAllData, championshipTabData, setChampionshipTabData, getShowState, isActive, onCSVImport } = props;
+    const { judges, championshipTotal, championshipCounts, showSuccess, showError, shouldFillTestData, onResetAllData, championshipTabData, setChampionshipTabData, getShowState, isActive, onCSVImport, globalSettings } = props;
 
     // State for dynamic table structure
     const [columns, setColumns] = useState<Column[]>([]);
@@ -355,7 +370,7 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
       
       // Generate unique cat numbers for each column
       const generateUniqueNumber = (): number => {
-        return Math.floor(Math.random() * 450) + 1;
+        return Math.floor(Math.random() * globalSettings.max_cats) + 1;
       };
       
       // Generate test data for each column
@@ -524,7 +539,7 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
           championshipTotal,
           championshipCounts,
           // [VOID LOGIC REFACTOR] Removed last remaining voided state properties from object initialization.
-          })
+          }, globalSettings.max_cats)
         );
       }, 0);
       showSuccess('Test Data Filled', 'Championship tab has been filled with realistic test data that complies with all validation rules.');
@@ -543,20 +558,20 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
       }
     }, [shouldFillTestData, judges.length, championshipTotal, columns.length, fillTestData]);
 
-    // Add useEffect to run validation after any relevant state change
-    useEffect(() => {
-      setErrors(
-        validateChampionshipTab({
+      // Add useEffect to run validation after any relevant state change
+  useEffect(() => {
+    setErrors(
+      validateChampionshipTab({
         columns,
-          showAwards: championshipTabData.showAwards,
-          championsFinals: championshipTabData.championsFinals,
-          lhChampionsFinals: championshipTabData.lhChampionsFinals,
-          shChampionsFinals: championshipTabData.shChampionsFinals,
+        showAwards: championshipTabData.showAwards,
+        championsFinals: championshipTabData.championsFinals,
+        lhChampionsFinals: championshipTabData.lhChampionsFinals,
+        shChampionsFinals: championshipTabData.shChampionsFinals,
         championshipTotal,
         championshipCounts
-        })
-      );
-    }, [columns, championshipTabData.showAwards, championshipTabData.championsFinals, championshipTabData.lhChampionsFinals, championshipTabData.shChampionsFinals, championshipTotal, championshipCounts]);
+      }, globalSettings.max_cats)
+    );
+  }, [columns, championshipTabData.showAwards, championshipTabData.championsFinals, championshipTabData.lhChampionsFinals, championshipTabData.shChampionsFinals, championshipTotal, championshipCounts, globalSettings.max_cats]);
 
     // Defensive getter for showAwards (Top 10/15)
     const getShowAward = (colIdx: number, i: number) =>
@@ -803,8 +818,8 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
       // Run basic validation for this input
       if (value.trim() !== '') {
         // Validate cat number format
-        if (!validateCatNumber(value)) {
-          setErrors((prev: any) => ({ ...prev, [errorKey]: 'Cat number must be between 1-450 or VOID' }));
+        if (!validateCatNumber(value, globalSettings.max_cats)) {
+          setErrors((prev: any) => ({ ...prev, [errorKey]: `Cat number must be between 1-${globalSettings.max_cats} or VOID` }));
           return;
         }
         // Sequential entry validation
@@ -813,7 +828,7 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
           return;
         }
         // Full validation handles all checks including duplicates
-        setErrors(validateChampionshipTab(input));
+        setErrors(validateChampionshipTab(input, globalSettings.max_cats));
       }
     };
 
@@ -901,20 +916,20 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
             delete copy[errorKey];
             return copy;
           });
-          const allErrors = validateChampionshipTab(input);
+          const allErrors = validateChampionshipTab(input, globalSettings.max_cats);
           setErrors(allErrors);
           setLocalInputState(prev => { const copy = { ...prev }; delete copy[key]; return copy; });
           return;
         }
-        if (localValue && !validateCatNumber(localValue)) {
-          setErrors((prev: any) => ({ ...prev, [errorKey]: 'Cat number must be between 1-450 or VOID' }));
-          const allErrors = validateChampionshipTab(input);
+        if (localValue && !validateCatNumber(localValue, globalSettings.max_cats)) {
+          setErrors((prev: any) => ({ ...prev, [errorKey]: `Cat number must be between 1-${globalSettings.max_cats} or VOID` }));
+          const allErrors = validateChampionshipTab(input, globalSettings.max_cats);
           setErrors(allErrors); // Always set all errors after any check
           setLocalInputState(prev => { const copy = { ...prev }; delete copy[key]; return copy; });
           return;
         }
         // Duplicate check (full-form): show duplicate error if present before sequential
-        const allErrors = validateChampionshipTab(input);
+        const allErrors = validateChampionshipTab(input, globalSettings.max_cats);
         if (allErrors[errorKey] && allErrors[errorKey].toLowerCase().includes('duplicate')) {
           setErrors(allErrors); // Set all errors for all cells, not just this one
           setLocalInputState(prev => { const copy = { ...prev }; delete copy[key]; return copy; });
@@ -923,13 +938,13 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
         // Sequential entry check (only if no duplicate error)
         if (!validateSequentialEntry(input, section, colIdx, rowIdx, localValue)) {
           setErrors((prev: any) => ({ ...prev, [errorKey]: 'You must fill previous placements before entering this position.' }));
-          const allErrorsSeq = validateChampionshipTab(input);
+          const allErrorsSeq = validateChampionshipTab(input, globalSettings.max_cats);
           setErrors(allErrorsSeq); // Always set all errors after any check
           setLocalInputState(prev => { const copy = { ...prev }; delete copy[key]; return copy; });
           return;
         }
         // If no errors, always run full-form validation for all cells
-        setErrors(validateChampionshipTab(input));
+        setErrors(validateChampionshipTab(input, globalSettings.max_cats));
         setLocalInputState(prev => { const copy = { ...prev }; delete copy[key]; return copy; });
         return;
       } else {
@@ -940,16 +955,16 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
             delete copy[errorKey];
             return copy;
           });
-          setErrors(validateChampionshipTab(input));
+          setErrors(validateChampionshipTab(input, globalSettings.max_cats));
           setLocalInputState(prev => { const copy = { ...prev }; delete copy[key]; return copy; });
           return;
         }
-        if (localValue && !validateCatNumber(localValue)) {
-          setErrors((prev: any) => ({ ...prev, [errorKey]: 'Cat number must be between 1-450 or VOID' }));
+        if (localValue && !validateCatNumber(localValue, globalSettings.max_cats)) {
+          setErrors((prev: any) => ({ ...prev, [errorKey]: `Cat number must be between 1-${globalSettings.max_cats} or VOID` }));
           setLocalInputState(prev => { const copy = { ...prev }; delete copy[key]; return copy; });
           return;
         }
-        const allErrors = validateChampionshipTab(input);
+        const allErrors = validateChampionshipTab(input, globalSettings.max_cats);
         if (allErrors[errorKey] && allErrors[errorKey].toLowerCase().includes('duplicate')) {
           setErrors((prev: any) => ({ ...prev, [errorKey]: allErrors[errorKey] }));
           setLocalInputState(prev => { const copy = { ...prev }; delete copy[key]; return copy; });

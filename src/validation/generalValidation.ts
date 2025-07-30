@@ -16,8 +16,12 @@ export interface ShowData {
   numberOfJudges: number;
   championshipCounts: {
     gcs: number;
+    lhGcs: number;
+    shGcs: number;
     lhChs: number;
     shChs: number;
+    lhNovs: number;
+    shNovs: number;
     novs: number;
     chs: number;
     total: number;
@@ -32,6 +36,8 @@ export interface ShowData {
     shGps: number;
     lhPrs: number;
     shPrs: number;
+    lhNovs: number;
+    shNovs: number;
     novs: number;
     gps: number;
     prs: number;
@@ -43,8 +49,12 @@ export interface ShowData {
 /**
  * Validates the General tab form data and judges.
  * Returns an object with errors keyed by field name.
+ * @param showData - The show data to validate
+ * @param judges - Array of judges to validate
+ * @param maxJudges - Maximum number of judges allowed (default: 12)
+ * @param maxCats - Maximum number of cats allowed (default: 450)
  */
-export function validateGeneralForm(showData: ShowData, judges: Judge[]): { [key: string]: string } {
+export function validateGeneralForm(showData: ShowData, judges: Judge[], maxJudges: number = 12, maxCats: number = 450): { [key: string]: string } {
   const newErrors: { [key: string]: string } = {};
 
   // Required fields
@@ -56,9 +66,9 @@ export function validateGeneralForm(showData: ShowData, judges: Judge[]): { [key
 
   // Number of judges
   if (showData.numberOfJudges < 1) {
-    newErrors.numberOfJudges = 'Number of judges must be between 1-12 for show submission';
-  } else if (showData.numberOfJudges > 12) {
-    newErrors.numberOfJudges = 'Maximum 12 judges allowed';
+    newErrors.numberOfJudges = `Number of judges must be between 1-${maxJudges} for show submission`;
+  } else if (showData.numberOfJudges > maxJudges) {
+    newErrors.numberOfJudges = `Maximum ${maxJudges} judges allowed`;
   }
 
   // Judges
@@ -76,11 +86,11 @@ export function validateGeneralForm(showData: ShowData, judges: Judge[]): { [key
       newErrors[`judge${judge.id}Acronym`] = `Judge ${judge.id} acronym cannot exceed 6 characters`;
     }
     
-    // Ring Number validation - should be between 1 and max_judges (12)
+    // Ring Number validation - should be between 1 and max_judges
     if (!judge.ringNumber || judge.ringNumber < 1) {
-      newErrors[`judge${judge.id}RingNumber`] = `Judge ${judge.id} ring number must be between 1 and 12`;
-    } else if (judge.ringNumber > 12) {
-      newErrors[`judge${judge.id}RingNumber`] = `Judge ${judge.id} ring number cannot exceed 12 (max 12)`;
+      newErrors[`judge${judge.id}RingNumber`] = `Judge ${judge.id} ring number must be between 1 and ${maxJudges}`;
+    } else if (judge.ringNumber > maxJudges) {
+      newErrors[`judge${judge.id}RingNumber`] = `Judge ${judge.id} ring number cannot exceed ${maxJudges} (max ${maxJudges})`;
     }
   });
 
@@ -97,6 +107,55 @@ export function validateGeneralForm(showData: ShowData, judges: Judge[]): { [key
   // Household Pet Count validation
   if (showData.householdPetCount < 0 || isNaN(showData.householdPetCount)) {
     newErrors.householdPetCount = 'Household Pet count must be a non-negative integer';
+  }
+
+  // Show Count validation against maxCats
+  // Championship Counts validation
+  if (showData.championshipCounts.lhGcs > maxCats) {
+    newErrors.championshipLhGcs = `Longhair GCs cannot exceed ${maxCats}`;
+  }
+  if (showData.championshipCounts.shGcs > maxCats) {
+    newErrors.championshipShGcs = `Shorthair GCs cannot exceed ${maxCats}`;
+  }
+  if (showData.championshipCounts.lhChs > maxCats) {
+    newErrors.championshipLhChs = `Longhair CHs cannot exceed ${maxCats}`;
+  }
+  if (showData.championshipCounts.shChs > maxCats) {
+    newErrors.championshipShChs = `Shorthair CHs cannot exceed ${maxCats}`;
+  }
+  if (showData.championshipCounts.lhNovs > maxCats) {
+    newErrors.championshipLhNovs = `Longhair NOVs cannot exceed ${maxCats}`;
+  }
+  if (showData.championshipCounts.shNovs > maxCats) {
+    newErrors.championshipShNovs = `Shorthair NOVs cannot exceed ${maxCats}`;
+  }
+
+  // Kitten Counts validation
+  if (showData.kittenCounts.lhKittens > maxCats) {
+    newErrors.kittenLhKittens = `Longhair Kittens cannot exceed ${maxCats}`;
+  }
+  if (showData.kittenCounts.shKittens > maxCats) {
+    newErrors.kittenShKittens = `Shorthair Kittens cannot exceed ${maxCats}`;
+  }
+
+  // Premiership Counts validation
+  if (showData.premiershipCounts.lhGps > maxCats) {
+    newErrors.premiershipLhGps = `Longhair GPs cannot exceed ${maxCats}`;
+  }
+  if (showData.premiershipCounts.shGps > maxCats) {
+    newErrors.premiershipShGps = `Shorthair GPs cannot exceed ${maxCats}`;
+  }
+  if (showData.premiershipCounts.lhPrs > maxCats) {
+    newErrors.premiershipLhPrs = `Longhair PRs cannot exceed ${maxCats}`;
+  }
+  if (showData.premiershipCounts.shPrs > maxCats) {
+    newErrors.premiershipShPrs = `Shorthair PRs cannot exceed ${maxCats}`;
+  }
+  if (showData.premiershipCounts.lhNovs > maxCats) {
+    newErrors.premiershipLhNovs = `Longhair NOVs cannot exceed ${maxCats}`;
+  }
+  if (showData.premiershipCounts.shNovs > maxCats) {
+    newErrors.premiershipShNovs = `Shorthair NOVs cannot exceed ${maxCats}`;
   }
 
   return newErrors;

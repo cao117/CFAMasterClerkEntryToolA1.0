@@ -18,7 +18,7 @@ This document describes the **current validation rules** enforced in the Househo
   - All columns use the same row count, regardless of ring type
 
 ## Validation Rules
-- **Cat number format:** Must be between 1-450
+- **Cat number format:** Must be between 1-{max_cats}
 - **Sequential entry:** Must fill positions sequentially (no skipping)
 - **Duplicate check:** No duplicates within the same section of the final. If a duplicate is found, the error is shown on all cells with the same value in that section (not just the last entered cell). The error message is: 'Duplicate cat number within this section of the final'.
 - **Status validation:** Only HHP is allowed (always selected)
@@ -29,7 +29,7 @@ This document describes the **current validation rules** enforced in the Househo
 ## Error Precedence
 For each cell, only the highest-precedence error is shown:
 1. Duplicate error (within section of the final; shown on all cells with the same value; message: 'Duplicate cat number within this section of the final')
-2. Range error (cat number not 1-450)
+2. Range error (cat number not 1-{max_cats})
 3. Sequential entry error ("You must fill previous placements before entering this position.")
 4. Status error (should always be HHP)
 

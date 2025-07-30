@@ -37,13 +37,13 @@ The Premiership tab uses **hair-specific breakpoints** based on ring type:
 The Premiership tab validation follows the **exact same order and structure** as the Championship tab, with only the necessary differences in terminology and breakpoints:
 
 ### 1. Show Awards Section (Top 10/15)
-- **Cat number format**: Must be between 1-450
+- **Cat number format**: Must be between 1-{max_cats}
 - **Sequential entry**: Must fill positions sequentially (no skipping). The error is only shown on the first empty cell after the last filled cell in each column, and never on filled cells.
 - **Duplicate check**: No duplicates within the same column
 - **Status validation**: All three statuses (GP, PR, NOV) are allowed
 
 ### 2. Finals Sections (Best AB PR, Best LH PR, Best SH PR)
-- **Cat number format**: Must be between 1-450
+- **Cat number format**: Must be between 1-{max_cats}
 - **Sequential entry**: Must fill positions sequentially (no skipping)
 - **Duplicate check**: No duplicates within the same section/column
 - **Cross-section duplicate check**: Same cat number cannot appear in both LH PR and SH PR sections
@@ -137,7 +137,7 @@ Suppose you have the following cats in the Premiership Final (Top 10/15):
 
 ## Error Precedence (Finals Sections)
 - For each cell in Best AB PR, Best LH PR, and Best SH PR, only the highest-precedence error is ever shown:
-  1. Range error (cat number not 1-450)
+  1. Range error (cat number not 1-{max_cats})
   2. Duplicate error (within section, highest priority)
   3. Cross-section duplicate error (LH PR vs SH PR) - "Duplicate: a cat cannot be both longhair and shorthair"
   4. Status error (GP/NOV/MISSING/INVALID from Show Awards)
@@ -257,7 +257,7 @@ The only differences are:
 - This logic is enforced in the UI and validation code.
 
 ## 2024-06-22: Stricter Cat Number Validation & Error Precedence Refactor
-- Cat numbers must now be all digits (no letters or symbols) and in the range 1-450.
+- Cat numbers must now be all digits (no letters or symbols) and in the range 1-{max_cats}.
 - Any non-integer input (e.g., '15a', '1.5', 'abc') is now rejected as invalid.
 - Finals and Show Awards: error precedence is now range > duplicate > status (GP/NOV) > sequential > order > assignment reminder (Best AB PR only).
 - If both range and duplicate errors are present, both are shown (range first).

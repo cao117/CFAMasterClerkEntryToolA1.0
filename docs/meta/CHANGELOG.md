@@ -2,6 +2,73 @@
 
 This changelog records major changes to the CFA Master Clerk Entry Tool, including validation rule changes, documentation restructuring, feature additions, and UI/UX improvements.
 
+### [2024-12-19] Settings Panel: Maximum Number of Rings Field Added
+- **Area:** src/components/SettingsPanel.tsx, src/App.tsx
+- **Change:** Added new "Maximum Number of Rings" setting to the General Settings section in the Settings Panel. This field is positioned between "Maximum Number of Judges" and "Maximum Number of Cats" for logical grouping.
+- **Summary:**
+  - **New Field**: Added `max_rings` property to SettingsData interface with default value of 8
+  - **UI Design**: Purple/indigo color theme with ring icon, matching the modern glassmorphism design pattern
+  - **Validation**: 3-digit number input (1-999 range) with auto-text selection on focus
+  - **Positioning**: Placed between max_judges and max_cats for logical workflow grouping
+  - **Consistency**: Uses same SettingsInput component and styling as other general settings
+- **Rationale:** Provides users with a centralized setting to configure the maximum number of rings for their show, improving the configuration workflow and maintaining consistency with other general settings.
+- **Impact:** Users can now configure ring limits alongside judge and cat limits in a single, organized interface.
+
+### [2024-12-19] Settings Panel: Maximum Number of Rings Field Removed
+- **Area:** src/components/SettingsPanel.tsx, src/App.tsx
+- **Change:** Removed "Maximum Number of Rings" field as it was not needed for the application functionality
+- **Rationale:** The field was not required for the current application workflow
+
+### [2024-12-19] Settings Panel: Maximum Number of Judges Integration
+- **Area:** src/components/GeneralTab.tsx, src/App.tsx, src/validation/generalValidation.ts, docs/USAGE.md, docs/validation/VALIDATION_GENERAL.md
+- **Change:** Integrated the "Maximum Number of Judges" setting with the General Information tab
+- **Summary:**
+  - **Dynamic Validation**: Number of judges field now respects the maximum set in Settings Panel
+  - **Real-time Updates**: When setting changes, General tab immediately reflects new maximum
+  - **Error Handling**: Shows error when trying to set maximum lower than current judge count
+  - **Documentation**: Updated USAGE.md and validation docs to reflect configurable limits
+  - **Validation Messages**: All error messages now show dynamic maximum instead of hardcoded 12
+- **Rationale:** Provides flexible configuration for judge limits while maintaining data integrity and user guidance
+- **Impact:** Users can now configure judge limits according to their show requirements, with proper validation and error handling
+
+### [2024-12-19] Settings Panel: Maximum Number of Cats Integration
+- **Area:** src/components/GeneralTab.tsx, docs/USAGE.md
+- **Change:** Integrated the "Maximum Number of Cats" setting with all show count input fields in the General Information tab
+- **Summary:**
+  - **Automatic Capping**: All show count input fields are automatically capped at the max_cats setting
+  - **Silent Enforcement**: No error messages shown - values are silently capped to the maximum
+  - **Comprehensive Coverage**: Championship, Kitten, Premiership, and Household Pet count fields all respect the limit
+  - **Test Data Integration**: Test data generation now respects the max_cats setting instead of hardcoded 450
+  - **Documentation**: Updated USAGE.md to reflect the integration and behavior
+- **Rationale:** Provides centralized control over maximum cat counts while maintaining a smooth user experience without disruptive error messages
+- **Impact:** Users can now configure cat limits according to their show requirements, with automatic enforcement across all input fields
+
+### [2024-12-19] Ring Number Dynamic Cap Implementation
+- **Area:** src/components/GeneralTab.tsx, src/App.tsx, src/components/SettingsPanel.tsx, docs/USAGE.md
+- **Change:** Implemented dynamic ring number capping and updated settings hard limits
+- **Summary:**
+  - **Dynamic Ring Number Cap**: Ring numbers now capped at 2 × current number of judges (instead of static max_judges setting)
+  - **Automatic Clearing**: Invalid ring numbers are automatically cleared when judge count decreases
+  - **Settings Hard Limits**: Increased max_judges hard cap from 12 to 24, max_cats hard cap from 450 to 1000 (defaults remain 12 and 450)
+  - **Hard Cap Enforcement**: Values are now automatically capped at hard limits during input, blur, and restore operations
+  - **Minimum Judge Count**: Enforced minimum of 1 judge (prevents 0 judges)
+  - **Real-time Updates**: Ring number maximum changes dynamically as judge count changes
+  - **Documentation**: Updated USAGE.md with new Ring Number Dynamic Cap section
+- **Rationale:** Provides more flexible ring number assignment while maintaining data integrity and preventing invalid states
+- **Impact:** Users can now assign ring numbers up to 2x their judge count, with automatic cleanup when reducing judge count
+
+### [2024-12-19] Jump-to-Menu Dropdown: Ring Number Display Fix
+- **Area:** src/utils/jumpToMenuUtils.ts, all tab components (Championship, Premiership, Kitten, Household Pet)
+- **Change:** Fixed jump-to-menu dropdown to display actual ring numbers instead of auto-generated sequential IDs. All utility functions now use `col.judge.ringNumber` instead of `col.judge.id` for ring number display.
+- **Summary:**
+  - **Before**: Dropdown showed auto-index values (Ring 01, Ring 02, Ring 03...) regardless of actual ring numbers entered
+  - **After**: Dropdown now shows actual ring numbers entered in General Information tab (Ring 05, Ring 12, Ring 03...)
+  - **Functions Updated**: All 6 utility functions in jumpToMenuUtils.ts updated to use `col.judge.ringNumber`
+  - **Tabs Affected**: Championship, Premiership, Kitten, and Household Pet tabs all now display correct ring numbers
+  - **Consistency**: Dropdown display now matches table headers and selection logic
+- **Rationale:** Previously, the dropdown showed sequential auto-index values (1, 2, 3, 4...) while the table headers and selection logic used actual ring numbers (5, 12, 3, 8...). This created confusion and made the dropdown unusable. Now the dropdown displays the actual ring numbers that users entered in the General Information tab.
+- **Impact:** Users can now effectively use the jump-to-menu dropdown to navigate to specific rings, as the displayed ring numbers match the actual ring assignments.
+
 ### [2024-12-19] General Tab: Show Count Section UI Redesign - Two-Color Alternating System
 - **Area:** src/components/GeneralTab.tsx
 - **Change:** Redesigned Show Count section with clean two-color alternating system and improved visual hierarchy

@@ -47,13 +47,13 @@ The Championship tab uses **hair-specific breakpoints** based on ring type:
 The Championship tab validation follows this order:
 
 ### 1. Show Awards Section (Top 10/15)
-- **Cat number format**: Must be between 1-450 (except VOID, which is always ignored)
+- **Cat number format**: Must be between 1-{max_cats} (except VOID, which is always ignored)
 - **Sequential entry**: Must fill positions sequentially (no skipping, except VOID, which is always ignored; VOID placements are treated as if they do not exist for validation)
 - **Duplicate check**: No duplicates within the same column (except VOID, which is always ignored; VOID placements are treated as if they do not exist for validation)
 - **Status validation**: All three statuses (GC, CH, NOV) are allowed (except VOID, which is always ignored)
 
 ### 2. Finals Sections (Best AB CH, Best LH CH, Best SH CH)
-- **Cat number format**: Must be between 1-450
+- **Cat number format**: Must be between 1-{max_cats}
 - **Sequential entry**: Must fill positions sequentially (no skipping)
 - **Duplicate check**: No duplicates within the same section/column
 - **Cross-section duplicate check**: Same cat number cannot appear in both LH CH and SH CH sections

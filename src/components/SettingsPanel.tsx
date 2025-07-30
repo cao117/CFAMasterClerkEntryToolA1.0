@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import cfaLogo from '../assets/cfa-logo-official.png';
 import { useEffect, useRef } from 'react';
+import SettingsInput from './SettingsInput';
+import Modal from './Modal';
 
 // Settings data structure
 interface SettingsData {
@@ -18,8 +20,8 @@ interface SettingsData {
 
 // Default values as specified
 const DEFAULT_SETTINGS: SettingsData = {
-  max_judges: 12,
-  max_cats: 450,
+  max_judges: 12, // Default value (hard cap is 24)
+  max_cats: 450, // Default value (hard cap is 1000)
   placement_thresholds: {
     championship: 85,
     kitten: 75,
@@ -75,14 +77,24 @@ interface SettingsPanelProps {
     short_hair_breeds: string[];
     long_hair_breeds: string[];
   }>>;
+  currentNumberOfJudges: number;
 }
 
 type SettingsSection = 'general' | 'placement' | 'breed';
 
-export default function SettingsPanel({ isOpen, onClose, showSuccess, globalSettings, setGlobalSettings }: SettingsPanelProps) {
+export default function SettingsPanel({ isOpen, onClose, showSuccess, globalSettings, setGlobalSettings, currentNumberOfJudges }: SettingsPanelProps) {
   const [activeSection, setActiveSection] = useState<SettingsSection>('general');
   const [breedTab, setBreedTab] = useState<'SHORT HAIR' | 'LONG HAIR'>('SHORT HAIR');
   const modalRef = useRef<HTMLDivElement>(null);
+  const [showMaxJudgesErrorModal, setShowMaxJudgesErrorModal] = useState(false);
+  
+  // Local state for max_cats to prevent cascade updates
+  const [localMaxCats, setLocalMaxCats] = useState(globalSettings.max_cats.toString());
+  
+  // Reset local state if globalSettings changes externally
+  useEffect(() => {
+    setLocalMaxCats(globalSettings.max_cats.toString());
+  }, [globalSettings.max_cats]);
 
   // Keyboard accessibility: ESC to close
   useEffect(() => {
@@ -96,20 +108,82 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess, globalSett
     return () => document.removeEventListener('keydown', handleEscape);
   }, [isOpen, onClose]);
 
-  // Handle numeric input validation (3-digit, 1-999)
-  const handleNumericInput = (value: string, min: number = 1, max: number = 999): number => {
+  // Handle numeric input validation (3-digit, 0-999, allows empty for editing)
+  const handleNumericInput = (value: string, min: number = 0, max: number = 999): number => {
     const num = parseInt(value) || 0;
     if (num < min) return min;
     if (num > max) return max;
     return num;
   };
 
-  // Update general settings
+  // Handle key down events for max_judges input (Case 2: Down arrow validation)
+  const handleMaxJudgesKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Check for down arrow key when trying to decrease max_judges
+    if (e.key === 'ArrowDown') {
+      const currentValue = parseInt(e.currentTarget.value) || 0;
+      const newValue = currentValue - 1;
+      
+      // Validate if the new value would be lower than current number of judges
+      if (newValue < currentNumberOfJudges && newValue > 0) {
+        e.preventDefault(); // Prevent the default down arrow behavior
+        setShowMaxJudgesErrorModal(true);
+        return;
+      }
+    }
+  };
+
+  // Handle blur events for max_judges input (Case 1: Focus outside validation)
+  const handleMaxJudgesBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const inputValue = e.target.value;
+    
+    // If field is empty, set to default value of 1
+    if (inputValue === '') {
+      setGlobalSettings(prev => ({
+        ...prev,
+        max_judges: 1
+      }));
+      return;
+    }
+    
+    const currentValue = parseInt(inputValue) || 0;
+    
+    // Apply hard cap of 24
+    const cappedValue = Math.min(currentValue, 24);
+    
+    // Validate if the current value is lower than current number of judges
+    if (cappedValue < currentNumberOfJudges && cappedValue > 0) {
+      setShowMaxJudgesErrorModal(true);
+      // Reset to the previous valid value
+      setGlobalSettings(prev => ({
+        ...prev,
+        max_judges: Math.max(prev.max_judges, currentNumberOfJudges)
+      }));
+    } else {
+      // Apply the capped value
+      setGlobalSettings(prev => ({
+        ...prev,
+        max_judges: cappedValue
+      }));
+    }
+  };
+
+  // Note: Removed onInput handler to prevent validation during typing
+  // Validation now only occurs on blur, save, and down arrow key
+
+  // Update general settings with hard cap enforcement
   const updateGeneralSetting = (field: 'max_judges' | 'max_cats', value: string) => {
-    const numValue = handleNumericInput(value);
+    // Apply hard caps: max_judges = 24, max_cats = 1000
+    const hardCaps = {
+      max_judges: 24,
+      max_cats: 1000
+    };
+    
+    const numValue = parseInt(value) || 0;
+    const cappedValue = Math.min(numValue, hardCaps[field]);
+    
     setGlobalSettings(prev => ({
       ...prev,
-      [field]: numValue
+      [field]: cappedValue
     }));
   };
 
@@ -186,6 +260,9 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess, globalSett
   // Delete confirmation modal state
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [breedToDelete, setBreedToDelete] = useState<string>('');
+  
+  // Restore defaults modal state
+  const [showRestoreDefaultsModal, setShowRestoreDefaultsModal] = useState(false);
   
 
 
@@ -274,90 +351,143 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess, globalSett
 
   // Save settings
   const handleSaveSettings = () => {
-    // In a real implementation, this would save to localStorage or a file
+    // Validate max_judges before saving
+    if (!validateMaxJudgesBeforeSave()) {
+      return; // Don't save if validation fails
+    }
+    
+    // Save to localStorage (this is already handled by the App component's useEffect)
     showSuccess('Settings Saved', 'All settings have been saved successfully.');
     onClose();
   };
 
-  // Render General Settings section with premium styling
+  // Validate max_judges setting before saving (Case 3: Save settings validation)
+  const validateMaxJudgesBeforeSave = (): boolean => {
+    if (globalSettings.max_judges < currentNumberOfJudges && globalSettings.max_judges > 0) {
+      setShowMaxJudgesErrorModal(true);
+      return false;
+    }
+    return true;
+  };
+
+  // Handle restore defaults confirmation
+  const handleRestoreDefaults = () => {
+    // Clear localStorage and reset to default values
+    try {
+      localStorage.removeItem('cfa_global_settings');
+    } catch (error) {
+      console.error('Error clearing settings from localStorage:', error);
+    }
+    
+    setGlobalSettings(DEFAULT_SETTINGS);
+    setShowRestoreDefaultsModal(false);
+    showSuccess('Defaults Restored', 'All settings have been restored to default values.');
+  };
+
+  // NOTE: Maximum Number of Rings field was removed as it was not needed for the application
+  // The settings panel now only includes: max_judges, max_cats, placement_thresholds, and breed lists
+  
+  // Error handling: Prevents users from setting max_judges lower than current number of judges
+  // Validation occurs ONLY in these three cases:
+  // Case 1: User finishes input and moves focus outside the input box (onBlur)
+  // Case 2: User clicks the built-in spinner down arrow (onKeyDown ArrowDown)
+  // Case 3: User clicks save settings button (validateMaxJudgesBeforeSave)
+  // All editing actions (clearing, typing, etc.) are allowed without validation during editing
+  // Empty field automatically becomes 1 when user leaves the field
+  // Shows error modal with guidance to reduce judge count in General Information tab first
+
+  // Render General Settings section with modern, fashionable design
   const renderGeneralSection = () => (
-    <div className="space-y-6">
-      <h3 className="text-lg font-semibold text-gray-800 mb-1">General Settings</h3>
-      <div className="w-full h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent mb-4" />
+    <div className="space-y-8">
+      <div className="text-center">
+        <h3 className="text-2xl font-bold text-gray-800 mb-2 tracking-tight">General Settings</h3>
+        <div className="w-24 h-1 bg-gradient-to-r from-amber-400 to-yellow-500 rounded-full mx-auto"></div>
+      </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* Maximum Number of Judges - Premium Design */}
+        {/* Maximum Number of Judges - Modern Glassmorphism Design */}
         <div className="group relative">
-          <div className="absolute inset-0 bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-500 blur-xl"></div>
-          <div className="relative bg-white border-2 border-gray-200 rounded-2xl p-6 shadow-lg hover:shadow-2xl hover:shadow-amber-200/30 transition-all duration-500 transform hover:scale-[1.02] group-hover:border-amber-300">
+          {/* Animated background glow */}
+          <div className="absolute inset-0 bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 rounded-3xl opacity-0 group-hover:opacity-100 transition-all duration-700 blur-2xl"></div>
+          
+          <div className="relative bg-white/90 backdrop-blur-sm border border-gray-200/60 rounded-3xl p-8 shadow-xl hover:shadow-2xl hover:shadow-amber-200/30 transition-all duration-500 transform hover:scale-[1.02] group-hover:border-amber-300/80">
             {/* Decorative corner accent */}
-            <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-br from-amber-400 to-yellow-500 rounded-bl-2xl opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
+            <div className="absolute top-0 right-0 w-12 h-12 bg-gradient-to-br from-amber-400 to-yellow-500 rounded-bl-3xl opacity-0 group-hover:opacity-100 transition-all duration-700"></div>
             
-            <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center">
-              <svg className="w-5 h-5 mr-2 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-              Maximum Number of Judges
+            <label className="block text-base font-semibold text-gray-700 mb-6 flex items-center justify-center">
+              <div className="p-3 bg-gradient-to-br from-amber-100 to-yellow-100 rounded-2xl mr-4 flex items-center justify-center">
+                <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              </div>
+              <span className="text-lg">Maximum Number of Judges</span>
             </label>
             
-            <div className="relative">
-              <input
+            <div className="flex justify-center">
+              {/* Use width='md' to match placement threshold input width */}
+              <SettingsInput
                 type="number"
-                min="1"
-                max="999"
+                min={1}
+                max={24}
                 value={globalSettings.max_judges}
                 onChange={(e) => updateGeneralSetting('max_judges', e.target.value)}
-                onFocus={(e) => e.target.select()}
-                className="w-full text-center text-lg font-bold text-gray-800 bg-gradient-to-r from-gray-50 to-white border-2 border-gray-300 rounded-xl py-3 px-4 focus:border-amber-400 focus:ring-4 focus:ring-amber-200/30 focus:outline-none transition-all duration-300 hover:border-amber-300 hover:shadow-lg"
+                onKeyDown={handleMaxJudgesKeyDown}
+                onBlur={handleMaxJudgesBlur}
                 placeholder="12"
+                width="md" // Ensures uniform width with placement threshold
+                glowColor="amber"
               />
-              {/* Animated focus indicator */}
-              <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-amber-400/20 to-yellow-400/20 opacity-0 focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
-            </div>
-            
-            <div className="mt-3 flex items-center justify-center">
-              <div className="flex items-center space-x-2 text-xs text-gray-500 bg-gray-100 rounded-full px-3 py-1">
-                <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-                <span>Range: 1-999</span>
-              </div>
             </div>
           </div>
         </div>
         
-        {/* Maximum Number of Cats - Premium Design */}
+        {/* Maximum Number of Cats - Modern Glassmorphism Design */}
         <div className="group relative">
-          <div className="absolute inset-0 bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50 rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-500 blur-xl"></div>
-          <div className="relative bg-white border-2 border-gray-200 rounded-2xl p-6 shadow-lg hover:shadow-2xl hover:shadow-teal-200/30 transition-all duration-500 transform hover:scale-[1.02] group-hover:border-teal-300">
+          {/* Animated background glow */}
+          <div className="absolute inset-0 bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50 rounded-3xl opacity-0 group-hover:opacity-100 transition-all duration-700 blur-2xl"></div>
+          
+          <div className="relative bg-white/90 backdrop-blur-sm border border-gray-200/60 rounded-3xl p-8 shadow-xl hover:shadow-2xl hover:shadow-teal-200/30 transition-all duration-500 transform hover:scale-[1.02] group-hover:border-teal-300/80">
             {/* Decorative corner accent */}
-            <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-br from-teal-400 to-cyan-500 rounded-bl-2xl opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
+            <div className="absolute top-0 right-0 w-12 h-12 bg-gradient-to-br from-teal-400 to-cyan-500 rounded-bl-3xl opacity-0 group-hover:opacity-100 transition-all duration-700"></div>
             
-            <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center">
-              <svg className="w-5 h-5 mr-2 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-              </svg>
-              Maximum Number of Cats
+            <label className="block text-base font-semibold text-gray-700 mb-6 flex items-center justify-center">
+              <div className="p-3 bg-gradient-to-br from-teal-100 to-cyan-100 rounded-2xl mr-4 flex items-center justify-center">
+                <svg className="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+              </div>
+              <span className="text-lg">Maximum Number of Cats</span>
             </label>
             
-            <div className="relative">
-              <input
+            <div className="flex justify-center">
+              {/* Use width='md' to match placement threshold input width */}
+              <SettingsInput
                 type="number"
-                min="1"
-                max="999"
-                value={globalSettings.max_cats}
-                onChange={(e) => updateGeneralSetting('max_cats', e.target.value)}
-                onFocus={(e) => e.target.select()}
-                className="w-full text-center text-lg font-bold text-gray-800 bg-gradient-to-r from-gray-50 to-white border-2 border-gray-300 rounded-xl py-3 px-4 focus:border-teal-400 focus:ring-4 focus:ring-teal-200/30 focus:outline-none transition-all duration-300 hover:border-teal-300 hover:shadow-lg"
+                min={1}
+                max={1000}
+                value={localMaxCats}
+                onChange={(e) => setLocalMaxCats(e.target.value)}
+                onBlur={(e) => {
+                  const inputValue = e.target.value;
+                  if (inputValue === '') {
+                    setGlobalSettings(prev => ({ ...prev, max_cats: 450 }));
+                    setLocalMaxCats('450');
+                    return;
+                  }
+                  const currentValue = parseInt(inputValue) || 0;
+                  const cappedValue = Math.min(currentValue, 1000);
+                  setGlobalSettings(prev => ({ ...prev, max_cats: cappedValue }));
+                  setLocalMaxCats(cappedValue.toString());
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.currentTarget.blur(); // Trigger onBlur when Enter is pressed
+                  }
+                }}
                 placeholder="450"
+                width="md" // Ensures uniform width with placement threshold
+                glowColor="teal"
               />
-              {/* Animated focus indicator */}
-              <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-teal-400/20 to-cyan-400/20 opacity-0 focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
-            </div>
-            
-            <div className="mt-3 flex items-center justify-center">
-              <div className="flex items-center space-x-2 text-xs text-gray-500 bg-gray-100 rounded-full px-3 py-1">
-                <span className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></span>
-                <span>Range: 1-999</span>
-              </div>
             </div>
           </div>
         </div>
@@ -365,162 +495,140 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess, globalSett
     </div>
   );
 
-  // Render Placement Threshold section with premium styling
+  // Render Placement Threshold section with modern, fashionable design
   const renderPlacementSection = () => (
-    <div className="space-y-6">
-      <h3 className="text-lg font-semibold text-gray-800 mb-1">Placement Threshold Settings</h3>
-      <div className="w-full h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent mb-4" />
+    <div className="space-y-8">
+      <div className="text-center">
+        <h3 className="text-2xl font-bold text-gray-800 mb-2 tracking-tight">Placement Threshold Settings</h3>
+        <div className="w-24 h-1 bg-gradient-to-r from-purple-400 to-indigo-500 rounded-full mx-auto"></div>
+      </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Championship Threshold - Premium Design */}
+        {/* Championship Threshold - Modern Glassmorphism Design */}
         <div className="group relative">
-          <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-500 blur-xl"></div>
-          <div className="relative bg-white border-2 border-gray-200 rounded-2xl p-5 shadow-lg hover:shadow-2xl hover:shadow-purple-200/30 transition-all duration-500 transform hover:scale-[1.02] group-hover:border-purple-300">
+          {/* Animated background glow */}
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 rounded-3xl opacity-0 group-hover:opacity-100 transition-all duration-700 blur-2xl"></div>
+          
+          <div className="relative bg-white/90 backdrop-blur-sm border border-gray-200/60 rounded-3xl p-6 shadow-xl hover:shadow-2xl hover:shadow-purple-200/30 transition-all duration-500 transform hover:scale-[1.02] group-hover:border-purple-300/80">
             {/* Decorative corner accent */}
-            <div className="absolute top-0 right-0 w-6 h-6 bg-gradient-to-br from-purple-400 to-indigo-500 rounded-bl-2xl opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
+            <div className="absolute top-0 right-0 w-10 h-10 bg-gradient-to-br from-purple-400 to-indigo-500 rounded-bl-3xl opacity-0 group-hover:opacity-100 transition-all duration-700"></div>
             
-            <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center">
-              <svg className="w-4 h-4 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-              </svg>
-              Championship
+            <label className="block text-lg font-semibold text-gray-700 mb-6 flex items-center justify-start px-2 ml-16">
+              <div className="p-3 bg-gradient-to-br from-purple-100 to-indigo-100 rounded-2xl mr-4 flex items-center justify-center">
+                <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                </svg>
+              </div>
+              <span className="text-lg">Championship</span>
             </label>
             
-            <div className="relative">
-              <input
+            <div className="flex justify-center">
+              <SettingsInput
                 type="number"
-                min="1"
-                max="999"
+                min={1}
+                max={999}
                 value={globalSettings.placement_thresholds.championship}
                 onChange={(e) => updatePlacementThreshold('championship', e.target.value)}
-                onFocus={(e) => e.target.select()}
-                className="w-full text-center text-lg font-bold text-gray-800 bg-gradient-to-r from-gray-50 to-white border-2 border-gray-300 rounded-xl py-3 px-4 focus:border-purple-400 focus:ring-4 focus:ring-purple-200/30 focus:outline-none transition-all duration-300 hover:border-purple-300 hover:shadow-lg"
                 placeholder="85"
+                width="md"
               />
-              {/* Animated focus indicator */}
-              <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-400/20 to-indigo-400/20 opacity-0 focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
-            </div>
-            
-            <div className="mt-2 flex items-center justify-center">
-              <div className="flex items-center space-x-2 text-xs text-gray-500 bg-gray-100 rounded-full px-3 py-1">
-                <span className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></span>
-                <span>Range: 1-999</span>
-              </div>
             </div>
           </div>
         </div>
         
-        {/* Kitten Threshold - Premium Design */}
+        {/* Kitten Threshold - Modern Glassmorphism Design */}
         <div className="group relative">
-          <div className="absolute inset-0 bg-gradient-to-br from-pink-50 via-rose-50 to-red-50 rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-500 blur-xl"></div>
-          <div className="relative bg-white border-2 border-gray-200 rounded-2xl p-5 shadow-lg hover:shadow-2xl hover:shadow-pink-200/30 transition-all duration-500 transform hover:scale-[1.02] group-hover:border-pink-300">
+          {/* Animated background glow */}
+          <div className="absolute inset-0 bg-gradient-to-br from-pink-50 via-rose-50 to-red-50 rounded-3xl opacity-0 group-hover:opacity-100 transition-all duration-700 blur-2xl"></div>
+          
+          <div className="relative bg-white/90 backdrop-blur-sm border border-gray-200/60 rounded-3xl p-6 shadow-xl hover:shadow-2xl hover:shadow-pink-200/30 transition-all duration-500 transform hover:scale-[1.02] group-hover:border-pink-300/80">
             {/* Decorative corner accent */}
-            <div className="absolute top-0 right-0 w-6 h-6 bg-gradient-to-br from-pink-400 to-rose-500 rounded-bl-2xl opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
+            <div className="absolute top-0 right-0 w-10 h-10 bg-gradient-to-br from-pink-400 to-rose-500 rounded-bl-3xl opacity-0 group-hover:opacity-100 transition-all duration-700"></div>
             
-            <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center">
-              <svg className="w-4 h-4 mr-2 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-              </svg>
-              Kitten
+            <label className="block text-lg font-semibold text-gray-700 mb-6 flex items-center justify-start px-2 ml-16">
+              <div className="p-3 bg-gradient-to-br from-pink-100 to-rose-100 rounded-2xl mr-4 flex items-center justify-center">
+                <svg className="w-6 h-6 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+              </div>
+              <span className="text-lg">Kitten</span>
             </label>
             
-            <div className="relative">
-              <input
+            <div className="flex justify-center">
+              <SettingsInput
                 type="number"
-                min="1"
-                max="999"
+                min={1}
+                max={999}
                 value={globalSettings.placement_thresholds.kitten}
                 onChange={(e) => updatePlacementThreshold('kitten', e.target.value)}
-                onFocus={(e) => e.target.select()}
-                className="w-full text-center text-lg font-bold text-gray-800 bg-gradient-to-r from-gray-50 to-white border-2 border-gray-300 rounded-xl py-3 px-4 focus:border-pink-400 focus:ring-4 focus:ring-pink-200/30 focus:outline-none transition-all duration-300 hover:border-pink-300 hover:shadow-lg"
                 placeholder="75"
+                width="md"
               />
-              {/* Animated focus indicator */}
-              <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-pink-400/20 to-rose-400/20 opacity-0 focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
-            </div>
-            
-            <div className="mt-2 flex items-center justify-center">
-              <div className="flex items-center space-x-2 text-xs text-gray-500 bg-gray-100 rounded-full px-3 py-1">
-                <span className="w-2 h-2 bg-pink-400 rounded-full animate-pulse"></span>
-                <span>Range: 1-999</span>
-              </div>
             </div>
           </div>
         </div>
         
-        {/* Premiership Threshold - Premium Design */}
+        {/* Premiership Threshold - Modern Glassmorphism Design */}
         <div className="group relative">
-          <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 via-green-50 to-lime-50 rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-500 blur-xl"></div>
-          <div className="relative bg-white border-2 border-gray-200 rounded-2xl p-5 shadow-lg hover:shadow-2xl hover:shadow-emerald-200/30 transition-all duration-500 transform hover:scale-[1.02] group-hover:border-emerald-300">
+          {/* Animated background glow */}
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 via-green-50 to-lime-50 rounded-3xl opacity-0 group-hover:opacity-100 transition-all duration-700 blur-2xl"></div>
+          
+          <div className="relative bg-white/90 backdrop-blur-sm border border-gray-200/60 rounded-3xl p-6 shadow-xl hover:shadow-2xl hover:shadow-emerald-200/30 transition-all duration-500 transform hover:scale-[1.02] group-hover:border-emerald-300/80">
             {/* Decorative corner accent */}
-            <div className="absolute top-0 right-0 w-6 h-6 bg-gradient-to-br from-emerald-400 to-green-500 rounded-bl-2xl opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
+            <div className="absolute top-0 right-0 w-10 h-10 bg-gradient-to-br from-emerald-400 to-green-500 rounded-bl-3xl opacity-0 group-hover:opacity-100 transition-all duration-700"></div>
             
-            <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center">
-              <svg className="w-4 h-4 mr-2 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-              </svg>
-              Premiership
+            <label className="block text-lg font-semibold text-gray-700 mb-6 flex items-center justify-start px-2 ml-16">
+              <div className="p-3 bg-gradient-to-br from-emerald-100 to-green-100 rounded-2xl mr-4 flex items-center justify-center">
+                <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                </svg>
+              </div>
+              <span className="text-lg">Premiership</span>
             </label>
             
-            <div className="relative">
-              <input
+            <div className="flex justify-center">
+              <SettingsInput
                 type="number"
-                min="1"
-                max="999"
+                min={1}
+                max={999}
                 value={globalSettings.placement_thresholds.premiership}
                 onChange={(e) => updatePlacementThreshold('premiership', e.target.value)}
-                onFocus={(e) => e.target.select()}
-                className="w-full text-center text-lg font-bold text-gray-800 bg-gradient-to-r from-gray-50 to-white border-2 border-gray-300 rounded-xl py-3 px-4 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-200/30 focus:outline-none transition-all duration-300 hover:border-emerald-300 hover:shadow-lg"
                 placeholder="50"
+                width="md"
               />
-              {/* Animated focus indicator */}
-              <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-emerald-400/20 to-green-400/20 opacity-0 focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
-            </div>
-            
-            <div className="mt-2 flex items-center justify-center">
-              <div className="flex items-center space-x-2 text-xs text-gray-500 bg-gray-100 rounded-full px-3 py-1">
-                <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span>
-                <span>Range: 1-999</span>
-              </div>
             </div>
           </div>
         </div>
         
-        {/* Household Pet Threshold - Premium Design */}
+        {/* Household Pet Threshold - Modern Glassmorphism Design */}
         <div className="group relative">
-          <div className="absolute inset-0 bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-500 blur-xl"></div>
-          <div className="relative bg-white border-2 border-gray-200 rounded-2xl p-5 shadow-lg hover:shadow-2xl hover:shadow-orange-200/30 transition-all duration-500 transform hover:scale-[1.02] group-hover:border-orange-300">
+          {/* Animated background glow */}
+          <div className="absolute inset-0 bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 rounded-3xl opacity-0 group-hover:opacity-100 transition-all duration-700 blur-2xl"></div>
+          
+          <div className="relative bg-white/90 backdrop-blur-sm border border-gray-200/60 rounded-3xl p-6 shadow-xl hover:shadow-2xl hover:shadow-orange-200/30 transition-all duration-500 transform hover:scale-[1.02] group-hover:border-orange-300/80">
             {/* Decorative corner accent */}
-            <div className="absolute top-0 right-0 w-6 h-6 bg-gradient-to-br from-orange-400 to-amber-500 rounded-bl-2xl opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
+            <div className="absolute top-0 right-0 w-10 h-10 bg-gradient-to-br from-orange-400 to-amber-500 rounded-bl-3xl opacity-0 group-hover:opacity-100 transition-all duration-700"></div>
             
-            <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center">
-              <svg className="w-4 h-4 mr-2 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5a2 2 0 012-2h4a2 2 0 012 2v2H8V5z" />
-              </svg>
-              Household Pet
+            <label className="block text-lg font-semibold text-gray-700 mb-6 flex items-center justify-start px-2 ml-16">
+              <div className="p-3 bg-gradient-to-br from-orange-100 to-amber-100 rounded-2xl mr-4 flex items-center justify-center">
+                <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5a2 2 0 012-2h4a2 2 0 012 2v2H8V5z" />
+                </svg>
+              </div>
+              <span className="text-lg">Household Pet</span>
             </label>
             
-            <div className="relative">
-              <input
+            <div className="flex justify-center">
+              <SettingsInput
                 type="number"
-                min="1"
-                max="999"
+                min={1}
+                max={999}
                 value={globalSettings.placement_thresholds.household_pet}
                 onChange={(e) => updatePlacementThreshold('household_pet', e.target.value)}
-                onFocus={(e) => e.target.select()}
-                className="w-full text-center text-lg font-bold text-gray-800 bg-gradient-to-r from-gray-50 to-white border-2 border-gray-300 rounded-xl py-3 px-4 focus:border-orange-400 focus:ring-4 focus:ring-orange-200/30 focus:outline-none transition-all duration-300 hover:border-orange-300 hover:shadow-lg"
                 placeholder="50"
+                width="md"
               />
-              {/* Animated focus indicator */}
-              <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-orange-400/20 to-amber-400/20 opacity-0 focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
-            </div>
-            
-            <div className="mt-2 flex items-center justify-center">
-              <div className="flex items-center space-x-2 text-xs text-gray-500 bg-gray-100 rounded-full px-3 py-1">
-                <span className="w-2 h-2 bg-orange-400 rounded-full animate-pulse"></span>
-                <span>Range: 1-999</span>
-              </div>
             </div>
           </div>
         </div>
@@ -533,9 +641,11 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess, globalSett
     const currentBreeds = breedTab === 'SHORT HAIR' ? globalSettings.short_hair_breeds : globalSettings.long_hair_breeds;
     const totalBreeds = currentBreeds.length;
     return (
-      <div className="space-y-3">
-        <h3 className="text-lg font-semibold text-gray-800 mb-1">Breed List</h3>
-        <div className="w-full h-px bg-gray-200 opacity-70 mb-2 mt-1" />
+      <div className="space-y-8">
+        <div className="text-center">
+          <h3 className="text-2xl font-bold text-gray-800 mb-2 tracking-tight">Breed List Settings</h3>
+          <div className="w-24 h-1 bg-gradient-to-r from-emerald-400 to-green-500 rounded-full mx-auto"></div>
+        </div>
         {/* Ultra-Modern Breed Type Tabs */}
         <div className="relative bg-gray-100 rounded-2xl p-1.5 shadow-inner">
           <div className="flex relative">
@@ -621,14 +731,15 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess, globalSett
           {/* Cool Inline Add Breed Input */}
           {showNewBreedInput ? (
             <div className="flex items-center space-x-2 bg-white border-2 border-amber-300 rounded-xl shadow-lg px-4 py-2 animate-in slide-in-from-right-2 duration-300">
-              <input
+              <SettingsInput
                 id="new-breed-input"
                 type="text"
                 value={newBreedValue}
                 onChange={(e) => setNewBreedValue(e.target.value)}
                 onKeyDown={handleNewBreedKeyDown}
                 placeholder={`Enter ${breedTab.toLowerCase()} breed name...`}
-                className="text-sm font-mono text-gray-800 bg-transparent border-none outline-none focus:ring-0 min-w-[200px]"
+                width="min-w-[200px]"
+                className="text-sm font-mono bg-transparent border-none outline-none focus:ring-0"
                 autoFocus
               />
                   <button
@@ -690,14 +801,15 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess, globalSett
                 <div className="flex-1 min-w-0">
                   {editingBreed === breed ? (
                     <div className="flex items-center space-x-2">
-                      <input
+                      <SettingsInput
                         ref={editInputRef}
                         type="text"
                         value={editValue}
                         onChange={(e) => setEditValue(e.target.value)}
                         onKeyDown={handleEditKeyDown}
                         onBlur={saveEditBreed}
-                        className="cfa-input w-full text-sm font-mono text-gray-800"
+                        width="w-full"
+                        className="text-sm font-mono"
                         autoFocus
                       />
                       <button
@@ -904,12 +1016,7 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess, globalSett
           <div className="flex justify-between items-center">
             <div className="flex space-x-3">
               <button
-                onClick={() => {
-                  if (confirm('Are you sure you want to restore all settings to default values?')) {
-                    setGlobalSettings(DEFAULT_SETTINGS);
-                    showSuccess('Defaults Restored', 'All settings have been restored to default values.');
-                  }
-                }}
+                onClick={() => setShowRestoreDefaultsModal(true)}
                 className="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-all duration-200 shadow-md hover:shadow-lg"
                 title="Restore all settings to default values"
               >
@@ -941,9 +1048,12 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess, globalSett
             </div>
             <button
               onClick={handleSaveSettings}
-              className="cfa-button"
+              className="inline-flex items-center px-4 py-2 bg-amber-600 text-white font-medium rounded-lg hover:bg-amber-700 transition-all duration-200 shadow-md hover:shadow-lg"
               title="Save all current settings"
             >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
               Save Settings
             </button>
           </div>
@@ -989,6 +1099,31 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess, globalSett
           </div>
         </div>
       )}
+      
+      {/* Maximum Judges Error Modal */}
+      <Modal
+        isOpen={showMaxJudgesErrorModal}
+        onClose={() => setShowMaxJudgesErrorModal(false)}
+        title="Invalid Maximum Judges Setting"
+        message={`You cannot set the maximum number of judges to ${globalSettings.max_judges} because you currently have ${currentNumberOfJudges} judges assigned. Please reduce the number of judges in the General Information tab first, then try setting the maximum again.`}
+        type="alert"
+        confirmText="OK"
+        showCancel={false}
+        onConfirm={() => setShowMaxJudgesErrorModal(false)}
+      />
+      
+      {/* Restore Defaults Confirmation Modal */}
+      <Modal
+        isOpen={showRestoreDefaultsModal}
+        onClose={() => setShowRestoreDefaultsModal(false)}
+        title="Restore Default Settings"
+        message="Are you sure you want to restore all settings to default values? This action cannot be undone and will reset all current settings including maximum judges, rings, cats, placement thresholds, and breed lists."
+        type="warning"
+        confirmText="Restore Defaults"
+        cancelText="Cancel"
+        onConfirm={handleRestoreDefaults}
+        onCancel={() => setShowRestoreDefaultsModal(false)}
+      />
     </div>
   );
 } 

@@ -62,6 +62,18 @@ interface GeneralTabProps {
   onJudgeRingTypeChange?: (id: number, oldType: string, newType: string) => void;
   getShowState: () => Record<string, unknown>;
   onCSVImport: () => Promise<void>;
+  globalSettings: {
+    max_judges: number;
+    max_cats: number;
+    placement_thresholds: {
+      championship: number;
+      kitten: number;
+      premiership: number;
+      household_pet: number;
+    };
+    short_hair_breeds: string[];
+    long_hair_breeds: string[];
+  };
 }
 
 // Replace ChevronDownCircleIcon and ChevronUpCircleIcon with integrated corner icon
@@ -117,7 +129,8 @@ export default function GeneralTab({
   showInfo: _showInfo, // unused, prefix with _
   onJudgeRingTypeChange,
   getShowState,
-  onCSVImport
+  onCSVImport,
+  globalSettings
 }: GeneralTabProps) {
   // Ref to the component root for event delegation
   const containerRef = useRef<HTMLDivElement>(null);
@@ -152,27 +165,118 @@ export default function GeneralTab({
     }, 100);
   }, []);
 
+  // Track previous max_cats value to only run when it decreases
+  const prevMaxCatsRef = useRef(globalSettings.max_cats);
+
+  // Monitor max_cats changes and auto-cap show count inputs if needed
+  useEffect(() => {
+    const maxCats = globalSettings.max_cats;
+    const prevMaxCats = prevMaxCatsRef.current;
+    
+    // Only proceed if max_cats was reduced
+    if (maxCats >= prevMaxCats) {
+      prevMaxCatsRef.current = maxCats;
+      return;
+    }
+    
+    let hasChanges = false;
+    
+    // Create a function to safely cap values
+    const capValue = (currentValue: number, maxValue: number): number => {
+      return currentValue > maxValue ? maxValue : currentValue;
+    };
+    
+    // Deep clone the show data object to avoid mutations
+    const updatedShowData: ShowData = {
+      ...showData,
+      championshipCounts: {
+        gcs: capValue(showData.championshipCounts.gcs, maxCats),
+        lhGcs: capValue(showData.championshipCounts.lhGcs, maxCats),
+        shGcs: capValue(showData.championshipCounts.shGcs, maxCats),
+        lhChs: capValue(showData.championshipCounts.lhChs, maxCats),
+        shChs: capValue(showData.championshipCounts.shChs, maxCats),
+        lhNovs: capValue(showData.championshipCounts.lhNovs, maxCats),
+        shNovs: capValue(showData.championshipCounts.shNovs, maxCats),
+        novs: capValue(showData.championshipCounts.novs, maxCats),
+        chs: capValue(showData.championshipCounts.chs, maxCats),
+        total: capValue(showData.championshipCounts.total, maxCats)
+      },
+      kittenCounts: {
+        lhKittens: capValue(showData.kittenCounts.lhKittens, maxCats),
+        shKittens: capValue(showData.kittenCounts.shKittens, maxCats),
+        total: capValue(showData.kittenCounts.total, maxCats)
+      },
+      premiershipCounts: {
+        lhGps: capValue(showData.premiershipCounts.lhGps, maxCats),
+        shGps: capValue(showData.premiershipCounts.shGps, maxCats),
+        lhPrs: capValue(showData.premiershipCounts.lhPrs, maxCats),
+        shPrs: capValue(showData.premiershipCounts.shPrs, maxCats),
+        lhNovs: capValue(showData.premiershipCounts.lhNovs, maxCats),
+        shNovs: capValue(showData.premiershipCounts.shNovs, maxCats),
+        novs: capValue(showData.premiershipCounts.novs, maxCats),
+        gps: capValue(showData.premiershipCounts.gps, maxCats),
+        prs: capValue(showData.premiershipCounts.prs, maxCats),
+        total: capValue(showData.premiershipCounts.total, maxCats)
+      },
+      householdPetCount: capValue(showData.householdPetCount, maxCats)
+    };
+    
+    // Check if any values were actually capped
+    if (showData.championshipCounts.gcs > maxCats ||
+        showData.championshipCounts.lhGcs > maxCats ||
+        showData.championshipCounts.shGcs > maxCats ||
+        showData.championshipCounts.lhChs > maxCats ||
+        showData.championshipCounts.shChs > maxCats ||
+        showData.championshipCounts.lhNovs > maxCats ||
+        showData.championshipCounts.shNovs > maxCats ||
+        showData.kittenCounts.lhKittens > maxCats ||
+        showData.kittenCounts.shKittens > maxCats ||
+        showData.premiershipCounts.lhGps > maxCats ||
+        showData.premiershipCounts.shGps > maxCats ||
+        showData.premiershipCounts.lhPrs > maxCats ||
+        showData.premiershipCounts.shPrs > maxCats ||
+        showData.premiershipCounts.lhNovs > maxCats ||
+        showData.premiershipCounts.shNovs > maxCats ||
+        showData.householdPetCount > maxCats) {
+      hasChanges = true;
+    }
+    
+    // Update the show data if any values were capped
+    if (hasChanges) {
+      setShowData(updatedShowData);
+      _showInfo(
+        'Values Auto-Capped',
+        `Some show count values have been automatically capped to ${maxCats} to match the new maximum cats setting.`,
+        4000
+      );
+    }
+    
+    // Update the ref to track the new max value
+    prevMaxCatsRef.current = maxCats;
+  }, [globalSettings.max_cats]); // Remove showData dependency to prevent infinite loops
+
   // Update judges when numberOfJudges changes with proper validation
+  // Uses dynamic maximum from settings panel instead of hardcoded 12
   useEffect(() => {
     const currentCount = judges.length;
     let targetCount = showData.numberOfJudges;
     
-    // Enforce maximum limit of 12 judges
-    if (targetCount > 12) {
-      targetCount = 12;
+    // Enforce maximum limit from settings
+    if (targetCount > globalSettings.max_judges) {
+      targetCount = globalSettings.max_judges;
       // Only update if the current value is different to prevent infinite loop
-      if (showData.numberOfJudges !== 12) {
-        setShowData(prev => ({ ...prev, numberOfJudges: 12 }));
+      if (showData.numberOfJudges !== globalSettings.max_judges) {
+        setShowData(prev => ({ ...prev, numberOfJudges: globalSettings.max_judges }));
         return; // Exit early to prevent further processing
       }
     }
     
-    // Allow 0 judges (no minimum enforcement)
-    if (targetCount < 0) {
-      targetCount = 0;
+    // Enforce minimum of 1 judge
+    if (targetCount < 1) {
+      targetCount = 1;
       // Only update if the current value is different to prevent infinite loop
-      if (showData.numberOfJudges !== 0) {
-        setShowData(prev => ({ ...prev, numberOfJudges: 0 }));
+      if (showData.numberOfJudges !== 1) {
+        setShowData(prev => ({ ...prev, numberOfJudges: 1 }));
         return; // Exit early to prevent further processing
       }
     }
@@ -192,6 +296,23 @@ export default function GeneralTab({
       setJudges(judges.slice(0, targetCount));
     }
   }, [showData.numberOfJudges, judges.length]);
+
+  // Clear invalid ring numbers when judge count decreases
+  useEffect(() => {
+    if (showData.numberOfJudges > 0) {
+      const maxRingNumber = showData.numberOfJudges * 2;
+      const updatedJudges = judges.map(judge => {
+        if (judge.ringNumber > maxRingNumber) {
+          return { ...judge, ringNumber: 0 }; // Clear invalid ring numbers
+        }
+        return judge;
+      });
+      
+      if (updatedJudges.some(judge => judge.ringNumber === 0)) {
+        setJudges(updatedJudges);
+      }
+    }
+  }, [showData.numberOfJudges, judges]);
 
   const updateJudge = (id: number, field: keyof Judge, value: string | number) => {
     let oldType = undefined;
@@ -250,7 +371,13 @@ export default function GeneralTab({
   };
 
   const updateShowData = (field: keyof ShowData, value: unknown) => {
-    setShowData(prev => ({ ...prev, [field]: value }));
+    // Special handling for householdPetCount to cap at max_cats setting
+    if (field === 'householdPetCount' && typeof value === 'number') {
+      const cappedValue = Math.min(value, globalSettings.max_cats);
+      setShowData(prev => ({ ...prev, [field]: cappedValue }));
+    } else {
+      setShowData(prev => ({ ...prev, [field]: value }));
+    }
   };
 
   // Enhanced number of judges input handler with validation
@@ -258,15 +385,15 @@ export default function GeneralTab({
     const value = parseInt(e.target.value) || 0;
     
     // Only prevent negative numbers during input
-    if (value > 12) {
+    if (value > globalSettings.max_judges) {
       // Don't show error during input, just cap the value
-      updateShowData('numberOfJudges', 12);
+      updateShowData('numberOfJudges', globalSettings.max_judges);
       return;
     }
     
-    if (value < 0) {
-      // Don't show error during input, just set to 0
-      updateShowData('numberOfJudges', 0);
+    if (value < 1) {
+      // Don't show error during input, just set to 1 (minimum)
+      updateShowData('numberOfJudges', 1);
       return;
     }
     
@@ -315,9 +442,9 @@ export default function GeneralTab({
   const handleNumberBlur = (e: React.FocusEvent<HTMLInputElement>, field: string, minValue: number = 0) => {
     const value = e.target.value.trim();
     if (value === '' || parseInt(value) < minValue) {
-      // Revert to 0 for empty or invalid values
+      // Revert to 1 for empty or invalid values (minimum)
       if (field === 'numberOfJudges') {
-        setShowData(prev => ({ ...prev, numberOfJudges: 0 })); // Revert to 0
+        setShowData(prev => ({ ...prev, numberOfJudges: 1 })); // Revert to 1 (minimum)
       } else if (field.startsWith('championship')) {
         const countField = field.replace('championship', '') as keyof ShowData['championshipCounts'];
         updateChampionshipCount(countField, 0);
@@ -372,32 +499,41 @@ export default function GeneralTab({
   };
 
   const updateChampionshipCount = (field: keyof ShowData['championshipCounts'], value: number) => {
+    // Cap the value at max_cats setting - no error message needed
+    const cappedValue = Math.min(value, globalSettings.max_cats);
+    
     setShowData(prev => ({
       ...prev,
       championshipCounts: {
         ...prev.championshipCounts,
-        [field]: value
+        [field]: cappedValue
       }
     }));
   };
 
   const updatePremiershipCount = (field: keyof ShowData['premiershipCounts'], value: number) => {
+    // Cap the value at max_cats setting - no error message needed
+    const cappedValue = Math.min(value, globalSettings.max_cats);
+    
     setShowData(prev => ({
       ...prev,
       premiershipCounts: {
         ...prev.premiershipCounts,
-        [field]: value
+        [field]: cappedValue
       }
     }));
   };
 
   const updateKittenCount = (field: keyof ShowData['kittenCounts'], value: number) => {
+    // Cap the value at max_cats setting - no error message needed
+    const cappedValue = Math.min(value, globalSettings.max_cats);
+    
     setShowData(prev => ({
       ...prev,
       kittenCounts: {
         ...prev.kittenCounts,
-        [field]: value,
-        total: field === 'lhKittens' ? value + prev.kittenCounts.shKittens : prev.kittenCounts.lhKittens + value
+        [field]: cappedValue,
+        total: field === 'lhKittens' ? cappedValue + prev.kittenCounts.shKittens : prev.kittenCounts.lhKittens + cappedValue
       }
     }));
   };
@@ -414,7 +550,7 @@ export default function GeneralTab({
     setJudges(reindexedJudges);
     
     // Use the properly ordered judges for validation
-    const errors = validateGeneralForm(showData, reindexedJudges);
+    const errors = validateGeneralForm(showData, reindexedJudges, globalSettings.max_judges);
     setErrors(errors);
     if (Object.keys(errors).length > 0) {
       setIsCSVErrorModalOpen(true);
@@ -486,7 +622,7 @@ export default function GeneralTab({
     // Determine number of judges
     const numJudges = showData.numberOfJudges > 0 ? showData.numberOfJudges : 6;
 
-    // Generate random show counts ensuring total ≤ 450
+    // Generate random show counts ensuring total �?max_cats setting
     let totalCats = 0;
     let attempts = 0;
     const maxAttempts = 100;
@@ -518,11 +654,11 @@ export default function GeneralTab({
 
       totalCats = championshipTotal + kittenTotal + premiershipTotal + householdPetCount;
       attempts++;
-    } while (totalCats > 450 && attempts < maxAttempts);
+    } while (totalCats > globalSettings.max_cats && attempts < maxAttempts);
 
-    // If we couldn't get under 450, scale down proportionally
-    if (totalCats > 450) {
-      const scaleFactor = 450 / totalCats;
+    // If we couldn't get under max_cats, scale down proportionally
+    if (totalCats > globalSettings.max_cats) {
+      const scaleFactor = globalSettings.max_cats / totalCats;
       championshipTotal = Math.floor(championshipTotal * scaleFactor);
       kittenTotal = Math.floor(kittenTotal * scaleFactor);
       premiershipTotal = Math.floor(premiershipTotal * scaleFactor);
@@ -622,7 +758,7 @@ export default function GeneralTab({
       {/* Premium Required Field Legend */}
       <div className="flex items-center gap-2 mb-6">
         <div className="flex items-center space-x-2 bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-full px-3 py-1.5">
-          <span className="text-red-500 font-bold text-lg">●</span>
+          <span className="text-red-500 font-bold text-lg">*</span>
           <span className="text-sm font-medium text-gray-700">Required field</span>
         </div>
       </div>
@@ -665,9 +801,9 @@ export default function GeneralTab({
                   {/* Row 1: Show Date & # of Judges */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <div className="flex items-center space-x-3 h-8">
-                      <label className="text-sm font-semibold text-gray-700 min-w-[120px]" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>
+                      <label className="text-sm font-semibold text-gray-700 min-w-[120px]">
                         Show Date:
-                        <span className="ml-1 text-red-500 text-base">●</span>
+                        <span className="ml-1 text-red-500 text-base">*</span>
                       </label>
                       <input 
                         type="date"
@@ -675,25 +811,25 @@ export default function GeneralTab({
                         onChange={e => updateShowData('showDate', e.target.value)}
                         onFocus={e => e.target.select()}
                         className={`text-sm font-medium rounded-md py-1 px-2 focus:outline-none transition-all duration-300 shadow-sm ${errors.showDate ? 'border-2 border-red-300 bg-red-50/80 focus:border-red-400 focus:ring-2 focus:ring-red-100' : 'border border-blue-200 bg-white focus:border-blue-400 focus:ring-1 focus:ring-blue-100'}`}
-                        style={{ fontFamily: 'Arial, Helvetica, sans-serif', width: '150px' }}
+                        style={{ width: '150px' }}
                       />
                     </div>
                     <div className="flex items-center space-x-3 h-8">
-                      <label className="text-sm font-semibold text-gray-700 min-w-[120px]" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>
+                      <label className="text-sm font-semibold text-gray-700 min-w-[120px]">
                         # of Judges:
-                        <span className="ml-1 text-red-500 text-base">●</span>
+                        <span className="ml-1 text-red-500 text-base">*</span>
                       </label>
                       <input 
                         ref={numberOfJudgesRef}
                         type="number" 
                         min="0" 
-                        max="12" 
+                        max={globalSettings.max_judges} 
                         value={safeNumberInput(showData.numberOfJudges)} 
                         onChange={handleNumberOfJudgesChange}
                         onFocus={e => { e.target.select(); handleNumberFocus(e); handleFieldFocus('numberOfJudges'); }}
                         onBlur={e => { handleNumberBlur(e, 'numberOfJudges', 0); handleFieldBlur(); }}
                         className={`text-center text-sm font-medium rounded-md py-1 px-2 focus:outline-none transition-all duration-300 shadow-sm ${errors.numberOfJudges ? 'border-2 border-red-300 bg-red-50/80 focus:border-red-400 focus:ring-2 focus:ring-red-100' : 'border border-blue-200 bg-white focus:border-blue-400 focus:ring-1 focus:ring-blue-100'}`}
-                        style={{ fontFamily: 'Arial, Helvetica, sans-serif', width: '80px' }}
+                        style={{ width: '80px' }}
                       />
                       </div>
                     </div>
@@ -701,9 +837,9 @@ export default function GeneralTab({
                   {/* Row 2: Club Name & Master Clerk Name */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <div className="flex items-center space-x-3 h-8">
-                      <label className="text-sm font-semibold text-gray-700 min-w-[120px]" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>
+                      <label className="text-sm font-semibold text-gray-700 min-w-[120px]">
                         Club Name:
-                        <span className="ml-1 text-red-500 text-base">●</span>
+                        <span className="ml-1 text-red-500 text-base">*</span>
                       </label>
                       <input 
                         ref={clubNameRef}
@@ -714,13 +850,13 @@ export default function GeneralTab({
                         onBlur={handleFieldBlur}
                         className={`text-sm font-medium rounded-md py-1 px-2 focus:outline-none transition-all duration-300 shadow-sm ${errors.clubName ? 'border-2 border-red-300 bg-red-50/80 focus:border-red-400 focus:ring-2 focus:ring-red-100 placeholder-red-400' : 'border border-blue-200 bg-white focus:border-blue-400 focus:ring-1 focus:ring-blue-100 placeholder-gray-400'}`}
                         placeholder="Enter club name"
-                        style={{ fontFamily: 'Arial, Helvetica, sans-serif', width: '260px' }}
+                        style={{ width: '260px' }}
                       />
                       </div>
                     <div className="flex items-center space-x-3 h-8">
-                      <label className="text-sm font-semibold text-gray-700 min-w-[120px]" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>
+                      <label className="text-sm font-semibold text-gray-700 min-w-[120px]">
                         Master Clerk:
-                        <span className="ml-1 text-red-500 text-base">●</span>
+                        <span className="ml-1 text-red-500 text-base">*</span>
                       </label>
                       <input 
                         ref={masterClerkRef}
@@ -731,7 +867,7 @@ export default function GeneralTab({
                         onBlur={handleFieldBlur}
                         className={`text-sm font-medium rounded-md py-1 px-2 focus:outline-none transition-all duration-300 shadow-sm ${errors.masterClerk ? 'border-2 border-red-300 bg-red-50/80 focus:border-red-400 focus:ring-2 focus:ring-red-100 placeholder-red-400' : 'border border-blue-200 bg-white focus:border-blue-400 focus:ring-1 focus:ring-blue-100 placeholder-gray-400'}`}
                         placeholder="Enter master clerk name"
-                        style={{ fontFamily: 'Arial, Helvetica, sans-serif', width: '260px' }}
+                        style={{ width: '260px' }}
                       />
                       </div>
                     </div>
@@ -788,7 +924,7 @@ export default function GeneralTab({
                     {/* Longhair Row */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                       <div className="flex items-center space-x-3 h-8">
-                        <label className="text-sm font-semibold text-emerald-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of LH GCs:</label>
+                        <label className="text-sm font-semibold text-emerald-800 w-32"># of LH GCs:</label>
                         <input 
                           type="number" 
                           min="0" 
@@ -796,12 +932,11 @@ export default function GeneralTab({
                           onChange={e => updateChampionshipCount('lhGcs', parseInt(e.target.value) || 0)} 
                           onFocus={e => e.target.select()}
                           onBlur={e => handleNumberBlur(e, 'championshiplhGcs')} 
-                          className="w-20 text-center text-sm font-medium bg-white border border-emerald-300 rounded-md py-1 px-2 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-100 focus:outline-none transition-all duration-200 shadow-sm" 
-                          style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+                          className="w-20 text-center text-sm font-medium bg-white border border-emerald-300 rounded-md py-1 px-2 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-100 focus:outline-none transition-all duration-200 shadow-sm"
                         />
                       </div>
                       <div className="flex items-center space-x-3 h-8">
-                        <label className="text-sm font-semibold text-emerald-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of LH CHs:</label>
+                        <label className="text-sm font-semibold text-emerald-800 w-32"># of LH CHs:</label>
                         <input 
                           type="number" 
                           min="0" 
@@ -809,12 +944,11 @@ export default function GeneralTab({
                           onChange={e => updateChampionshipCount('lhChs', parseInt(e.target.value) || 0)} 
                           onFocus={e => e.target.select()}
                           onBlur={e => handleNumberBlur(e, 'championshiplhChs')} 
-                          className="w-20 text-center text-sm font-medium bg-white border border-emerald-300 rounded-md py-1 px-2 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-100 focus:outline-none transition-all duration-200 shadow-sm" 
-                          style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+                          className="w-20 text-center text-sm font-medium bg-white border border-emerald-300 rounded-md py-1 px-2 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-100 focus:outline-none transition-all duration-200 shadow-sm"
                         />
                       </div>
                       <div className="flex items-center space-x-3 h-8">
-                        <label className="text-sm font-semibold text-emerald-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of LH NOVs:</label>
+                        <label className="text-sm font-semibold text-emerald-800 w-32" ># of LH NOVs:</label>
                         <input 
                           type="number" 
                           min="0" 
@@ -823,7 +957,7 @@ export default function GeneralTab({
                           onFocus={e => e.target.select()}
                           onBlur={e => handleNumberBlur(e, 'championshiplhNovs')} 
                           className="w-20 text-center text-sm font-medium bg-white border border-emerald-300 rounded-md py-1 px-2 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-100 focus:outline-none transition-all duration-200 shadow-sm" 
-                          style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+                          
                         />
                       </div>
         </div>
@@ -831,7 +965,7 @@ export default function GeneralTab({
                     {/* Shorthair Row */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                       <div className="flex items-center space-x-3 h-8">
-                        <label className="text-sm font-semibold text-emerald-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of SH GCs:</label>
+                        <label className="text-sm font-semibold text-emerald-800 w-32" ># of SH GCs:</label>
                         <input 
                           type="number" 
                           min="0" 
@@ -840,11 +974,11 @@ export default function GeneralTab({
                           onFocus={handleNumberFocus}
                           onBlur={e => handleNumberBlur(e, 'championshipshGcs')} 
                           className="w-20 text-center text-sm font-medium bg-white border border-emerald-300 rounded-md py-1 px-2 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-100 focus:outline-none transition-all duration-200 shadow-sm" 
-                          style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+                          
                         />
                           </div>
                       <div className="flex items-center space-x-3 h-8">
-                        <label className="text-sm font-semibold text-emerald-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of SH CHs:</label>
+                        <label className="text-sm font-semibold text-emerald-800 w-32" ># of SH CHs:</label>
                         <input 
                           type="number" 
                           min="0" 
@@ -853,11 +987,11 @@ export default function GeneralTab({
                           onFocus={handleNumberFocus}
                           onBlur={e => handleNumberBlur(e, 'championshipshChs')} 
                           className="w-20 text-center text-sm font-medium bg-white border border-emerald-300 rounded-md py-1 px-2 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-100 focus:outline-none transition-all duration-200 shadow-sm" 
-                          style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+                          
                         />
                         </div>
                       <div className="flex items-center space-x-3 h-8">
-                        <label className="text-sm font-semibold text-emerald-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of SH NOVs:</label>
+                        <label className="text-sm font-semibold text-emerald-800 w-32" ># of SH NOVs:</label>
                           <input
                           type="number" 
                           min="0" 
@@ -866,7 +1000,7 @@ export default function GeneralTab({
                           onFocus={handleNumberFocus}
                           onBlur={e => handleNumberBlur(e, 'championshipshNovs')} 
                           className="w-20 text-center text-sm font-medium bg-white border border-emerald-300 rounded-md py-1 px-2 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-100 focus:outline-none transition-all duration-200 shadow-sm" 
-                          style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+                          
                         />
                           </div>
                         </div>
@@ -874,33 +1008,33 @@ export default function GeneralTab({
                     {/* Totals Row - Fixed Alignment */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 pt-3 border-t border-emerald-200">
                       <div className="flex items-center space-x-3 h-8">
-                        <label className="text-sm font-semibold text-emerald-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of GCs:</label>
+                        <label className="text-sm font-semibold text-emerald-800 w-32" ># of GCs:</label>
                           <input
                           type="number" 
                           value={safeNumberInput(showData.championshipCounts.gcs)} 
                           readOnly 
                           className="w-20 text-center text-sm font-semibold bg-emerald-50 border border-emerald-200 rounded-md py-1 px-2 text-emerald-800" 
-                          style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+                          
                         />
                           </div>
                       <div className="flex items-center space-x-3 h-8">
-                        <label className="text-sm font-semibold text-emerald-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of CHs:</label>
+                        <label className="text-sm font-semibold text-emerald-800 w-32" ># of CHs:</label>
                         <input 
                           type="number" 
                           value={safeNumberInput(showData.championshipCounts.chs)} 
                           readOnly 
                           className="w-20 text-center text-sm font-semibold bg-emerald-50 border border-emerald-200 rounded-md py-1 px-2 text-emerald-800" 
-                          style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+                          
                         />
                         </div>
                       <div className="flex items-center space-x-3 h-8">
-                        <label className="text-sm font-semibold text-emerald-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>Total Count:</label>
+                        <label className="text-sm font-semibold text-emerald-800 w-32" >Total Count:</label>
                         <input 
                           type="number" 
                           value={safeNumberInput(showData.championshipCounts.total)} 
                           readOnly 
                           className="w-20 text-center text-sm font-semibold bg-emerald-50 border border-emerald-200 rounded-md py-1 px-2 text-emerald-800" 
-                          style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+                          
                         />
                           </div>
                         </div>
@@ -918,7 +1052,7 @@ export default function GeneralTab({
                   
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                     <div className="flex items-center space-x-3 h-8">
-                      <label className="text-sm font-semibold text-purple-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of LH Kittens:</label>
+                      <label className="text-sm font-semibold text-purple-800 w-32" ># of LH Kittens:</label>
                       <input 
                         type="number" 
                         min="0" 
@@ -927,11 +1061,11 @@ export default function GeneralTab({
                         onFocus={handleNumberFocus}
                         onBlur={e => handleNumberBlur(e, 'kittenCountslhKittens')} 
                         className="w-20 text-center text-sm font-medium bg-white border border-purple-300 rounded-md py-1 px-2 focus:border-purple-500 focus:ring-1 focus:ring-purple-100 focus:outline-none transition-all duration-200 shadow-sm" 
-                        style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+                        
                       />
                     </div>
                     <div className="flex items-center space-x-3 h-8">
-                      <label className="text-sm font-semibold text-purple-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of SH Kittens:</label>
+                      <label className="text-sm font-semibold text-purple-800 w-32" ># of SH Kittens:</label>
                       <input 
                         type="number" 
                         min="0" 
@@ -940,17 +1074,17 @@ export default function GeneralTab({
                         onFocus={handleNumberFocus}
                         onBlur={e => handleNumberBlur(e, 'kittenCountsshKittens')} 
                         className="w-20 text-center text-sm font-medium bg-white border border-purple-300 rounded-md py-1 px-2 focus:border-purple-500 focus:ring-1 focus:ring-purple-100 focus:outline-none transition-all duration-200 shadow-sm" 
-                        style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+                        
                       />
                     </div>
                     <div className="flex items-center space-x-3 h-8">
-                      <label className="text-sm font-semibold text-purple-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>Total Count:</label>
+                      <label className="text-sm font-semibold text-purple-800 w-32" >Total Count:</label>
                       <input 
                         type="number" 
                         value={safeNumberInput(showData.kittenCounts.total)} 
                         readOnly 
                         className="w-20 text-center text-sm font-semibold bg-purple-50 border border-purple-200 rounded-md py-1 px-2 text-purple-800" 
-                        style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+                        
                       />
                     </div>
                   </div>
@@ -969,7 +1103,7 @@ export default function GeneralTab({
                     {/* Longhair Row */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                       <div className="flex items-center space-x-3 h-8">
-                        <label className="text-sm font-semibold text-emerald-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of LH GPs:</label>
+                        <label className="text-sm font-semibold text-emerald-800 w-32" ># of LH GPs:</label>
                         <input 
                           type="number" 
                           min="0" 
@@ -978,11 +1112,11 @@ export default function GeneralTab({
                           onFocus={handleNumberFocus}
                           onBlur={e => handleNumberBlur(e, 'premiershiplhGps')} 
                           className="w-20 text-center text-sm font-medium bg-white border border-emerald-300 rounded-md py-1 px-2 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-100 focus:outline-none transition-all duration-200 shadow-sm" 
-                          style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+                          
                         />
                       </div>
                       <div className="flex items-center space-x-3 h-8">
-                        <label className="text-sm font-semibold text-emerald-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of LH PRs:</label>
+                        <label className="text-sm font-semibold text-emerald-800 w-32" ># of LH PRs:</label>
                         <input 
                           type="number" 
                           min="0" 
@@ -991,11 +1125,11 @@ export default function GeneralTab({
                           onFocus={handleNumberFocus}
                           onBlur={e => handleNumberBlur(e, 'premiershiplhPrs')} 
                           className="w-20 text-center text-sm font-medium bg-white border border-emerald-300 rounded-md py-1 px-2 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-100 focus:outline-none transition-all duration-200 shadow-sm" 
-                          style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+                          
                         />
                       </div>
                       <div className="flex items-center space-x-3 h-8">
-                        <label className="text-sm font-semibold text-emerald-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of LH NOVs:</label>
+                        <label className="text-sm font-semibold text-emerald-800 w-32" ># of LH NOVs:</label>
                         <input 
                           type="number" 
                           min="0" 
@@ -1004,7 +1138,7 @@ export default function GeneralTab({
                           onFocus={handleNumberFocus}
                           onBlur={e => handleNumberBlur(e, 'premiershiplhNovs')} 
                           className="w-20 text-center text-sm font-medium bg-white border border-emerald-300 rounded-md py-1 px-2 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-100 focus:outline-none transition-all duration-200 shadow-sm" 
-                          style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+                          
                         />
                       </div>
                     </div>
@@ -1012,7 +1146,7 @@ export default function GeneralTab({
                     {/* Shorthair Row */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                       <div className="flex items-center space-x-3 h-8">
-                        <label className="text-sm font-semibold text-emerald-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of SH GPs:</label>
+                        <label className="text-sm font-semibold text-emerald-800 w-32" ># of SH GPs:</label>
                         <input 
                           type="number" 
                           min="0" 
@@ -1021,11 +1155,11 @@ export default function GeneralTab({
                           onFocus={handleNumberFocus}
                           onBlur={e => handleNumberBlur(e, 'premiershipshGps')} 
                           className="w-20 text-center text-sm font-medium bg-white border border-emerald-300 rounded-md py-1 px-2 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-100 focus:outline-none transition-all duration-200 shadow-sm" 
-                          style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+                          
                         />
                       </div>
                       <div className="flex items-center space-x-3 h-8">
-                        <label className="text-sm font-semibold text-emerald-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of SH PRs:</label>
+                        <label className="text-sm font-semibold text-emerald-800 w-32" ># of SH PRs:</label>
                         <input 
                           type="number" 
                           min="0" 
@@ -1034,11 +1168,11 @@ export default function GeneralTab({
                           onFocus={handleNumberFocus}
                           onBlur={e => handleNumberBlur(e, 'premiershipshPrs')} 
                           className="w-20 text-center text-sm font-medium bg-white border border-emerald-300 rounded-md py-1 px-2 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-100 focus:outline-none transition-all duration-200 shadow-sm" 
-                          style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+                          
                         />
                       </div>
                       <div className="flex items-center space-x-3 h-8">
-                        <label className="text-sm font-semibold text-emerald-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of SH NOVs:</label>
+                        <label className="text-sm font-semibold text-emerald-800 w-32" ># of SH NOVs:</label>
                         <input 
                           type="number" 
                           min="0" 
@@ -1047,7 +1181,7 @@ export default function GeneralTab({
                           onFocus={handleNumberFocus}
                           onBlur={e => handleNumberBlur(e, 'premiershipshNovs')} 
                           className="w-20 text-center text-sm font-medium bg-white border border-emerald-300 rounded-md py-1 px-2 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-100 focus:outline-none transition-all duration-200 shadow-sm" 
-                          style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+                          
                         />
                       </div>
                     </div>
@@ -1055,33 +1189,33 @@ export default function GeneralTab({
                     {/* Totals Row - Fixed Alignment */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 pt-3 border-t border-emerald-200">
                       <div className="flex items-center space-x-3 h-8">
-                        <label className="text-sm font-semibold text-emerald-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of GPs:</label>
+                        <label className="text-sm font-semibold text-emerald-800 w-32" ># of GPs:</label>
                         <input 
                           type="number" 
                           value={safeNumberInput(showData.premiershipCounts.gps)} 
                           readOnly 
                           className="w-20 text-center text-sm font-semibold bg-emerald-50 border border-emerald-200 rounded-md py-1 px-2 text-emerald-800" 
-                          style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+                          
                         />
                       </div>
                       <div className="flex items-center space-x-3 h-8">
-                        <label className="text-sm font-semibold text-emerald-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}># of PRs:</label>
+                        <label className="text-sm font-semibold text-emerald-800 w-32" ># of PRs:</label>
                         <input 
                           type="number" 
                           value={safeNumberInput(showData.premiershipCounts.prs)} 
                           readOnly 
                           className="w-20 text-center text-sm font-semibold bg-emerald-50 border border-emerald-200 rounded-md py-1 px-2 text-emerald-800" 
-                          style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+                          
                         />
                       </div>
                       <div className="flex items-center space-x-3 h-8">
-                        <label className="text-sm font-semibold text-emerald-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>Total Count:</label>
+                        <label className="text-sm font-semibold text-emerald-800 w-32" >Total Count:</label>
                         <input 
                           type="number" 
                           value={safeNumberInput(showData.premiershipCounts.total)} 
                           readOnly 
                           className="w-20 text-center text-sm font-semibold bg-emerald-50 border border-emerald-200 rounded-md py-1 px-2 text-emerald-800" 
-                          style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+                          
                         />
                       </div>
                     </div>
@@ -1098,7 +1232,7 @@ export default function GeneralTab({
                   </header>
                   
                   <div className="flex items-center space-x-3 h-8">
-                    <label className="text-sm font-semibold text-purple-800 w-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>Total Count:</label>
+                    <label className="text-sm font-semibold text-purple-800 w-32" >Total Count:</label>
                     <input 
                       type="number" 
                       min="0" 
@@ -1107,7 +1241,7 @@ export default function GeneralTab({
                       onFocus={handleNumberFocus}
                       onBlur={e => handleNumberBlur(e, 'householdPetCount')} 
                       className={`w-20 text-center text-sm font-medium rounded-md py-1 px-2 focus:outline-none transition-all duration-300 shadow-sm ${errors.householdPetCount ? 'border-2 border-red-300 bg-red-50/80 focus:border-red-400 focus:ring-2 focus:ring-red-100' : 'border border-purple-300 bg-white focus:border-purple-500 focus:ring-1 focus:ring-purple-100'}`}
-                      style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+                      
                     />
                   </div>
                 </section>
@@ -1214,12 +1348,12 @@ export default function GeneralTab({
                         ?
                       </div>
                     </div>
-                    <h3 className="text-2xl font-bold text-gray-800 mb-3 text-center">✨ No Judges Assigned ✨</h3>
+                    <h3 className="text-2xl font-bold text-gray-800 mb-3 text-center">No Judges Assigned</h3>
                     <div className="h-0.5 w-16 bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 rounded-full mb-4 mx-auto"></div>
                     <ul className="space-y-3 text-sm text-gray-600 font-medium w-full max-w-xs mx-auto relative z-10">
                       <li className="flex items-start space-x-3 group hover:bg-gray-50/50 p-2 rounded-lg transition-all duration-200">
                         <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gradient-to-br from-pink-400 to-rose-400 text-white font-bold text-sm shadow-sm group-hover:scale-110 transition-all duration-200">1</span>
-                        <span className="text-gray-700">Set the <span className="font-semibold text-pink-600 bg-pink-100 px-1.5 py-0.5 rounded-md"># of Judges</span> field above to a number between <span className="font-semibold text-gray-800">1-12</span></span>
+                        <span className="text-gray-700">Set the <span className="font-semibold text-pink-600 bg-pink-100 px-1.5 py-0.5 rounded-md"># of Judges</span> field above to a number between <span className="font-semibold text-gray-800">1-{globalSettings.max_judges}</span></span>
                       </li>
                       <li className="flex items-start space-x-3 group hover:bg-gray-50/50 p-2 rounded-lg transition-all duration-200">
                         <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gradient-to-br from-purple-400 to-indigo-400 text-white font-bold text-sm shadow-sm group-hover:scale-110 transition-all duration-200">2</span>
@@ -1227,7 +1361,7 @@ export default function GeneralTab({
                       </li>
                       <li className="flex items-start space-x-3 group hover:bg-gray-50/50 p-2 rounded-lg transition-all duration-200">
                         <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-cyan-400 text-white font-bold text-sm shadow-sm group-hover:scale-110 transition-all duration-200">3</span>
-                        <span className="text-gray-700">All fields marked with <span className="text-red-500 text-base align-middle font-bold">●</span> are required</span>
+                        <span className="text-gray-700">All fields marked with <span className="text-red-500 text-base align-middle font-bold">*</span> are required</span>
                       </li>
                     </ul>
                   </div>
@@ -1239,11 +1373,11 @@ export default function GeneralTab({
                     <table className="min-w-full rounded-2xl bg-white shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300">
                 <thead>
                         <tr className="bg-gradient-to-r from-indigo-50 via-purple-50 to-blue-50 border-b border-indigo-200">
-                          <th className="uppercase text-xs font-bold tracking-wider text-indigo-800 py-3 px-4 text-left align-top" style={{ fontFamily: 'Inter, Arial, Helvetica, sans-serif' }}>Judge # <span className="text-red-500 text-base">●</span></th>
-                          <th className="uppercase text-xs font-bold tracking-wider text-indigo-800 py-3 px-4 text-left align-top" style={{ fontFamily: 'Inter, Arial, Helvetica, sans-serif' }}>Ring Number <span className="text-red-500 text-base">●</span></th>
-                          <th className="uppercase text-xs font-bold tracking-wider text-indigo-800 py-3 px-4 text-left align-top" style={{ fontFamily: 'Inter, Arial, Helvetica, sans-serif' }}>Judge Name <span className="text-red-500 text-base">●</span></th>
-                          <th className="uppercase text-xs font-bold tracking-wider text-indigo-800 py-3 px-4 text-left align-top" style={{ fontFamily: 'Inter, Arial, Helvetica, sans-serif' }}>Acronym <span className="text-red-500 text-base">●</span></th>
-                          <th className="uppercase text-xs font-bold tracking-wider text-indigo-800 py-3 px-4 text-left align-top" style={{ fontFamily: 'Inter, Arial, Helvetica, sans-serif' }}>Ring Type <span className="text-red-500 text-base">●</span></th>
+                          <th className="uppercase text-xs font-bold tracking-wider text-indigo-800 py-3 px-4 text-left align-top" >Judge # <span className="text-red-500 text-base">*</span></th>
+                          <th className="uppercase text-xs font-bold tracking-wider text-indigo-800 py-3 px-4 text-left align-top" >Ring Number <span className="text-red-500 text-base">*</span></th>
+                          <th className="uppercase text-xs font-bold tracking-wider text-indigo-800 py-3 px-4 text-left align-top" >Judge Name <span className="text-red-500 text-base">*</span></th>
+                          <th className="uppercase text-xs font-bold tracking-wider text-indigo-800 py-3 px-4 text-left align-top" >Acronym <span className="text-red-500 text-base">*</span></th>
+                          <th className="uppercase text-xs font-bold tracking-wider text-indigo-800 py-3 px-4 text-left align-top" >Ring Type <span className="text-red-500 text-base">*</span></th>
                           <th className="bg-gradient-to-r from-indigo-50 via-purple-50 to-blue-50 border-b border-indigo-200 py-3 px-4 w-12 align-top"></th>
                   </tr>
                 </thead>
@@ -1252,7 +1386,7 @@ export default function GeneralTab({
                           <tr key={judge.id} className={`${index % 2 === 0 ? "bg-white" : "bg-indigo-50/30"} hover:bg-indigo-100/30 transition-all duration-200`} style={{ height: 48 }}>
                             <td className="px-4 py-3 align-middle">
                               {/* Judge number badge - displays sequential judge number */}
-                              <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-amber-200 to-orange-200 text-gray-800 font-bold text-sm text-center shadow-md border border-amber-300/50 hover:shadow-lg hover:from-amber-300 hover:to-orange-300 transition-all duration-200" style={{ fontFamily: 'Inter, Arial, Helvetica, sans-serif' }}>
+                              <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-amber-200 to-orange-200 text-gray-800 font-bold text-sm text-center shadow-md border border-amber-300/50 hover:shadow-lg hover:from-amber-300 hover:to-orange-300 transition-all duration-200" >
                                 {index + 1}
                               </span>
                             </td>
@@ -1261,12 +1395,13 @@ export default function GeneralTab({
                               <input 
                                 type="number" 
                                 min="1" 
-                                max="12"
+                                max={showData.numberOfJudges > 0 ? showData.numberOfJudges * 2 : 1}
                                 value={judge.ringNumber} 
                                 onChange={e => {
                                   const value = parseInt(e.target.value) || 1;
-                                  // Auto-cap at maximum value (12)
-                                  const cappedValue = Math.min(value, 12);
+                                  // Auto-cap at 2x the current number of judges (dynamic)
+                                  const maxRingNumber = showData.numberOfJudges > 0 ? showData.numberOfJudges * 2 : 1;
+                                  const cappedValue = Math.min(value, maxRingNumber);
                                   updateJudge(judge.id, 'ringNumber', cappedValue);
                                 }} 
                                 onFocus={() => handleFieldFocus(`judge${judge.id}RingNumber`)} 
@@ -1277,7 +1412,7 @@ export default function GeneralTab({
                                 }} 
                                 className={`w-20 text-center text-sm font-medium rounded-md py-1 px-2 focus:outline-none transition-all duration-300 shadow-sm ${errors[`judge${judge.id}RingNumber`] ? 'border-2 border-red-300 bg-red-50/80 focus:border-red-400 focus:ring-2 focus:ring-red-100' : 'border border-indigo-200 bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100'}`}
                                 placeholder="Ring #" 
-                                style={{ fontFamily: 'Inter, Arial, Helvetica, sans-serif' }} 
+                                 
                               />
                             </td>
                             <td className="px-4 py-3 align-middle">
@@ -1290,7 +1425,7 @@ export default function GeneralTab({
                                 onBlur={handleFieldBlur} 
                                 className={`w-full rounded-lg px-3 py-2 text-sm font-medium transition-all duration-300 shadow-sm ${errors[`judge${judge.id}Name`] ? 'border-2 border-red-300 bg-red-50/80 focus:border-red-400 focus:ring-2 focus:ring-red-100 placeholder-red-400' : 'border border-indigo-200 bg-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 placeholder-indigo-400 hover:border-indigo-300'}`}
                                 placeholder="Enter judge name" 
-                                style={{ fontFamily: 'Inter, Arial, Helvetica, sans-serif' }} 
+                                 
                               />
                             </td>
                             <td className="px-4 py-3 align-middle">
@@ -1304,7 +1439,7 @@ export default function GeneralTab({
                                 className={`w-24 text-center text-sm font-medium rounded-md py-1 px-2 focus:outline-none transition-all duration-300 shadow-sm ${errors[`judge${judge.id}Acronym`] ? 'border-2 border-red-300 bg-red-50/80 focus:border-red-400 focus:ring-2 focus:ring-red-100' : 'border border-indigo-200 bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100'}`}
                                 placeholder="Acronym" 
                                 maxLength={5} 
-                                style={{ fontFamily: 'Inter, Arial, Helvetica, sans-serif' }} 
+                                 
                               />
                             </td>
                             <td className="px-4 py-3 align-middle">
@@ -1346,7 +1481,7 @@ export default function GeneralTab({
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                     </svg>
                                     <span className="sr-only">Remove judge</span>
-                                    <span className="absolute -top-8 left-1/2 -translate-x-1/2 scale-0 group-[.show-tooltip]:scale-100 transition-transform duration-200 bg-red-600 text-white text-xs rounded-lg px-2 py-1 shadow-lg pointer-events-none z-10" style={{ fontFamily: 'Inter, Arial, Helvetica, sans-serif' }}>
+                                    <span className="absolute -top-8 left-1/2 -translate-x-1/2 scale-0 group-[.show-tooltip]:scale-100 transition-transform duration-200 bg-red-600 text-white text-xs rounded-lg px-2 py-1 shadow-lg pointer-events-none z-10" >
                                       Remove judge
                                     </span>
                                   </button>

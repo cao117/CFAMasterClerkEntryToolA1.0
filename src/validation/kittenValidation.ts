@@ -27,16 +27,18 @@ export function isVoidInput(catNumber: string): boolean {
   return catNumber.trim().toUpperCase() === 'VOID';
 }
 
+import { validateCatNumber as validateCatNumberHelper, getCatNumberValidationMessage } from '../utils/validationHelpers';
+
 /**
- * Validate cat number format: either a number 1-450 or VOID (case-insensitive)
+ * Validate cat number format: either a number 1-maxCats or VOID (case-insensitive)
  * @param {string} catNumber - The cat number to validate
+ * @param {number} maxCats - The maximum number of cats allowed (from globalSettings.max_cats)
  * @returns {boolean} True if valid
  */
-export function validateCatNumberFormat(catNumber: string): boolean {
+export function validateCatNumberFormat(catNumber: string, maxCats: number): boolean {
   if (!catNumber || catNumber.trim() === '') return true; // Empty is valid
   if (isVoidInput(catNumber)) return true; // VOID is valid
-  const num = Number(catNumber);
-  return !isNaN(num) && num >= 1 && num <= 450;
+  return validateCatNumberHelper(catNumber, maxCats);
 }
 
 /**
@@ -50,7 +52,7 @@ export function validateCatNumberFormat(catNumber: string): boolean {
  * @param {KittenValidationInput} input
  * @returns {Record<string, string>} errors keyed by cell
  */
-export function validateKittenTab(input: KittenValidationInput): Record<string, string> {
+export function validateKittenTab(input: KittenValidationInput, maxCats: number): Record<string, string> {
   const errors: Record<string, string> = {};
   const { columns, showAwards, kittenCounts } = input;
   
@@ -96,15 +98,15 @@ export function validateKittenTab(input: KittenValidationInput): Record<string, 
       if (isVoidInput(cell.catNumber)) continue;
       
       // 1. Format validation (Range error) - assign first
-      if (cell.catNumber && !validateCatNumberFormat(cell.catNumber)) {
-        errors[key] = 'Cat number must be between 1-450 or VOID';
+      if (cell.catNumber && !validateCatNumberFormat(cell.catNumber, maxCats)) {
+        errors[key] = getCatNumberValidationMessage(maxCats);
         continue;
       }
       
       // 2. Duplicate error - only if no format error
       if (cell.catNumber && catNumberToRows[cell.catNumber] && catNumberToRows[cell.catNumber].length > 1) {
         if (errors[key]) {
-          errors[key] = 'Cat number must be between 1-450 or VOID. Duplicate: This cat is already placed in another position.';
+          errors[key] = `${getCatNumberValidationMessage(maxCats)} Duplicate: This cat is already placed in another position.`;
         } else {
           errors[key] = 'Duplicate: This cat is already placed in another position.';
         }

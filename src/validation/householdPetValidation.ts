@@ -34,7 +34,9 @@ function isVoidInput(catNumber: string): boolean {
  * @param {HouseholdPetValidationInput} input
  * @returns {Record<string, string>} errors keyed by cell
  */
-export function validateHouseholdPetTab(input: HouseholdPetValidationInput): Record<string, string> {
+import { validateCatNumber as validateCatNumberHelper, getCatNumberValidationMessage } from '../utils/validationHelpers';
+
+export function validateHouseholdPetTab(input: HouseholdPetValidationInput, maxCats: number): Record<string, string> {
   const errors: Record<string, string> = {};
   const { columns, showAwards, householdPetCount } = input;
   // Breakpoint logic: 50 household pets for 15 positions
@@ -68,16 +70,15 @@ export function validateHouseholdPetTab(input: HouseholdPetValidationInput): Rec
       if (isVoidInput(cell.catNumber)) continue;
       
       // 1. Range check (Format validation) - assign first
-      const catNum = Number(cell.catNumber);
-      if (cell.catNumber && (isNaN(catNum) || catNum < 1 || catNum > 450)) {
-        errors[key] = 'Cat number must be between 1 and 450 or VOID';
+      if (cell.catNumber && !validateCatNumberHelper(cell.catNumber, maxCats)) {
+        errors[key] = getCatNumberValidationMessage(maxCats);
         continue;
       }
       
       // 2. Duplicate error - only if no range error
       if (cell.catNumber && catNumberToRows[cell.catNumber] && catNumberToRows[cell.catNumber].length > 1) {
         if (errors[key]) {
-          errors[key] = 'Cat number must be between 1 and 450 or VOID. Duplicate: This cat is already placed in another position.';
+          errors[key] = `${getCatNumberValidationMessage(maxCats)} Duplicate: This cat is already placed in another position.`;
         } else {
           errors[key] = 'Duplicate: This cat is already placed in another position.';
         }

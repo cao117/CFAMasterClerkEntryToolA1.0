@@ -28,7 +28,7 @@ export const getRoomTypeAbbreviation = (roomType: string): string => {
  */
 export const formatJumpToMenuOptions = (columns: any[]): string[] => {
   return columns.map((col) => {
-    const ringNumber = col.judge.id.toString().padStart(2, '0');
+    const ringNumber = col.judge.ringNumber.toString().padStart(2, '0');
     const judgeAcronym = col.judge.acronym.padEnd(3, '\u00A0'); // Non-breaking space
     return `Ring ${ringNumber} - ${judgeAcronym} - ${getRoomTypeAbbreviation(col.specialty)}`;
   });
@@ -43,12 +43,12 @@ export const formatJumpToMenuOptions = (columns: any[]): string[] => {
 export const formatJumpToMenuValue = (columns: any[], focusedColumnIndex: number | null): string => {
   if (focusedColumnIndex !== null && focusedColumnIndex >= 0 && focusedColumnIndex < columns.length) {
     const col = columns[focusedColumnIndex];
-    const ringNumber = col.judge.id.toString().padStart(2, '0');
+    const ringNumber = col.judge.ringNumber.toString().padStart(2, '0');
     const judgeAcronym = col.judge.acronym.padEnd(3, '\u00A0'); // Non-breaking space
     return `Ring ${ringNumber} - ${judgeAcronym} - ${getRoomTypeAbbreviation(col.specialty)}`;
   } else if (columns.length > 0) {
     const col = columns[0];
-    const ringNumber = col.judge.id.toString().padStart(2, '0');
+    const ringNumber = col.judge.ringNumber.toString().padStart(2, '0');
     const judgeAcronym = col.judge.acronym.padEnd(3, '\u00A0'); // Non-breaking space
     return `Ring ${ringNumber} - ${judgeAcronym} - ${getRoomTypeAbbreviation(col.specialty)}`;
   }
@@ -62,7 +62,7 @@ export const formatJumpToMenuValue = (columns: any[], focusedColumnIndex: number
  */
 export const formatJumpToMenuOptionsHHP = (columns: any[]): string[] => {
   return columns.map((col) => {
-    const ringNumber = col.judge.id.toString().padStart(2, '0');
+    const ringNumber = col.judge.ringNumber.toString().padStart(2, '0');
     const judgeAcronym = col.judge.acronym.padEnd(3, '\u00A0'); // Non-breaking space
     return `Ring ${ringNumber} - ${judgeAcronym} - ${getRoomTypeAbbreviation(col.judge.ringType)}`;
   });
@@ -77,12 +77,12 @@ export const formatJumpToMenuOptionsHHP = (columns: any[]): string[] => {
 export const formatJumpToMenuValueHHP = (columns: any[], focusedColumnIndex: number | null): string => {
   if (focusedColumnIndex !== null && focusedColumnIndex >= 0 && focusedColumnIndex < columns.length) {
     const col = columns[focusedColumnIndex];
-    const ringNumber = col.judge.id.toString().padStart(2, '0');
+    const ringNumber = col.judge.ringNumber.toString().padStart(2, '0');
     const judgeAcronym = col.judge.acronym.padEnd(3, '\u00A0'); // Non-breaking space
     return `Ring ${ringNumber} - ${judgeAcronym} - ${getRoomTypeAbbreviation(col.judge.ringType)}`;
   } else if (columns.length > 0) {
     const col = columns[0];
-    const ringNumber = col.judge.id.toString().padStart(2, '0');
+    const ringNumber = col.judge.ringNumber.toString().padStart(2, '0');
     const judgeAcronym = col.judge.acronym.padEnd(3, '\u00A0'); // Non-breaking space
     return `Ring ${ringNumber} - ${judgeAcronym} - ${getRoomTypeAbbreviation(col.judge.ringType)}`;
   }
@@ -97,7 +97,7 @@ export const formatJumpToMenuValueHHP = (columns: any[], focusedColumnIndex: num
  */
 export const formatJumpToMenuOptionsHHPNoRoomType = (columns: any[]): string[] => {
   return columns.map((col) => {
-    const ringNumber = col.judge.id.toString().padStart(2, '0');
+    const ringNumber = col.judge.ringNumber.toString().padStart(2, '0');
     const judgeAcronym = col.judge.acronym.padEnd(3, '\u00A0'); // Non-breaking space
     return `Ring ${ringNumber} - ${judgeAcronym}`;
   });
@@ -112,12 +112,12 @@ export const formatJumpToMenuOptionsHHPNoRoomType = (columns: any[]): string[] =
 export const formatJumpToMenuValueHHPNoRoomType = (columns: any[], focusedColumnIndex: number | null): string => {
   if (focusedColumnIndex !== null && focusedColumnIndex >= 0 && focusedColumnIndex < columns.length) {
     const col = columns[focusedColumnIndex];
-    const ringNumber = col.judge.id.toString().padStart(2, '0');
+    const ringNumber = col.judge.ringNumber.toString().padStart(2, '0');
     const judgeAcronym = col.judge.acronym.padEnd(3, '\u00A0'); // Non-breaking space
     return `Ring ${ringNumber} - ${judgeAcronym}`;
   } else if (columns.length > 0) {
     const col = columns[0];
-    const ringNumber = col.judge.id.toString().padStart(2, '0');
+    const ringNumber = col.judge.ringNumber.toString().padStart(2, '0');
     const judgeAcronym = col.judge.acronym.padEnd(3, '\u00A0'); // Non-breaking space
     return `Ring ${ringNumber} - ${judgeAcronym}`;
   }

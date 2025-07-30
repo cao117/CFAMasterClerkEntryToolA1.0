@@ -148,12 +148,12 @@ Suppose the General tab has the following judges:
   - Longhair: If (LH GC + LH CH) ≥ 85, use Top 15/5 Best; else Top 10/3 Best.
   - Shorthair: If (SH GC + SH CH) ≥ 85, use Top 15/5 Best; else Top 10/3 Best.
 - **Show Awards**:
-  - Cat # must be 1-450.
+  - Cat # must be 1-{max_cats}.
   - Status: GC, CH, or NOV.
   - No duplicates within a column.
   - Must fill positions sequentially (no skipping).
 - **Best AB/LH/SH CH**:
-  - Cat # must be 1-450.
+  - Cat # must be 1-{max_cats}.
   - No duplicates within a section.
   - Must fill positions sequentially.
   - Only cats NOT listed as GC or NOV in Show Awards are eligible.
@@ -174,12 +174,12 @@ Suppose the General tab has the following judges:
   - Longhair: If (LH PR + GP) ≥ 85, use Top 15/5 Best; else Top 10/3 Best.
   - Shorthair: If (SH PR + GP) ≥ 85, use Top 15/5 Best; else Top 10/3 Best.
 - **Show Awards**:
-  - Cat # must be 1-450.
+  - Cat # must be 1-{max_cats}.
   - Status: GP, PR, or NOV.
   - No duplicates within a column.
   - Must fill positions sequentially.
 - **Best AB/LH/SH PR**:
-  - Cat # must be 1-450.
+  - Cat # must be 1-{max_cats}.
   - No duplicates within a section.
   - Must fill positions sequentially.
   - Only cats NOT listed as GP or NOV in Show Awards are eligible.
@@ -203,7 +203,7 @@ Suppose the General tab has the following judges:
     - For Shorthair (SH) rings: Only SH section appears if its count for the selected group is greater than 0.
   - **NOV Count Inclusion**: For Championship and Premiership groups, NOV cats are included in visibility calculations as they can receive BoB and 2BoB awards.
 - **Input Validation**:
-  - Cat # must be 1-450 or VOID.
+  - Cat # must be 1-{max_cats} or VOID.
   - No duplicates within the same judge-group-hair length combination.
   - Input values persist separately for each judge-group-hair length combination.
 - **Breed List Management**:
@@ -286,13 +286,13 @@ If a higher-precedence error is present, lower-precedence errors/reminders are s
   - "301 needs to be assigned to either LH or SH CH final."
 
 #### 6. Format Error (Cat Number Range)
-- **Definition:** Cat number is not within the valid range (1-450).
+- **Definition:** Cat number is not within the valid range (1-{max_cats}).
 - **How Checked:**
-  - On every entry, the tool checks if the cat number is a valid integer between 1 and 450.
+  - On every entry, the tool checks if the cat number is a valid integer between 1 and {max_cats}.
 - **Example:**
   - Cat #999 is entered. A format error appears.
 - **Error Message:**
-  - "Cat number must be between 1-450"
+  - "Cat number must be between 1-{max_cats}"
 
 #### 7. Voiding Error (Voiding Logic)
 - **Definition:** Not an error per se, but voiding a cat number in any cell in a column voids all other cells in that column with the same cat number (across all sections). Unvoiding is synchronized as well.
@@ -321,7 +321,7 @@ If a higher-precedence error is present, lower-precedence errors/reminders are s
 | Sequential Entry   | Any section/column               | Position 2 filled, position 1 empty                      | You must fill in previous empty award placements before entering this position. |
 | Order              | Best AB/LH/SH CH/PR              | 1st Best AB CH not matching 1st CH in Show Awards        | Must be 402 (1st CH required by CFA rules)                 |
 | Assignment Reminder| Best AB CH/PR                    | Cat #301 in Best AB CH not assigned to LH/SH             | 301 needs to be assigned to either LH or SH CH final.      |
-| Format             | Any section/column               | Cat #999 entered                                         | Cat number must be between 1-450                           |
+| Format             | Any section/column               | Cat #999 entered                                         | Cat number must be between 1-{max_cats}                           |
 | Voiding            | Any section/column               | Cat #401 voided in any cell                              | (No error message; cell is voided)                         |
 | General/Other      | General tab                      | Duplicate judge acronym                                  | Judge acronyms must be unique.                             |
 

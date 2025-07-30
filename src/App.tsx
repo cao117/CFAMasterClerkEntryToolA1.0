@@ -61,6 +61,37 @@ interface ShowData {
   householdPetCount: number;
 }
 
+// Default settings values
+const DEFAULT_SETTINGS = {
+  max_judges: 12, // Default value (hard cap is 24)
+  max_cats: 450, // Default value (hard cap is 1000)
+  placement_thresholds: {
+    championship: 85,
+    kitten: 75,
+    premiership: 50,
+    household_pet: 50,
+  },
+  short_hair_breeds: [
+    "ABYSSINIAN", "AMERICAN SH", "AMERICAN WH", "BALINESE", "BALINESE-JAVANESE",
+    "BENGAL", "BOMBAY", "BRITISH SH", "BURMESE", "BURMILLA - LH", "BURMILLA - SH",
+    "CHARTREUX", "COLORPOINT SH", "CORNISH REX", "DEVON REX", "EGYPTIAN MAU",
+    "EUROPEAN BURM", "HAVANA BROWN", "JAPANESE BOBTAIL - LH", "JAPANESE BOBTAIL - SH",
+    "KORAT", "LAPERM - LH", "LAPERM - SH", "LYKOI", "MANX - LH", "MANX - SH",
+    "OCICAT", "ORIENTAL - LH", "ORIENTAL - SH", "RUSSIAN BLUE", "SCOTTISH FOLD - LH",
+    "SCOTTISH FOLD - SH", "SCOTTISH STRAIGHT EAR - LH", "SCOTTISH STRAIGHT EAR - SH",
+    "SELKIRK REX - LH", "SELKIRK REX - SH", "SIAMESE", "SINGAPURA", "SOMALI",
+    "SPHYNX", "TONKINESE", "TOYBOB"
+  ],
+  long_hair_breeds: [
+    "AMERICAN BOBTAIL-LH", "AMERICAN BOBTAIL-SH", "AMERICAN CURL-LH", "AMERICAN CURL-SH",
+    "BIRMAN", "EXOTIC SOLID", "EXOTIC SILVER/GOLDEN", "EXOTIC SHADED/SMOKE",
+    "EXOTIC TABBY", "EXOTIC PARTI-COLOR", "EXOTIC CALICO/BI-COLOR", "EXOTIC POINTED",
+    "MAINE COON CAT", "NORWEGIAN FOREST CAT", "PERSIAN SOLID", "PERSIAN SILVER/GOLDEN",
+    "PERSIAN SHADED/SMOKE", "PERSIAN TABBY", "PERSIAN PARTI-COLOR", "PERSIAN CALICO/BI-COLOR",
+    "PERSIAN HIMALAYAN", "RAGAMUFFIN", "RAGDOLL", "SIBERIAN", "TURKISH ANGORA", "TURKISH VAN"
+  ]
+};
+
 function App() {
   // Screen guard hook to check if device meets minimum 1280px requirement
   const fallbackType = useScreenGuard();
@@ -70,36 +101,55 @@ function App() {
   const [zoomLevel, setZoomLevel] = useState(100); // Zoom level in percentage
   const [isSettingsOpen, setIsSettingsOpen] = useState(false); // Settings panel state
   
-  // Global settings state
-  const [globalSettings, setGlobalSettings] = useState({
-    max_judges: 12,
-    max_cats: 450,
-    placement_thresholds: {
-      championship: 85,
-      kitten: 75,
-      premiership: 50,
-      household_pet: 50,
-    },
-    short_hair_breeds: [
-      "ABYSSINIAN", "AMERICAN SH", "AMERICAN WH", "BALINESE", "BALINESE-JAVANESE",
-      "BENGAL", "BOMBAY", "BRITISH SH", "BURMESE", "BURMILLA - LH", "BURMILLA - SH",
-      "CHARTREUX", "COLORPOINT SH", "CORNISH REX", "DEVON REX", "EGYPTIAN MAU",
-      "EUROPEAN BURM", "HAVANA BROWN", "JAPANESE BOBTAIL - LH", "JAPANESE BOBTAIL - SH",
-      "KORAT", "LAPERM - LH", "LAPERM - SH", "LYKOI", "MANX - LH", "MANX - SH",
-      "OCICAT", "ORIENTAL - LH", "ORIENTAL - SH", "RUSSIAN BLUE", "SCOTTISH FOLD - LH",
-      "SCOTTISH FOLD - SH", "SCOTTISH STRAIGHT EAR - LH", "SCOTTISH STRAIGHT EAR - SH",
-      "SELKIRK REX - LH", "SELKIRK REX - SH", "SIAMESE", "SINGAPURA", "SOMALI",
-      "SPHYNX", "TONKINESE", "TOYBOB"
-    ],
-    long_hair_breeds: [
-      "AMERICAN BOBTAIL-LH", "AMERICAN BOBTAIL-SH", "AMERICAN CURL-LH", "AMERICAN CURL-SH",
-      "BIRMAN", "EXOTIC SOLID", "EXOTIC SILVER/GOLDEN", "EXOTIC SHADED/SMOKE",
-      "EXOTIC TABBY", "EXOTIC PARTI-COLOR", "EXOTIC CALICO/BI-COLOR", "EXOTIC POINTED",
-      "MAINE COON CAT", "NORWEGIAN FOREST CAT", "PERSIAN SOLID", "PERSIAN SILVER/GOLDEN",
-      "PERSIAN SHADED/SMOKE", "PERSIAN TABBY", "PERSIAN PARTI-COLOR", "PERSIAN CALICO/BI-COLOR",
-      "PERSIAN HIMALAYAN", "RAGAMUFFIN", "RAGDOLL", "SIBERIAN", "TURKISH ANGORA", "TURKISH VAN"
-    ]
+  // Global settings state with localStorage persistence
+  const [globalSettings, setGlobalSettings] = useState(() => {
+    // Load settings from localStorage synchronously during initialization
+    try {
+      const savedSettings = localStorage.getItem('cfa_global_settings');
+      if (savedSettings) {
+        const parsedSettings = JSON.parse(savedSettings);
+        // Merge with defaults to ensure all required fields exist
+        const mergedSettings = {
+          ...DEFAULT_SETTINGS,
+          ...parsedSettings,
+          // Ensure nested objects are properly merged
+          placement_thresholds: {
+            ...DEFAULT_SETTINGS.placement_thresholds,
+            ...parsedSettings.placement_thresholds
+          }
+        };
+        console.log('Settings loaded from localStorage during initialization:', mergedSettings);
+        return mergedSettings;
+      } else {
+        console.log('No saved settings found during initialization, using defaults');
+        return DEFAULT_SETTINGS;
+      }
+    } catch (error) {
+      console.error('Error loading settings from localStorage during initialization:', error);
+      return DEFAULT_SETTINGS;
+    }
   });
+
+  // Save settings to localStorage whenever they change (but not during initial load)
+  const [isInitialized, setIsInitialized] = useState(false);
+  
+  useEffect(() => {
+    // Mark as initialized after first render
+    setIsInitialized(true);
+  }, []);
+
+  useEffect(() => {
+    // Only save to localStorage if we're past the initial load
+    if (isInitialized) {
+      try {
+        localStorage.setItem('cfa_global_settings', JSON.stringify(globalSettings));
+        console.log('Settings saved to localStorage:', globalSettings);
+      } catch (error) {
+        console.error('Error saving settings to localStorage:', error);
+      }
+    }
+  }, [globalSettings, isInitialized]);
+
   const [showData, setShowData] = useState<ShowData>({
     showDate: '',
     clubName: '',
@@ -422,6 +472,7 @@ function App() {
         onJudgeRingTypeChange={handleJudgeRingTypeChange}
         getShowState={getShowState}
         onCSVImport={handleCSVImport}
+        globalSettings={globalSettings}
       />,
       disabled: false
     },
@@ -461,6 +512,7 @@ function App() {
         getShowState={getShowState}
         isActive={activeTab === 'championship'}
         onCSVImport={handleCSVImport}
+        globalSettings={globalSettings}
       />,
       disabled: championshipTabDisabled
     },
@@ -478,6 +530,7 @@ function App() {
         onTabReset={() => setKittenTabData({ showAwards: {}, voidedShowAwards: {}, errors: {}, focusedColumnIndex: null, isResetModalOpen: false, isCSVErrorModalOpen: false })}
         getShowState={getShowState}
         onCSVImport={handleCSVImport}
+        globalSettings={globalSettings}
       />,
       disabled: kittenTabDisabled
     },
@@ -505,6 +558,7 @@ function App() {
         setPremiershipTabData={setPremiershipTabData}
         getShowState={getShowState}
         onCSVImport={handleCSVImport}
+        globalSettings={globalSettings}
       />,
       disabled: premiershipTabDisabled
     },
@@ -522,6 +576,7 @@ function App() {
         setHouseholdPetTabData={setHouseholdPetTabData}
         onTabReset={() => setHouseholdPetTabData({ showAwards: {}, voidedShowAwards: {} })}
         onCSVImport={handleCSVImport}
+        globalSettings={globalSettings}
       />,
       disabled: showData.householdPetCount <= 0 || !isShowInfoValid(showData) || !areJudgesValid(judges)
     },
@@ -790,7 +845,7 @@ function App() {
             </button>
           )}
           {/* Household Pet Tab */}
-          {showData.householdPetCount <= 0 ? (
+          {showData.householdPetCount <= 0 || !isShowInfoValid(showData) || !areJudgesValid(judges) ? (
             <Tooltip content="Complete General Info to unlock.">
               <button
                 className={`flex items-center gap-2 px-5 py-2 rounded-full font-bold text-base transition-all duration-200 focus:outline-none modern-tab-font border-b-2 disabled`}
@@ -859,6 +914,7 @@ function App() {
         showSuccess={showSuccess}
         globalSettings={globalSettings}
         setGlobalSettings={setGlobalSettings}
+        currentNumberOfJudges={showData.numberOfJudges}
       />
       {/* App Version Badge Footer */}
       <footer className="fixed bottom-4 right-4 z-50">

@@ -31,7 +31,7 @@ The Kitten tab uses **hair-specific breakpoints** based on ring type:
 - **If < 75**: Top 10 positions
 
 ## Validation Rules
-- **Cat number format:** Must be between 1-450
+- **Cat number format:** Must be between 1-{max_cats}
 - **Sequential entry:** Must fill positions sequentially (no skipping; VOID placements are treated as if they do not exist for validation. If a VOID appears before a filled placement, it does not block sequential entry.)
 - **Duplicate check:** No duplicates within the same section of the final. VOID placements are treated as if they do not exist for validation. If a VOID appears in a row, it is ignored for duplicate checks. If a duplicate is found, the error is shown on all cells with the same value in that section (not just the last entered cell). The error message is: 'Duplicate cat number within this section of the final'.
 - **Status validation:** Only KIT is allowed (always selected)
@@ -42,7 +42,7 @@ The Kitten tab uses **hair-specific breakpoints** based on ring type:
 ## Error Precedence
 For each cell, only the highest-precedence error is shown:
 1. Duplicate error (within section of the final; shown on all cells with the same value; message: 'Duplicate cat number within this section of the final')
-2. Range error (cat number not 1-450)
+2. Range error (cat number not 1-{max_cats})
 3. Sequential entry error ("You must fill previous placements before entering this position.")
 4. Status error (should always be KIT)
 
