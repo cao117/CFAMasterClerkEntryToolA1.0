@@ -939,11 +939,11 @@ export default function PremiershipTab({
               if (selectedIndex !== -1) {
                 setFocusedColumnIndex(selectedIndex);
                 const th = document.getElementById(`ring-th-${selectedIndex}`);
-                const container = tableContainerRef.current;
-                if (th && container) {
-                  const frozenWidth = 140;
-                  const scrollLeft = th.offsetLeft - frozenWidth;
-                  container.scrollTo({ left: scrollLeft, behavior: 'smooth' });
+              const container = tableContainerRef.current;
+              if (th && container) {
+                const frozenWidth = 140;
+                const scrollLeft = th.offsetLeft - frozenWidth;
+                container.scrollTo({ left: scrollLeft, behavior: 'smooth' });
                 }
               }
             }}

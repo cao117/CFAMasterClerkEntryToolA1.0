@@ -467,7 +467,7 @@ const BreedSheetsTab: React.FC<BreedSheetsTabProps> = (props) => {
     if (breedSheetsTabData.errors[errorKey]) {
       return 'border-red-400 bg-red-50';
     }
-    return 'border-orange-200/50';
+    return 'border-cyan-200/50';
   };
 
   /**
@@ -674,25 +674,25 @@ const BreedSheetsTab: React.FC<BreedSheetsTabProps> = (props) => {
       {/* Breed Sheets - Premium Design */}
       <div className="group relative">
         {/* Header */}
-        <div className="bg-white flex items-center justify-between px-6 pt-4 pb-3 gap-4 transition-all duration-200 border-b border-orange-200 shadow-sm">
+        <div className="bg-white flex items-center justify-between px-6 pt-4 pb-3 gap-4 transition-all duration-200 border-b border-cyan-200 shadow-sm">
           <div className="flex items-center min-w-0">
-            <span className="p-1.5 bg-gradient-to-br from-orange-500 to-amber-400 rounded-xl shadow flex-shrink-0">
+            <span className="p-1.5 bg-gradient-to-br from-cyan-500 to-teal-400 rounded-xl shadow flex-shrink-0">
               {/* Breed/List Icon */}
               <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
               </svg>
             </span>
-            <span className="text-xl font-bold text-orange-700 ml-3">Breed Sheets</span>
+            <span className="text-xl font-bold text-cyan-700 ml-3">Breed Sheets</span>
           </div>
           
           {/* Right: Selected Judge Info */}
           {selectedJudge && (
-            <div className="flex items-center gap-2 text-sm text-orange-600 font-medium" style={{ fontFamily: "'Arial', 'Helvetica', sans-serif" }}>
+            <div className="flex items-center gap-2 text-sm text-cyan-600 font-medium" style={{ fontFamily: "'Arial', 'Helvetica', sans-serif" }}>
               <span className="font-bold">Judge {selectedJudge.id}</span>
-              <span className="text-orange-400">•</span>
+              <span className="text-cyan-400">•</span>
               <span className="font-semibold">{selectedJudge.name}</span>
-              <span className="text-orange-400">•</span>
-              <span className="text-xs font-medium text-orange-600 bg-orange-100 px-2 py-0.5 rounded-full">
+              <span className="text-cyan-400">•</span>
+              <span className="text-xs font-medium text-cyan-600 bg-cyan-100 px-2 py-0.5 rounded-full">
                 {selectedJudge.ringType === 'Allbreed' ? 'AB' : selectedJudge.ringType === 'Double Specialty' ? 'DSP' : selectedJudge.ringType === 'Longhair' ? 'LH' : 'SH'}
               </span>
             </div>
@@ -700,7 +700,7 @@ const BreedSheetsTab: React.FC<BreedSheetsTabProps> = (props) => {
         </div>
 
         {/* Main Content - Split Layout */}
-        <div className="bg-white border-x border-orange-200 shadow-lg">
+        <div className="bg-white border-x border-cyan-200 shadow-lg">
           <div className="flex" style={{ minHeight: '600px' }}>
                         {/* Left Panel - Judge Selector */}
             <div className="w-64 bg-gradient-to-b from-white to-gray-50/30 border-r border-gray-100">
@@ -727,20 +727,20 @@ const BreedSheetsTab: React.FC<BreedSheetsTabProps> = (props) => {
                         onClick={() => handleJudgeSelect(judge.id)}
                         className={`group relative w-full text-left px-4 py-3 rounded-xl transition-all duration-300 ${
                           breedSheetsTabData.selectedJudgeId === judge.id
-                            ? 'bg-gradient-to-r from-orange-50 to-orange-100/50 border border-orange-200 shadow-sm scale-[1.02]'
-                            : 'bg-white/60 hover:bg-white/80 border border-transparent hover:border-orange-100 hover:shadow-sm'
+                            ? 'bg-gradient-to-r from-cyan-50 to-cyan-100/50 border border-cyan-200 shadow-sm scale-[1.02]'
+                            : 'bg-white/60 hover:bg-white/80 border border-transparent hover:border-cyan-100 hover:shadow-sm'
                         }`}
                         style={{ fontFamily: "'Arial', 'Helvetica', sans-serif" }}
                       >
                         {/* Selection Indicator */}
                         {breedSheetsTabData.selectedJudgeId === judge.id && (
-                          <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-orange-400 to-orange-500 rounded-r-full"></div>
+                          <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-cyan-400 to-cyan-500 rounded-r-full"></div>
                         )}
                         
                         <div className="flex items-center justify-between">
                           <span className={`text-sm font-medium transition-colors duration-200 ${
                             breedSheetsTabData.selectedJudgeId === judge.id
-                              ? 'text-orange-800'
+                              ? 'text-cyan-800'
                               : 'text-gray-700 group-hover:text-gray-900'
                           }`}>
                             Judge {judge.id.toString().padStart(2, '0')} • {judge.name.split(' ').map(n => n[0]).join('.')} • {judge.ringType === 'Allbreed' ? 'AB' : judge.ringType === 'Double Specialty' ? 'DSP' : judge.ringType === 'Longhair' ? 'LH' : 'SH'}
@@ -749,7 +749,7 @@ const BreedSheetsTab: React.FC<BreedSheetsTabProps> = (props) => {
                           {/* Check Icon - Only for Selected */}
                           {breedSheetsTabData.selectedJudgeId === judge.id && (
                             <div className="opacity-100 transition-opacity duration-200">
-                              <svg className="w-4 h-4 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg className="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                               </svg>
                             </div>
@@ -769,7 +769,7 @@ const BreedSheetsTab: React.FC<BreedSheetsTabProps> = (props) => {
 
                   {/* Parent-Child Relationship Control Panel */}
                   <div className="mb-4">
-                    <div className="bg-white/90 backdrop-blur-sm rounded-xl border border-orange-200/50 shadow-sm p-3">
+                    <div className="bg-white/90 backdrop-blur-sm rounded-xl border border-cyan-200/50 shadow-sm p-3">
                       <div className="flex items-center justify-between gap-4">
                         {/* Left Side - Controls */}
                         <div className="flex items-center gap-4">
@@ -781,15 +781,15 @@ const BreedSheetsTab: React.FC<BreedSheetsTabProps> = (props) => {
                                   key={group}
                                   onClick={() => handleGroupSelect(group)}
                                   className={`relative px-3 py-1.5 rounded-lg font-medium text-sm transition-all duration-300 ${
-                                    breedSheetsTabData.selectedGroup === group
-                                      ? 'bg-white text-gray-700 border-2 border-orange-300 shadow-lg shadow-orange-100 scale-105'
-                                      : 'bg-white text-gray-700 hover:bg-orange-50 border border-orange-200 hover:scale-102'
+                                                                      breedSheetsTabData.selectedGroup === group
+                                    ? 'bg-white text-gray-700 border-2 border-cyan-300 shadow-lg shadow-cyan-100 scale-105'
+                                    : 'bg-white text-gray-700 hover:bg-cyan-50 border border-cyan-200 hover:scale-102'
                                   }`}
                                   style={{ fontFamily: "'Arial', 'Helvetica', sans-serif" }}
                                 >
                                   {group}
                                   {breedSheetsTabData.selectedGroup === group && (
-                                    <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-orange-400 rounded-full animate-pulse"></div>
+                                    <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-cyan-400 rounded-full animate-pulse"></div>
                                   )}
                                 </button>
                               ))}
@@ -801,26 +801,26 @@ const BreedSheetsTab: React.FC<BreedSheetsTabProps> = (props) => {
                             {/* Elegant Dashed Line with Dots */}
                             <div className="flex items-center gap-1">
                               {/* Left Dash */}
-                              <div className="w-3 h-0.5 bg-gradient-to-r from-orange-300 to-orange-400 rounded-full animate-dash-pulse"></div>
+                              <div className="w-3 h-0.5 bg-gradient-to-r from-cyan-300 to-cyan-400 rounded-full animate-dash-pulse"></div>
                               
                               {/* Left Dot */}
-                              <div className={`w-0.5 h-0.5 bg-orange-300 rounded-full transition-all duration-300 ${
+                              <div className={`w-0.5 h-0.5 bg-cyan-300 rounded-full transition-all duration-300 ${
                                 breedSheetsTabData.pingTriggered ? 'animate-dot-jump' : 'animate-dash-pulse'
                               }`} style={{ animationDelay: breedSheetsTabData.pingTriggered ? '0s' : '0.5s' }}></div>
                               
                               {/* Center Dash */}
-                              <div className="w-3 h-0.5 bg-gradient-to-r from-orange-300 to-orange-400 rounded-full animate-dash-pulse" style={{ animationDelay: '1s' }}></div>
+                              <div className="w-3 h-0.5 bg-gradient-to-r from-cyan-300 to-cyan-400 rounded-full animate-dash-pulse" style={{ animationDelay: '1s' }}></div>
                               
                               {/* Center Dot */}
-                              <div className={`w-0.5 h-0.5 bg-gradient-to-r from-orange-300 to-orange-400 rounded-full transition-all duration-300 ${
+                              <div className={`w-0.5 h-0.5 bg-gradient-to-r from-cyan-300 to-cyan-400 rounded-full transition-all duration-300 ${
                                 breedSheetsTabData.pingTriggered ? 'animate-dot-jump' : 'animate-dash-pulse'
                               }`} style={{ animationDelay: breedSheetsTabData.pingTriggered ? '0.2s' : '1.5s' }}></div>
                               
                               {/* Right Dash */}
-                              <div className="w-3 h-0.5 bg-gradient-to-r from-orange-400 to-orange-300 rounded-full animate-dash-pulse" style={{ animationDelay: '2s' }}></div>
+                              <div className="w-3 h-0.5 bg-gradient-to-r from-cyan-400 to-cyan-300 rounded-full animate-dash-pulse" style={{ animationDelay: '2s' }}></div>
                               
                               {/* Right Dot */}
-                              <div className={`w-0.5 h-0.5 bg-orange-400 rounded-full transition-all duration-300 ${
+                              <div className={`w-0.5 h-0.5 bg-cyan-400 rounded-full transition-all duration-300 ${
                                 breedSheetsTabData.pingTriggered ? 'animate-dot-jump' : 'animate-dash-pulse'
                               }`} style={{ animationDelay: breedSheetsTabData.pingTriggered ? '0.4s' : '2.5s' }}></div>
                             </div>
@@ -835,14 +835,14 @@ const BreedSheetsTab: React.FC<BreedSheetsTabProps> = (props) => {
                                   onClick={() => handleHairLengthSelect(hairLength)}
                                   className={`relative px-3 py-1.5 rounded-lg font-medium text-sm transition-all duration-300 ${
                                     breedSheetsTabData.selectedHairLength === hairLength
-                                      ? 'bg-white text-gray-700 border-2 border-orange-300 shadow-lg shadow-orange-100 scale-105'
-                                      : 'bg-white text-gray-700 hover:bg-orange-50 border border-orange-200 hover:scale-102'
+                                      ? 'bg-white text-gray-700 border-2 border-cyan-300 shadow-lg shadow-cyan-100 scale-105'
+                                      : 'bg-white text-gray-700 hover:bg-cyan-50 border border-cyan-200 hover:scale-102'
                                   }`}
                                   style={{ fontFamily: "'Arial', 'Helvetica', sans-serif" }}
                                 >
                                   {hairLength}
                                   {breedSheetsTabData.selectedHairLength === hairLength && (
-                                    <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-orange-400 rounded-full animate-pulse"></div>
+                                    <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-cyan-400 rounded-full animate-pulse"></div>
                                   )}
                                 </button>
                               ))}
@@ -858,7 +858,7 @@ const BreedSheetsTab: React.FC<BreedSheetsTabProps> = (props) => {
                               placeholder="Search breeds..."
                               value={breedSearchTerm}
                               onChange={(e) => setBreedSearchTerm(e.target.value)}
-                              className="w-48 px-4 py-2 pl-10 text-sm border border-orange-200 rounded-lg focus:border-orange-400 focus:ring-2 focus:ring-orange-100 focus:outline-none transition-all duration-200 placeholder-gray-400"
+                              className="w-48 px-4 py-2 pl-10 text-sm border border-cyan-200 rounded-lg focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100 focus:outline-none transition-all duration-200 placeholder-gray-400"
                               style={{ fontFamily: "'Arial', 'Helvetica', sans-serif" }}
                             />
                             <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
@@ -883,8 +883,8 @@ const BreedSheetsTab: React.FC<BreedSheetsTabProps> = (props) => {
                   </div>
 
                   {/* Breed Sheet Content */}
-                  <div className="bg-white border border-orange-200 rounded-lg shadow-sm">
-                    <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white px-6 py-2 rounded-t-lg">
+                  <div className="bg-white border border-cyan-200 rounded-lg shadow-sm">
+                    <div className="bg-gradient-to-r from-cyan-500 to-teal-500 text-white px-6 py-2 rounded-t-lg">
                       <h4 className="text-lg font-bold" style={{ fontFamily: "'Arial', 'Helvetica', sans-serif" }}>
                         {breedSheetsTabData.selectedGroup} - {breedSheetsTabData.selectedHairLength} Breeds
                       </h4>
@@ -899,18 +899,18 @@ const BreedSheetsTab: React.FC<BreedSheetsTabProps> = (props) => {
                           const breedPrefix = breedSheetsTabData.selectedHairLength === 'Longhair' ? 'lh' : 'sh';
                           
                           return filteredBreedList.map((breed) => (
-                            <div key={`${breedPrefix}-${breed}`} className="grid grid-cols-[140px_1fr] gap-2 py-1 px-4 border-b border-orange-100/40 hover:bg-orange-50/20 transition-all duration-200 items-start">
+                            <div key={`${breedPrefix}-${breed}`} className="grid grid-cols-[140px_1fr] gap-2 py-1 px-4 border-b border-cyan-100/40 hover:bg-cyan-50/20 transition-all duration-200 items-start">
                               <div className="flex items-start min-h-[28px] max-w-[140px]">
-                                <div className="font-medium text-orange-800 text-xs tracking-wide uppercase leading-tight break-words" style={{ fontFamily: "'Arial', 'Helvetica', sans-serif" }}>
+                                <div className="font-semibold text-cyan-900 text-xs tracking-wide uppercase leading-tight break-words bg-cyan-50/60 px-2 py-1 rounded-md border border-cyan-200/40" style={{ fontFamily: "'Arial', 'Helvetica', sans-serif" }}>
                                   {breed}
                                 </div>
                               </div>
                               <div className="flex gap-1 justify-end">
                                   <div className="flex flex-col items-center w-[80px]">
-                                    <label className="text-[10px] font-bold text-orange-600 uppercase tracking-widest text-center" style={{ fontFamily: "'Arial', 'Helvetica', sans-serif" }}>BoB</label>
+                                    <label className="text-[10px] font-bold text-cyan-700 uppercase tracking-widest text-center bg-cyan-100/40 px-1 py-0.5 rounded-sm" style={{ fontFamily: "'Arial', 'Helvetica', sans-serif" }}>BoB</label>
                                     <input
                                       type="text"
-                                      className={`w-12 h-7 text-xs text-center font-semibold rounded-md border bg-white/90 focus:border-orange-400 focus:ring-1 focus:ring-orange-100 focus:bg-white transition-all duration-200 ${getBorderStyle(`${breedPrefix}-${breed}-bob`)} ${isVoidInput(getCurrentInputValue(selectedJudge.id, `${breedPrefix}-${breed}`, 'bob')) ? 'opacity-50 grayscale line-through' : ''}`}
+                                      className={`w-12 h-7 text-xs text-center font-semibold rounded-md border-2 bg-white shadow-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 focus:bg-white transition-all duration-200 ${getBorderStyle(`${breedPrefix}-${breed}-bob`)} ${isVoidInput(getCurrentInputValue(selectedJudge.id, `${breedPrefix}-${breed}`, 'bob')) ? 'opacity-50 grayscale line-through' : ''}`}
                                       placeholder="#"
                                       value={getCurrentInputValue(selectedJudge.id, `${breedPrefix}-${breed}`, 'bob')}
                                       onChange={(e) => handleInputChange(selectedJudge.id, `${breedPrefix}-${breed}`, 'bob', e.target.value)}
@@ -929,10 +929,10 @@ const BreedSheetsTab: React.FC<BreedSheetsTabProps> = (props) => {
                                     )}
                                   </div>
                                   <div className="flex flex-col items-center w-[80px]">
-                                    <label className="text-[10px] font-bold text-orange-600 uppercase tracking-widest text-center" style={{ fontFamily: "'Arial', 'Helvetica', sans-serif" }}>2BoB</label>
+                                    <label className="text-[10px] font-bold text-cyan-700 uppercase tracking-widest text-center bg-cyan-100/40 px-1 py-0.5 rounded-sm" style={{ fontFamily: "'Arial', 'Helvetica', sans-serif" }}>2BoB</label>
                                     <input
                                       type="text"
-                                      className={`w-12 h-7 text-xs text-center font-semibold rounded-md border bg-white/90 focus:border-orange-400 focus:ring-1 focus:ring-orange-100 focus:bg-white transition-all duration-200 ${getBorderStyle(`${breedPrefix}-${breed}-secondBest`)} ${isVoidInput(getCurrentInputValue(selectedJudge.id, `${breedPrefix}-${breed}`, 'secondBest')) ? 'opacity-50 grayscale line-through' : ''}`}
+                                      className={`w-12 h-7 text-xs text-center font-semibold rounded-md border-2 bg-white shadow-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 focus:bg-white transition-all duration-200 ${getBorderStyle(`${breedPrefix}-${breed}-secondBest`)} ${isVoidInput(getCurrentInputValue(selectedJudge.id, `${breedPrefix}-${breed}`, 'secondBest')) ? 'opacity-50 grayscale line-through' : ''}`}
                                       placeholder="#"
                                       value={getCurrentInputValue(selectedJudge.id, `${breedPrefix}-${breed}`, 'secondBest')}
                                       onChange={(e) => handleInputChange(selectedJudge.id, `${breedPrefix}-${breed}`, 'secondBest', e.target.value)}
@@ -952,10 +952,10 @@ const BreedSheetsTab: React.FC<BreedSheetsTabProps> = (props) => {
                                   </div>
                                 {breedSheetsTabData.selectedGroup === 'Championship' && (
                                   <div className="flex flex-col items-center w-[80px]">
-                                    <label className="text-[10px] font-bold text-orange-600 uppercase tracking-widest text-center" style={{ fontFamily: "'Arial', 'Helvetica', sans-serif" }}>CH</label>
+                                    <label className="text-[10px] font-bold text-cyan-700 uppercase tracking-widest text-center bg-cyan-100/40 px-1 py-0.5 rounded-sm" style={{ fontFamily: "'Arial', 'Helvetica', sans-serif" }}>CH</label>
                                     <input
                                       type="text"
-                                      className={`w-12 h-7 text-xs text-center font-semibold rounded-md border bg-white/90 focus:border-orange-400 focus:ring-1 focus:ring-orange-100 focus:bg-white transition-all duration-200 ${getBorderStyle(`${breedPrefix}-${breed}-bestCH`)} ${isVoidInput(getCurrentInputValue(selectedJudge.id, `${breedPrefix}-${breed}`, 'bestCH')) ? 'opacity-50 grayscale line-through' : ''}`}
+                                      className={`w-12 h-7 text-xs text-center font-semibold rounded-md border-2 bg-white shadow-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 focus:bg-white transition-all duration-200 ${getBorderStyle(`${breedPrefix}-${breed}-bestCH`)} ${isVoidInput(getCurrentInputValue(selectedJudge.id, `${breedPrefix}-${breed}`, 'bestCH')) ? 'opacity-50 grayscale line-through' : ''}`}
                                       placeholder="#"
                                       value={getCurrentInputValue(selectedJudge.id, `${breedPrefix}-${breed}`, 'bestCH')}
                                       onChange={(e) => handleInputChange(selectedJudge.id, `${breedPrefix}-${breed}`, 'bestCH', e.target.value)}
@@ -976,10 +976,10 @@ const BreedSheetsTab: React.FC<BreedSheetsTabProps> = (props) => {
                                 )}
                                 {breedSheetsTabData.selectedGroup === 'Premiership' && (
                                   <div className="flex flex-col items-center w-[80px]">
-                                    <label className="text-[10px] font-bold text-orange-600 uppercase tracking-widest text-center" style={{ fontFamily: "'Arial', 'Helvetica', sans-serif" }}>PR</label>
+                                    <label className="text-[10px] font-bold text-cyan-700 uppercase tracking-widest text-center bg-cyan-100/40 px-1 py-0.5 rounded-sm" style={{ fontFamily: "'Arial', 'Helvetica', sans-serif" }}>PR</label>
                                     <input
                                       type="text"
-                                      className={`w-12 h-7 text-xs text-center font-semibold rounded-md border bg-white/90 focus:border-orange-400 focus:ring-1 focus:ring-orange-100 focus:bg-white transition-all duration-200 ${getBorderStyle(`${breedPrefix}-${breed}-bestPR`)} ${isVoidInput(getCurrentInputValue(selectedJudge.id, `${breedPrefix}-${breed}`, 'bestPR')) ? 'opacity-50 grayscale line-through' : ''}`}
+                                      className={`w-12 h-7 text-xs text-center font-semibold rounded-md border-2 bg-white shadow-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 focus:bg-white transition-all duration-200 ${getBorderStyle(`${breedPrefix}-${breed}-bestPR`)} ${isVoidInput(getCurrentInputValue(selectedJudge.id, `${breedPrefix}-${breed}`, 'bestPR')) ? 'opacity-50 grayscale line-through' : ''}`}
                                       placeholder="#"
                                       value={getCurrentInputValue(selectedJudge.id, `${breedPrefix}-${breed}`, 'bestPR')}
                                       onChange={(e) => handleInputChange(selectedJudge.id, `${breedPrefix}-${breed}`, 'bestPR', e.target.value)}
@@ -1009,7 +1009,7 @@ const BreedSheetsTab: React.FC<BreedSheetsTabProps> = (props) => {
                 </div>
               ) : (
                 <div className="flex items-center justify-center h-full">
-                  <div className="text-center text-orange-600">
+                  <div className="text-center text-cyan-600">
                     <svg className="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>

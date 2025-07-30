@@ -1143,8 +1143,11 @@ export default function GeneralTab({
                 {/* Show explanation when no judges - Updated to match working top section */}
                 {judges.length === 0 && (
                   <div 
-                    className="flex flex-col items-center justify-center p-4 mb-6 bg-gradient-to-br from-amber-50 via-white to-yellow-50 rounded-2xl shadow-lg border border-amber-100 max-w-xl mx-auto"
+                    className="relative flex flex-col items-center justify-center p-6 mb-6 bg-white/80 backdrop-blur-md rounded-2xl shadow-lg border border-gray-200/50 hover:shadow-xl hover:bg-white/90 transition-all duration-300 max-w-xl mx-auto overflow-hidden"
                   >
+                    {/* Subtle animated background elements */}
+                    <div className="absolute top-2 right-2 w-16 h-16 bg-gradient-to-br from-pink-200 to-purple-200 rounded-full blur-xl opacity-60 animate-pulse"></div>
+                    <div className="absolute bottom-2 left-2 w-12 h-12 bg-gradient-to-br from-blue-200 to-cyan-200 rounded-full blur-lg opacity-60 animate-pulse" style={{animationDelay: '1s'}}></div>
                     {/* Expand the cat animation container - Same as top section */}
                     <div 
                       className="relative mb-4 flex items-end justify-center" 
@@ -1202,7 +1205,7 @@ export default function GeneralTab({
                           transform: 'rotate(15deg) translateY(-20px)', // Slightly tilted and move up with cat
                           fontSize: '24px',
                           fontWeight: 'bold',
-                          color: '#b45309', // Same color as "No Judges Assigned" text (amber-700)
+                          color: '#8b5cf6', // Purple to match the trendy theme
                           textShadow: '2px 2px 4px rgba(0,0,0,0.3)',
                           animation: 'cat-jump 2.2s infinite ease-in-out, question-blink 2.5s infinite ease-in-out', // Jump animation + slower blink animation
                           animationDelay: '0.05s, 0s', // Reduced jump delay to sync better with cat
@@ -1211,20 +1214,20 @@ export default function GeneralTab({
                         ?
                       </div>
                     </div>
-                    <h3 className="text-2xl font-bold font-serif text-amber-700 mb-2 text-center">No Judges Assigned</h3>
-                    <div className="h-1 w-16 bg-gradient-to-r from-amber-400 to-yellow-300 rounded-full mb-4 mx-auto"></div>
-                    <ul className="space-y-3 text-base text-slate-700 font-medium w-full max-w-xs mx-auto">
-                      <li className="flex items-start space-x-3">
-                        <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-amber-100 text-amber-700 font-bold text-lg shadow-sm">1</span>
-                        <span>Set the <span className="font-semibold text-amber-600"># of Judges</span> field above to a number between <span className="font-semibold">1-12</span></span>
+                    <h3 className="text-2xl font-bold text-gray-800 mb-3 text-center">✨ No Judges Assigned ✨</h3>
+                    <div className="h-0.5 w-16 bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 rounded-full mb-4 mx-auto"></div>
+                    <ul className="space-y-3 text-sm text-gray-600 font-medium w-full max-w-xs mx-auto relative z-10">
+                      <li className="flex items-start space-x-3 group hover:bg-gray-50/50 p-2 rounded-lg transition-all duration-200">
+                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gradient-to-br from-pink-400 to-rose-400 text-white font-bold text-sm shadow-sm group-hover:scale-110 transition-all duration-200">1</span>
+                        <span className="text-gray-700">Set the <span className="font-semibold text-pink-600 bg-pink-100 px-1.5 py-0.5 rounded-md"># of Judges</span> field above to a number between <span className="font-semibold text-gray-800">1-12</span></span>
                       </li>
-                      <li className="flex items-start space-x-3">
-                        <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-amber-100 text-amber-700 font-bold text-lg shadow-sm">2</span>
-                        <span>Fill in the <span className="font-semibold text-amber-600">judge name</span>, <span className="font-semibold text-amber-600">acronym</span>, <span className="font-semibold text-amber-600">ring number</span>, and <span className="font-semibold text-amber-600">ring type</span> for each judge</span>
+                      <li className="flex items-start space-x-3 group hover:bg-gray-50/50 p-2 rounded-lg transition-all duration-200">
+                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gradient-to-br from-purple-400 to-indigo-400 text-white font-bold text-sm shadow-sm group-hover:scale-110 transition-all duration-200">2</span>
+                        <span className="text-gray-700">Fill in the <span className="font-semibold text-purple-600 bg-purple-100 px-1.5 py-0.5 rounded-md">judge name</span>, <span className="font-semibold text-purple-600 bg-purple-100 px-1.5 py-0.5 rounded-md">acronym</span>, <span className="font-semibold text-purple-600 bg-purple-100 px-1.5 py-0.5 rounded-md">ring number</span>, and <span className="font-semibold text-purple-600 bg-purple-100 px-1.5 py-0.5 rounded-md">ring type</span> for each judge</span>
                       </li>
-                      <li className="flex items-start space-x-3">
-                        <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-amber-100 text-amber-700 font-bold text-lg shadow-sm">3</span>
-                        <span>All fields marked with <span className="text-red-500 text-base align-middle">●</span> are required</span>
+                      <li className="flex items-start space-x-3 group hover:bg-gray-50/50 p-2 rounded-lg transition-all duration-200">
+                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-cyan-400 text-white font-bold text-sm shadow-sm group-hover:scale-110 transition-all duration-200">3</span>
+                        <span className="text-gray-700">All fields marked with <span className="text-red-500 text-base align-middle font-bold">●</span> are required</span>
                       </li>
                     </ul>
                   </div>
@@ -1236,12 +1239,12 @@ export default function GeneralTab({
                     <table className="min-w-full rounded-2xl bg-white shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300">
                 <thead>
                         <tr className="bg-gradient-to-r from-indigo-50 via-purple-50 to-blue-50 border-b border-indigo-200">
-                          <th className="uppercase text-xs font-bold tracking-wider text-indigo-800 py-3 px-4 text-left" style={{ fontFamily: 'Inter, Arial, Helvetica, sans-serif' }}>Judge #</th>
-                          <th className="uppercase text-xs font-bold tracking-wider text-indigo-800 py-3 px-4 text-left" style={{ fontFamily: 'Inter, Arial, Helvetica, sans-serif' }}>Ring Number <span className="text-red-500 text-base">●</span></th>
-                          <th className="uppercase text-xs font-bold tracking-wider text-indigo-800 py-3 px-4 text-left" style={{ fontFamily: 'Inter, Arial, Helvetica, sans-serif' }}>Judge Name <span className="text-red-500 text-base">●</span></th>
-                          <th className="uppercase text-xs font-bold tracking-wider text-indigo-800 py-3 px-4 text-left" style={{ fontFamily: 'Inter, Arial, Helvetica, sans-serif' }}>Acronym <span className="text-red-500 text-base">●</span></th>
-                          <th className="uppercase text-xs font-bold tracking-wider text-indigo-800 py-3 px-4 text-left" style={{ fontFamily: 'Inter, Arial, Helvetica, sans-serif' }}>Ring Type <span className="text-red-500 text-base">●</span></th>
-                          <th className="bg-gradient-to-r from-indigo-50 via-purple-50 to-blue-50 border-b border-indigo-200 py-3 px-4 w-12"></th>
+                          <th className="uppercase text-xs font-bold tracking-wider text-indigo-800 py-3 px-4 text-left align-top" style={{ fontFamily: 'Inter, Arial, Helvetica, sans-serif' }}>Judge # <span className="text-red-500 text-base">●</span></th>
+                          <th className="uppercase text-xs font-bold tracking-wider text-indigo-800 py-3 px-4 text-left align-top" style={{ fontFamily: 'Inter, Arial, Helvetica, sans-serif' }}>Ring Number <span className="text-red-500 text-base">●</span></th>
+                          <th className="uppercase text-xs font-bold tracking-wider text-indigo-800 py-3 px-4 text-left align-top" style={{ fontFamily: 'Inter, Arial, Helvetica, sans-serif' }}>Judge Name <span className="text-red-500 text-base">●</span></th>
+                          <th className="uppercase text-xs font-bold tracking-wider text-indigo-800 py-3 px-4 text-left align-top" style={{ fontFamily: 'Inter, Arial, Helvetica, sans-serif' }}>Acronym <span className="text-red-500 text-base">●</span></th>
+                          <th className="uppercase text-xs font-bold tracking-wider text-indigo-800 py-3 px-4 text-left align-top" style={{ fontFamily: 'Inter, Arial, Helvetica, sans-serif' }}>Ring Type <span className="text-red-500 text-base">●</span></th>
+                          <th className="bg-gradient-to-r from-indigo-50 via-purple-50 to-blue-50 border-b border-indigo-200 py-3 px-4 w-12 align-top"></th>
                   </tr>
                 </thead>
                 <tbody>
