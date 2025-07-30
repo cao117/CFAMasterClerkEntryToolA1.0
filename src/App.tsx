@@ -13,6 +13,8 @@ import type { BreedSheetsTabData } from './components/BreedSheetsTab'
 import SettingsPanel from './components/SettingsPanel'
 import Tooltip from './components/Tooltip'
 import { handleRestoreFromExcel } from './utils/excelImport'
+import FallbackNotice from './components/FallbackNotice'
+import { useScreenGuard } from './hooks/useScreenGuard'
 
 interface Judge {
   id: number;
@@ -60,6 +62,9 @@ interface ShowData {
 }
 
 function App() {
+  // Screen guard hook to check if device meets minimum 1280px requirement
+  const fallbackType = useScreenGuard();
+  
   const [activeTab, setActiveTab] = useState('general');
   const [judges, setJudges] = useState<Judge[]>([]);
   const [zoomLevel, setZoomLevel] = useState(100); // Zoom level in percentage
@@ -602,6 +607,11 @@ function App() {
     document.addEventListener('wheel', handleWheel, { passive: false });
     return () => document.removeEventListener('wheel', handleWheel);
   }, []);
+
+  // Render fallback notice if screen size doesn't meet requirements
+  if (fallbackType) {
+    return <FallbackNotice type={fallbackType} />;
+  }
 
   return (
     <div className="min-h-screen bg-white">
