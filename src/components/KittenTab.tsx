@@ -58,6 +58,7 @@ interface KittenTabProps {
 
 type KittenTabData = {
   showAwards: { [key: string]: { catNumber: string; status: string } };
+  voidedShowAwards: { [key: string]: boolean };
   errors: { [key: string]: string };
   focusedColumnIndex: number | null;
   isResetModalOpen: boolean;
@@ -87,6 +88,14 @@ export default function KittenTab({
       if (judge.ringType === 'Double Specialty') {
         cols.push({ judge: { ...judge }, specialty: 'Longhair', columnIndex: cols.length });
         cols.push({ judge: { ...judge }, specialty: 'Shorthair', columnIndex: cols.length });
+      } else if (judge.ringType === 'Super Specialty') {
+        cols.push({ judge: { ...judge }, specialty: 'Longhair', columnIndex: cols.length });
+        cols.push({ judge: { ...judge }, specialty: 'Shorthair', columnIndex: cols.length });
+        cols.push({ judge: { ...judge }, specialty: 'Allbreed', columnIndex: cols.length });
+      } else if (judge.ringType === 'OCP Ring') {
+        // OCP Ring judges only create Allbreed column for Kitten tab (same as regular Allbreed judges)
+        // OCP columns are only needed for Championship and Premiership tabs
+        cols.push({ judge: { ...judge }, specialty: 'Allbreed', columnIndex: cols.length });
       } else {
         cols.push({ judge, specialty: judge.ringType, columnIndex: cols.length });
       }
@@ -96,14 +105,14 @@ export default function KittenTab({
 
   const columns: Column[] = useMemo(() => generateColumns(), [judges]);
 
-  // --- Hair-specific breakpoint logic: 75 kittens per hair type ---
+  // --- Hair-specific breakpoint logic: configurable kitten threshold per hair type ---
   const getAwardCount = (ringType: string) => {
     if (ringType === 'Allbreed') {
-      return kittenCounts.total >= 75 ? 15 : 10;
+      return kittenCounts.total >= globalSettings.placement_thresholds.kitten ? 15 : 10;
     } else if (ringType === 'Longhair') {
-      return kittenCounts.lhKittens >= 75 ? 15 : 10;
+      return kittenCounts.lhKittens >= globalSettings.placement_thresholds.kitten ? 15 : 10;
     } else if (ringType === 'Shorthair') {
-      return kittenCounts.shKittens >= 75 ? 15 : 10;
+      return kittenCounts.shKittens >= globalSettings.placement_thresholds.kitten ? 15 : 10;
     }
     return 10; // Default fallback
   };
@@ -272,7 +281,7 @@ export default function KittenTab({
       voidedShowAwards: {}, // Empty object since we no longer use voidedShowAwards
       kittenCounts
     };
-    return kittenValidation.validateKittenTab(validationInput, globalSettings.max_cats);
+    return kittenValidation.validateKittenTab(validationInput, globalSettings.max_cats, globalSettings.placement_thresholds.kitten);
   };
 
   // --- Validate on blur ---

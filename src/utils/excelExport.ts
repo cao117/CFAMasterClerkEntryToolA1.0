@@ -86,6 +86,11 @@ export function exportShowToExcel(showState: any): { workbook: XLSX.WorkBook, fi
   // Create new workbook
   const workbook = XLSX.utils.book_new();
 
+  // --- Settings Sheet (First Sheet) ---
+  const settingsData = buildSettingsSectionForExcel(showState.globalSettings);
+  const settingsWS = XLSX.utils.aoa_to_sheet(settingsData);
+  XLSX.utils.book_append_sheet(workbook, settingsWS, 'Settings');
+
   // --- General Info Sheet ---
   const generalData = buildGeneralSectionForExcel(showState.general, showState.judges);
   const generalWS = XLSX.utils.aoa_to_sheet(generalData);
@@ -203,6 +208,50 @@ function buildGeneralSection(general: any, judges: any[]): string[] {
   return rows;
 }
 
+// Helper: Build Settings section for Excel (returns array of arrays)
+function buildSettingsSectionForExcel(globalSettings: any): any[][] {
+  const rows: any[][] = [];
+  rows.push(['Settings']);
+  
+  // General Settings
+  rows.push(['General Settings']);
+  rows.push(['Setting', 'Value']);
+  rows.push(['Max Judges', globalSettings?.max_judges || 12]);
+  rows.push(['Max Cats', globalSettings?.max_cats || 450]);
+  
+  // Placement Thresholds
+  rows.push([]);
+  rows.push(['Placement Thresholds']);
+  rows.push(['Category', 'Threshold']);
+  rows.push(['Championship', globalSettings?.placement_thresholds?.championship || 85]);
+  rows.push(['Kitten', globalSettings?.placement_thresholds?.kitten || 75]);
+  rows.push(['Premiership', globalSettings?.placement_thresholds?.premiership || 50]);
+  rows.push(['Household Pet', globalSettings?.placement_thresholds?.household_pet || 50]);
+  
+  // Breed Lists
+  rows.push([]);
+  rows.push(['Long Hair Breeds']);
+  if (globalSettings?.long_hair_breeds && globalSettings.long_hair_breeds.length > 0) {
+    for (const breed of globalSettings.long_hair_breeds) {
+      rows.push([breed]);
+    }
+  } else {
+    rows.push(['No long hair breeds configured']);
+  }
+  
+  rows.push([]);
+  rows.push(['Short Hair Breeds']);
+  if (globalSettings?.short_hair_breeds && globalSettings.short_hair_breeds.length > 0) {
+    for (const breed of globalSettings.short_hair_breeds) {
+      rows.push([breed]);
+    }
+  } else {
+    rows.push(['No short hair breeds configured']);
+  }
+  
+  return rows;
+}
+
 // Helper: Build General Information section for Excel (returns array of arrays)
 function buildGeneralSectionForExcel(general: any, judges: any[]): any[][] {
   const rows: any[][] = [];
@@ -292,7 +341,7 @@ function buildBreedSheetSection(breedSheetsData: any, judge: any, globalSettings
   const ringType = judge.ringType;
   const sections = [];
 
-  if (ringType === 'Allbreed' || ringType === 'Double Specialty') {
+  if (ringType === 'Allbreed' || ringType === 'Double Specialty' || ringType === 'Super Specialty' || ringType === 'OCP Ring') {
     // Show all 6 sections: CH LH, CH SH, KIT LH, KIT SH, PR LH, PR SH
     sections.push(
       { group: 'Championship', hairLength: 'Longhair', breeds: lhBreeds },
@@ -379,9 +428,16 @@ function transformTabData(tabData: any, judges: any[], tabType: string, showStat
     if (judge.ringType === 'Double Specialty') {
       columns.push({ judge, specialty: 'Longhair' });
       columns.push({ judge, specialty: 'Shorthair' });
-    } else {
-      columns.push({ judge, specialty: judge.ringType });
-    }
+            } else if (judge.ringType === 'Super Specialty') {
+          columns.push({ judge, specialty: 'Longhair' });
+          columns.push({ judge, specialty: 'Shorthair' });
+          columns.push({ judge, specialty: 'Allbreed' });
+        } else if (judge.ringType === 'OCP Ring') {
+          columns.push({ judge, specialty: 'Allbreed' });
+          columns.push({ judge, specialty: 'OCP' });
+        } else {
+          columns.push({ judge, specialty: judge.ringType });
+        }
   });
 
   // Create rings array for the tabular section

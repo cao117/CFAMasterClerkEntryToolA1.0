@@ -2,6 +2,175 @@
 
 This changelog records major changes to the CFA Master Clerk Entry Tool, including validation rule changes, documentation restructuring, feature additions, and UI/UX improvements.
 
+### [2025-07-31 23:23:01] OCP Ring Order Preservation Bug Fix
+- **Area:** Championship validation file
+- **Change:** Fixed critical bug where OCP Ring order preservation validation was not detecting errors correctly
+- **Summary:**
+  - **Root Cause**: OCP order preservation validation was only checking finals sections (Best AB CH, LH CH, SH CH) but not checking the Top 10/15 Show Awards section
+  - **Problem**: When same cat had different order in Show Awards vs OCP column, no order violation error was generated
+  - **Solution**: Added validation for Show Awards section order preservation in OCP validation
+  - **Technical Details**:
+    - Added `getOrderedCHCatsFromShowAwards()` function to collect CH cats from Show Awards section
+    - Updated `validateOCPOrderPreservation()` to check Show Awards CH order
+    - Added validation for all 4 sections: Show Awards CH, AB CH, LH CH, SH CH
+  - **Affected Files**: `src/validation/championshipValidation.ts`
+  - **Result**: OCP Ring order preservation validation now works correctly for all sections
+- **Rationale:** OCP validation must check order preservation across all relevant sections, not just finals
+- **Impact:** OCP Ring order preservation validation now correctly detects and reports errors for all sections
+
+### [2025-07-31 23:00:25] OCP Ring Title Inconsistency Bug Fix
+- **Area:** Championship and Premiership tab components, validation files
+- **Change:** Fixed critical bug where OCP Ring title inconsistency validation was not detecting errors correctly
+- **Summary:**
+  - **Root Cause**: Validation functions were reading raw data instead of UI-processed data with OCP status forcing
+  - **Problem**: When same cat had GC in Allbreed column and CH in OCP column, no title inconsistency error was generated
+  - **Solution**: Updated validation input preparation to apply OCP status forcing logic (CH for Championship, PR for Premiership)
+  - **Technical Details**:
+    - Added `prepareValidationInput()` helper function in ChampionshipTab.tsx
+    - Updated `createValidationInput()` function in PremiershipTab.tsx
+    - Applied OCP status forcing to all validation calls in both components
+    - Ensured validation data matches UI display logic exactly
+  - **Affected Files**: `src/components/ChampionshipTab.tsx`, `src/components/PremiershipTab.tsx`
+  - **Result**: OCP Ring title inconsistency validation now works correctly
+- **Rationale:** Validation must use the same data processing logic as the UI to ensure consistency
+- **Impact:** OCP Ring title inconsistency validation now correctly detects and reports errors
+
+### [2025-07-31 17:52:19] Championship Tab: OCP Ring Placement Bug Fix
+- **Area:** src/components/ChampionshipTab.tsx
+- **Change:** Fixed bug where OCP rings in Championship tab were showing 15 placements instead of correct 1-10 range
+- **Summary:**
+  - **Root Cause**: Missing OCP case in `getChampionshipCountForRingType()` function in ChampionshipTab component
+  - **Fix**: Added `case 'OCP': return 10;` to handle OCP rings correctly
+  - **Consistency**: Now matches pattern used in KittenTab and PremiershipTab components
+  - **Validation**: `getFinalsPositionsForRingType()` in validation file already correctly handled OCP rings
+  - **Result**: OCP rings in Championship tab now show exactly 10 placements (1-10) instead of 15
+- **Rationale:** OCP rings should always have exactly 10 placements regardless of championship counts, consistent with other tabs
+- **Impact:** OCP rings in Championship tab now display correct 1-10 placement range
+
+### [2025-07-31 19:04:38] Super Specialty Cross-Column Validation Implementation
+- **Area:** Championship, Premiership, and Kitten validation files
+- **Change:** Added comprehensive cross-column validation for Super Specialty rings
+- **Summary:**
+  - **Title/Award Consistency**: Ensures same cat has same title across all Super Specialty columns
+  - **Implicit Title Detection**: Cats in specialty sections automatically assigned implicit titles
+  - **Ranked Cats Priority**: Prevents filler cats from being placed before ranked cats
+  - **Order Preservation**: Maintains relative order of cats from specialty columns in Allbreed column
+  - **Additive Validation**: Super Specialty validation runs after all existing validation
+  - **Cross-Column Errors**: Errors displayed under all offending input boxes
+  - **Scope**: Only applies to Super Specialty rings (3 columns with same judge ID)
+- **Technical Details:**
+  - Added `validateSuperSpecialtyCrossColumn()` functions to all validation files
+  - Integrated into main validation functions as final validation step
+  - Preserves all existing validation order and logic
+- **Impact:** Provides comprehensive cross-column validation while maintaining existing validation integrity
+
+### [2025-07-31 19:15:42] Enhanced Title Consistency Validation
+- **Area:** Championship and Premiership validation files
+- **Change:** Enhanced title consistency validation with implicit title detection
+- **Summary:**
+  - **Implicit Title Assignment**: Cats in specialty sections (CH/PR) automatically assigned implicit titles
+  - **Enhanced Error Messages**: More specific error messages indicating section-based implicit titles
+  - **Section-Specific Validation**: Different error messages for Championship (CH) vs Premiership (PR) sections
+  - **Documentation**: Updated Super Specialty validation documentation with implicit title examples
+- **Technical Details:**
+  - Enhanced `collectTitlesFromColumn()` functions to include section-specific implicit titles
+  - Updated error marking functions with section-specific error messages
+  - Added section name tracking for better error reporting
+- **Impact:** More accurate and informative title consistency validation for Super Specialty rings
+
+### [2025-07-31 22:25:53] OCP Ring Cross-Column Validation Implementation
+- **Area:** Championship and Premiership validation files, documentation
+- **Change:** Added comprehensive cross-column validation for OCP Ring judges
+- **Summary:**
+  - **Validation Order**: Runs AFTER all existing validation is complete
+  - **Title/Award Consistency**: Cannot have same cat # labeled GC/GP in AB column and CH/PR in OCP column
+  - **Ranked Cats Priority**: Filler cats (not ranked in AB ring) cannot appear in OCP before ranked cats
+  - **Order Preservation**: Order of AB CH/LH CH/SH CH and AB PR/LH PR/SH PR in AB column should be respected in OCP ranking
+  - **Error Messages**: Uses similar error messages to SSP validation for consistency
+  - **Implementation**: Follows same patterns as Super Specialty validation but adapted for OCP Ring structure
+- **Technical Details:**
+  - Added `validateOCPRingCrossColumn()` functions to Championship and Premiership validation files
+  - Integrated into main validation functions as final validation step
+  - Preserves all existing validation order and logic
+  - Only applies to OCP Ring judges (2 columns: Allbreed + OCP with same judge ID)
+  - Created comprehensive validation documentation in `docs/validation/VALIDATION_OCP_RING.md`
+- **Rationale:** OCP Ring judges require specific cross-column validation rules to ensure data integrity
+- **Impact:** Provides comprehensive cross-column validation for OCP Ring judges while maintaining existing validation integrity
+
+### [2025-07-31 22:02:30] OCP Ring Status Lock Implementation
+- **Area:** Championship and Premiership tab components
+- **Change:** OCP ring status dropdowns are now locked to appropriate values (CH for Championship, PR for Premiership)
+- **Summary:**
+  - **Championship Tab**: OCP ring status dropdowns are locked to "CH" status (same pattern as Kitten tab KIT status)
+  - **Premiership Tab**: OCP ring status dropdowns are locked to "PR" status (same pattern as Kitten tab KIT status)
+  - **UI Implementation**: OCP rings show static span with locked status instead of dropdown (matches Kitten tab pattern)
+  - **Data Handling**: OCP rings automatically set correct status when cat numbers are entered
+  - **Code changes**:
+    - Updated `ChampionshipTab.tsx` to lock OCP ring status to "CH"
+    - Updated `PremiershipTab.tsx` to lock OCP ring status to "PR"
+    - Modified `updateShowAward` functions to auto-set correct status for OCP rings
+    - Updated `getShowAward` functions to ensure OCP rings always return correct status
+- **Rationale:** OCP rings should have fixed status values that cannot be changed, following the same pattern as Kitten tab
+- **Impact:** OCP rings now have consistent, locked status behavior across Championship and Premiership tabs
+
+### [2025-07-31 16:54:17] OCP Ring Type Implementation
+- **Area:** All tab components, validation files, documentation
+- **Change:** Added new "OCP Ring" ring type that creates two columns (Allbreed, OCP) across Championship, Premiership, and Kittens tabs
+- **Summary:**
+  - **New ring type**: Added "OCP Ring" to ring type options in General tab
+  - **Column generation**: OCP Ring judges create two columns across Championship, Premiership, and Kittens tabs:
+    - Allbreed column (same validation as existing Allbreed rings)
+    - OCP column (always exactly 10 placements, no threshold checking)
+  - **Breed Sheets behavior**: OCP Ring behaves exactly like Allbreed on Breed Sheets tab, with "OCP" label instead of "AB"
+  - **Validation rules**: OCP column uses same validation logic as Championship Top Ten - always exactly 10 placements
+  - **CSV schema**: Updated CSV export schema to include "OCP Ring" in ring type enum
+  - **Excel export**: Updated excel export to handle OCP Ring column generation
+  - **Documentation updates**: Updated PROJECT_OVERVIEW.md with OCP Ring mapping and examples
+  - **Code changes**:
+    - Updated `GeneralTab.tsx` to include "OCP Ring" in ring type options
+    - Updated `ChampionshipTab.tsx`, `PremiershipTab.tsx`, `KittenTab.tsx` to handle OCP Ring column generation
+    - Updated `BreedSheetsTab.tsx` to show "OCP" label and handle OCP Ring like Allbreed
+    - Updated `excelExport.ts` to handle OCP Ring in breed sheets and tabular sections
+    - Updated validation files to handle OCP Ring with always 10 placements
+    - Updated CSV schema to include "OCP Ring" enum value
+- **Rationale:** OCP Ring judges need to award Allbreed and OCP finals separately, requiring two distinct columns with independent validation
+- **Impact:** Provides support for OCP Ring type with proper column generation, validation, and labeling across all tabs
+
+### [2025-07-31 16:40:10] BreedSheets Tab: Super Specialty Bug Fix
+- **Area:** src/components/BreedSheetsTab.tsx
+- **Change:** Fixed bug where Super Specialty (SSP) judges were not showing input fields on the right-hand side in BreedSheets tab
+- **Summary:**
+  - **Root Cause**: Missing "Super Specialty" case in `getBreedsForJudge()` and `getAvailableHairLengths()` functions
+  - **Fix**: Added "Super Specialty" to switch statements to return both long and short hair breeds (same as Allbreed behavior)
+  - **Result**: Super Specialty judges now properly display input fields and both Longhair/Shorthair sections
+- **Rationale:** Super Specialty should behave identically to Allbreed in BreedSheets tab except for label display (SSP vs AB)
+- **Impact:** Super Specialty judges now work correctly in BreedSheets tab with proper input field display
+
+### [2025-07-31 08:21:20] Super Specialty Ring Type Implementation
+- **Area:** All tab components, validation files, documentation
+- **Change:** Added new "Super Specialty" ring type that creates three columns (Longhair, Shorthair, Allbreed) across Championship, Premiership, and Kitten tabs
+- **Summary:**
+  - **New ring type**: Added "Super Specialty" to ring type options in General tab
+  - **Column generation**: Super Specialty judges create three columns across Championship, Premiership, and Kitten tabs:
+    - Longhair column (same validation as existing Longhair rings)
+    - Shorthair column (same validation as existing Shorthair rings)  
+    - Allbreed column (same validation as existing Allbreed rings)
+  - **Breed Sheets behavior**: Super Specialty behaves exactly like Allbreed on Breed Sheets tab, with "SSP" label instead of "AB"
+  - **Validation rules**: All existing validation rules for Longhair, Shorthair, and Allbreed apply to respective columns
+  - **CSV schema**: Updated CSV export schema to include "Super Specialty" in ring type enum
+  - **Excel export**: Updated excel export to handle Super Specialty column generation
+  - **Documentation updates**: Updated PROJECT_OVERVIEW.md with Super Specialty mapping and examples
+  - **Code changes**:
+    - Updated `GeneralTab.tsx` to include "Super Specialty" in ring type options
+    - Updated `ChampionshipTab.tsx`, `PremiershipTab.tsx`, `KittenTab.tsx` column generation logic
+    - Updated `App.tsx` column generation for ring type changes
+    - Updated `BreedSheetsTab.tsx` to show "SSP" label and handle Super Specialty like Allbreed
+    - Updated `excelExport.ts` to handle Super Specialty in breed sheets and tabular sections
+    - Updated CSV schema to include "Super Specialty" enum value
+    - Updated data types to include missing voided properties
+- **Rationale:** Super Specialty judges need to award Longhair, Shorthair, and Allbreed finals separately, requiring three distinct columns with independent validation
+- **Impact:** Provides support for Super Specialty ring type with proper column generation, validation, and labeling across all tabs
+
 ### [2024-12-19] Settings Panel: Maximum Number of Rings Field Added
 - **Area:** src/components/SettingsPanel.tsx, src/App.tsx
 - **Change:** Added new "Maximum Number of Rings" setting to the General Settings section in the Settings Panel. This field is positioned between "Maximum Number of Judges" and "Maximum Number of Cats" for logical grouping.

@@ -125,7 +125,7 @@ export function parseExcelAndRestoreState(
   excelBuffer: ArrayBuffer,
   showSuccess: SuccessCallback,
   showError: ErrorCallback
-): ImportedShowState | null {
+): { showState: ImportedShowState; settings: any } | null {
   try {
     // Parse Excel workbook
     const workbook = XLSX.read(excelBuffer, { type: 'array' });
@@ -211,6 +211,14 @@ export function parseExcelAndRestoreState(
     // Parse each worksheet
     const sheetNames = workbook.SheetNames;
 
+    // Parse Settings worksheet first (if present)
+    let importedSettings: any = null;
+    if (sheetNames.includes('Settings')) {
+      const worksheet = workbook.Sheets['Settings'];
+      const data = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as string[][];
+      importedSettings = parseSettingsWorksheet(data);
+    }
+
     // Parse General_Info worksheet
     if (sheetNames.includes('General_Info')) {
       const worksheet = workbook.Sheets['General_Info'];
@@ -276,7 +284,7 @@ export function parseExcelAndRestoreState(
     }
 
     showSuccess('Excel Import Successful', 'Show data has been successfully imported from Excel file.');
-    return restoredState;
+    return { showState: restoredState, settings: importedSettings };
 
   } catch (error) {
     showError('Import Error', 'An error occurred while importing the Excel file.');
@@ -285,6 +293,95 @@ export function parseExcelAndRestoreState(
 }
 
 // Helper functions for parsing
+
+function parseSettingsWorksheet(data: string[][]): any {
+  const settings: any = {
+    max_judges: 12,
+    max_cats: 450,
+    placement_thresholds: {
+      championship: 85,
+      kitten: 75,
+      premiership: 50,
+      household_pet: 50
+    },
+    short_hair_breeds: [],
+    long_hair_breeds: []
+  };
+
+  let currentSection = '';
+  let inBreedList = false;
+  let breedListType = '';
+
+  for (const row of data) {
+    if (!row || row.length === 0) continue;
+    
+    const firstCell = row[0]?.toString().trim() || '';
+    
+    // Check for section headers
+    if (firstCell === 'General Settings') {
+      currentSection = 'general';
+      continue;
+    } else if (firstCell === 'Placement Thresholds') {
+      currentSection = 'thresholds';
+      continue;
+    } else if (firstCell === 'Long Hair Breeds') {
+      currentSection = 'breeds';
+      breedListType = 'long_hair_breeds';
+      inBreedList = true;
+      continue;
+    } else if (firstCell === 'Short Hair Breeds') {
+      currentSection = 'breeds';
+      breedListType = 'short_hair_breeds';
+      inBreedList = true;
+      continue;
+    }
+    
+    // Parse general settings
+    if (currentSection === 'general' && row.length >= 2) {
+      const setting = firstCell;
+      const value = parseNumber(row[1]);
+      
+      switch (setting) {
+        case 'Max Judges':
+          settings.max_judges = value;
+          break;
+        case 'Max Cats':
+          settings.max_cats = value;
+          break;
+      }
+    }
+    
+    // Parse placement thresholds
+    if (currentSection === 'thresholds' && row.length >= 2) {
+      const category = firstCell;
+      const value = parseNumber(row[1]);
+      
+      switch (category) {
+        case 'Championship':
+          settings.placement_thresholds.championship = value;
+          break;
+        case 'Kitten':
+          settings.placement_thresholds.kitten = value;
+          break;
+        case 'Premiership':
+          settings.placement_thresholds.premiership = value;
+          break;
+        case 'Household Pet':
+          settings.placement_thresholds.household_pet = value;
+          break;
+      }
+    }
+    
+    // Parse breed lists
+    if (currentSection === 'breeds' && inBreedList && firstCell && firstCell !== 'Category' && firstCell !== 'Threshold') {
+      if (firstCell !== 'No long hair breeds configured' && firstCell !== 'No short hair breeds configured') {
+        settings[breedListType].push(firstCell);
+      }
+    }
+  }
+  
+  return settings;
+}
 
 function parseNumber(value: any): number {
   if (value === null || value === undefined || value === '') {
@@ -737,7 +834,7 @@ export async function handleExcelFileImport(
   file: File,
   showSuccess: SuccessCallback,
   showError: ErrorCallback
-): Promise<ImportedShowState | null> {
+): Promise<{ showState: ImportedShowState; settings: any } | null> {
   return new Promise((resolve) => {
     const reader = new FileReader();
     
@@ -749,8 +846,8 @@ export async function handleExcelFileImport(
         return;
       }
       
-      const restoredState = parseExcelAndRestoreState(excelBuffer, showSuccess, showError);
-      resolve(restoredState);
+      const result = parseExcelAndRestoreState(excelBuffer, showSuccess, showError);
+      resolve(result);
     };
     
     reader.onerror = () => {
@@ -771,7 +868,7 @@ export async function handleExcelFileImport(
 export async function handleRestoreFromExcel(
   showSuccess: SuccessCallback,
   showError: ErrorCallback
-): Promise<ImportedShowState | null> {
+): Promise<{ showState: ImportedShowState; settings: any } | null> {
   return new Promise((resolve) => {
     const input = document.createElement('input');
     input.type = 'file';

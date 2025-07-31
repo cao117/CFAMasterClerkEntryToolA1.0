@@ -1072,6 +1072,10 @@ export function validateChampionshipTab(input: ChampionshipValidationInput, maxC
     });
   }
 
+  // OCP Ring cross-column validation (runs AFTER all existing validation)
+  const ocpRingErrors = validateOCPRingCrossColumn(input, maxCats);
+  Object.assign(errors, ocpRingErrors);
+
   return errors;
 }
 
@@ -1233,3 +1237,518 @@ export function validateSingleSpecialtyCHWithTop15AndGetFirstError(input: Champi
   }
   return { isValid: true, firstErrorPosition: -1, errorMessage: '' };
 }
+
+/**
+ * Validates OCP Ring cross-column relationships for Championship tab
+ * This function runs AFTER all existing validation is complete
+ * Only applies to OCP Ring judges (2 columns: Allbreed + OCP with same judge ID)
+ */
+export function validateOCPRingCrossColumn(input: ChampionshipValidationInput, maxCats: number): { [key: string]: string } {
+  const errors: { [key: string]: string } = {};
+  
+  // Only run for OCP Ring judges
+  const ocpRings = findOCPRings(input.columns);
+  
+  for (const ringInfo of ocpRings) {
+    const { allbreedColIdx, ocpColIdx } = ringInfo;
+    
+    // 1. Title/Award Consistency Validation
+    const titleErrors = validateOCPTitleConsistency(input, allbreedColIdx, ocpColIdx);
+    Object.assign(errors, titleErrors);
+    
+    // 2. Ranked Cats Priority Validation
+    const priorityErrors = validateOCPRankedCatsPriority(input, allbreedColIdx, ocpColIdx, titleErrors);
+    Object.assign(errors, priorityErrors);
+    
+    // 3. Order Preservation Validation (ENHANCED: AB CH cats must appear first in exact order)
+    const orderErrors = validateOCPOrderPreservation(input, allbreedColIdx, ocpColIdx);
+    Object.assign(errors, orderErrors);
+  }
+  
+  return errors;
+}
+
+/**
+ * Finds OCP Ring judges (2 columns: Allbreed + OCP with same judge ID)
+ */
+function findOCPRings(columns: { judge: Judge; specialty: string }[]): Array<{
+  allbreedColIdx: number;
+  ocpColIdx: number;
+}> {
+  const rings: Array<{
+    allbreedColIdx: number;
+    ocpColIdx: number;
+  }> = [];
+  
+  // Group columns by judge ID
+  const judgeColumns: { [judgeId: number]: Array<{ colIdx: number; specialty: string }> } = {};
+  
+  columns.forEach((column, colIdx) => {
+    const judgeId = column.judge.id;
+    if (!judgeColumns[judgeId]) {
+      judgeColumns[judgeId] = [];
+    }
+    judgeColumns[judgeId].push({ colIdx, specialty: column.specialty });
+  });
+  
+  // Find OCP Ring judges (2 columns: Allbreed + OCP with same judge ID)
+  Object.entries(judgeColumns).forEach(([judgeId, judgeColumns]) => {
+    if (judgeColumns.length >= 2) {
+      const allbreed = judgeColumns.find(col => col.specialty === 'Allbreed');
+      const ocp = judgeColumns.find(col => col.specialty === 'OCP');
+      
+      if (allbreed && ocp) {
+        rings.push({
+          allbreedColIdx: allbreed.colIdx,
+          ocpColIdx: ocp.colIdx
+        });
+        
+        console.log('OCP Ring found:', { 
+          judgeId: parseInt(judgeId),
+          allbreedColIdx: allbreed.colIdx, 
+          allbreedSpecialty: allbreed.specialty,
+          ocpColIdx: ocp.colIdx,
+          ocpSpecialty: ocp.specialty
+        });
+      }
+    }
+  });
+  
+  return rings;
+}
+
+/**
+ * Validates title/award consistency between Allbreed and OCP columns
+ * Cannot have same cat # labeled CH in AB column and GC in OCP column
+ */
+function validateOCPTitleConsistency(
+  input: ChampionshipValidationInput,
+  allbreedColIdx: number,
+  ocpColIdx: number
+): { [key: string]: string } {
+  const errors: { [key: string]: string } = {};
+  const catTitles: { [catNumber: string]: { [column: string]: string } } = {};
+  
+  // Collect titles from Allbreed column (Show Awards + Finals)
+  collectOCPTitlesFromColumn(input, allbreedColIdx, 'Allbreed', catTitles);
+  
+  // Collect titles from OCP column (Show Awards only)
+  collectOCPTitlesFromColumn(input, ocpColIdx, 'OCP', catTitles);
+  
+  // Check for title inconsistencies
+  Object.entries(catTitles).forEach(([catNumber, titles]) => {
+    if (titles.Allbreed && titles.OCP && titles.Allbreed !== titles.OCP) {
+      // Cannot have same cat # labeled CH in AB column and GC in OCP column
+      if ((titles.Allbreed === 'CH' && titles.OCP === 'GC') ||
+          (titles.Allbreed === 'GC' && titles.OCP === 'CH')) {
+        markOCPTitleInconsistencyErrors(input, catNumber, allbreedColIdx, ocpColIdx, errors);
+      }
+    }
+  });
+  
+  return errors;
+}
+
+/**
+ * Collects titles from a column for OCP validation (Show Awards + Finals for Allbreed, Show Awards only for OCP)
+ */
+function collectOCPTitlesFromColumn(
+  input: ChampionshipValidationInput,
+  colIdx: number,
+  columnType: string,
+  catTitles: { [catNumber: string]: { [column: string]: string } }
+): void {
+  // Collect from Show Awards
+  Object.keys(input.showAwards).forEach(key => {
+    const [col, row] = key.split('-').map(Number);
+    if (col === colIdx && row < 10) { // Top 10 for OCP validation
+      const cell = input.showAwards[key];
+      if (cell.catNumber && !isVoidInput(cell.catNumber)) {
+        const catNumber = cell.catNumber.trim();
+        if (!catTitles[catNumber]) {
+          catTitles[catNumber] = {};
+        }
+        catTitles[catNumber][columnType] = cell.status;
+      }
+    }
+  });
+  
+  // For Allbreed column, also collect from Finals
+  if (columnType === 'Allbreed') {
+    // Collect from Champions Finals
+    Object.keys(input.championsFinals).forEach(key => {
+      const [col, row] = key.split('-').map(Number);
+      if (col === colIdx && row < 5) { // Top 5 for OCP validation
+        const catNumber = input.championsFinals[key];
+        if (catNumber && !isVoidInput(catNumber)) {
+          const trimmedCatNumber = catNumber.trim();
+          if (!catTitles[trimmedCatNumber]) {
+            catTitles[trimmedCatNumber] = {};
+          }
+          catTitles[trimmedCatNumber][columnType] = 'CH'; // Finals cats are CH
+        }
+      }
+    });
+    
+    // Collect from LH Champions Finals
+    Object.keys(input.lhChampionsFinals).forEach(key => {
+      const [col, row] = key.split('-').map(Number);
+      if (col === colIdx && row < 5) { // Top 5 for OCP validation
+        const catNumber = input.lhChampionsFinals[key];
+        if (catNumber && !isVoidInput(catNumber)) {
+          const trimmedCatNumber = catNumber.trim();
+          if (!catTitles[trimmedCatNumber]) {
+            catTitles[trimmedCatNumber] = {};
+          }
+          catTitles[trimmedCatNumber][columnType] = 'CH'; // Finals cats are CH
+        }
+      }
+    });
+    
+    // Collect from SH Champions Finals
+    Object.keys(input.shChampionsFinals).forEach(key => {
+      const [col, row] = key.split('-').map(Number);
+      if (col === colIdx && row < 5) { // Top 5 for OCP validation
+        const catNumber = input.shChampionsFinals[key];
+        if (catNumber && !isVoidInput(catNumber)) {
+          const trimmedCatNumber = catNumber.trim();
+          if (!catTitles[trimmedCatNumber]) {
+            catTitles[trimmedCatNumber] = {};
+          }
+          catTitles[trimmedCatNumber][columnType] = 'CH'; // Finals cats are CH
+        }
+      }
+    });
+  }
+}
+
+/**
+ * Marks title inconsistency errors for OCP rings
+ */
+function markOCPTitleInconsistencyErrors(
+  input: ChampionshipValidationInput,
+  catNumber: string,
+  allbreedColIdx: number,
+  ocpColIdx: number,
+  errors: { [key: string]: string }
+): void {
+  const errorMessage = `Title inconsistency: Cat #${catNumber} has different titles across OCP Ring columns`;
+  
+  // Mark errors in Allbreed column
+  Object.keys(input.showAwards).forEach(key => {
+    const [col, row] = key.split('-').map(Number);
+    if (col === allbreedColIdx && row < 10) {
+      const cell = input.showAwards[key];
+      if (cell.catNumber && cell.catNumber.trim() === catNumber) {
+        errors[key] = errorMessage;
+      }
+    }
+  });
+  
+  // Mark errors in OCP column
+  Object.keys(input.showAwards).forEach(key => {
+    const [col, row] = key.split('-').map(Number);
+    if (col === ocpColIdx && row < 10) {
+      const cell = input.showAwards[key];
+      if (cell.catNumber && cell.catNumber.trim() === catNumber) {
+        errors[key] = errorMessage;
+      }
+    }
+  });
+}
+
+/**
+ * Validates ranked cats priority for OCP rings
+ * Filler cats (not ranked in AB ring) cannot appear in OCP before ranked cats
+ */
+function validateOCPRankedCatsPriority(
+  input: ChampionshipValidationInput,
+  allbreedColIdx: number,
+  ocpColIdx: number,
+  titleErrors: { [key: string]: string } = {}
+): { [key: string]: string } {
+  const errors: { [key: string]: string } = {};
+  
+  // Get ranked cats from Allbreed column
+  const rankedCats = getOCPRankedCatsFromColumn(input, allbreedColIdx);
+  
+  // Check OCP column for filler cats appearing before ranked cats
+  checkOCPRankedCatsPriorityInColumn(input, ocpColIdx, rankedCats, errors, titleErrors);
+  
+  return errors;
+}
+
+/**
+ * Gets ranked cats from Allbreed column for OCP validation
+ */
+function getOCPRankedCatsFromColumn(input: ChampionshipValidationInput, colIdx: number): Set<string> {
+  const rankedCats = new Set<string>();
+  
+  // Collect from Show Awards
+  Object.keys(input.showAwards).forEach(key => {
+    const [col, row] = key.split('-').map(Number);
+    if (col === colIdx && row < 10) { // Top 10 for OCP validation
+      const cell = input.showAwards[key];
+      if (cell.catNumber && !isVoidInput(cell.catNumber)) {
+        rankedCats.add(cell.catNumber.trim());
+      }
+    }
+  });
+  
+  // Collect from Champions Finals
+  Object.keys(input.championsFinals).forEach(key => {
+    const [col, row] = key.split('-').map(Number);
+    if (col === colIdx && row < 5) { // Top 5 for OCP validation
+      const catNumber = input.championsFinals[key];
+      if (catNumber && !isVoidInput(catNumber)) {
+        rankedCats.add(catNumber.trim());
+      }
+    }
+  });
+  
+  // Collect from LH Champions Finals
+  Object.keys(input.lhChampionsFinals).forEach(key => {
+    const [col, row] = key.split('-').map(Number);
+    if (col === colIdx && row < 5) { // Top 5 for OCP validation
+      const catNumber = input.lhChampionsFinals[key];
+      if (catNumber && !isVoidInput(catNumber)) {
+        rankedCats.add(catNumber.trim());
+      }
+    }
+  });
+  
+  // Collect from SH Champions Finals
+  Object.keys(input.shChampionsFinals).forEach(key => {
+    const [col, row] = key.split('-').map(Number);
+    if (col === colIdx && row < 5) { // Top 5 for OCP validation
+      const catNumber = input.shChampionsFinals[key];
+      if (catNumber && !isVoidInput(catNumber)) {
+        rankedCats.add(catNumber.trim());
+      }
+    }
+  });
+  
+  return rankedCats;
+}
+
+/**
+ * Checks ranked cats priority in OCP column
+ */
+function checkOCPRankedCatsPriorityInColumn(
+  input: ChampionshipValidationInput,
+  colIdx: number,
+  rankedCats: Set<string>,
+  errors: { [key: string]: string },
+  titleErrors: { [key: string]: string } = {}
+): void {
+  let foundFirstRanked = false;
+  
+  // Check Show Awards in OCP column
+  for (let row = 0; row < 10; row++) { // OCP has exactly 10 placements
+    const key = `${colIdx}-${row}`;
+    const cell = input.showAwards[key];
+    
+    if (cell && cell.catNumber && !isVoidInput(cell.catNumber)) {
+      const catNumber = cell.catNumber.trim();
+      
+      if (rankedCats.has(catNumber)) {
+        foundFirstRanked = true;
+      } else if (!foundFirstRanked && !titleErrors[key]) {
+        // Filler cat appears before any ranked cat
+        errors[key] = `Filler cat placed before ranked cats: Cat #${cell.catNumber} is not ranked in Allbreed column but appears in OCP before ranked cats`;
+      }
+    }
+  }
+}
+
+/**
+ * Validates order preservation for OCP rings
+ * Order of AB CH, LH CH, SH CH in AB column should be respected in OCP ranking
+ * ENHANCED: AB CH cats must appear first in exact order in OCP ring
+ */
+function validateOCPOrderPreservation(
+  input: ChampionshipValidationInput,
+  allbreedColIdx: number,
+  ocpColIdx: number
+): { [key: string]: string } {
+  const errors: { [key: string]: string } = {};
+  
+  // Get ordered cats from Allbreed column sections
+  const abCHOrder = getOrderedABCHCatsFromChampionsFinals(input, allbreedColIdx);
+  const lhCHOrder = getOrderedLHCHCatsFromLHChampionsFinals(input, allbreedColIdx);
+  const shCHOrder = getOrderedSHCHCatsFromSHChampionsFinals(input, allbreedColIdx);
+  
+  // Check order preservation in OCP column
+  checkOCPOrderPreservationInColumn(input, ocpColIdx, abCHOrder, 'AB CH', errors);
+  checkOCPOrderPreservationInColumn(input, ocpColIdx, lhCHOrder, 'LH CH', errors);
+  checkOCPOrderPreservationInColumn(input, ocpColIdx, shCHOrder, 'SH CH', errors);
+  
+  return errors;
+}
+
+/**
+ * Gets ordered CH cats from Show Awards for a column
+ */
+function getOrderedCHCatsFromShowAwards(
+  input: ChampionshipValidationInput,
+  colIdx: number
+): string[] {
+  const orderedCats: string[] = [];
+  
+  Object.keys(input.showAwards).forEach(key => {
+    const [col, row] = key.split('-').map(Number);
+    if (col === colIdx && row < 10) { // Top 10 for OCP validation
+    const cell = input.showAwards[key];
+      if (cell.catNumber && cell.status === 'CH' && !isVoidInput(cell.catNumber)) {
+        orderedCats[row] = cell.catNumber.trim();
+    }
+  }
+  });
+  
+  return orderedCats.filter(cat => cat); // Remove empty slots
+}
+
+/**
+ * Checks order preservation in OCP column
+ * ENHANCED: Now enforces that AB CH cats must appear first in exact order
+ */
+function checkOCPOrderPreservationInColumn(
+  input: ChampionshipValidationInput,
+  colIdx: number,
+  specialtyOrder: string[],
+  hairLength: string,
+  errors: { [key: string]: string }
+): void {
+  if (specialtyOrder.length === 0) return;
+  
+  const ocpCats: string[] = [];
+  
+  // Collect cats from OCP column
+  Object.keys(input.showAwards).forEach(key => {
+    const [col, row] = key.split('-').map(Number);
+    if (col === colIdx && row < 10) { // OCP has exactly 10 placements
+      const cell = input.showAwards[key];
+      if (cell.catNumber && !isVoidInput(cell.catNumber)) {
+        ocpCats[row] = cell.catNumber;
+      }
+    }
+  });
+  
+  // SIMPLIFIED VALIDATION: Direct side-by-side comparison for AB CH cats
+  if (hairLength === 'AB CH') {
+    // Compare AB CH cats with OCP cats position by position
+    for (let i = 0; i < Math.min(specialtyOrder.length, ocpCats.length); i++) {
+      const abCHCat = specialtyOrder[i];
+      const ocpCat = ocpCats[i];
+      
+      // If OCP position has a cat but it doesn't match the AB CH cat for this position
+      if (ocpCat && abCHCat && ocpCat !== abCHCat) {
+        const errorKey = `${colIdx}-${i}`;
+        errors[errorKey] = `Order violation: ${ocpCat} is out of order in OCP. Must preserve order from AB CH column`;
+      }
+    }
+  } else if (hairLength === 'LH CH' || hairLength === 'SH CH') {
+    // For LH CH and SH CH sections, use order preservation logic with fillers allowed
+    let lastSpecialtyIndex = -1;
+    for (const specialtyCat of specialtyOrder) {
+      const currentIndex = ocpCats.indexOf(specialtyCat);
+      if (currentIndex !== -1 && currentIndex < lastSpecialtyIndex) {
+        // Order violation found
+        const errorKey = `${colIdx}-${currentIndex}`;
+        errors[errorKey] = `Order violation: ${specialtyCat} is out of order in OCP. Must preserve order from ${hairLength} column`;
+        break;
+      }
+      if (currentIndex !== -1) {
+        lastSpecialtyIndex = currentIndex;
+      }
+    }
+  } else {
+    // For Show Awards CH section, use original order preservation logic
+    let lastSpecialtyIndex = -1;
+    for (const specialtyCat of specialtyOrder) {
+      const currentIndex = ocpCats.indexOf(specialtyCat);
+      if (currentIndex !== -1 && currentIndex < lastSpecialtyIndex) {
+        // Order violation found
+        const errorKey = `${colIdx}-${currentIndex}`;
+        errors[errorKey] = `Order violation: ${specialtyCat} is out of order in OCP. Must preserve order from ${hairLength} column`;
+        break;
+      }
+      if (currentIndex !== -1) {
+        lastSpecialtyIndex = currentIndex;
+      }
+    }
+  }
+}
+
+/**
+ * Gets ordered AB CH cats from Champions Finals for a column
+ */
+function getOrderedABCHCatsFromChampionsFinals(
+  input: ChampionshipValidationInput,
+  colIdx: number
+): string[] {
+  const orderedCats: string[] = [];
+  
+  // AB CH cats are stored in championsFinals with keys like "0-0", "0-1", "0-2" etc.
+  // where the first number is column index and second is position (0=Best, 1=2nd Best, 2=3rd Best)
+  Object.keys(input.championsFinals).forEach(key => {
+    const [col, pos] = key.split('-').map(Number);
+    if (col === colIdx && pos < 10) { // Top 10 for OCP validation
+      const catNumber = input.championsFinals[key];
+      if (catNumber && !isVoidInput(catNumber)) {
+        orderedCats[pos] = catNumber.trim();
+      }
+    }
+  });
+  
+  return orderedCats.filter(cat => cat); // Remove empty slots
+}
+
+/**
+ * Gets ordered LH CH cats from LH Champions Finals for a column
+ */
+function getOrderedLHCHCatsFromLHChampionsFinals(
+  input: ChampionshipValidationInput,
+  colIdx: number
+): string[] {
+  const orderedCats: string[] = [];
+  
+  // LH CH cats are stored in lhChampionsFinals with keys like "0-0", "0-1", "0-2" etc.
+  // where the first number is column index and second is position (0=Best, 1=2nd Best, 2=3rd Best)
+  Object.keys(input.lhChampionsFinals).forEach(key => {
+    const [col, pos] = key.split('-').map(Number);
+    if (col === colIdx && pos < 10) { // Top 10 for OCP validation
+      const catNumber = input.lhChampionsFinals[key];
+      if (catNumber && !isVoidInput(catNumber)) {
+        orderedCats[pos] = catNumber.trim();
+      }
+    }
+  });
+  
+  return orderedCats.filter(cat => cat); // Remove empty slots
+}
+
+/**
+ * Gets ordered SH CH cats from SH Champions Finals for a column
+ */
+function getOrderedSHCHCatsFromSHChampionsFinals(
+  input: ChampionshipValidationInput,
+  colIdx: number
+): string[] {
+  const orderedCats: string[] = [];
+  
+  // SH CH cats are stored in shChampionsFinals with keys like "0-0", "0-1", "0-2" etc.
+  // where the first number is column index and second is position (0=Best, 1=2nd Best, 2=3rd Best)
+  Object.keys(input.shChampionsFinals).forEach(key => {
+    const [col, pos] = key.split('-').map(Number);
+    if (col === colIdx && pos < 10) { // Top 10 for OCP validation
+      const catNumber = input.shChampionsFinals[key];
+      if (catNumber && !isVoidInput(catNumber)) {
+        orderedCats[pos] = catNumber.trim();
+      }
+    }
+  });
+  
+  return orderedCats.filter(cat => cat); // Remove empty slots
+}
+

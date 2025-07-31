@@ -60,7 +60,7 @@
           "id": { "type": "integer" },
           "name": { "type": "string" },
           "acronym": { "type": "string" },
-          "ringType": { "type": "string", "enum": ["Longhair", "Shorthair", "Allbreed", "Double Specialty"] }
+          "ringType": { "type": "string", "enum": ["Longhair", "Shorthair", "Allbreed", "Double Specialty", "Super Specialty"] }
         },
         "required": ["id", "name", "acronym", "ringType"]
       }

@@ -36,11 +36,11 @@ function isVoidInput(catNumber: string): boolean {
  */
 import { validateCatNumber as validateCatNumberHelper, getCatNumberValidationMessage } from '../utils/validationHelpers';
 
-export function validateHouseholdPetTab(input: HouseholdPetValidationInput, maxCats: number): Record<string, string> {
+export function validateHouseholdPetTab(input: HouseholdPetValidationInput, maxCats: number, householdPetThreshold: number = 50): Record<string, string> {
   const errors: Record<string, string> = {};
   const { columns, showAwards, householdPetCount } = input;
-  // Breakpoint logic: 50 household pets for 15 positions
-  const maxRows = householdPetCount >= 50 ? 15 : 10;
+  // Breakpoint logic: configurable household pet threshold for 15 positions
+  const maxRows = householdPetCount >= householdPetThreshold ? 15 : 10;
   // For each column
   columns.forEach((_, colIdx) => {
     // Map from catNumber to all row indices where it appears (excluding voided and empty)

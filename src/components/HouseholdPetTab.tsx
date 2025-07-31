@@ -81,8 +81,8 @@ export default function HouseholdPetTab({
   };
   const columns: Column[] = useMemo(() => generateColumns(), [judges]);
 
-  // --- Breakpoint logic: 50 household pets ---
-  const getAwardCount = () => (householdPetCount >= 50 ? 15 : 10);
+  // --- Breakpoint logic: configurable household pet threshold ---
+  const getAwardCount = () => (householdPetCount >= globalSettings.placement_thresholds.household_pet ? 15 : 10);
   const totalCatRows = getAwardCount();
 
   // --- State for focused column (for ring glow effect) ---
@@ -227,7 +227,7 @@ export default function HouseholdPetTab({
       voidedShowAwards: householdPetTabData.voidedShowAwards || {},
       householdPetCount
     };
-    return householdPetValidation.validateHouseholdPetTab(validationInput, globalSettings.max_cats);
+    return householdPetValidation.validateHouseholdPetTab(validationInput, globalSettings.max_cats, globalSettings.placement_thresholds.household_pet);
   };
 
   // --- Validate on blur (matches KittenTab pattern) ---

@@ -68,6 +68,11 @@ type PremiershipTabData = {
   abPremiersFinals: { [key: string]: string };
   lhPremiersFinals: { [key: string]: string };
   shPremiersFinals: { [key: string]: string };
+  voidedShowAwards: { [key: string]: boolean };
+  voidedPremiersFinals: { [key: string]: boolean };
+  voidedABPremiersFinals: { [key: string]: boolean };
+  voidedLHPremiersFinals: { [key: string]: boolean };
+  voidedSHPremiersFinals: { [key: string]: boolean };
   errors: { [key: string]: string };
 };
 
@@ -161,6 +166,13 @@ export default function PremiershipTab({
       if (judge.ringType === 'Double Specialty') {
         cols.push({ judge: { ...judge }, specialty: 'Longhair', columnIndex: cols.length });
         cols.push({ judge: { ...judge }, specialty: 'Shorthair', columnIndex: cols.length });
+      } else if (judge.ringType === 'Super Specialty') {
+        cols.push({ judge: { ...judge }, specialty: 'Longhair', columnIndex: cols.length });
+        cols.push({ judge: { ...judge }, specialty: 'Shorthair', columnIndex: cols.length });
+        cols.push({ judge: { ...judge }, specialty: 'Allbreed', columnIndex: cols.length });
+      } else if (judge.ringType === 'OCP Ring') {
+        cols.push({ judge: { ...judge }, specialty: 'Allbreed', columnIndex: cols.length });
+        cols.push({ judge: { ...judge }, specialty: 'OCP', columnIndex: cols.length });
       } else {
         cols.push({ judge, specialty: judge.ringType, columnIndex: cols.length });
       }
@@ -170,21 +182,21 @@ export default function PremiershipTab({
 
   // Update numAwardRows based on breakpoint (like Championship tab)
   useEffect(() => {
-    if (premiershipTotal >= 50) {
+    if (premiershipTotal >= globalSettings.placement_thresholds.premiership) {
       setNumAwardRows(15);
     } else {
       setNumAwardRows(10);
     }
-  }, [premiershipTotal]);
+  }, [premiershipTotal, globalSettings.placement_thresholds.premiership]);
 
   // --- Helper: Get finals/Best PR counts for a ring type ---
   const getFinalsCount = (ringType: string) => {
     if (ringType === 'Allbreed') {
-      return premiershipCounts.gps + premiershipCounts.prs + premiershipCounts.lhNovs + premiershipCounts.shNovs >= 50 ? 15 : 10;
+      return premiershipCounts.gps + premiershipCounts.prs + premiershipCounts.lhNovs + premiershipCounts.shNovs >= globalSettings.placement_thresholds.premiership ? 15 : 10;
     } else if (ringType === 'Longhair') {
-      return premiershipCounts.lhGps + premiershipCounts.lhPrs + premiershipCounts.lhNovs >= 50 ? 15 : 10;
+      return premiershipCounts.lhGps + premiershipCounts.lhPrs + premiershipCounts.lhNovs >= globalSettings.placement_thresholds.premiership ? 15 : 10;
     } else if (ringType === 'Shorthair') {
-      return premiershipCounts.shGps + premiershipCounts.shPrs + premiershipCounts.shNovs >= 50 ? 15 : 10;
+      return premiershipCounts.shGps + premiershipCounts.shPrs + premiershipCounts.shNovs >= globalSettings.placement_thresholds.premiership ? 15 : 10;
     }
     return 10; // Default fallback
   };
@@ -223,7 +235,7 @@ export default function PremiershipTab({
 
   // --- Helper: Get Finals row count for a column/section ---
   const getFinalsRowCount = (colIdx: number, specialty: string, section: 'ab' | 'lh' | 'sh'): number => {
-    const calculated = getFinalsCount(specialty) >= 50 ? 3 : 2;
+    const calculated = getFinalsCount(specialty) >= globalSettings.placement_thresholds.premiership ? 3 : 2;
     let finalsObj: Record<string, string> = {};
     if (section === 'ab') finalsObj = premiershipTabData.abPremiersFinals;
     if (section === 'lh') finalsObj = premiershipTabData.lhPremiersFinals;
@@ -253,7 +265,7 @@ export default function PremiershipTab({
         count = premiershipCounts.gps + premiershipCounts.prs + premiershipCounts.lhNovs + premiershipCounts.shNovs;
         break;
     }
-    return count >= 50 ? 3 : 2; // 3 positions if 15 awards, 2 if 10 awards
+    return count >= globalSettings.placement_thresholds.premiership ? 3 : 2; // 3 positions if 15 awards, 2 if 10 awards
   };
 
   // Helper function to calculate row index for each section (like Championship tab)
@@ -295,7 +307,7 @@ export default function PremiershipTab({
   // Accessibility: refs for ALL Cat # input fields (Show Awards + Finals)
   // We'll build a 2D array: catInputRefs[columnIndex][verticalRowIndex]
   // Calculate totalCatRows using consistent logic (like ChampionshipTab approach)
-  const maxFinalsRows = premiershipTotal >= 50 ? 3 : 2;
+      const maxFinalsRows = premiershipTotal >= globalSettings.placement_thresholds.premiership ? 3 : 2;
   const totalCatRows = numAwardRows + maxFinalsRows + maxFinalsRows + maxFinalsRows; // Show Awards + AB + LH + SH
   const catInputRefs = useRef<(HTMLInputElement | null)[][]>([]);
   useEffect(() => {
@@ -433,9 +445,14 @@ export default function PremiershipTab({
     setPremiershipTabData((prev: any) => {
       const prevCell = prev.showAwards[key] || {};
       let newCell = { ...prevCell, [field]: value };
-      // If setting catNumber and status is missing, default to 'GP'
+      // If setting catNumber and status is missing, determine default based on column specialty
       if (field === 'catNumber' && value && (!prevCell.status || prevCell.status === '')) {
-        newCell.status = 'GP';
+        const column = columns[colIdx];
+        let defaultStatus = 'GP';
+        if (column?.specialty === 'OCP') {
+          defaultStatus = 'PR'; // OCP rings are locked to PR status
+        }
+        newCell.status = defaultStatus;
       }
       return {
       ...prev,
@@ -481,7 +498,7 @@ export default function PremiershipTab({
           return copy;
         });
         // Still run full validation to clear any stale errors
-        setErrors(premiershipValidation.validatePremiershipTab(createValidationInput(), globalSettings.max_cats));
+        setErrors(premiershipValidation.validatePremiershipTab(createValidationInput(), globalSettings.max_cats, globalSettings.placement_thresholds.premiership));
         return;
       }
       // Validate cat number format
@@ -498,7 +515,7 @@ export default function PremiershipTab({
     }
     
     // Always trigger full validation after any blur to ensure all relationship-based errors are applied
-    setErrors(premiershipValidation.validatePremiershipTab(createValidationInput(), globalSettings.max_cats));
+    setErrors(premiershipValidation.validatePremiershipTab(createValidationInput(), globalSettings.max_cats, globalSettings.placement_thresholds.premiership));
   };
 
   // --- Handler: Blur events for finals - run validation here (like ChampionshipTab) ---
@@ -513,7 +530,7 @@ export default function PremiershipTab({
           return copy;
         });
         // Still run full validation to clear any stale errors
-        setErrors(premiershipValidation.validatePremiershipTab(createValidationInput(), globalSettings.max_cats));
+        setErrors(premiershipValidation.validatePremiershipTab(createValidationInput(), globalSettings.max_cats, globalSettings.placement_thresholds.premiership));
         return;
       }
     // Range/Format check
@@ -522,7 +539,7 @@ export default function PremiershipTab({
         return;
       }
     // Full-form validation (get all errors)
-    const allErrors = premiershipValidation.validatePremiershipTab(input, globalSettings.max_cats);
+    const allErrors = premiershipValidation.validatePremiershipTab(input, globalSettings.max_cats, globalSettings.placement_thresholds.premiership);
     if (allErrors[errorKey] && allErrors[errorKey].toLowerCase().includes('duplicate')) {
       setErrors((prev: any) => ({ ...prev, [errorKey]: allErrors[errorKey] }));
       return;
@@ -546,26 +563,39 @@ export default function PremiershipTab({
   // };
 
   // Create validation input function
-  const createValidationInput = (): premiershipValidation.PremiershipValidationInput => ({
-    columns,
-    showAwards: premiershipTabData.showAwards,
-    premiersFinals: premiershipTabData.premiersFinals,
-    abPremiersFinals: premiershipTabData.abPremiersFinals,
-    lhPremiersFinals: premiershipTabData.lhPremiersFinals,
-    shPremiersFinals: premiershipTabData.shPremiersFinals,
-    premiershipTotal,
-    premiershipCounts: {
-      gps: premiershipCounts.gps,
-      lhGps: premiershipCounts.lhGps,
-      shGps: premiershipCounts.shGps,
-      lhPrs: premiershipCounts.lhPrs,
-      shPrs: premiershipCounts.shPrs,
-      lhNovs: premiershipCounts.lhNovs,
-      shNovs: premiershipCounts.shNovs,
-      novs: premiershipCounts.novs,
-      prs: premiershipCounts.prs
-    },
-  });
+  const createValidationInput = (): premiershipValidation.PremiershipValidationInput => {
+    // Prepare showAwards data with OCP status forcing (same logic as getShowAward)
+    const processedShowAwards = { ...premiershipTabData.showAwards };
+    Object.keys(processedShowAwards).forEach(key => {
+      const [colIdx, rowIdx] = key.split('-').map(Number);
+      const cell = processedShowAwards[key];
+      const column = columns[colIdx];
+      if (column?.specialty === 'OCP' && cell.catNumber && !isVoidInput(cell.catNumber)) {
+        processedShowAwards[key] = { ...cell, status: 'PR' };
+      }
+    });
+
+    return {
+      columns,
+      showAwards: processedShowAwards,
+      premiersFinals: premiershipTabData.premiersFinals,
+      abPremiersFinals: premiershipTabData.abPremiersFinals,
+      lhPremiersFinals: premiershipTabData.lhPremiersFinals,
+      shPremiersFinals: premiershipTabData.shPremiersFinals,
+      premiershipTotal,
+      premiershipCounts: {
+        gps: premiershipCounts.gps,
+        lhGps: premiershipCounts.lhGps,
+        shGps: premiershipCounts.shGps,
+        lhPrs: premiershipCounts.lhPrs,
+        shPrs: premiershipCounts.shPrs,
+        lhNovs: premiershipCounts.lhNovs,
+        shNovs: premiershipCounts.shNovs,
+        novs: premiershipCounts.novs,
+        prs: premiershipCounts.prs
+      },
+    };
+  };
 
   // --- Render Table UI ---
   // For each judge/column, render sections: Premiership Final, Best AB PR, Best LH PR, Best SH PR
@@ -691,12 +721,19 @@ export default function PremiershipTab({
   };
 
   useEffect(() => {
-    setErrors(premiershipValidation.validatePremiershipTab(createValidationInput(), globalSettings.max_cats));
-  }, [premiershipTabData.showAwards, premiershipTabData.abPremiersFinals, premiershipTabData.lhPremiersFinals, premiershipTabData.shPremiersFinals, globalSettings.max_cats]);
+    setErrors(premiershipValidation.validatePremiershipTab(createValidationInput(), globalSettings.max_cats, globalSettings.placement_thresholds.premiership));
+  }, [premiershipTabData.showAwards, premiershipTabData.abPremiersFinals, premiershipTabData.lhPremiersFinals, premiershipTabData.shPremiersFinals, globalSettings.max_cats, globalSettings.placement_thresholds.premiership]);
 
   // Defensive getter for showAwards (Top 10/15)
-  const getShowAward = (colIdx: number, i: number) =>
-    premiershipTabData.showAwards[`${colIdx}-${i}`] || { catNumber: '', status: 'GP' };
+  const getShowAward = (colIdx: number, i: number) => {
+    const cell = premiershipTabData.showAwards[`${colIdx}-${i}`] || { catNumber: '', status: 'GP' };
+    // For OCP rings, ensure status is always PR
+    const column = columns[colIdx];
+    if (column?.specialty === 'OCP' && cell.catNumber && !isVoidInput(cell.catNumber)) {
+      return { ...cell, status: 'PR' };
+    }
+    return cell;
+  };
 
   // --- Cat # Input Handlers (Context-7, robust, decoupled) ---
   // onChange: only update localInputState
@@ -1076,22 +1113,32 @@ export default function PremiershipTab({
                                     />
                                     {/* Only render status dropdown if not VOID */}
                                     {!isVoidInput(catNumber) && (
-                                      <CustomSelect
-                                        options={['GP', 'PR', 'NOV']}
-                                        value={status || 'GP'} // Defensive: always default to 'GP' if missing
-                                        onChange={val => updateShowAward(colIdx, i, 'status', val)}
-                                        className="min-w-[70px]"
-                                        ariaLabel="Status"
-                                        borderColor="border-blue-300"
-                                        focusBorderColor="focus:border-blue-500"
-                                        textColor="text-blue-700"
-                                        highlightBg="bg-blue-50"
-                                        highlightText="text-blue-900"
-                                        selectedBg="bg-blue-100"
-                                        selectedText="text-blue-800"
-                                        hoverBg="bg-blue-50"
-                                        hoverText="text-blue-900"
-                                      />
+                                      col.specialty === 'OCP' ? (
+                                        // OCP rings are locked to PR status (same pattern as Kitten tab KIT status)
+                                        <span
+                                          className="min-w-[70px] inline-flex items-center justify-center rounded-full px-3 py-1.5 border border-blue-300 text-blue-700 text-xs font-semibold shadow-sm opacity-80 bg-white"
+                                          aria-label="Status"
+                                        >
+                                          PR
+                                        </span>
+                                      ) : (
+                                        <CustomSelect
+                                          options={['GP', 'PR', 'NOV']}
+                                          value={status || 'GP'} // Defensive: always default to 'GP' if missing
+                                          onChange={val => updateShowAward(colIdx, i, 'status', val)}
+                                          className="min-w-[70px]"
+                                          ariaLabel="Status"
+                                          borderColor="border-blue-300"
+                                          focusBorderColor="focus:border-blue-500"
+                                          textColor="text-blue-700"
+                                          highlightBg="bg-blue-50"
+                                          highlightText="text-blue-900"
+                                          selectedBg="bg-blue-100"
+                                          selectedText="text-blue-800"
+                                          hoverBg="bg-blue-50"
+                                          hoverText="text-blue-900"
+                                        />
+                                      )
                                     )}
                                   </div>
                                   {/* Error message */}

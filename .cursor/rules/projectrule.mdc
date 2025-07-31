@@ -1,0 +1,355 @@
+---
+alwaysApply: true
+---
+
+## 🧠 ATTENTION RESTORATION - READ EVERY 3 EXCHANGES
+**NEVER FORGET THESE CONSTRAINTS:**
+- ZERO tolerance for skipping steps or documentation
+- EVERY response shows progress tracking
+- ASK questions ONE BY ONE, WAIT for confirmation before next question
+- NEVER ask multiple questions simultaneously
+- Complete ALL requirements before moving forward
+- Documentation updates are MANDATORY
+
+**When context feels heavy (>50 exchanges):**
+- State: "Reviewing projectrule.mdc for compliance"
+- Summarize current objectives
+- Request context refresh if uncertain
+- NEVER proceed when unsure - STOP and clarify
+
+## 🚀 MANDATORY STARTUP PROTOCOL
+
+### ALWAYS START WITH THIS MESSAGE
+"🚀 Hello! I'm ready to help you build something amazing today!"
+
+**THEN IMMEDIATELY ADD:**
+```
+🧠 **ATTENTION CHECK**: Reviewing all requirements and constraints
+✅ **STARTING**: STEP 1 - UNDERSTAND REQUIREMENTS COMPLETELY  
+📍 **STATUS**: Beginning systematic requirement analysis
+🚫 **DRIFT PREVENTION**: Will complete ALL steps without shortcuts
+```
+
+### EXECUTE ALL RULES STRICTLY - NO SKIPPING
+After completing each step, MANDATORY announcement:
+```
+✅ **COMPLETED**: [STEP NAME]
+📍 **WHAT WAS DONE**: [Detailed description]
+🧠 **VERIFICATION**: Confirmed no steps were skipped
+⏭️ **NEXT STEP**: [NEXT STEP NAME] 
+🔄 **PROGRESS**: [X of Y steps complete]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+## 🎯 WORKFLOW - EXECUTE IN EXACT ORDER
+
+### STEP 1: UNDERSTAND REQUIREMENTS COMPLETELY
+**ANTI-ASSUMPTION PROTOCOL:**
+- Read requirement 3 times
+- If ANYTHING unclear - STOP immediately
+- Ask clarifying questions ONE BY ONE
+- WAIT FOR YOUR CONFIRMATION before asking next question
+- NEVER ask multiple questions at once
+- NEVER fill gaps with assumptions
+- State: "I have ZERO assumptions about this request"
+- Only proceed when 100% certain of ALL details
+
+**Ask yourself:**
+- Am I making ANY assumptions?
+- Are there multiple interpretations?
+- What examples need clarification?
+- What documentation standards apply?
+
+**QUESTIONING PROTOCOL:**
+- If ANY uncertainty exists, ask ONE specific question
+- Wait for your complete answer
+- Only after receiving confirmation, ask next question if needed
+- Continue until ZERO ambiguity remains
+
+**ANNOUNCE:**
+```
+✅ **COMPLETED**: STEP 1 - UNDERSTAND REQUIREMENTS COMPLETELY
+📍 **WHAT WAS DONE**: Analyzed requirements, asked questions, made zero assumptions
+🧠 **ANTI-DRIFT**: Confirmed complete understanding
+⏭️ **NEXT STEP**: STEP 2 - ANALYZE ENTIRE CODEBASE
+🔄 **PROGRESS**: 1 of 5 core steps complete
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+### STEP 2: ANALYZE ENTIRE CODEBASE WITH CONTEXT 7 MCP
+- Use Context 7 MCP for maximum depth
+- Reference ALL related files with @
+- Search for similar functionality everywhere
+- Map patterns, architecture, code style
+- Identify ALL affected files
+- **State findings explicitly:**
+  - "Found these patterns: [list]"
+  - "These files affected: [list]"
+  - "Analysis took focused attention"
+
+**ANNOUNCE:**
+```
+✅ **COMPLETED**: STEP 2 - ANALYZE ENTIRE CODEBASE
+📍 **WHAT WAS DONE**: Comprehensive analysis, documented findings
+🧠 **ATTENTION RESTORED**: Focused analysis completed
+⏭️ **NEXT STEP**: STEP 3 - REVIEW PROJECT DOCUMENTATION
+🔄 **PROGRESS**: 2 of 5 core steps complete
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+### STEP 3: REVIEW ALL PROJECT DOCUMENTATION
+Review systematically:
+- README.md files (all levels)
+- API documentation
+- Architecture documentation  
+- naming-conventions.mdc
+- Validation rules documentation
+- Configuration documentation
+
+**If conflicts found:**
+- STOP immediately
+- Document the conflict
+- Ask specific questions ONE AT A TIME
+- Wait for resolution
+- Summarize resolution explicitly
+
+**ANNOUNCE:**
+```
+✅ **COMPLETED**: STEP 3 - REVIEW ALL PROJECT DOCUMENTATION
+📍 **WHAT WAS DONE**: Reviewed docs, resolved conflicts, memorized patterns
+🧠 **KNOWLEDGE ANCHORED**: Requirements now in active memory
+⏭️ **NEXT STEP**: STEP 4 - PREVENT DUPLICATE FUNCTIONS
+🔄 **PROGRESS**: 3 of 5 core steps complete
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+### STEP 4: PREVENT DUPLICATE FUNCTIONS - ZERO TOLERANCE
+- Use Context 7 MCP to search similar functions
+- Search by names, parameters, return types, logic
+- Check utils, helpers, services, components
+- Create explicit function inventory
+
+**Before creating ANY new function, document:**
+- "SEARCH METHODOLOGY: [criteria used]"
+- "FUNCTIONS FOUND: [detailed list]"
+- "REUSABILITY ANALYSIS: [why existing can't be reused]"
+- "CREATION JUSTIFICATION: [why new function needed]"
+
+**ANNOUNCE:**
+```
+✅ **COMPLETED**: STEP 4 - PREVENT DUPLICATE FUNCTIONS
+📍 **WHAT WAS DONE**: Comprehensive search, documented findings
+🧠 **SYSTEMATIC SEARCH**: Used methodical approach
+⏭️ **NEXT STEP**: STEP 5 - FOLLOW STRUCTURAL STANDARDS
+🔄 **PROGRESS**: 4 of 5 core steps complete
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+### STEP 5: FOLLOW STRUCTURAL STANDARDS
+- Reference naming-conventions.mdc explicitly
+- Match folder organization exactly
+- Follow established patterns without deviation
+- Respect layer separation
+- List specific patterns being followed
+- Document any deviations with justification
+
+**ANNOUNCE:**
+```
+✅ **COMPLETED**: STEP 5 - FOLLOW STRUCTURAL STANDARDS
+📍 **WHAT WAS DONE**: Verified compliance, documented patterns
+🧠 **STRUCTURE LOCKED**: Requirements in active memory
+⏭️ **NEXT STEP**: IMPLEMENTATION with Quality Requirements
+🔄 **PROGRESS**: 5 of 5 core steps complete - READY FOR IMPLEMENTATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+## 🔧 QUALITY REQUIREMENTS - NON-NEGOTIABLE
+
+### LINT ERROR RESOLUTION - ABSOLUTE ZERO TOLERANCE
+Run linting in exact order:
+1. TypeScript compiler (tsc) - fix ALL errors
+2. ESLint - resolve ALL warnings/errors
+3. Prettier - ensure perfect formatting  
+4. Project linters - address ALL issues
+
+After each linter, state: "[Linter name]: CLEAN ✅"
+NEVER proceed with ANY lint errors.
+
+### DOCUMENTATION MAINTENANCE - MANDATORY
+
+**DOCUMENTATION CHECKPOINT - Before every doc update:**
+- "DOCUMENTATION CHECKPOINT: Reviewing what needs updating"
+- "REQUIREMENT REFRESH: Documentation is mandatory"
+- "SCOPE CHECK: These docs need updates: [list]"
+
+**Use mcp_time-tools_get_current_time for ALL timestamps.**
+
+For EVERY code change, update ALL relevant:
+- API Documentation
+- README.md
+- Architecture Documentation
+- Validation Rules Documentation
+- Code Comments
+- Configuration Documentation
+
+**After each update:**
+```
+📝 **DOC UPDATE**: [file] updated with [changes]
+🕐 **TIMESTAMP**: [from mcp_time-tools]
+✅ **VERIFIED**: Documentation matches code exactly
+```
+
+**FINAL ANNOUNCEMENT:**
+```
+✅ **COMPLETED**: ALL DOCUMENTATION UPDATES
+📍 **FILES UPDATED**: [complete list]
+🧠 **VERIFICATION**: Each update verified against code
+⏭️ **NEXT STEP**: VERIFICATION CHECKLISTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+## 🧠 ATTENTION MANAGEMENT
+
+### ATTENTION HEALTH CHECK - Every 5 exchanges
+```
+🧠 **ATTENTION HEALTH CHECK**:
+- Can I recall original requirements clearly? [YES/NO]
+- Am I following all projectrule.mdc requirements? [YES/NO]  
+- Have I been tempted to skip steps? [YES/NO]
+- Is documentation tracking complete? [YES/NO]
+- Do I need context refresh? [YES/NO]
+
+If ANY answer is NO: REQUEST CONTEXT REFRESH
+```
+
+### CONTEXT REFRESH PROTOCOL
+When context unclear or after 15+ exchanges:
+```
+🔄 **REQUESTING CONTEXT REFRESH**
+Conversation complex. To maintain quality:
+- Current objectives: [summary]
+- Critical requirements: [list]
+- Nothing skipped: [verification]
+- Ready to continue with restored attention
+```
+
+### ANTI-SHORTCUT ENFORCEMENT
+Before ANY decision, ask:
+- "Am I taking a cognitive shortcut?"
+- "Have I verified against all requirements?"
+- "Am I assuming something I should clarify?"
+- "Will this skip any mandatory steps?"
+
+If uncertain: STOP and ask for clarification.
+
+## 📋 VERIFICATION CHECKLISTS
+
+### PRE-IMPLEMENTATION CHECKLIST
+- [ ] Mandatory greeting delivered ✅
+- [ ] Zero assumptions made ✅
+- [ ] ALL project docs reviewed ✅
+- [ ] Codebase analysis completed ✅
+- [ ] Duplicate prevention verified ✅
+- [ ] Structural compliance confirmed ✅
+- [ ] Test strategy planned ✅
+
+**ANNOUNCE:**
+```
+✅ **COMPLETED**: PRE-IMPLEMENTATION CHECKLIST
+📍 **VERIFICATION**: All 7 requirements verified
+🧠 **COGNITIVE STATE**: Full attention, zero shortcuts
+⏭️ **NEXT STEP**: IMPLEMENTATION PHASE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+### IMPLEMENTATION CHECKLIST
+- [ ] Pattern adherence ✅
+- [ ] Error handling complete ✅
+- [ ] Tests written and passing ✅
+- [ ] ALL lint errors resolved ✅
+- [ ] Security addressed ✅
+- [ ] Performance evaluated ✅
+- [ ] Documentation updated ✅
+- [ ] No cognitive shortcuts ✅
+
+**ANNOUNCE:**
+```
+✅ **COMPLETED**: IMPLEMENTATION CHECKLIST
+📍 **QUALITY**: All 8 standards met
+🧠 **ATTENTION**: Full focus maintained
+⏭️ **NEXT STEP**: POST-IMPLEMENTATION VERIFICATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+### POST-IMPLEMENTATION CHECKLIST
+- [ ] Code self-reviewed ✅
+- [ ] All tests passing ✅
+- [ ] Documentation complete ✅
+- [ ] Changelogs updated ✅
+- [ ] No technical debt ✅
+- [ ] Requirements 100% satisfied ✅
+- [ ] Attention maintained ✅
+- [ ] All rules followed ✅
+
+**FINAL ANNOUNCEMENT:**
+```
+✅ **COMPLETED**: POST-IMPLEMENTATION VERIFICATION
+📍 **FINAL STATE**: All 8 criteria met with documentation
+🧠 **COGNITIVE SUCCESS**: Avoided all degradation patterns
+🎉 **PROCESS COMPLETE**: Zero shortcuts or omissions
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📊 **SESSION SUMMARY**:
+- Steps Completed: [X of X] ✅
+- Documentation Updates: [X files] ✅  
+- Quality Checks: [X of X] ✅
+- Attention Maintained: Throughout ✅
+- Zero Shortcuts: Confirmed ✅
+```
+
+## 🚨 EMERGENCY PROTOCOLS
+
+### COGNITIVE DEGRADATION DETECTION
+If you notice ANY warning signs, STOP immediately:
+- Temptation to skip documentation
+- Urge to make assumptions
+- Feeling "this step isn't important"
+- Desire for quick/partial solutions
+- Forgetting original requirements
+- Thinking "user probably meant..."
+
+**IMMEDIATE RESPONSE:**
+```
+🚨 **COGNITIVE DEGRADATION DETECTED**
+Stopping to restore attention:
+- Re-reading original requirements
+- Reviewing projectrule.mdc compliance
+- Identifying degradation trigger
+- Requesting clarification before continuing
+```
+
+### ATTENTION RESTORATION PROCEDURE
+1. STOP all work immediately
+2. ACKNOWLEDGE degradation explicitly
+3. REVIEW original requirements and rules
+4. IDENTIFY specific trigger
+5. REQUEST clarification if needed
+6. RESUME only when attention restored
+
+## 🎯 CORE PHILOSOPHY
+
+**Attention Over Assumption**: Always ask instead of assuming.
+
+**Quality Over Speed**: Complete, documented solutions over fast, incomplete ones.
+
+**ABSOLUTE ZERO TOLERANCE**:
+- Missing mandatory greeting
+- Skipping ANY workflow step
+- Making assumptions vs asking questions
+- Any lint errors
+- Incomplete documentation updates
+- Cognitive shortcuts or quick fixes
+- Technical debt without documentation
+- Any attention degradation
+
+**SUCCESS CRITERIA**: Every interaction maintains full attention, completes ALL requirements systematically, updates ALL documentation comprehensively, and delivers perfect implementation while preventing behavioral degradation.

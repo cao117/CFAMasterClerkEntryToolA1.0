@@ -12,10 +12,11 @@ This document describes the **current validation rules** enforced in the Househo
   - Voiding logic, error display, keyboard navigation, and all styling match the Kitten tab exactly
 
 ## Breakpoint Logic
-- **Breakpoint:** 50 household pets (total)
-  - If **≥50 household pets**: Top 15 positions
-  - If **<50 household pets**: Top 10 positions
+- **Breakpoint:** [configurable threshold] household pets (total, default: 50)
+  - If **≥ threshold household pets**: Top 15 positions
+  - If **< threshold household pets**: Top 10 positions
   - All columns use the same row count, regardless of ring type
+  - The threshold is configurable in the General Settings panel
 
 ## Validation Rules
 - **Cat number format:** Must be between 1-{max_cats}

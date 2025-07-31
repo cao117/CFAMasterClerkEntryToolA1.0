@@ -2,6 +2,283 @@
 
 This changelog records all changes, additions, and deletions to validation rules for each tab in the CFA Master Clerk Entry Tool. Each entry includes the date, affected tab, summary of the change, and rationale/context.
 
+### [2025-08-01 00:39:40] Championship & Premiership Tabs: OCP Ring Error Message Simplification
+- **Tabs:** Championship, Premiership
+- **Change:** Simplified OCP Ring error messages to use consistent format without specifying which cat should be in each position
+- **Summary:**
+  - **Root Cause**: Error messages were too detailed and complex, specifying which cat should be in each position
+  - **Problem**: Error messages like "Best OCP Cat should be Best AB CH Cat #123" and "Should be Cat #456 in this position" were too verbose
+  - **Solution**: Simplified all OCP Ring error messages to use consistent format: "Order violation: {catNumber} is out of order in OCP. Must preserve order from {section} column"
+  - **Implementation**: 
+    - Updated AB CH/PR validation to use simple error format instead of ordinal labels
+    - Updated LH CH/PR validation to use simple error format instead of specifying expected cat
+    - Updated SH CH/PR validation to use simple error format instead of specifying expected cat
+    - Updated Show Awards CH/PR validation to use simple error format instead of specifying expected cat
+  - **Error Messages** (Simplified):
+    - AB CH/PR: "Order violation: {catNumber} is out of order in OCP. Must preserve order from AB CH/PR column"
+    - LH CH/PR: "Order violation: {catNumber} is out of order in OCP. Must preserve order from LH CH/PR column"
+    - SH CH/PR: "Order violation: {catNumber} is out of order in OCP. Must preserve order from SH CH/PR column"
+    - Show Awards CH/PR: "Order violation: {catNumber} is out of order in OCP. Must preserve order from Show Awards CH/PR column"
+  - **Consistency**: All error messages now follow the same simple format across both tabs
+- **Files Modified**: 
+  - `src/validation/championshipValidation.ts` - Simplified error messages in OCP validation
+  - `src/validation/premiershipValidation.ts` - Simplified error messages in OCP validation
+  - `docs/validation/VALIDATION_OCP_RING.md` - Updated error message examples
+- **Testing**: Build successful, validation functions properly integrated into main validation flow
+- **Rationale**: Simplified error messages are clearer and more consistent, focusing on the violation rather than specific suggestions
+- **Impact**: OCP Ring validation now uses consistent, simple error messages across both Championship and Premiership tabs
+
+### [2025-08-01 00:34:58] Premiership Tab: OCP Ring PR Order Validation Implementation (Matching Championship)
+
+### [2025-08-01 00:26:47] Championship Tab: OCP Ring LH CH and SH CH Order Validation Implementation
+
+### [2025-07-31 23:47:03] Championship & Premiership Tabs: OCP Ring AB CH/PR First Rule Enhancement
+- **Tabs:** Championship, Premiership
+- **Change:** Enhanced OCP Ring validation to enforce that AB CH/PR cats must appear first in exact order in OCP ring
+- **Summary:**
+  - **Root Cause**: Previous OCP Ring validation only checked order preservation but didn't enforce that AB CH/PR cats must appear before any filler cats
+  - **Problem**: Users could place filler cats before AB CH/PR cats in OCP ring, which violated the rule that AB CH/PR cats must appear first in exact order
+  - **Solution**: Enhanced `checkOCPOrderPreservationInColumn` function in both Championship and Premiership validation files
+  - **Implementation**: 
+    - Added logic to find the first AB CH/PR cat in OCP ring
+    - Added validation to check if any filler appears before AB CH/PR cats
+    - Added validation to ensure AB CH/PR cats appear in exact order
+    - Enhanced error messages to clearly indicate the rule violation
+  - **Error Messages**:
+    - Championship: "Filler cat {catNumber} cannot appear before AB CH cats in OCP ring. AB CH cats must appear first in exact order."
+    - Premiership: "Filler cat {catNumber} cannot appear before AB PR cats in OCP ring. AB PR cats must appear first in exact order."
+- **Files Modified**: 
+  - `src/validation/championshipValidation.ts` - Added OCP Ring validation functions and enhanced order preservation
+  - `src/validation/premiershipValidation.ts` - Enhanced existing OCP Ring validation
+  - `docs/validation/VALIDATION_OCP_RING.md` - Updated documentation to reflect new rule
+- **Testing**: Build successful, validation functions properly integrated into main validation flow
+
+### [2025-07-31 23:41:42] Championship & Premiership Tabs: OCP Ring AB CH/PR First Rule Enhancement
+- **Tabs:** Championship, Premiership
+- **Change:** Enhanced OCP Ring validation to enforce that AB CH/PR cats must appear first in exact order in OCP ring
+- **Summary:**
+  - **Root Cause**: Previous OCP Ring validation only checked order preservation but didn't enforce that AB CH/PR cats must appear before any filler cats
+  - **Problem**: Users could place filler cats before AB CH/PR cats in OCP ring, which violated the rule that AB CH/PR cats must appear first in exact order
+  - **Solution**: Enhanced `checkOCPOrderPreservationInColumn` function in both Championship and Premiership validation files
+  - **Implementation**: 
+    - Added logic to find the first AB CH/PR cat in OCP ring
+    - Added validation to check if any filler appears before AB CH/PR cats
+    - Added validation to ensure AB CH/PR cats appear in exact order
+    - Enhanced error messages to clearly indicate the rule violation
+  - **Error Messages**:
+    - Championship: "Filler cat {catNumber} cannot appear before AB CH cats in OCP ring. AB CH cats must appear first in exact order."
+    - Premiership: "Filler cat {catNumber} cannot appear before AB PR cats in OCP ring. AB PR cats must appear first in exact order."
+- **Files Modified**: 
+  - `src/validation/championshipValidation.ts` - Added OCP Ring validation functions and enhanced order preservation
+  - `src/validation/premiershipValidation.ts` - Enhanced existing OCP Ring validation
+  - `docs/validation/VALIDATION_OCP_RING.md` - Updated documentation to reflect new rule
+- **Testing**: Build successful, validation functions properly integrated into main validation flow
+
+### [2025-07-31 23:23:01] Championship Tab: OCP Ring Order Preservation Bug Fix
+- **Tabs:** Championship
+- **Change:** Fixed critical bug where OCP Ring order preservation validation was not detecting errors correctly
+- **Summary:**
+  - **Root Cause**: OCP order preservation validation was only checking finals sections (Best AB CH, LH CH, SH CH) but not checking the Top 10/15 Show Awards section
+  - **Problem**: When same cat had different order in Show Awards vs OCP column, no order violation error was generated
+  - **Solution**: Added validation for Show Awards section order preservation in OCP validation
+  - **Technical Details**:
+    - Added `getOrderedCHCatsFromShowAwards()` function to collect CH cats from Show Awards section
+    - Updated `validateOCPOrderPreservation()` to check Show Awards CH order
+    - Added validation for all 4 sections: Show Awards CH, AB CH, LH CH, SH CH
+  - **Affected Files**: `src/validation/championshipValidation.ts`
+  - **Result**: OCP Ring order preservation validation now works correctly for all sections
+- **Rationale:** OCP validation must check order preservation across all relevant sections, not just finals
+- **Impact:** OCP Ring order preservation validation now correctly detects and reports errors for all sections
+
+### [2025-07-31 23:00:25] Championship & Premiership Tabs: OCP Ring Title Inconsistency Bug Fix
+- **Tabs:** Championship, Premiership
+- **Change:** Fixed critical bug where OCP Ring title inconsistency validation was not detecting errors correctly
+- **Summary:**
+  - **Root Cause**: Validation functions were reading raw data instead of UI-processed data with OCP status forcing
+  - **Problem**: When same cat had GC in Allbreed column and CH in OCP column, no title inconsistency error was generated
+  - **Solution**: Updated validation input preparation to apply OCP status forcing logic (CH for Championship, PR for Premiership)
+  - **Technical Details**:
+    - Added `prepareValidationInput()` helper function in ChampionshipTab.tsx
+    - Updated `createValidationInput()` function in PremiershipTab.tsx
+    - Applied OCP status forcing to all validation calls in both components
+    - Ensured validation data matches UI display logic exactly
+  - **Affected Files**: `src/components/ChampionshipTab.tsx`, `src/components/PremiershipTab.tsx`
+  - **Result**: OCP Ring title inconsistency validation now works correctly
+- **Rationale:** Validation must use the same data processing logic as the UI to ensure consistency
+- **Impact:** OCP Ring title inconsistency validation now correctly detects and reports errors
+
+### [2025-07-31 20:23:24] Championship & Premiership Tabs: Specialty Finals Consistency Error Placement Fix
+- **Tabs:** Championship, Premiership
+- **Change:** Fixed Specialty Finals Consistency validation to check each position individually and place errors at specific mismatched positions
+- **Summary:**
+  - **Position-by-position validation**: Now checks each LH/SH CH/PR position (0, 1, 2, 3, 4, etc.) individually instead of only checking position 0
+  - **Multiple error support**: Allows multiple errors for different positions (e.g., both "Best LH CH" and "2nd Best LH CH" can show errors simultaneously)
+  - **Specific error placement**: Errors are placed at the exact mismatched position instead of always using position 0
+  - **Improved error messages**: Changed from "should appear in [section]" to "should appear as [placement]" to reflect placement vs section distinction
+  - **Documentation update**: Updated VALIDATION_SUPER_SPECIALTY.md with corrected examples and error messages
+- **Rationale:** Previous implementation only checked position 0 and always placed errors there, causing error replacement instead of showing multiple errors for different positions
+- **Impact:** Users now see separate errors for each mismatched position, making it clear which specific placements need correction
+
+---
+
+### [2025-07-31 17:52:19] Championship Tab: OCP Ring Placement Bug Fix
+- **Tabs:** Championship
+- **Change:** Fixed bug where OCP rings were showing 15 placements instead of correct 1-10 range
+- **Summary:** 
+  - **Root Cause**: Missing OCP case in `getChampionshipCountForRingType()` function in ChampionshipTab component
+  - **Fix**: Added `case 'OCP': return 10;` to handle OCP rings correctly
+  - **Consistency**: Now matches pattern used in KittenTab and PremiershipTab components
+  - **Validation**: `getFinalsPositionsForRingType()` in validation file already correctly handled OCP rings
+  - **Result**: OCP rings in Championship tab now show exactly 10 placements (1-10) instead of 15
+- **Rationale:** OCP rings should always have exactly 10 placements regardless of championship counts, consistent with other tabs
+- **Impact:** OCP rings in Championship tab now display correct 1-10 placement range
+
+### [2025-07-31 22:25:53] Championship and Premiership Tabs: OCP Ring Cross-Column Validation Implementation
+- **Tabs:** Championship, Premiership
+- **Change:** Added comprehensive cross-column validation for OCP Ring judges
+- **Summary:** 
+  - **Validation Order**: Runs AFTER all existing validation is complete
+  - **Title/Award Consistency**: Cannot have same cat # labeled GC/GP in AB column and CH/PR in OCP column
+  - **Ranked Cats Priority**: Filler cats (not ranked in AB ring) cannot appear in OCP before ranked cats
+  - **Order Preservation**: Order of AB CH/LH CH/SH CH and AB PR/LH PR/SH PR in AB column should be respected in OCP ranking
+  - **Error Messages**: Uses similar error messages to SSP validation for consistency
+  - **Implementation**: Follows same patterns as Super Specialty validation but adapted for OCP Ring structure
+  - **Scope**: Only applies to OCP Ring judges (2 columns: Allbreed + OCP with same judge ID)
+- **Technical Details:**
+  - Added `validateOCPRingCrossColumn()` functions to Championship and Premiership validation files
+  - Integrated into main validation functions as final validation step
+  - Preserves all existing validation order and logic
+  - Created comprehensive validation documentation in `docs/validation/VALIDATION_OCP_RING.md`
+- **Rationale:** OCP Ring judges require specific cross-column validation rules to ensure data integrity
+- **Impact:** Provides comprehensive cross-column validation for OCP Ring judges while maintaining existing validation integrity
+
+### [2025-07-31 22:02:30] Championship and Premiership: OCP Ring Status Lock Implementation
+- **Tabs:** Championship, Premiership
+- **Change:** OCP ring status dropdowns are now locked to appropriate values (CH for Championship, PR for Premiership)
+- **Summary:** 
+  - **Championship Tab**: OCP ring status dropdowns are locked to "CH" status (same pattern as Kitten tab KIT status)
+  - **Premiership Tab**: OCP ring status dropdowns are locked to "PR" status (same pattern as Kitten tab KIT status)
+  - **UI Implementation**: OCP rings show static span with locked status instead of dropdown (matches Kitten tab pattern)
+  - **Data Handling**: OCP rings automatically set correct status when cat numbers are entered
+  - **Validation Impact**: No validation changes needed - status is automatically set correctly
+- **Rationale:** OCP rings should have fixed status values that cannot be changed, following the same pattern as Kitten tab
+- **Impact:** OCP rings now have consistent, locked status behavior across Championship and Premiership tabs
+
+### [2025-07-31 16:54:17] All Tabs: OCP Ring Type Validation Implementation
+- **Tabs:** Championship, Premiership, Kitten, Breed Sheets, General
+- **Change:** Added validation support for new "OCP Ring" type with always 10 placements
+- **Summary:** 
+  - **Championship validation**: Added OCP case to `getFinalsPositionsForRingType()` - always returns 10
+  - **Premiership validation**: Added OCP case to `getPremiershipCountForRingType()` - always returns 10
+  - **Kitten validation**: Added OCP case to breakpoint calculation - always returns 10
+  - **General validation**: Updated ring type options to include "OCP Ring"
+  - **Validation logic**: OCP columns use same validation as Championship Top Ten but always require exactly 10 placements
+  - **Breed Sheets behavior**: OCP Ring behaves exactly like Allbreed on Breed Sheets tab, with "OCP" label instead of "AB"
+- **Rationale:** OCP Ring requires consistent validation across all tabs with no threshold checking
+- **Impact:** OCP Ring judges now have proper validation with always 10 placements across all tabs
+
+### [2025-01-31] Breed Sheets Tab: Super Specialty Bug Fix
+- **Tabs:** Breed Sheets
+- **Change:** Fixed bug where Super Specialty judges were not showing input fields on the right-hand side
+- **Summary:** 
+  - **Root Cause**: Missing "Super Specialty" case in `getBreedsForJudge()` and `getAvailableHairLengths()` functions
+  - **Fix**: Added "Super Specialty" to switch statements to return both long and short hair breeds (same as Allbreed behavior)
+  - **Result**: Super Specialty judges now properly display input fields and both Longhair/Shorthair sections
+- **Rationale**: Super Specialty should behave identically to Allbreed in BreedSheets tab except for label display (SSP vs AB)
+
+### [2025-01-31] All Tabs: Super Specialty Ring Type Implementation
+- **Tabs:** Championship, Premiership, Kitten, Breed Sheets, General
+- **Change:** Added new "Super Specialty" ring type that creates three columns (Longhair, Shorthair, Allbreed) across all tabs
+- **Summary:** 
+  - **New ring type**: Added "Super Specialty" to ring type options in General tab
+  - **Column generation**: Super Specialty judges create three columns across Championship, Premiership, and Kitten tabs:
+    - Longhair column (same validation as existing Longhair rings)
+    - Shorthair column (same validation as existing Shorthair rings)  
+    - Allbreed column (same validation as existing Allbreed rings)
+  - **Breed Sheets behavior**: Super Specialty behaves exactly like Allbreed on Breed Sheets tab, with "SSP" label instead of "AB"
+  - **Validation rules**: All existing validation rules for Longhair, Shorthair, and Allbreed apply to respective columns
+  - **CSV schema**: Updated CSV export schema to include "Super Specialty" in ring type enum
+  - **Excel export**: Updated excel export to handle Super Specialty column generation
+  - **Documentation updates**: Updated PROJECT_OVERVIEW.md with Super Specialty mapping and examples
+  - **Code changes**:
+    - Updated `GeneralTab.tsx` to include "Super Specialty" in ring type options
+    - Updated `ChampionshipTab.tsx`, `PremiershipTab.tsx`, `KittenTab.tsx` column generation logic
+    - Updated `App.tsx` column generation for ring type changes
+    - Updated `BreedSheetsTab.tsx` to show "SSP" label and handle Super Specialty like Allbreed
+    - Updated `excelExport.ts` to handle Super Specialty in breed sheets and tabular sections
+    - Updated CSV schema to include "Super Specialty" enum value
+    - Updated data types to include missing voided properties
+- **Rationale:** Super Specialty judges need to award Longhair, Shorthair, and Allbreed finals separately, requiring three distinct columns with independent validation
+- **Impact:** Provides support for Super Specialty ring type with proper column generation, validation, and labeling across all tabs
+
+---
+
+### [2024-12-19] All Tabs: Configurable Threshold Implementation for All Categories
+- **Tabs:** Championship, Kitten, Premiership, Household Pet
+- **Change:** Replaced hardcoded thresholds with configurable thresholds from Settings for all categories
+- **Summary:** 
+  - **Dynamic thresholds**: All thresholds are now configurable in Settings → Placement Thresholds:
+    - Championship: default 85 (was hardcoded 85)
+    - Kitten: default 75 (was hardcoded 75)
+    - Premiership: default 50 (was hardcoded 50)
+    - Household Pet: default 50 (was hardcoded 50)
+  - **Excel export/import**: All thresholds included in Settings sheet for Excel export/import
+  - **Validation updates**: All validation functions updated to use dynamic thresholds instead of hardcoded values
+  - **Documentation updates**: All validation documentation updated to reflect configurable thresholds
+  - **Code changes**:
+    - Updated `ChampionshipTab.tsx`, `KittenTab.tsx`, `PremiershipTab.tsx`, `HouseholdPetTab.tsx`
+    - Updated `championshipValidation.ts`, `kittenValidation.ts`, `premiershipValidation.ts`, `householdPetValidation.ts`
+    - Enhanced SettingsPanel with consolidated modal logic
+    - Updated App.tsx with callback handlers for all tabs
+    - Added helper functions for change detection and message generation
+- **Rationale:** Users can now adjust all thresholds based on their specific show requirements, providing maximum flexibility for different show sizes and formats
+- **Impact:** Provides configurable thresholds for all categories with proper user notification and selective data reset when changed
+
+---
+
+### [2024-12-19] All Tabs: Threshold Change Modal Removal - Simplified User Experience
+- **Tabs:** Championship, Kitten, Premiership, Household Pet
+- **Change:** Removed threshold change confirmation modals to simplify user experience
+- **Summary:** 
+  - **Modal removal**: Eliminated all threshold change confirmation modals (consolidated and individual)
+  - **Immediate effect**: Threshold changes now take effect immediately without user confirmation
+  - **Data preservation**: UI dynamically adjusts rows based on threshold values, data is preserved in memory
+  - **Export behavior**: Excel export automatically uses current threshold values, only exports appropriate number of rows
+  - **No data loss**: Hidden data remains in memory and reappears if threshold is changed back
+  - **Simplified workflow**: Users can change thresholds and see immediate visual feedback
+  - **Code cleanup**: Removed modal state management, handler functions, and callback props
+  - **Code changes**:
+    - Removed modal state variables and handlers from `SettingsPanel.tsx`
+    - Removed threshold change detection logic from `handleSaveSettings`
+    - Removed modal render components from `SettingsPanel.tsx`
+    - Removed callback props from `SettingsPanelProps` interface
+    - Removed callback implementations from `App.tsx`
+    - Simplified `handleSaveSettings` to save immediately without modal checks
+- **Rationale:** Analysis showed that threshold changes are non-destructive - UI adjusts dynamically, data is preserved, and export behavior is correct. Modal was unnecessary complexity that added friction without providing value.
+- **Impact:** Streamlined user experience with immediate threshold changes and no unnecessary confirmation dialogs
+
+---
+
+### [2024-12-19] Championship Tab: Configurable Championship Threshold Implementation
+- **Tab:** Championship
+- **Change:** Replaced hardcoded championship threshold (85) with configurable threshold from Settings
+- **Summary:** 
+  - **Dynamic threshold**: Championship threshold is now configurable in Settings → Placement Thresholds → Championship
+  - **Default value**: 85 (same as previous hardcoded value)
+  - **Modal prompt**: When threshold is changed, a modal warns that Championship tab will be reset
+  - **Tab reset**: Championship tab data is cleared and user is switched to Championship tab when threshold changes
+  - **Excel export/import**: Threshold is included in Settings sheet for Excel export/import
+  - **Validation updates**: All validation functions updated to use dynamic threshold instead of hardcoded 85
+  - **Documentation updates**: VALIDATION_CHAMPIONSHIP.md updated to reflect configurable threshold
+  - **Code changes**:
+    - Updated `ChampionshipTab.tsx` (4 instances of hardcoded 85 replaced)
+    - Updated `championshipValidation.ts` (12 instances of hardcoded 85 replaced)
+    - Added Settings sheet to Excel export/import functionality
+    - Added modal prompt in SettingsPanel for threshold changes
+    - Updated App.tsx to handle threshold change callback
+- **Rationale:** Users can now adjust the championship threshold based on their specific show requirements, providing flexibility for different show sizes and formats
+- **Impact:** Provides configurable championship threshold with proper user notification and data reset when changed
+
 ---
 
 ### [2024-12-19] All Tabs: Dynamic Max Cats Implementation
@@ -957,3 +1234,40 @@ This changelog records all changes, additions, and deletions to validation rules
 2024-06-20 - ChampionshipTab - AB/LH/SH CH finals validation logic now matches PremiershipTab finals logic exactly, including error precedence, sequential error logic, and assignment reminder. This ensures perfect parity and robust error handling across both tabs.
 
 2024-06-20 - ChampionshipTab - Order errors for Best AB CH are now only set if the cell is filled and incorrect, not for empty cells, matching PremiershipTab logic. This prevents premature error display and ensures perfect parity.
+
+### [2024-12-XX - Cross-Column Duplicate Prevention Fix](#)
+
+**Issue**: The "Cross-Column Duplicate Prevention" validation rule was not being called in the Super Specialty cross-column validation for both Championship and Premiership tabs.
+
+**Fix**: 
+- Added missing call to `validateCrossColumnDuplicates` function in `validateSuperSpecialtyCrossColumn` for both `championshipValidation.ts` and `premiershipValidation.ts`
+- Added the `validateCrossColumnDuplicates` function implementation to `premiershipValidation.ts` (it was already present in `championshipValidation.ts`)
+
+**Files Modified**:
+- `src/validation/championshipValidation.ts` - Added missing function call
+- `src/validation/premiershipValidation.ts` - Added missing function call and implementation
+
+**Testing**: The rule now properly detects when a cat number appears in both Longhair and Shorthair columns within the same Super Specialty ring and displays appropriate error messages.
+
+### [2025-07-31 - Kitten Tab Super Specialty Cross-Column Validation Implementation](#)
+
+**Issue**: The Kitten tab was missing the "Cross-Column Duplicate Prevention" validation rule in its Super Specialty cross-column validation, while Championship and Premiership tabs had complete SSP validation.
+
+**Fix**: 
+- Added missing call to `validateCrossColumnDuplicates` function in `validateSuperSpecialtyCrossColumn` for `kittenValidation.ts`
+- Added the `validateCrossColumnDuplicates` function implementation to `kittenValidation.ts`
+- Updated documentation to reflect that Kitten tab now has complete SSP validation
+
+**Files Modified**:
+- `src/validation/kittenValidation.ts` - Added missing function call and implementation
+- `docs/validation/VALIDATION_SUPER_SPECIALTY.md` - Updated Kitten tab section to list applicable SSP rules
+- `docs/validation/VALIDATION_KITTEN.md` - Added Super Specialty Cross-Column Validation section
+
+**Applicable SSP Rules for Kitten Tab**:
+- ✅ Title/Award Consistency (KIT status consistency)
+- ✅ Ranked Cats Priority (filler cats vs ranked cats in Allbreed)
+- ✅ Order Preservation Within Hair Length (order from specialty to Allbreed)
+- ❌ Specialty Finals Consistency (NOT APPLICABLE - no finals sections)
+- ✅ Cross-Column Duplicate Prevention (no cat in both LH and SH columns)
+
+**Testing**: The Kitten tab now has complete Super Specialty cross-column validation parity with Championship and Premiership tabs.

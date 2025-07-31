@@ -10,26 +10,26 @@
 
 ## Hair-Specific Breakpoint Logic
 
-The Premiership tab uses **hair-specific breakpoints** based on ring type:
+The Premiership tab uses **hair-specific breakpoints** based on ring type. The breakpoint threshold is configurable in the General Settings panel (default: 50).
 
 ### Allbreed Rings
-- **Breakpoint**: Premiership cats + Novices (LH GP + SH GP + LH PR + SH PR + LH NOV + SH NOV) ≥ 50
+- **Breakpoint**: Premiership cats + Novices (LH GP + SH GP + LH PR + SH PR + LH NOV + SH NOV) ≥ [configurable threshold]
 - **Note**: Novices (NOV) ARE included in the premiership count for breakpoint calculation
-- **If ≥ 50**: Top 15 positions, 3 Best AB PR, 3 Best LH PR, 3 Best SH PR
-- **If < 50**: Top 10 positions, 2 Best AB PR, 2 Best LH PR, 2 Best SH PR
+- **If ≥ threshold**: Top 15 positions, 3 Best AB PR, 3 Best LH PR, 3 Best SH PR
+- **If < threshold**: Top 10 positions, 2 Best AB PR, 2 Best LH PR, 2 Best SH PR
 
 ### Longhair Rings
-- **Breakpoint**: LH premiership cats + LH novices (LH GP + LH PR + LH NOV) ≥ 50
+- **Breakpoint**: LH premiership cats + LH novices (LH GP + LH PR + LH NOV) ≥ [configurable threshold]
 - **Note**: LH novices ARE included in the longhair count for breakpoint calculation
-- **If ≥ 50**: Top 15 positions, 3 Best LH PR
-- **If < 50**: Top 10 positions, 2 Best LH PR
+- **If ≥ threshold**: Top 15 positions, 3 Best LH PR
+- **If < threshold**: Top 10 positions, 2 Best LH PR
 - **Note**: Best AB PR and Best SH PR sections are disabled (not applicable)
 
 ### Shorthair Rings
-- **Breakpoint**: SH premiership cats + SH novices (SH GP + SH PR + SH NOV) ≥ 50
+- **Breakpoint**: SH premiership cats + SH novices (SH GP + SH PR + SH NOV) ≥ [configurable threshold]
 - **Note**: SH novices ARE included in the shorthair count for breakpoint calculation
-- **If ≥ 50**: Top 15 positions, 3 Best SH PR
-- **If < 50**: Top 10 positions, 2 Best SH PR
+- **If ≥ threshold**: Top 15 positions, 3 Best SH PR
+- **If < threshold**: Top 10 positions, 2 Best SH PR
 - **Note**: Best AB PR and Best LH PR sections are disabled (not applicable)
 
 ## Validation Order and Structure
@@ -67,6 +67,17 @@ Suppose Best AB PR is [8, 6].
 - **Invalid SH PR:** [7, 6] (7 is a filler above AB PR cat 6; error on 7)
 
 - **Single specialty strict validation**: For Longhair/Shorthair only rings, strict order validation with Top 10/15
+
+### 4. OCP Ring Cross-Column Validation (NEW)
+For OCP Ring judges (2 columns: Allbreed + OCP with same judge ID), additional cross-column validation runs after all existing validation:
+
+- **Title/Award Consistency**: Cannot have same cat # labeled GP in Allbreed column and PR in OCP column
+- **Ranked Cats Priority**: Filler cats (not ranked in Allbreed ring) cannot appear in OCP before ranked cats
+- **Order Preservation**: 
+  - Order of PR cats in Show Awards (Top 10/15) should be respected in OCP ranking
+  - Order of AB PR, LH PR, SH PR in Allbreed column finals should be respected in OCP ranking
+
+For detailed OCP Ring validation rules, see `docs/validation/VALIDATION_OCP_RING.md`.
 
 ## Eligibility Rules
 

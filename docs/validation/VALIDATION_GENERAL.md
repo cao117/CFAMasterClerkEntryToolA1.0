@@ -31,7 +31,7 @@ This document describes the **current validation rules** enforced in the General
   - Must be unique among all judges.
 - **Ring Type**
   - Required for each judge.
-  - Must be one of: Longhair, Shorthair, Allbreed, Double Specialty.
+  - Must be one of: Longhair, Shorthair, Allbreed, Double Specialty, Super Specialty, OCP Ring.
 - **Ring Number**
   - Required for each judge.
   - Must be between 1 and the maximum set in Settings Panel (default: 12).

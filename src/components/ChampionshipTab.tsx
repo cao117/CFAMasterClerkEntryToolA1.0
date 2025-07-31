@@ -90,6 +90,10 @@ type ChampionshipTabData = {
   championsFinals: { [key: string]: string };
   lhChampionsFinals: { [key: string]: string };
   shChampionsFinals: { [key: string]: string };
+  voidedShowAwards: { [key: string]: boolean };
+  voidedChampionsFinals: { [key: string]: boolean };
+  voidedLHChampionsFinals: { [key: string]: boolean };
+  voidedSHChampionsFinals: { [key: string]: boolean };
   errors: { [key: string]: string };
 };
 
@@ -125,7 +129,7 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
     // Accessibility: refs for ALL Cat # input fields (Show Awards + Finals)
     // We'll build a 2D array: catInputRefs[columnIndex][verticalRowIndex]
     // Calculate totalCatRows using consistent logic (like PremiershipTab approach but simplified)
-    const maxFinalsRows = championshipTotal >= 85 ? 5 : 3;
+    const maxFinalsRows = championshipTotal >= globalSettings.placement_thresholds.championship ? 5 : 3;
     const totalCatRows = numAwardRows + maxFinalsRows + maxFinalsRows + maxFinalsRows; // Show Awards + Best CH + LH CH + SH CH
     const catInputRefs = useRef<(HTMLInputElement | null)[][]>([]);
     useEffect(() => {
@@ -244,6 +248,30 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
             judge: { ...judge }, // keep original id
             specialty: 'Shorthair'
           });
+        } else if (judge.ringType === 'Super Specialty') {
+          // For Super Specialty, create three columns (LH, SH, AB) but all use the original judge's id (ring number) and info
+          columns.push({
+            judge: { ...judge }, // keep original id
+            specialty: 'Longhair'
+          });
+          columns.push({
+            judge: { ...judge }, // keep original id
+            specialty: 'Shorthair'
+          });
+          columns.push({
+            judge: { ...judge }, // keep original id
+            specialty: 'Allbreed'
+          });
+        } else if (judge.ringType === 'OCP Ring') {
+          // For OCP Ring, create two columns (AB, OCP) but both use the original judge's id (ring number) and info
+          columns.push({
+            judge: { ...judge }, // keep original id
+            specialty: 'Allbreed'
+          });
+          columns.push({
+            judge: { ...judge }, // keep original id
+            specialty: 'OCP'
+          });
         } else {
           // For all other types, just use the judge as-is
           columns.push({
@@ -266,10 +294,17 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
       setChampionshipTabData((prev: ChampionshipTabData) => {
         if (field === 'catNumber') {
           const prevCell = prev.showAwards[key] || {};
+          // Determine the correct status based on the column specialty
+          const column = columns[columnIndex];
+          let defaultStatus = 'GC';
+          if (column?.specialty === 'OCP') {
+            defaultStatus = 'CH'; // OCP rings are locked to CH status
+          }
+          
           const newCell = {
             ...prevCell,
             catNumber: value,
-            status: prevCell.status || (value ? 'GC' : '')
+            status: prevCell.status || (value ? defaultStatus : '')
           };
           return {
             ...prev,
@@ -354,12 +389,12 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
     }, [judges]);
 
     useEffect(() => {
-      if (championshipTotal >= 85) {
+      if (championshipTotal >= globalSettings.placement_thresholds.championship) {
         setNumAwardRows(15);
       } else {
         setNumAwardRows(10);
       }
-    }, [championshipTotal]);
+    }, [championshipTotal, globalSettings.placement_thresholds.championship]);
 
     // Test data generation function for Championship tab - UPDATED TO COMPLY WITH VALIDATION RULES
     const fillTestData = useCallback(() => {
@@ -525,6 +560,10 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
         championsFinals: newChampionsFinals,
         lhChampionsFinals: newLhChampionsFinals,
         shChampionsFinals: newShChampionsFinals,
+        voidedShowAwards: {},
+        voidedChampionsFinals: {},
+        voidedLHChampionsFinals: {},
+        voidedSHChampionsFinals: {},
         errors: {}
       }));
       // After state is updated, trigger a full-form validation to clear any stale errors
@@ -561,21 +600,44 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
       // Add useEffect to run validation after any relevant state change
   useEffect(() => {
     setErrors(
-      validateChampionshipTab({
+      validateChampionshipTab(prepareValidationInput(), globalSettings.max_cats)
+    );
+  }, [columns, championshipTabData.showAwards, championshipTabData.championsFinals, championshipTabData.lhChampionsFinals, championshipTabData.shChampionsFinals, championshipTotal, championshipCounts, globalSettings.max_cats]);
+
+    // Helper function to prepare validation input with OCP status forcing
+    const prepareValidationInput = () => {
+      // Prepare showAwards data with OCP status forcing (same logic as getShowAward)
+      const processedShowAwards = { ...championshipTabData.showAwards };
+      Object.keys(processedShowAwards).forEach(key => {
+        const [colIdx, rowIdx] = key.split('-').map(Number);
+        const cell = processedShowAwards[key];
+        const column = columns[colIdx];
+        if (column?.specialty === 'OCP' && cell.catNumber && !isVoidInput(cell.catNumber)) {
+          processedShowAwards[key] = { ...cell, status: 'CH' };
+        }
+      });
+
+      return {
         columns,
-        showAwards: championshipTabData.showAwards,
+        showAwards: processedShowAwards,
         championsFinals: championshipTabData.championsFinals,
         lhChampionsFinals: championshipTabData.lhChampionsFinals,
         shChampionsFinals: championshipTabData.shChampionsFinals,
         championshipTotal,
         championshipCounts
-      }, globalSettings.max_cats)
-    );
-  }, [columns, championshipTabData.showAwards, championshipTabData.championsFinals, championshipTabData.lhChampionsFinals, championshipTabData.shChampionsFinals, championshipTotal, championshipCounts, globalSettings.max_cats]);
+      };
+    };
 
     // Defensive getter for showAwards (Top 10/15)
-    const getShowAward = (colIdx: number, i: number) =>
-      championshipTabData.showAwards[`${colIdx}-${i}`] || { catNumber: '', status: 'GC' };
+    const getShowAward = (colIdx: number, i: number) => {
+      const cell = championshipTabData.showAwards[`${colIdx}-${i}`] || { catNumber: '', status: 'GC' };
+      // For OCP rings, ensure status is always CH
+      const column = columns[colIdx];
+      if (column?.specialty === 'OCP' && cell.catNumber && !isVoidInput(cell.catNumber)) {
+        return { ...cell, status: 'CH' };
+      }
+      return cell;
+    };
 
     // Ensure showAwards is initialized for all visible cells (robust, merge missing keys)
     useEffect(() => {
@@ -633,6 +695,10 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
         championsFinals: {},
         lhChampionsFinals: {},
         shChampionsFinals: {},
+        voidedShowAwards: {},
+        voidedChampionsFinals: {},
+        voidedLHChampionsFinals: {},
+        voidedSHChampionsFinals: {},
         errors: {},
       }));
       
@@ -726,6 +792,8 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
           return championshipCounts.lhGcs + championshipCounts.lhChs + championshipCounts.lhNovs;
         case 'Shorthair':
           return championshipCounts.shGcs + championshipCounts.shChs + championshipCounts.shNovs;
+        case 'OCP':
+          return 10; // OCP always requires exactly 10 placements, no threshold checking
         default:
           return championshipCounts.lhGcs + championshipCounts.shGcs + championshipCounts.lhChs + championshipCounts.shChs + championshipCounts.lhNovs + championshipCounts.shNovs; // Championship cats + Novices
       }
@@ -741,7 +809,7 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
     const getShowAwardsRowCount = (colIdx: number, specialty: string): number => {
       // Calculate the correct breakpoint based on ring type
       const count = getChampionshipCountForRingType(specialty);
-      const calculated = count >= 85 ? 15 : 10;
+      const calculated = count >= globalSettings.placement_thresholds.championship ? 15 : 10;
       
       // Only check for imported data if it's within the valid range for this ring type
       let maxIdx = -1;
@@ -762,7 +830,7 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
      * This ensures that after CSV import, if 5 rows are present, all are shown, even if the show count is not set before render.
      */
     const getFinalsRowCount = (colIdx: number, specialty: string, section: 'champions' | 'lhChampions' | 'shChampions'): number => {
-      const calculated = getChampionshipCountForRingType(specialty) >= 85 ? 5 : 3;
+      const calculated = getChampionshipCountForRingType(specialty) >= globalSettings.placement_thresholds.championship ? 5 : 3;
       let finalsObj: Record<string, string> = {};
       if (section === 'champions') finalsObj = championshipTabData.championsFinals;
       if (section === 'lhChampions') finalsObj = championshipTabData.lhChampionsFinals;
@@ -828,7 +896,7 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
           return;
         }
         // Full validation handles all checks including duplicates
-        setErrors(validateChampionshipTab(input, globalSettings.max_cats));
+        setErrors(validateChampionshipTab(prepareValidationInput(), globalSettings.max_cats, globalSettings.placement_thresholds.championship));
       }
     };
 
@@ -916,20 +984,20 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
             delete copy[errorKey];
             return copy;
           });
-          const allErrors = validateChampionshipTab(input, globalSettings.max_cats);
+          const allErrors = validateChampionshipTab(prepareValidationInput(), globalSettings.max_cats, globalSettings.placement_thresholds.championship);
           setErrors(allErrors);
           setLocalInputState(prev => { const copy = { ...prev }; delete copy[key]; return copy; });
           return;
         }
         if (localValue && !validateCatNumber(localValue, globalSettings.max_cats)) {
           setErrors((prev: any) => ({ ...prev, [errorKey]: `Cat number must be between 1-${globalSettings.max_cats} or VOID` }));
-          const allErrors = validateChampionshipTab(input, globalSettings.max_cats);
+          const allErrors = validateChampionshipTab(prepareValidationInput(), globalSettings.max_cats, globalSettings.placement_thresholds.championship);
           setErrors(allErrors); // Always set all errors after any check
           setLocalInputState(prev => { const copy = { ...prev }; delete copy[key]; return copy; });
           return;
         }
         // Duplicate check (full-form): show duplicate error if present before sequential
-        const allErrors = validateChampionshipTab(input, globalSettings.max_cats);
+        const allErrors = validateChampionshipTab(prepareValidationInput(), globalSettings.max_cats, globalSettings.placement_thresholds.championship);
         if (allErrors[errorKey] && allErrors[errorKey].toLowerCase().includes('duplicate')) {
           setErrors(allErrors); // Set all errors for all cells, not just this one
           setLocalInputState(prev => { const copy = { ...prev }; delete copy[key]; return copy; });
@@ -938,13 +1006,13 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
         // Sequential entry check (only if no duplicate error)
         if (!validateSequentialEntry(input, section, colIdx, rowIdx, localValue)) {
           setErrors((prev: any) => ({ ...prev, [errorKey]: 'You must fill previous placements before entering this position.' }));
-          const allErrorsSeq = validateChampionshipTab(input, globalSettings.max_cats);
+          const allErrorsSeq = validateChampionshipTab(prepareValidationInput(), globalSettings.max_cats, globalSettings.placement_thresholds.championship);
           setErrors(allErrorsSeq); // Always set all errors after any check
           setLocalInputState(prev => { const copy = { ...prev }; delete copy[key]; return copy; });
           return;
         }
         // If no errors, always run full-form validation for all cells
-        setErrors(validateChampionshipTab(input, globalSettings.max_cats));
+        setErrors(validateChampionshipTab(prepareValidationInput(), globalSettings.max_cats, globalSettings.placement_thresholds.championship));
         setLocalInputState(prev => { const copy = { ...prev }; delete copy[key]; return copy; });
         return;
       } else {
@@ -955,7 +1023,7 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
             delete copy[errorKey];
             return copy;
           });
-          setErrors(validateChampionshipTab(input, globalSettings.max_cats));
+          setErrors(validateChampionshipTab(prepareValidationInput(), globalSettings.max_cats, globalSettings.placement_thresholds.championship));
           setLocalInputState(prev => { const copy = { ...prev }; delete copy[key]; return copy; });
           return;
         }
@@ -964,7 +1032,7 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
           setLocalInputState(prev => { const copy = { ...prev }; delete copy[key]; return copy; });
           return;
         }
-        const allErrors = validateChampionshipTab(input, globalSettings.max_cats);
+        const allErrors = validateChampionshipTab(prepareValidationInput(), globalSettings.max_cats, globalSettings.placement_thresholds.championship);
         if (allErrors[errorKey] && allErrors[errorKey].toLowerCase().includes('duplicate')) {
           setErrors((prev: any) => ({ ...prev, [errorKey]: allErrors[errorKey] }));
           setLocalInputState(prev => { const copy = { ...prev }; delete copy[key]; return copy; });
@@ -1218,22 +1286,32 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                                     />
                                     {/* Only render status dropdown if not VOID */}
                                     {!isVoidInput(award.catNumber) && (
-                                      <CustomSelect
-                                        options={['GC', 'CH', 'NOV']}
-                                        value={award.status || 'GC'}
-                                        onChange={val => updateShowAward(columnIndex, i, 'status', val)}
-                                        className="min-w-[70px]"
-                                        ariaLabel="Status"
-                                        borderColor="border-violet-300"
-                                        focusBorderColor="focus:border-violet-500"
-                                        textColor="text-violet-700"
-                                        highlightBg="bg-violet-50"
-                                        highlightText="text-violet-900"
-                                        selectedBg="bg-violet-100"
-                                        selectedText="text-violet-800"
-                                        hoverBg="bg-violet-50"
-                                        hoverText="text-violet-900"
-                                      />
+                                      col.specialty === 'OCP' ? (
+                                        // OCP rings are locked to CH status (same pattern as Kitten tab KIT status)
+                                        <span
+                                          className="min-w-[70px] inline-flex items-center justify-center rounded-full px-3 py-1.5 border border-violet-300 text-violet-700 text-xs font-semibold shadow-sm opacity-80 bg-white"
+                                          aria-label="Status"
+                                        >
+                                          CH
+                                        </span>
+                                      ) : (
+                                        <CustomSelect
+                                          options={['GC', 'CH', 'NOV']}
+                                          value={award.status || 'GC'}
+                                          onChange={val => updateShowAward(columnIndex, i, 'status', val)}
+                                          className="min-w-[70px]"
+                                          ariaLabel="Status"
+                                          borderColor="border-violet-300"
+                                          focusBorderColor="focus:border-violet-500"
+                                          textColor="text-violet-700"
+                                          highlightBg="bg-violet-50"
+                                          highlightText="text-violet-900"
+                                          selectedBg="bg-violet-100"
+                                          selectedText="text-violet-800"
+                                          hoverBg="bg-violet-50"
+                                          hoverText="text-violet-900"
+                                        />
+                                      )
                                     )}
                                   </div>
                                     {/* Error message */}

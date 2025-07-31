@@ -357,6 +357,13 @@ function App() {
         if (judge.ringType === 'Double Specialty') {
           columns.push({ judge, specialty: 'Longhair' });
           columns.push({ judge, specialty: 'Shorthair' });
+        } else if (judge.ringType === 'Super Specialty') {
+          columns.push({ judge, specialty: 'Longhair' });
+          columns.push({ judge, specialty: 'Shorthair' });
+          columns.push({ judge, specialty: 'Allbreed' });
+        } else if (judge.ringType === 'OCP Ring') {
+          columns.push({ judge, specialty: 'Allbreed' });
+          columns.push({ judge, specialty: 'OCP' });
         } else {
           columns.push({ judge, specialty: judge.ringType });
         }
@@ -437,8 +444,18 @@ function App() {
   // Function to handle Excel import and restore application state
   const handleCSVImport = async () => {
     try {
-      const restoredState = await handleRestoreFromExcel(showSuccess, showError);
-      if (!restoredState) return;
+      const importResult = await handleRestoreFromExcel(showSuccess, showError);
+      if (!importResult) return;
+
+      const { showState: restoredState, settings: importedSettings } = importResult;
+
+      // Update global settings if imported
+      if (importedSettings) {
+        setGlobalSettings((prev: any) => ({
+          ...prev,
+          ...importedSettings
+        }));
+      }
 
       // Update all state with restored data
       setShowData(restoredState.general);

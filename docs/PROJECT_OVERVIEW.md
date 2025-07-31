@@ -53,6 +53,8 @@ The columns in the Championship and Premiership tabs are generated dynamically b
 | Longhair             | 1 column                               | Longhair                |
 | Shorthair            | 1 column                               | Shorthair               |
 | Double Specialty     | 2 columns (one LH, one SH)             | Longhair, Shorthair     |
+| Super Specialty      | 3 columns (LH, SH, AB)                 | Longhair, Shorthair, Allbreed |
+| OCP Ring             | 2 columns (AB, OCP)                     | Allbreed, OCP           |
 
 - **Double Specialty**: Each judge with this ring type is split into two columns—one for Longhair, one for Shorthair—because CFA rules require these to be judged and awarded separately.
 
@@ -65,6 +67,8 @@ Suppose the General tab has the following judges:
 | Smith      | 1       | SM      | Allbreed          |
 | Jones      | 2       | JN      | Double Specialty  |
 | Lee        | 3       | LE      | Shorthair         |
+| Brown      | 4       | BR      | Super Specialty   |
+| Wilson     | 5       | WL      | OCP Ring          |
 
 **Resulting columns in Championship/Premiership tabs:**
 
@@ -74,18 +78,27 @@ Suppose the General tab has the following judges:
 | 2       | Longhair   | JN            | Double Spec |
 | 3       | Shorthair  | JN            | Double Spec |
 | 4       | Shorthair  | LE            | Shorthair   |
+| 5       | Longhair   | BR            | Super Spec  |
+| 6       | Shorthair  | BR            | Super Spec  |
+| 7       | Allbreed   | BR            | Super Spec  |
+| 8       | Allbreed   | WL            | OCP Ring    |
+| 9       | OCP        | WL            | OCP Ring    |
 
 - The "Double Specialty" judge (JN) appears as two columns: one for Longhair, one for Shorthair.
+- The "Super Specialty" judge (BR) appears as three columns: one for Longhair, one for Shorthair, and one for Allbreed.
+- The "OCP Ring" judge (WL) appears as two columns: one for Allbreed, one for OCP.
 
 #### Column Labeling
 
 - Each column is labeled with the ring number, judge acronym, and specialty (e.g., "Ring 2 - JN - Longhair").
 - The order of columns matches the order of judges in the General tab, with Double Specialty judges split into two consecutive columns.
 
-#### Background: Why Double Specialty Judges Create Two Columns
+#### Background: Why Double Specialty, Super Specialty, and OCP Ring Judges Create Multiple Columns
 
 - In CFA shows, a "Double Specialty" ring means the judge awards Longhair and Shorthair finals separately, as if they were two distinct rings.
-- Therefore, the tool must provide two separate columns for each Double Specialty judge, ensuring that awards and validation are handled independently for each specialty.
+- A "Super Specialty" ring means the judge awards Longhair, Shorthair, and Allbreed finals separately, as if they were three distinct rings.
+- An "OCP Ring" means the judge awards Allbreed and OCP finals separately, as if they were two distinct rings.
+- Therefore, the tool must provide separate columns for each specialty, ensuring that awards and validation are handled independently for each specialty.
 
 ---
 
@@ -104,7 +117,7 @@ Suppose the General tab has the following judges:
 ### Judge Fields
 - **Name**: Judge's full name (max 120 chars, unique).
 - **Acronym**: Judge's acronym (max 6 chars, unique).
-- **Ring Type**: One of: Allbreed, Longhair, Shorthair, Double Specialty.
+- **Ring Type**: One of: Allbreed, Longhair, Shorthair, Double Specialty, Super Specialty.
 
 ### Championship Tab Fields
 - **Show Awards (Top 10/15)**: Cat # and status (GC, CH, NOV) for each placement per judge/ring.

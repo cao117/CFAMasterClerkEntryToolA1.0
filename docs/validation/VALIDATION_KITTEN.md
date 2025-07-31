@@ -13,22 +13,22 @@ This document describes the **current validation rules** enforced in the Kitten 
 
 ## Hair-Specific Breakpoint Logic
 
-The Kitten tab uses **hair-specific breakpoints** based on ring type:
+The Kitten tab uses **hair-specific breakpoints** based on ring type. The breakpoint threshold is configurable in the General Settings panel (default: 75).
 
 ### Allbreed Rings
-- **Breakpoint**: Total kittens (LH + SH) ≥ 75
-- **If ≥ 75**: Top 15 positions
-- **If < 75**: Top 10 positions
+- **Breakpoint**: Total kittens (LH + SH) ≥ [configurable threshold]
+- **If ≥ threshold**: Top 15 positions
+- **If < threshold**: Top 10 positions
 
 ### Longhair Rings
-- **Breakpoint**: LH kittens ≥ 75
-- **If ≥ 75**: Top 15 positions
-- **If < 75**: Top 10 positions
+- **Breakpoint**: LH kittens ≥ [configurable threshold]
+- **If ≥ threshold**: Top 15 positions
+- **If < threshold**: Top 10 positions
 
 ### Shorthair Rings
-- **Breakpoint**: SH kittens ≥ 75
-- **If ≥ 75**: Top 15 positions
-- **If < 75**: Top 10 positions
+- **Breakpoint**: SH kittens ≥ [configurable threshold]
+- **If ≥ threshold**: Top 15 positions
+- **If < threshold**: Top 10 positions
 
 ## Validation Rules
 - **Cat number format:** Must be between 1-{max_cats}
@@ -38,6 +38,16 @@ The Kitten tab uses **hair-specific breakpoints** based on ring type:
 - **If a Cat # input is VOID, the status label is hidden (not rendered) for that cell.**
 - **Voiding:** Voiding a cat number in any cell in a column voids all instances of that cat number in that column
 - **Error display:** Errors are shown inline, with the same styling and precedence as the Premiership tab
+
+## Super Specialty Cross-Column Validation
+The Kitten tab includes Super Specialty cross-column validation for rings with exactly 3 columns (Longhair + Shorthair + Allbreed) with the same judge ID:
+
+- **Title/Award Consistency**: KIT status must be consistent across all Super Specialty columns
+- **Ranked Cats Priority**: Filler cats cannot be placed before ranked cats in the Allbreed column
+- **Order Preservation Within Hair Length**: Cats from specialty columns must maintain their relative order when appearing in the Allbreed column
+- **Cross-Column Duplicate Prevention**: A cat number cannot appear in both Longhair and Shorthair columns within the same Super Specialty ring
+
+**Note**: Specialty Finals Consistency rule does not apply to Kitten tab as it has no finals sections.
 
 ## Error Precedence
 For each cell, only the highest-precedence error is shown:

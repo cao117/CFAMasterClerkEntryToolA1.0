@@ -78,6 +78,7 @@ interface SettingsPanelProps {
     long_hair_breeds: string[];
   }>>;
   currentNumberOfJudges: number;
+
 }
 
 type SettingsSection = 'general' | 'placement' | 'breed';
@@ -95,7 +96,9 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess, globalSett
   useEffect(() => {
     setLocalMaxCats(globalSettings.max_cats.toString());
   }, [globalSettings.max_cats]);
+  
 
+  
   // Keyboard accessibility: ESC to close
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -190,6 +193,7 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess, globalSett
   // Update placement threshold settings
   const updatePlacementThreshold = (field: keyof SettingsData['placement_thresholds'], value: string) => {
     const numValue = handleNumericInput(value);
+    
     setGlobalSettings(prev => ({
       ...prev,
       placement_thresholds: {
@@ -348,9 +352,14 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess, globalSett
     setShowDeleteModal(false);
     setBreedToDelete('');
   };
+  
+  // Championship threshold change modal handlers
+
 
   // Save settings
   const handleSaveSettings = () => {
+    console.log('Save Settings clicked');
+    
     // Validate max_judges before saving
     if (!validateMaxJudgesBeforeSave()) {
       return; // Don't save if validation fails
@@ -1124,6 +1133,8 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess, globalSett
         onConfirm={handleRestoreDefaults}
         onCancel={() => setShowRestoreDefaultsModal(false)}
       />
+      
+
     </div>
   );
 } 

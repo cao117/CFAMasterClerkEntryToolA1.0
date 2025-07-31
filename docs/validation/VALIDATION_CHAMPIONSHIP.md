@@ -1,5 +1,12 @@
 # Championship Tab Validation Rules
 
+> **2024-12-19: Configurable Championship Threshold**
+> - The Championship threshold is now configurable in Settings → Placement Thresholds → Championship
+> - Default value: 85 (same as previous hardcoded value)
+> - Changes take effect immediately without confirmation
+> - The threshold determines Top 10 vs Top 15 positions and Top 3 vs Top 5 finals positions
+> - Threshold changes are persisted in localStorage and included in Excel export/import
+
 > **2024-06-22: VOID Logic Refactor**
 > - Voided ("VOID") cat numbers are now always ignored for all validation and error assignment in the Championship tab, matching KittenTab.
 > - VOID cat numbers are never included in duplicate detection, sequential checks, status checks, or any other validation.
@@ -23,23 +30,23 @@ This document describes the **current validation rules** enforced in the Champio
 The Championship tab uses **hair-specific breakpoints** based on ring type:
 
 ### Allbreed Rings
-- **Breakpoint**: Championship cats + Novices (LH GC + SH GC + LH CH + SH CH + LH NOV + SH NOV) ≥ 85
+- **Breakpoint**: Championship cats + Novices (LH GC + SH GC + LH CH + SH CH + LH NOV + SH NOV) ≥ Championship Threshold (configurable, default: 85)
 - **Note**: Novices (NOV) ARE included in the championship count for breakpoint calculation
-- **If ≥ 85**: Top 15 positions, 5 Best AB CH, 5 Best LH CH, 5 Best SH CH
-- **If < 85**: Top 10 positions, 3 Best AB CH, 3 Best LH CH, 3 Best SH CH
+- **If ≥ Championship Threshold**: Top 15 positions, 5 Best AB CH, 5 Best LH CH, 5 Best SH CH
+- **If < Championship Threshold**: Top 10 positions, 3 Best AB CH, 3 Best LH CH, 3 Best SH CH
 
 ### Longhair Rings
-- **Breakpoint**: LH championship cats + LH novices (LH GC + LH CH + LH NOV) ≥ 85
+- **Breakpoint**: LH championship cats + LH novices (LH GC + LH CH + LH NOV) ≥ Championship Threshold (configurable, default: 85)
 - **Note**: LH novices ARE included in the longhair count for breakpoint calculation
-- **If ≥ 85**: Top 15 positions, 5 Best LH CH
-- **If < 85**: Top 10 positions, 3 Best LH CH
+- **If ≥ Championship Threshold**: Top 15 positions, 5 Best LH CH
+- **If < Championship Threshold**: Top 10 positions, 3 Best LH CH
 - **Note**: Best AB CH and Best SH CH sections are disabled (not applicable)
 
 ### Shorthair Rings
-- **Breakpoint**: SH championship cats + SH novices (SH GC + SH CH + SH NOV) ≥ 85
+- **Breakpoint**: SH championship cats + SH novices (SH GC + SH CH + SH NOV) ≥ Championship Threshold (configurable, default: 85)
 - **Note**: SH novices ARE included in the shorthair count for breakpoint calculation
-- **If ≥ 85**: Top 15 positions, 5 Best SH CH
-- **If < 85**: Top 10 positions, 3 Best SH CH
+- **If ≥ Championship Threshold**: Top 15 positions, 5 Best SH CH
+- **If < Championship Threshold**: Top 10 positions, 3 Best SH CH
 - **Note**: Best AB CH and Best LH CH sections are disabled (not applicable)
 
 ## Validation Order and Structure
@@ -75,6 +82,17 @@ Suppose Best AB CH is [3, 2].
 - **Invalid LH CH:** [5, 3, 2] (5 is a filler above AB CH cats; error on 5)
 - **Valid SH CH:** [2, 4] (2 is at the top, filler 4 after)
 - **Invalid SH CH:** [4, 2] (4 is a filler above AB CH cat 2; error on 4)
+
+### 4. OCP Ring Cross-Column Validation (NEW)
+For OCP Ring judges (2 columns: Allbreed + OCP with same judge ID), additional cross-column validation runs after all existing validation:
+
+- **Title/Award Consistency**: Cannot have same cat # labeled GC in Allbreed column and CH in OCP column
+- **Ranked Cats Priority**: Filler cats (not ranked in Allbreed ring) cannot appear in OCP before ranked cats
+- **Order Preservation**: 
+  - Order of CH cats in Show Awards (Top 10/15) should be respected in OCP ranking
+  - Order of AB CH, LH CH, SH CH in Allbreed column finals should be respected in OCP ranking
+
+For detailed OCP Ring validation rules, see `docs/validation/VALIDATION_OCP_RING.md`.
 
 ## Eligibility Rules
 

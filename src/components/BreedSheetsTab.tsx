@@ -196,10 +196,10 @@ const BreedSheetsTab: React.FC<BreedSheetsTabProps> = (props) => {
         // Include NOV cats for breed sheets (they can get BoB/2BoB)
         const chLHCount = showCounts.championshipCounts.lhGcs + showCounts.championshipCounts.lhChs + showCounts.championshipCounts.lhNovs;
         const chSHCount = showCounts.championshipCounts.shGcs + showCounts.championshipCounts.shChs + showCounts.championshipCounts.shNovs;
-        if (chLHCount > 0 && (selectedJudge.ringType === 'Longhair' || selectedJudge.ringType === 'Double Specialty' || selectedJudge.ringType === 'Allbreed')) {
+        if (chLHCount > 0 && (selectedJudge.ringType === 'Longhair' || selectedJudge.ringType === 'Double Specialty' || selectedJudge.ringType === 'Super Specialty' || selectedJudge.ringType === 'Allbreed' || selectedJudge.ringType === 'OCP Ring')) {
           hairLengths.push('Longhair');
         }
-        if (chSHCount > 0 && (selectedJudge.ringType === 'Shorthair' || selectedJudge.ringType === 'Double Specialty' || selectedJudge.ringType === 'Allbreed')) {
+        if (chSHCount > 0 && (selectedJudge.ringType === 'Shorthair' || selectedJudge.ringType === 'Double Specialty' || selectedJudge.ringType === 'Super Specialty' || selectedJudge.ringType === 'Allbreed' || selectedJudge.ringType === 'OCP Ring')) {
           hairLengths.push('Shorthair');
         }
         break;
@@ -207,20 +207,20 @@ const BreedSheetsTab: React.FC<BreedSheetsTabProps> = (props) => {
         // Include NOV cats for breed sheets (they can get BoB/2BoB)
         const prLHCount = showCounts.premiershipCounts.lhGps + showCounts.premiershipCounts.lhPrs + showCounts.premiershipCounts.lhNovs;
         const prSHCount = showCounts.premiershipCounts.shGps + showCounts.premiershipCounts.shPrs + showCounts.premiershipCounts.shNovs;
-        if (prLHCount > 0 && (selectedJudge.ringType === 'Longhair' || selectedJudge.ringType === 'Double Specialty' || selectedJudge.ringType === 'Allbreed')) {
+        if (prLHCount > 0 && (selectedJudge.ringType === 'Longhair' || selectedJudge.ringType === 'Double Specialty' || selectedJudge.ringType === 'Super Specialty' || selectedJudge.ringType === 'Allbreed' || selectedJudge.ringType === 'OCP Ring')) {
           hairLengths.push('Longhair');
         }
-        if (prSHCount > 0 && (selectedJudge.ringType === 'Shorthair' || selectedJudge.ringType === 'Double Specialty' || selectedJudge.ringType === 'Allbreed')) {
+        if (prSHCount > 0 && (selectedJudge.ringType === 'Shorthair' || selectedJudge.ringType === 'Double Specialty' || selectedJudge.ringType === 'Super Specialty' || selectedJudge.ringType === 'Allbreed' || selectedJudge.ringType === 'OCP Ring')) {
           hairLengths.push('Shorthair');
         }
         break;
       case 'Kitten':
         const kitLHCount = showCounts.kittenCounts.lhKittens;
         const kitSHCount = showCounts.kittenCounts.shKittens;
-        if (kitLHCount > 0 && (selectedJudge.ringType === 'Longhair' || selectedJudge.ringType === 'Double Specialty' || selectedJudge.ringType === 'Allbreed')) {
+        if (kitLHCount > 0 && (selectedJudge.ringType === 'Longhair' || selectedJudge.ringType === 'Double Specialty' || selectedJudge.ringType === 'Super Specialty' || selectedJudge.ringType === 'Allbreed')) {
           hairLengths.push('Longhair');
         }
-        if (kitSHCount > 0 && (selectedJudge.ringType === 'Shorthair' || selectedJudge.ringType === 'Double Specialty' || selectedJudge.ringType === 'Allbreed')) {
+        if (kitSHCount > 0 && (selectedJudge.ringType === 'Shorthair' || selectedJudge.ringType === 'Double Specialty' || selectedJudge.ringType === 'Super Specialty' || selectedJudge.ringType === 'Allbreed')) {
           hairLengths.push('Shorthair');
         }
         break;
@@ -239,7 +239,9 @@ const BreedSheetsTab: React.FC<BreedSheetsTabProps> = (props) => {
       case 'Shorthair':
         return { lhBreeds: [], shBreeds: globalSettings.short_hair_breeds };
       case 'Double Specialty':
+      case 'Super Specialty':
       case 'Allbreed':
+      case 'OCP Ring':
         return { lhBreeds: globalSettings.long_hair_breeds, shBreeds: globalSettings.short_hair_breeds };
       default:
         return { lhBreeds: [], shBreeds: [] };
@@ -701,7 +703,7 @@ const BreedSheetsTab: React.FC<BreedSheetsTabProps> = (props) => {
               <span className="font-semibold">{selectedJudge.name}</span>
               <span className="text-cyan-400">•</span>
               <span className="text-xs font-medium text-cyan-600 bg-cyan-100 px-2 py-0.5 rounded-full">
-                {selectedJudge.ringType === 'Allbreed' ? 'AB' : selectedJudge.ringType === 'Double Specialty' ? 'DSP' : selectedJudge.ringType === 'Longhair' ? 'LH' : 'SH'}
+                {selectedJudge.ringType === 'Allbreed' ? 'AB' : selectedJudge.ringType === 'Double Specialty' ? 'DSP' : selectedJudge.ringType === 'Super Specialty' ? 'SSP' : selectedJudge.ringType === 'Longhair' ? 'LH' : 'SH'}
               </span>
             </div>
           )}
@@ -750,7 +752,7 @@ const BreedSheetsTab: React.FC<BreedSheetsTabProps> = (props) => {
                               ? 'text-cyan-800'
                               : 'text-gray-700 group-hover:text-gray-900'
                           }`}>
-                            Judge {judge.id.toString().padStart(2, '0')} • {judge.name.split(' ').map(n => n[0]).join('.')} • {judge.ringType === 'Allbreed' ? 'AB' : judge.ringType === 'Double Specialty' ? 'DSP' : judge.ringType === 'Longhair' ? 'LH' : 'SH'}
+                            Judge {judge.id.toString().padStart(2, '0')} • {judge.name.split(' ').map(n => n[0]).join('.')} • {judge.ringType === 'Allbreed' ? 'AB' : judge.ringType === 'Double Specialty' ? 'DSP' : judge.ringType === 'Super Specialty' ? 'SSP' : judge.ringType === 'Longhair' ? 'LH' : 'SH'}
                           </span>
                           
                           {/* Check Icon - Only for Selected */}

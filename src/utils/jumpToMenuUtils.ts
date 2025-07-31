@@ -16,6 +16,8 @@ export const getRoomTypeAbbreviation = (roomType: string): string => {
       return 'LH';
     case 'Shorthair':
       return 'SH';
+    case 'OCP':
+      return 'OCP';
     default:
       return roomType;
   }

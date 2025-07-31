@@ -1,0 +1,734 @@
+# Debugging Rules - Manual Testing with Debug Information Workflow
+
+---
+alwaysApply: false
+---
+
+## 🧠 DEBUGGING ATTENTION MANAGEMENT - READ EVERY 3 EXCHANGES
+**NEVER FORGET THESE DEBUGGING CONSTRAINTS:**
+- ZERO tolerance for skipping debugging steps
+- ASK clarifying questions ONE BY ONE, WAIT for confirmation before next question
+- NEVER ask multiple questions simultaneously about the bug
+- Manual testing with debug info after 2 failed fixes
+- Complete ALL verification steps before implementing fixes
+- Documentation updates are MANDATORY after confirmed fixes
+
+**When debugging context feels heavy (>50 exchanges):**
+- State: "Reviewing debugging-rules.mdc for compliance"
+- Summarize current debugging progress and fix attempts
+- Request context refresh if uncertain about bug details
+- NEVER proceed with fixes when unsure - STOP and clarify
+
+### ALWAYS EXECUTE ALL RULE STRICTLY WITHOUT SKIPPING
+**REQUIRED**: Always apply all the rules below strictly one by one, do not skip or alter the rules in anyway. After a step is done, always let user know which next rule is being completed. AGAIN THIS IS MANDATORY
+
+## MANDATORY STARTUP PROTOCOL
+
+### ALWAYS START WITH THIS MESSAGE
+**REQUIRED**: Every debugging response must begin with:
+"🔍 Ready to solve this puzzle! Let me analyze this issue systematically and understand exactly what's happening."
+
+**THEN IMMEDIATELY ADD STEP TRACKING:**
+```
+🧠 **DEBUGGING ATTENTION CHECK**: Reviewing bug details carefully
+✅ **STARTING**: STEP 1 - INITIAL BUG UNDERSTANDING
+📍 **STATUS**: Beginning systematic analysis without assumptions
+🚫 **ASSUMPTION PREVENTION**: Will ask questions instead of assuming bug details
+```
+
+## 📝 MANDATORY STEP COMPLETION ANNOUNCEMENTS
+**After completing EVERY step, ALWAYS announce:**
+
+```
+✅ **COMPLETED**: [STEP NAME] 
+📍 **WHAT WAS DONE**: [Brief description of what was accomplished]
+🧠 **VERIFICATION**: Confirmed no debugging steps were skipped
+⏭️ **NEXT STEP**: [NEXT STEP NAME]
+🔄 **DEBUG PROGRESS**: [X of Y steps complete]
+🔧 **FIX ATTEMPTS**: [X attempts made] (track throughout session)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+## 🚨 LINT ERROR EXCEPTION PROTOCOL
+
+### LINT ERROR DETECTION AND HANDLING
+**When the reported issue is a lint error:**
+- **IMMEDIATE IDENTIFICATION**: Recognize lint errors vs runtime bugs
+- **BYPASS MANUAL TESTING**: Lint errors don't require user testing
+- **UNLIMITED FIX ATTEMPTS**: Lint error fixes don't count toward 2-fix limit
+- **DIRECT RESOLUTION**: Fix all lint errors immediately without debug info
+
+**LINT ERROR INDICATORS:**
+- ESLint errors/warnings
+- TypeScript compiler errors
+- Prettier formatting issues
+- Import/export errors
+- Unused variable warnings
+- Code style violations
+- Missing type annotations
+
+### LINT ERROR WORKFLOW
+```
+🔍 **LINT ERROR DETECTED**
+
+**Issue Type**: Lint/Compiler Error (Not Runtime Bug)
+**Error Details**: [Specific lint error description]
+**Files Affected**: [List of files with lint issues]
+
+**FIXING IMMEDIATELY** - No manual testing needed
+**Fix attempts for lint issues do NOT count toward the 2-fix limit**
+```
+
+**LINT ERROR FIX PROCESS:**
+1. **Identify all related lint errors** in the codebase
+2. **Fix systematically** following project standards
+3. **Verify compliance** with linting rules
+4. **Continue fixing** until all lint errors resolved
+5. **No user testing required** for lint-only issues
+
+**AFTER LINT FIXES:**
+```
+✅ **LINT ERRORS RESOLVED**
+📍 **WHAT WAS FIXED**: [List of lint issues resolved]
+🔧 **LINT FIX ATTEMPTS**: [X] attempts (Do not count toward runtime fix limit)
+⏭️ **NEXT STEP**: [Continue with original workflow or await confirmation]
+```
+
+### STEP 1: INITIAL BUG UNDERSTANDING (NO ASSUMPTIONS - ENHANCED QUESTIONING)
+**When user reports a bug:**
+- Listen carefully to the user's description of the issue
+- Analyze the expected behavior vs actual behavior described
+- Use existing knowledge to understand the problem area
+- Form initial hypothesis based on user description alone
+
+**ENHANCED QUESTIONING PROTOCOL:**
+- If ANY detail is unclear, ask ONE specific question
+- WAIT for user's complete answer
+- Only after receiving confirmation, ask next question if needed
+- Continue until ZERO ambiguity about the bug remains
+
+**Present Initial Understanding:**
+```
+Based on your description, here's my understanding:
+
+**Issue Location**: [Specific page/component/feature based on description]
+**Expected Result**: [What should happen according to user]
+**Actual Result**: [What actually happens according to user]
+**My Initial Analysis**: [Hypothesis of what might be wrong]
+
+I need to confirm this understanding before proceeding.
+
+FIRST QUESTION: Is this understanding of the issue location correct?
+[Wait for answer before asking about expected behavior]
+```
+
+**QUESTIONING SEQUENCE (One by One):**
+1. First ask about issue location accuracy
+2. Wait for confirmation
+3. Then ask about expected behavior accuracy  
+4. Wait for confirmation
+5. Then ask about actual behavior accuracy
+6. Wait for confirmation
+7. Finally ask about any missing details
+8. Wait for confirmation
+
+**Only proceed when user confirms ALL aspects are correct**
+
+**THEN ANNOUNCE:**
+```
+✅ **COMPLETED**: STEP 1 - INITIAL BUG UNDERSTANDING
+📍 **WHAT WAS DONE**: Analyzed description, asked clarifying questions one by one
+🧠 **ANTI-ASSUMPTION**: Confirmed complete understanding without making assumptions
+⏭️ **NEXT STEP**: Proceeding to STEP 2 - CONTEXT 7 DEEP ANALYSIS
+🔄 **DEBUG PROGRESS**: 1 of 8 debugging steps complete
+🔧 **FIX ATTEMPTS**: 0 attempts made
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+### STEP 2: CONTEXT 7 DEEP ANALYSIS (AFTER CONFIRMATION)
+**Once understanding is CONFIRMED:**
+
+#### 2.1 COMPREHENSIVE CODEBASE ANALYSIS
+**MANDATORY** Context 7 MCP investigation:
+- Use Context 7 MCP to analyze entire codebase related to the issue
+- Map all files, components, and functions involved in the reported behavior
+- Understand complete data flow from user action to final result
+- Identify all dependencies, integrations, and architectural patterns
+- Study existing similar functionality that works correctly
+
+#### 2.2 IMPLEMENTATION DEEP DIVE
+```
+REQUIRED Analysis Documentation:
+- **Entry Points**: Where does the problematic flow begin?
+- **Execution Path**: What functions/components are called in sequence?
+- **Data Transformations**: How is data processed through the flow?
+- **External Dependencies**: What APIs, libraries, or services are involved?
+- **Potential Failure Points**: Where could the implementation be failing?
+```
+
+**THEN ANNOUNCE:**
+```
+✅ **COMPLETED**: STEP 2 - CONTEXT 7 DEEP ANALYSIS
+📍 **WHAT WAS DONE**: Comprehensive codebase analysis using Context 7 MCP
+🧠 **SYSTEMATIC ANALYSIS**: Mapped complete data flow and dependencies
+⏭️ **NEXT STEP**: Proceeding to STEP 3 - CHAIN OF THOUGHT ROOT CAUSE ANALYSIS
+🔄 **DEBUG PROGRESS**: 2 of 8 debugging steps complete
+🔧 **FIX ATTEMPTS**: 0 attempts made
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+### STEP 3: CHAIN OF THOUGHT ROOT CAUSE ANALYSIS
+**MANDATORY** systematic reasoning process:
+
+#### 3.1 HYPOTHESIS FORMATION FROM CODE ANALYSIS
+```
+**Primary Hypothesis**: [Most likely cause based on code analysis]
+**Code Evidence**: [Specific implementation details that support this]
+**Logic Flow**: [How the bug manifests through the code path]
+
+**Alternative Hypotheses**:
+- Hypothesis 2: [Second most likely cause with code evidence]
+- Hypothesis 3: [Third possibility with supporting analysis]
+
+**Confidence Level**: [High/Medium/Low] - Based on code analysis certainty
+```
+
+#### 3.2 SYSTEMATIC ELIMINATION PROCESS
+```
+For each hypothesis, analyze:
+- **Implementation Logic**: Does the code logic support this theory?
+- **Data Flow Analysis**: Are data transformations correct?
+- **Error Handling**: Are edge cases properly handled?
+- **Async/Timing Issues**: Are there potential race conditions?
+- **Integration Points**: Are external dependencies working as expected?
+```
+
+**THEN ANNOUNCE:**
+```
+✅ **COMPLETED**: STEP 3 - CHAIN OF THOUGHT ROOT CAUSE ANALYSIS
+📍 **WHAT WAS DONE**: Systematic hypothesis formation and elimination process
+🧠 **METHODICAL REASONING**: Tested multiple hypotheses against code evidence
+⏭️ **NEXT STEP**: Proceeding to STEP 4 - FIRST FIX ATTEMPT
+🔄 **DEBUG PROGRESS**: 3 of 8 debugging steps complete
+🔧 **FIX ATTEMPTS**: 0 attempts made - Ready for first attempt
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+### STEP 4: FIRST FIX ATTEMPT (BASED ON ANALYSIS)
+**Implement fix based on Context 7 + Chain of Thought analysis:**
+
+#### 4.1 CHECK FOR LINT ERROR EXCEPTION
+**BEFORE implementing runtime fix:**
+```
+🔍 **ISSUE TYPE VERIFICATION**:
+- Is this a lint/compiler error? [YES = Skip to lint fix protocol]
+- Is this a runtime behavior issue? [YES = Continue with manual testing workflow]
+
+If LINT ERROR: Apply Lint Error Exception Protocol (unlimited fixes, no user testing)
+If RUNTIME BUG: Continue with standard fix attempt protocol below
+```
+
+#### 4.2 IMPLEMENT PRIMARY HYPOTHESIS FIX (Runtime Bugs Only)
+- Address the most likely cause identified in analysis
+- Follow all coding standards and project patterns  
+- Include comments explaining the fix rationale
+- Make minimal changes that target the specific issue
+
+#### 4.3 PRESENT FIX FOR TESTING (Runtime Bugs Only)
+```
+🔧 **RUNTIME FIX ATTEMPT 1 IMPLEMENTED**
+
+**Root Cause Targeted**: [Primary hypothesis from analysis]
+**Solution Applied**: [Specific changes made]
+**Files Modified**: [List of files changed]
+**Rationale**: [Why this fix should resolve the issue]
+
+**TESTING REQUEST**:
+Please test the original issue now:
+1. [Specific steps to reproduce the original issue]
+2. Check if the issue is resolved
+3. Verify no new issues appeared
+
+Reply with "FIXED" if resolved, or describe what still happens.
+```
+
+**THEN ANNOUNCE:**
+```
+✅ **COMPLETED**: STEP 4 - FIRST FIX ATTEMPT
+📍 **WHAT WAS DONE**: [Implemented lint fixes] OR [Implemented runtime fix for testing]
+🧠 **TARGETED APPROACH**: Applied minimal fix based on systematic analysis
+⏭️ **NEXT STEP**: [Continue with Step 5 if runtime] OR [Lint fixes complete]
+🔄 **DEBUG PROGRESS**: 4 of 8 debugging steps complete
+🔧 **RUNTIME FIX ATTEMPTS**: [0 for lint, 1 for runtime] - [Awaiting test results for runtime]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+### STEP 5: SECOND FIX ATTEMPT (IF FIRST RUNTIME FIX FAILED)
+**Only execute if user reports first RUNTIME fix didn't work:**
+
+#### 5.1 VERIFY NOT A LINT ERROR
+**BEFORE second runtime fix attempt:**
+```
+🔍 **ISSUE TYPE RE-VERIFICATION**:
+- Did user report lint/compiler errors in testing? [YES = Switch to lint protocol]
+- Is this still a runtime behavior issue? [YES = Continue with second runtime fix]
+
+If NEW LINT ERRORS appeared: Apply Lint Error Exception Protocol
+If STILL RUNTIME BUG: Continue with second runtime fix attempt below
+```
+
+#### 5.2 ANALYZE FIRST RUNTIME FIX FAILURE
+- Review why primary hypothesis was incorrect
+- Move to secondary hypothesis from chain of thought analysis
+- Consider any new information from user's test results
+
+#### 5.3 IMPLEMENT SECONDARY HYPOTHESIS FIX (Runtime Only)
+```
+🔧 **RUNTIME FIX ATTEMPT 2 IMPLEMENTED**
+
+**First Fix Analysis**: [Why first attempt didn't work]
+**New Root Cause Targeted**: [Secondary hypothesis]  
+**Solution Applied**: [Different approach implemented]
+**Files Modified**: [List of files changed]
+**Rationale**: [Why this approach should work]
+
+**TESTING REQUEST**:
+Please test the issue again:
+1. [Same reproduction steps]
+2. Check if issue is now resolved
+3. Report any remaining problems (including any lint errors)
+
+Reply with "FIXED" if resolved, or describe current behavior.
+```
+
+**THEN ANNOUNCE:**
+```
+✅ **COMPLETED**: STEP 5 - SECOND FIX ATTEMPT
+📍 **WHAT WAS DONE**: [Implemented lint fixes] OR [Implemented second runtime fix for testing]
+🧠 **ADAPTIVE APPROACH**: Learned from first attempt and adjusted strategy
+⏭️ **NEXT STEP**: [Continue fixing lint] OR [Awaiting test results before STEP 6 (Debug Info)]
+🔄 **DEBUG PROGRESS**: 5 of 8 debugging steps complete
+🔧 **RUNTIME FIX ATTEMPTS**: [X] runtime attempts - If this fails, will add debug info
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+### STEP 6: DEBUG INFO INSERTION (AFTER 2 FAILED RUNTIME FIXES)
+**Only execute if both previous RUNTIME fixes failed:**
+
+#### 6.1 VERIFY RUNTIME BUG (NOT LINT ERRORS)
+**BEFORE adding debug info:**
+```
+🔍 **FINAL ISSUE TYPE VERIFICATION**:
+- Has user reported lint/compiler errors during testing? [YES = Fix lint issues first]
+- Is this confirmed as a runtime behavior issue? [YES = Add debug info]
+- Have 2 runtime fix attempts been made? [YES = Proceed with debug info]
+
+If LINT ERRORS present: Apply Lint Error Exception Protocol first
+If RUNTIME BUG confirmed: Continue with debug info insertion below
+```
+
+#### 6.2 ADD COMPREHENSIVE DEBUG INFO (Runtime Bugs Only)
+```
+🐛 **ENTERING DEBUG INFO MODE FOR RUNTIME BUG**
+
+After 2 RUNTIME fix attempts, I need runtime debugging information.
+I'm adding comprehensive debug messages to capture what's actually happening.
+
+**Debug Info Strategy**:
+- Console logs at key execution points
+- Variable value tracking through the problematic flow
+- Error state monitoring
+- Timing and async operation logging  
+- User interaction event tracking
+
+**Files Being Instrumented**: [List of files getting debug info]
+```
+
+#### 6.2 IMPLEMENT DEBUG LOGGING
+**Add strategic console.log statements:**
+- Entry points to problematic functions
+- Variable states before/after transformations
+- Conditional branch tracking
+- API request/response logging
+- Error boundary information
+- User interaction event details
+
+#### 6.3 DEBUG TESTING INSTRUCTIONS
+```
+🔍 **DEBUG TESTING PROTOCOL**
+
+I've added debug information throughout the code. Here's what I need:
+
+**STEP-BY-STEP TESTING**:
+1. Open browser developer console (F12)
+2. Clear the console
+3. Reproduce the issue following these exact steps:
+   [Detailed step-by-step instructions]
+4. Copy ALL console messages (including errors, warnings, logs)
+5. Paste the complete console output in your response
+
+**IMPORTANT**: 
+- Don't filter the console output - copy everything
+- Include any error messages in red
+- Include all debug logs I added
+- If nothing appears in console, tell me "NO CONSOLE OUTPUT"
+
+This debug info will show me exactly what's happening at runtime.
+```
+
+**THEN ANNOUNCE:**
+```
+✅ **COMPLETED**: STEP 6 - DEBUG INFO INSERTION
+📍 **WHAT WAS DONE**: Added comprehensive debug logging for runtime bug analysis
+🧠 **RUNTIME INVESTIGATION**: Prepared to analyze actual execution behavior
+⏭️ **NEXT STEP**: Waiting for user to provide console debug output
+🔄 **DEBUG PROGRESS**: 6 of 8 debugging steps complete
+🔧 **RUNTIME FIX ATTEMPTS**: 2 runtime attempts made - Now gathering runtime data
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+### STEP 7: DEBUG INFO ANALYSIS AND FIX (ITERATIVE)
+**Execute when user provides console output:**
+
+#### 7.1 ANALYZE CONSOLE OUTPUT
+```
+🔍 **DEBUG OUTPUT ANALYSIS**
+
+**Console Data Received**: [Acknowledge receipt]
+**Key Findings**:
+- Execution path traced: [What actually happened]
+- Variable states observed: [Actual vs expected values]
+- Error conditions detected: [Any errors or warnings]
+- Timing issues identified: [Async operation analysis]
+- Unexpected behaviors: [Deviations from expected flow]
+
+**ROOT CAUSE UPDATED**: [New understanding based on runtime data]
+```
+
+#### 7.2 IMPLEMENT DEBUG-INFORMED FIX
+```
+🔧 **DEBUG-INFORMED FIX IMPLEMENTED**
+
+**Runtime Evidence Shows**: [What console output revealed]
+**Actual Problem**: [Real issue based on debug data]
+**Solution Applied**: [Fix targeting the real problem]
+**Debug Logs Updated**: [Modified debug messages for next iteration]
+
+**TESTING REQUEST**:
+Please test again with console open:
+1. Clear console
+2. Reproduce the issue
+3. Copy any new console output
+4. Report if issue is resolved
+
+Reply with "FIXED" if working, or paste new console output.
+```
+
+#### 7.3 ITERATIVE DEBUG LOOP
+**Continue this pattern until fixed:**
+- If still not working: Add more targeted debug info
+- Update debug messages based on new findings
+- Request another console output cycle
+- Implement next fix based on accumulated debug data
+- Repeat until user confirms "FIXED"
+
+**THEN ANNOUNCE:**
+```
+✅ **COMPLETED**: STEP 7 - DEBUG INFO ANALYSIS AND FIX (ITERATION X)
+📍 **WHAT WAS DONE**: Analyzed runtime data and implemented evidence-based fix
+🧠 **EVIDENCE-BASED**: Used actual execution data to target real problem
+⏭️ **NEXT STEP**: Awaiting test results (continue iteration or proceed to STEP 8)
+🔄 **DEBUG PROGRESS**: 7 of 8 debugging steps complete
+🔧 **RUNTIME FIX ATTEMPTS**: [Initial 2] + [Debug iterations] = [Total runtime attempts]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+### STEP 8: MANDATORY CLEANUP AND DOCUMENTATION (AFTER FIX CONFIRMED)
+**CRITICAL: Only execute after user confirms "FIXED" - NEVER skip this step:**
+
+#### 8.1 IMMEDIATE DEBUG CODE CLEANUP
+```
+🧹 **REMOVING DEBUG CODE NOW**
+
+**Currently Removing**:
+- All console.log statements added for debugging
+- Temporary debugging variables  
+- Debug-only code branches
+- Performance monitoring code
+
+**Files Being Cleaned**: [List each file being modified]
+**Preserving**: Error handling improvements and useful production logging
+```
+
+#### 8.2 MANDATORY DOCUMENTATION UPDATES - EXECUTE IMMEDIATELY
+**TIMESTAMP RULE - MANDATORY**: Use mcp_time-tools_get_current_time for ALL timestamps
+
+**STEP 8.2.1 - CREATE BUG-REPORT.md**
+```
+Creating comprehensive bug report documentation:
+
+**BUG-REPORT.md Content**:
+- Issue description and reproduction steps
+- Root cause analysis with evidence
+- Solution implemented with rationale
+- Testing verification process
+- Files modified during resolution
+- Timestamp: [Call mcp_time-tools_get_current_time]
+```
+
+**STEP 8.2.2 - UPDATE DEBUGGING-LOG.md**
+```
+Documenting debugging methodology used:
+
+**DEBUGGING-LOG.md Content**:
+- Analysis process and tools used (Context 7, Chain of Thought, Debug Info)
+- Fix attempts made and results
+- Runtime evidence gathered (console outputs, debug data)
+- Decision points and methodology rationale
+- Timestamp: [Call mcp_time-tools_get_current_time]
+```
+
+**STEP 8.2.3 - CREATE ROOT-CAUSE-ANALYSIS.md**
+```
+Documenting technical root cause:
+
+**ROOT-CAUSE-ANALYSIS.md Content**:
+- Technical explanation of the actual problem
+- Code evidence and runtime data supporting conclusion
+- Why initial hypotheses were incorrect (if applicable)
+- Implementation details of the final solution
+- Timestamp: [Call mcp_time-tools_get_current_time]
+```
+
+**STEP 8.2.4 - UPDATE SOLUTION-VERIFICATION.md**
+```
+Documenting testing and verification:
+
+**SOLUTION-VERIFICATION.md Content**:
+- Manual testing approach used
+- User feedback and confirmation process
+- Debug info analysis results
+- Verification that solution addresses root cause
+- Timestamp: [Call mcp_time-tools_get_current_time]
+```
+
+#### 8.3 MANDATORY CHANGELOG UPDATES - EXECUTE IMMEDIATELY
+
+**STEP 8.3.1 - UPDATE CHANGELOG.md**
+```
+Adding user-facing bug fix entry:
+
+**CHANGELOG.md Entry**:
+- [YYYY-MM-DD HH:MM:SS] FIXED: [Brief user-facing description]
+- Issue: [What was broken from user perspective]
+- Resolution: [What now works correctly]
+- Impact: [Who benefits from this fix]
+```
+
+**STEP 8.3.2 - UPDATE DEBUG-METHODOLOGY-LOG.md**
+```
+Recording debugging approach used:
+
+**DEBUG-METHODOLOGY-LOG.md Entry**:
+- [YYYY-MM-DD HH:MM:SS] DEBUGGING SESSION: [Bug type]
+- Approach: [Context 7 + Chain of Thought] OR [Debug Info Method]
+- Tools Used: [Specific MCP tools and analysis methods]
+- Success Factors: [What led to resolution]
+```
+
+**STEP 8.3.3 - UPDATE BUGFIX-CHANGELOG.md**
+```
+Recording technical implementation details:
+
+**BUGFIX-CHANGELOG.md Entry**:
+- [YYYY-MM-DD HH:MM:SS] TECHNICAL FIX: [Code-level description]
+- Files Modified: [Complete list with line numbers if applicable]
+- Code Changes: [Specific implementation changes made]
+- Testing Evidence: [Debug data or manual testing that confirmed fix]
+```
+
+#### 8.4 CODE-LEVEL DOCUMENTATION UPDATES - EXECUTE IMMEDIATELY
+
+**STEP 8.4.1 - ADD INLINE COMMENTS**
+```
+Adding explanatory comments to fixed code:
+
+**Inline Comments Being Added**:
+- Rationale for fix implementation
+- Explanation of why previous approach failed
+- Edge case handling documentation
+- Future maintenance notes
+```
+
+**STEP 8.4.2 - UPDATE FUNCTION/COMPONENT DOCUMENTATION**
+```
+Updating code documentation if behavior changed:
+
+**Documentation Updates**:
+- Function signatures and parameter documentation
+- Component prop documentation
+- API endpoint documentation
+- Error handling documentation
+```
+
+#### 8.5 DOCUMENTATION VERIFICATION AND CONFIRMATION
+**MANDATORY VERIFICATION CHECKLIST:**
+- [ ] **BUG-REPORT.md**: Created with complete issue details ✅
+- [ ] **DEBUGGING-LOG.md**: Updated with methodology used ✅
+- [ ] **ROOT-CAUSE-ANALYSIS.md**: Created with technical analysis ✅  
+- [ ] **SOLUTION-VERIFICATION.md**: Updated with testing details ✅
+- [ ] **CHANGELOG.md**: Updated with user-facing description ✅
+- [ ] **DEBUG-METHODOLOGY-LOG.md**: Updated with debugging approach ✅
+- [ ] **BUGFIX-CHANGELOG.md**: Updated with technical details ✅
+- [ ] **Inline Comments**: Added to all modified code ✅
+- [ ] **Function Documentation**: Updated for behavior changes ✅
+- [ ] **Timestamps**: All entries use mcp_time-tools_get_current_time ✅
+
+**AFTER ALL DOCUMENTATION COMPLETE:**
+```
+📋 **DOCUMENTATION VERIFICATION COMPLETE**
+
+**Files Created/Updated**:
+- BUG-REPORT.md: ✅ Created
+- DEBUGGING-LOG.md: ✅ Updated  
+- ROOT-CAUSE-ANALYSIS.md: ✅ Created
+- SOLUTION-VERIFICATION.md: ✅ Updated
+- CHANGELOG.md: ✅ Updated
+- DEBUG-METHODOLOGY-LOG.md: ✅ Updated
+- BUGFIX-CHANGELOG.md: ✅ Updated
+- Code Comments: ✅ Added to [X] files
+- Function Docs: ✅ Updated [X] functions
+
+**All documentation timestamps**: [Current timestamp from mcp_time-tools]
+**Documentation Status**: COMPLETE AND VERIFIED ✅
+```
+
+**THEN ANNOUNCE:**
+```
+✅ **COMPLETED**: STEP 8 - MANDATORY CLEANUP AND DOCUMENTATION
+📍 **WHAT WAS DONE**: 
+  - Debug code completely removed from [X] files
+  - BUG-REPORT.md created with full issue details
+  - DEBUGGING-LOG.md updated with methodology
+  - ROOT-CAUSE-ANALYSIS.md created with technical analysis
+  - SOLUTION-VERIFICATION.md updated with testing details
+  - CHANGELOG.md updated with user-facing description
+  - DEBUG-METHODOLOGY-LOG.md updated with debugging approach
+  - BUGFIX-CHANGELOG.md updated with technical implementation
+  - Inline comments added to [X] modified code files
+  - Function documentation updated for [X] changed functions
+🧠 **COMPLETE RECORD**: Full debugging process with evidence documented in 7 files
+📋 **VERIFICATION**: All 10 documentation requirements completed and verified
+🎉 **DEBUGGING PROCESS COMPLETE**: Bug fixed with comprehensive documentation
+🔄 **DEBUG PROGRESS**: 8 of 8 debugging steps complete - FULLY FINISHED
+🔧 **FINAL STATUS**: [X] runtime attempts + debugging iterations - Success with complete docs
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+## 🧠 DEBUGGING ATTENTION MANAGEMENT
+
+### DEBUGGING SESSION HEALTH CHECK - Every 5 exchanges
+```
+🧠 **DEBUGGING ATTENTION HEALTH CHECK**:
+- Can I recall the original bug description clearly? [YES/NO]
+- Am I tracking fix attempts correctly? [YES/NO]  
+- Should I be adding debug info instead of more fixes? [YES/NO]
+- Is my analysis based on evidence vs assumptions? [YES/NO]
+- Do I need to refresh debugging context? [YES/NO]
+
+If ANY answer is NO: REQUEST DEBUGGING CONTEXT REFRESH
+```
+
+### DEBUG INFO DECISION LOGIC
+```
+🔄 **DEBUG INFO TRIGGER CONDITIONS**:
+- After 2 failed fix attempts
+- When static analysis confidence is low
+- When user reports unexpected behavior not matching analysis
+- When fix attempts seem to miss the real issue
+- When runtime behavior is needed to understand the problem
+```
+
+### ANTI-SHORTCUT DEBUGGING ENFORCEMENT
+Before ANY debugging decision, ask:
+- "Have I already tried 2 fixes without success?"
+- "Should I be adding debug info instead of another fix attempt?"
+- "Am I assuming something about runtime behavior I should verify?"
+- "Will debug info give me better evidence than more static analysis?"
+
+If uncertain about ANY answer:
+- STOP immediately
+- Assess current fix attempt count
+- Consider if debug info approach is needed
+- Only proceed with clear justification
+
+## DEBUGGING WORKFLOW SUMMARY
+
+### FIX ATTEMPT STRATEGY
+1. **Runtime Attempts 1-2**: Use Context 7 + Chain of Thought analysis (manual testing required)
+2. **Lint Error Fixes**: Unlimited attempts, no manual testing, don't count toward runtime limit
+3. **After 2 runtime failures**: Switch to debug info + runtime analysis approach
+4. **Continue debug iterations**: Until user confirms "FIXED"
+5. **Always distinguish**: Lint errors vs runtime bugs throughout process
+
+### MANUAL TESTING INTEGRATION
+- **User tests every fix attempt**
+- **Console output provides runtime evidence**
+- **Debug info reveals actual execution behavior**
+- **Iterative improvement based on real data**
+- **No automated testing assumptions**
+
+## QUALITY ASSURANCE FOR DEBUGGING
+
+### PRE-DEBUG-INFO CHECKLIST (After 2 Failed Runtime Fixes)
+- [ ] **Two Runtime Fix Attempts Made**: Confirmed 2 runtime fixes tried based on static analysis
+- [ ] **User Tested Both Runtime Fixes**: User provided feedback on both runtime fix attempts  
+- [ ] **Lint Errors Resolved**: Any lint issues fixed separately (don't count toward limit)
+- [ ] **Static Analysis Exhausted**: Chain of thought reasoning completed for runtime bug
+- [ ] **Debug Info Strategy Planned**: Clear plan for what runtime data to capture
+- [ ] **Console Testing Protocol**: Clear instructions provided to user
+
+### POST-FIX CHECKLIST  
+- [ ] **User Confirmed "FIXED"**: User explicitly confirmed issue resolved
+- [ ] **Debug Code Completely Removed**: All temporary debug statements cleaned up
+- [ ] **BUG-REPORT.md Created**: Complete issue description and resolution documented
+- [ ] **DEBUGGING-LOG.md Updated**: Full methodology and process documented
+- [ ] **ROOT-CAUSE-ANALYSIS.md Created**: Technical root cause with evidence documented
+- [ ] **SOLUTION-VERIFICATION.md Updated**: Testing approach and results documented
+- [ ] **CHANGELOG.md Updated**: User-facing bug fix description added
+- [ ] **DEBUG-METHODOLOGY-LOG.md Updated**: Debugging approach recorded
+- [ ] **BUGFIX-CHANGELOG.md Updated**: Technical implementation details recorded
+- [ ] **Inline Comments Added**: Explanatory comments added to all modified code
+- [ ] **Function Documentation Updated**: Documentation updated for any behavior changes
+- [ ] **All Timestamps Used mcp_time-tools**: All documentation uses proper timestamps
+- [ ] **Documentation Verification Complete**: All 10 documentation requirements verified
+- [ ] **Attention Maintained**: Full debugging focus sustained throughout process
+
+## DEBUGGING SUCCESS CRITERIA
+
+**Perfect Manual Testing Debugging Achieved When**:
+- Issue understanding confirmed through systematic one-by-one questioning
+- Maximum 2 fix attempts based on static analysis before adding debug info
+- Runtime debugging approach used when static analysis insufficient
+- Debug info provides actual execution evidence vs assumptions
+- User confirms resolution through systematic manual testing
+- **ALL 7 documentation files created/updated with complete details**
+- **All code changes have explanatory inline comments**
+- **All timestamps use mcp_time-tools_get_current_time**
+- **Documentation verification checklist 100% complete**
+- Full attention maintained throughout entire debugging process
+
+**ABSOLUTE ZERO TOLERANCE**:
+- More than 2 RUNTIME fix attempts without debug info
+- Counting lint error fixes toward the 2-fix runtime limit
+- Requesting manual testing for lint/compiler errors
+- Implementing fixes without user testing confirmation (except lint errors)
+- Assuming runtime behavior without debug evidence
+- Making assumptions instead of asking clarifying questions one by one
+- Asking multiple questions simultaneously instead of systematically
+- Any form of debugging attention degradation or cognitive shortcuts
+- Skipping debug info approach after 2 failed runtime analysis fixes
+- **SKIPPING ANY STEP 8 DOCUMENTATION REQUIREMENTS**
+- **Missing documentation updates after confirmed fixes**
+- **Not using mcp_time-tools_get_current_time for timestamps**
+- **Incomplete documentation verification checklist**

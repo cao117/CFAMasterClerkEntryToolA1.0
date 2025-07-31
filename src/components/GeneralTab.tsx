@@ -1445,7 +1445,7 @@ export default function GeneralTab({
                             <td className="px-4 py-3 align-middle">
                               {/* Ring type dropdown - custom select component for specialty types */}
                               <CustomSelect 
-                                options={["Longhair", "Shorthair", "Allbreed", "Double Specialty"]} 
+                                options={["Longhair", "Shorthair", "Allbreed", "Double Specialty", "Super Specialty", "OCP Ring"]} 
                                 value={judge.ringType} 
                                 onChange={val => updateJudge(judge.id, 'ringType', val)} 
                                 ariaLabel="Ring Type" 

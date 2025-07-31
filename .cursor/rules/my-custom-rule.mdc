@@ -1,6 +1,0 @@
-1. Feel free to ask me questions one by one if you are not confident about the answer you give or if yo usee ambiguity in context
-
-2. anytime there is a file change, always make sure the appropriate mds under docs folder in this project are appropriately updated.
-
-3. **CRITICAL**: Always follow the naming conventions rule (.cursor/rules/naming-conventions.mdc) - use hyphens (-) for object keys, NEVER underscores (_). This is critical for CSV export compatibility and validation consistency.
-
