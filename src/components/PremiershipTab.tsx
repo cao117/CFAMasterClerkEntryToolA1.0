@@ -1000,10 +1000,10 @@ export default function PremiershipTab({
                 }
               }
             }}
-            className="w-[240px] font-semibold text-base rounded-full px-4 py-2 bg-white border-2 border-blue-200 shadow-md hover:shadow-lg focus:border-blue-400 focus:shadow-lg text-blue-700 transition-all duration-200 font-mono"
+            className="w-[250px] font-semibold text-base rounded-full px-4 py-2 bg-white border-2 border-blue-200 shadow-md hover:shadow-lg focus:border-blue-400 focus:shadow-lg text-blue-700 transition-all duration-200 font-mono"
             ariaLabel="Jump to Judge"
             selectedIcon="🎗️"
-            dropdownMenuClassName="w-[240px] rounded-xl bg-gradient-to-b from-white via-blue-50 to-white shadow-xl border-2 border-blue-200 text-base font-semibold text-blue-800 transition-all duration-200 font-mono whitespace-pre"
+            dropdownMenuClassName="w-[250px] rounded-xl bg-gradient-to-b from-white via-blue-50 to-white shadow-xl border-2 border-blue-200 text-base font-semibold text-blue-800 transition-all duration-200 font-mono whitespace-pre"
             borderColor="border-blue-300" // Blue border
             focusBorderColor="focus:border-blue-500" // Blue border on focus
             textColor="text-blue-700" // Blue text

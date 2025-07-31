@@ -406,10 +406,10 @@ export default function HouseholdPetTab({
                 }
               }
             }}
-            className="w-[240px] font-semibold text-base rounded-full px-4 py-2 bg-white border-2 border-orange-200 shadow-md hover:shadow-lg focus:border-orange-400 focus:shadow-lg text-orange-700 transition-all duration-200 font-mono"
+            className="w-[260px] font-semibold text-base rounded-full px-4 py-2 bg-white border-2 border-orange-200 shadow-md hover:shadow-lg focus:border-orange-400 focus:shadow-lg text-orange-700 transition-all duration-200 font-mono"
             ariaLabel="Jump to Ring"
             selectedIcon="🐱"
-            dropdownMenuClassName="w-[240px] rounded-xl bg-gradient-to-b from-white via-orange-50 to-white shadow-xl border-2 border-orange-200 text-base font-semibold text-orange-800 transition-all duration-200 font-mono whitespace-pre"
+            dropdownMenuClassName="w-[260px] rounded-xl bg-gradient-to-b from-white via-orange-50 to-white shadow-xl border-2 border-orange-200 text-base font-semibold text-orange-800 transition-all duration-200 font-mono whitespace-pre"
             borderColor="border-orange-300" // Orange border
             focusBorderColor="focus:border-orange-500" // Orange border on focus
             textColor="text-orange-700" // Orange text

@@ -449,10 +449,10 @@ export default function KittenTab({
                 }
               }
             }}
-            className="w-[240px] font-semibold text-base rounded-full px-4 py-2 bg-white border-2 border-green-200 shadow-md hover:shadow-lg focus:border-green-400 focus:shadow-lg text-green-700 transition-all duration-200 font-mono"
+            className="w-[250px] font-semibold text-base rounded-full px-4 py-2 bg-white border-2 border-green-200 shadow-md hover:shadow-lg focus:border-green-400 focus:shadow-lg text-green-700 transition-all duration-200 font-mono"
             ariaLabel="Jump to Ring"
             selectedIcon="🐾"
-            dropdownMenuClassName="w-[240px] rounded-xl bg-gradient-to-b from-white via-green-50 to-white shadow-xl border-2 border-green-200 text-base font-semibold text-green-800 transition-all duration-200 font-mono whitespace-pre"
+            dropdownMenuClassName="w-[250px] rounded-xl bg-gradient-to-b from-white via-green-50 to-white shadow-xl border-2 border-green-200 text-base font-semibold text-green-800 transition-all duration-200 font-mono whitespace-pre"
             borderColor="border-green-300" // Green border
             focusBorderColor="focus:border-green-500" // Green border on focus
             textColor="text-green-700" // Green text

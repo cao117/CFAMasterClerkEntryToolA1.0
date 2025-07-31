@@ -1198,10 +1198,10 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                   }
                 }
               }}
-              className="w-[240px] font-semibold text-base rounded-full px-4 py-2 bg-white border-2 border-violet-200 shadow-md hover:shadow-lg focus:border-violet-400 focus:shadow-lg text-violet-700 transition-all duration-200 font-mono"
+              className="w-[250px] font-semibold text-base rounded-full px-4 py-2 bg-white border-2 border-violet-200 shadow-md hover:shadow-lg focus:border-violet-400 focus:shadow-lg text-violet-700 transition-all duration-200 font-mono"
               ariaLabel="Jump to Ring"
               selectedIcon="🏆"
-              dropdownMenuClassName="w-[240px] rounded-xl bg-gradient-to-b from-white via-violet-50 to-white shadow-xl border-2 border-violet-200 text-base font-semibold text-violet-800 transition-all duration-200 font-mono whitespace-pre"
+              dropdownMenuClassName="w-[250px] rounded-xl bg-gradient-to-b from-white via-violet-50 to-white shadow-xl border-2 border-violet-200 text-base font-semibold text-violet-800 transition-all duration-200 font-mono whitespace-pre"
             />
           </div>
           <div className="relative">
