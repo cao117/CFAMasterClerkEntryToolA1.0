@@ -703,7 +703,7 @@ const BreedSheetsTab: React.FC<BreedSheetsTabProps> = (props) => {
               <span className="font-semibold">{selectedJudge.name}</span>
               <span className="text-cyan-400">•</span>
               <span className="text-xs font-medium text-cyan-600 bg-cyan-100 px-2 py-0.5 rounded-full">
-                {selectedJudge.ringType === 'Allbreed' ? 'AB' : selectedJudge.ringType === 'Double Specialty' ? 'DSP' : selectedJudge.ringType === 'Super Specialty' ? 'SSP' : selectedJudge.ringType === 'Longhair' ? 'LH' : 'SH'}
+                {selectedJudge.ringType === 'Allbreed' ? 'AB' : selectedJudge.ringType === 'Double Specialty' ? 'DSP' : selectedJudge.ringType === 'Super Specialty' ? 'SSP' : selectedJudge.ringType === 'OCP Ring' ? 'OCP' : selectedJudge.ringType === 'Longhair' ? 'LH' : 'SH'}
               </span>
             </div>
           )}
@@ -752,7 +752,7 @@ const BreedSheetsTab: React.FC<BreedSheetsTabProps> = (props) => {
                               ? 'text-cyan-800'
                               : 'text-gray-700 group-hover:text-gray-900'
                           }`}>
-                            Judge {judge.id.toString().padStart(2, '0')} • {judge.name.split(' ').map(n => n[0]).join('.')} • {judge.ringType === 'Allbreed' ? 'AB' : judge.ringType === 'Double Specialty' ? 'DSP' : judge.ringType === 'Super Specialty' ? 'SSP' : judge.ringType === 'Longhair' ? 'LH' : 'SH'}
+                            Judge {judge.id.toString().padStart(2, '0')} • {judge.name.split(' ').map(n => n[0]).join('.')} • {judge.ringType === 'Allbreed' ? 'AB' : judge.ringType === 'Double Specialty' ? 'DSP' : judge.ringType === 'Super Specialty' ? 'SSP' : judge.ringType === 'OCP Ring' ? 'OCP' : judge.ringType === 'Longhair' ? 'LH' : 'SH'}
                           </span>
                           
                           {/* Check Icon - Only for Selected */}

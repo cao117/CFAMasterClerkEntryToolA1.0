@@ -513,3 +513,8 @@ This changelog records major changes to the CFA Master Clerk Entry Tool, includi
 - **Backward Compatibility**: Maintained support for loading older CSV files
 - **Build Errors**: Resolved all import errors and build now completes successfully
 - **Function References**: Replaced all references to removed `formActions.ts` functions 
+
+### [2024-12-19 15:30:00] FIXED: Show count inputs now behave consistently for backspace deletion
+  - Issue: All show count inputs (except HHP total count) were converting to 0 immediately when deleting text
+  - Resolution: Inputs now preserve empty state during deletion and convert to 0 only when leaving focus
+  - Impact: Improved user experience for data entry across all show count inputs 
