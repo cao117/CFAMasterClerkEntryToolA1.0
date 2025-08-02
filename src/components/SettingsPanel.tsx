@@ -3,6 +3,7 @@ import cfaLogo from '../assets/cfa-logo-official.png';
 import { useEffect, useRef } from 'react';
 import SettingsInput from './SettingsInput';
 import Modal from './Modal';
+import { AutoSaveService } from '../utils/autoSaveService';
 
 
 // Settings data structure
@@ -17,6 +18,8 @@ interface SettingsData {
   };
   short_hair_breeds: string[];
   long_hair_breeds: string[];
+  numberOfSaves: number;
+  saveCycle: number;
 }
 
 // Default values as specified
@@ -47,7 +50,9 @@ const DEFAULT_SETTINGS: SettingsData = {
     "MAINE COON CAT", "NORWEGIAN FOREST CAT", "PERSIAN SOLID", "PERSIAN SILVER/GOLDEN",
     "PERSIAN SHADED/SMOKE", "PERSIAN TABBY", "PERSIAN PARTI-COLOR", "PERSIAN CALICO/BI-COLOR",
     "PERSIAN HIMALAYAN", "RAGAMUFFIN", "RAGDOLL", "SIBERIAN", "TURKISH ANGORA", "TURKISH VAN"
-  ]
+  ],
+  numberOfSaves: 3,
+  saveCycle: 5
 };
 
 interface SettingsPanelProps {
@@ -65,6 +70,8 @@ interface SettingsPanelProps {
     };
     short_hair_breeds: string[];
     long_hair_breeds: string[];
+    numberOfSaves: number;
+    saveCycle: number;
   };
   setGlobalSettings: React.Dispatch<React.SetStateAction<{
     max_judges: number;
@@ -77,6 +84,8 @@ interface SettingsPanelProps {
     };
     short_hair_breeds: string[];
     long_hair_breeds: string[];
+    numberOfSaves: number;
+    saveCycle: number;
   }>>;
   currentNumberOfJudges: number;
 
@@ -85,20 +94,33 @@ interface SettingsPanelProps {
 type SettingsSection = 'general' | 'placement' | 'breed' | 'auto-save';
 
 export default function SettingsPanel({ isOpen, onClose, showSuccess, globalSettings, setGlobalSettings, currentNumberOfJudges }: SettingsPanelProps) {
-  const [activeSection, setActiveSection] = useState<SettingsSection>('general');
+  const [activeSection, setActiveSection] = useState<SettingsSection>('auto-save');
   const [breedTab, setBreedTab] = useState<'SHORT HAIR' | 'LONG HAIR'>('SHORT HAIR');
   const modalRef = useRef<HTMLDivElement>(null);
   const [showMaxJudgesErrorModal, setShowMaxJudgesErrorModal] = useState(false);
   
-
-  
-  // Local state for max_cats to prevent cascade updates
+  const [localMaxJudges, setLocalMaxJudges] = useState(globalSettings.max_judges.toString());
   const [localMaxCats, setLocalMaxCats] = useState(globalSettings.max_cats.toString());
+  const [localChampionship, setLocalChampionship] = useState(globalSettings.placement_thresholds.championship.toString());
+  const [localKitten, setLocalKitten] = useState(globalSettings.placement_thresholds.kitten.toString());
+  const [localPremiership, setLocalPremiership] = useState(globalSettings.placement_thresholds.premiership.toString());
+  const [localHouseholdPet, setLocalHouseholdPet] = useState(globalSettings.placement_thresholds.household_pet.toString());
+  
+  // Add state for auto-save settings
+  const [localNumberOfSaves, setLocalNumberOfSaves] = useState("3");
+  const [localSaveCycle, setLocalSaveCycle] = useState("5");
   
   // Reset local state if globalSettings changes externally
   useEffect(() => {
+    setLocalMaxJudges(globalSettings.max_judges.toString());
     setLocalMaxCats(globalSettings.max_cats.toString());
-  }, [globalSettings.max_cats]);
+    setLocalChampionship(globalSettings.placement_thresholds.championship.toString());
+    setLocalKitten(globalSettings.placement_thresholds.kitten.toString());
+    setLocalPremiership(globalSettings.placement_thresholds.premiership.toString());
+    setLocalHouseholdPet(globalSettings.placement_thresholds.household_pet.toString());
+    setLocalNumberOfSaves(globalSettings.numberOfSaves?.toString() || "3");
+    setLocalSaveCycle(globalSettings.saveCycle?.toString() || "5");
+  }, [globalSettings]);
 
 
   
@@ -205,6 +227,33 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess, globalSett
         ...prev.placement_thresholds,
         [field]: numValue
       }
+    }));
+  };
+
+  // Update auto-save settings with validation and capping
+  const updateAutoSaveSetting = async (field: 'numberOfSaves' | 'saveCycle', value: string) => {
+    const numValue = parseInt(value) || 0;
+    const minValue = field === 'numberOfSaves' ? 1 : 1;
+    const maxValue = field === 'numberOfSaves' ? 10 : 60;
+    const cappedValue = Math.max(minValue, Math.min(numValue, maxValue));
+    
+    // If numberOfSaves is being reduced, cleanup excess files
+    if (field === 'numberOfSaves') {
+      const currentNumberOfSaves = globalSettings.numberOfSaves || 3;
+      if (cappedValue < currentNumberOfSaves) {
+        try {
+          const autoSaveService = new AutoSaveService();
+          await autoSaveService.cleanupExcessAutoSaveFiles(cappedValue);
+          console.log(`Cleaned up auto-save files: reduced from ${currentNumberOfSaves} to ${cappedValue}`);
+        } catch (error) {
+          console.error('Failed to cleanup excess auto-save files:', error);
+        }
+      }
+    }
+    
+    setGlobalSettings(prev => ({
+      ...prev,
+      [field]: cappedValue
     }));
   };
 
@@ -543,8 +592,8 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess, globalSett
                 type="number"
                 min={1}
                 max={999}
-                value={globalSettings.placement_thresholds.championship}
-                onChange={(e) => updatePlacementThreshold('championship', e.target.value)}
+                value={localChampionship}
+                onChange={(e) => setLocalChampionship(e.target.value)}
                 placeholder="85"
                 width="md"
               />
@@ -575,8 +624,8 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess, globalSett
                 type="number"
                 min={1}
                 max={999}
-                value={globalSettings.placement_thresholds.kitten}
-                onChange={(e) => updatePlacementThreshold('kitten', e.target.value)}
+                value={localKitten}
+                onChange={(e) => setLocalKitten(e.target.value)}
                 placeholder="75"
                 width="md"
               />
@@ -607,8 +656,8 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess, globalSett
                 type="number"
                 min={1}
                 max={999}
-                value={globalSettings.placement_thresholds.premiership}
-                onChange={(e) => updatePlacementThreshold('premiership', e.target.value)}
+                value={localPremiership}
+                onChange={(e) => setLocalPremiership(e.target.value)}
                 placeholder="50"
                 width="md"
               />
@@ -640,8 +689,8 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess, globalSett
                 type="number"
                 min={1}
                 max={999}
-                value={globalSettings.placement_thresholds.household_pet}
-                onChange={(e) => updatePlacementThreshold('household_pet', e.target.value)}
+                value={localHouseholdPet}
+                onChange={(e) => setLocalHouseholdPet(e.target.value)}
                 placeholder="50"
                 width="md"
               />
@@ -924,12 +973,25 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess, globalSett
               </label>
               
               <div className="flex justify-center">
+                {/* Number of auto-save files to maintain in rotation (1-10) */}
                 <SettingsInput
                   type="number"
                   min={1}
                   max={10}
-                  value="3"
-                  onChange={(e) => {}}
+                  value={localNumberOfSaves}
+                  onChange={(e) => setLocalNumberOfSaves(e.target.value)}
+                  onBlur={async (e) => {
+                    const inputValue = e.target.value;
+                    if (inputValue === '') {
+                      setLocalNumberOfSaves('3');
+                      await updateAutoSaveSetting('numberOfSaves', '3');
+                      return;
+                    }
+                    const currentValue = parseInt(inputValue) || 0;
+                    const cappedValue = Math.max(1, Math.min(currentValue, 10));
+                    setLocalNumberOfSaves(cappedValue.toString());
+                    await updateAutoSaveSetting('numberOfSaves', cappedValue.toString());
+                  }}
                   placeholder="3"
                   width="md"
                   glowColor="cyan"
@@ -961,12 +1023,25 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess, globalSett
               </label>
               
               <div className="flex justify-center">
+                {/* Auto-save frequency in minutes (1-60) */}
                 <SettingsInput
                   type="number"
                   min={1}
                   max={60}
-                  value="5"
-                  onChange={(e) => {}}
+                  value={localSaveCycle}
+                  onChange={(e) => setLocalSaveCycle(e.target.value)}
+                  onBlur={async (e) => {
+                    const inputValue = e.target.value;
+                    if (inputValue === '') {
+                      setLocalSaveCycle('5');
+                      await updateAutoSaveSetting('saveCycle', '5');
+                      return;
+                    }
+                    const currentValue = parseInt(inputValue) || 0;
+                    const cappedValue = Math.max(1, Math.min(currentValue, 60));
+                    setLocalSaveCycle(cappedValue.toString());
+                    await updateAutoSaveSetting('saveCycle', cappedValue.toString());
+                  }}
                   placeholder="5"
                   width="md"
                   glowColor="indigo"

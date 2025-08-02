@@ -15,6 +15,7 @@ interface AutoSaveFileListProps {
   isOpen: boolean;
   onClose: () => void;
   onRestore: (formData: any) => void;
+  numberOfSaves?: number; // Maximum number of files to display (from settings)
 }
 
 /**
@@ -27,7 +28,8 @@ interface AutoSaveFileListProps {
 export function AutoSaveFileList({ 
   isOpen, 
   onClose, 
-  onRestore 
+  onRestore,
+  numberOfSaves = 3
 }: AutoSaveFileListProps) {
   const [autoSaveFiles, setAutoSaveFiles] = useState<AutoSaveFile[]>([]);
   const [loading, setLoading] = useState(false);
@@ -71,7 +73,10 @@ export function AutoSaveFileList({
     // Sort by timestamp (newest first)
     files.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
     
-    setAutoSaveFiles(files);
+    // Limit display to numberOfSaves files to match settings
+    const limitedFiles = files.slice(0, numberOfSaves);
+    
+    setAutoSaveFiles(limitedFiles);
     setLoading(false);
   };
 

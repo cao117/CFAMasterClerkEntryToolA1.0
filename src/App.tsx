@@ -10,7 +10,7 @@ import SettingsPanel from './components/SettingsPanel';
 import ToastContainer from './components/ToastContainer';
 import AutoSaveNotificationBar from './components/AutoSaveNotificationBar';
 import { AutoSaveFileList } from './components/AutoSaveFileList';
-import { AutoSaveDebugInfo } from './components/AutoSaveDebugInfo';
+
 
 import { useToast } from './hooks/useToast';
 import { useScreenGuard } from './hooks/useScreenGuard';
@@ -96,7 +96,9 @@ const DEFAULT_SETTINGS = {
     "MAINE COON CAT", "NORWEGIAN FOREST CAT", "PERSIAN SOLID", "PERSIAN SILVER/GOLDEN",
     "PERSIAN SHADED/SMOKE", "PERSIAN TABBY", "PERSIAN PARTI-COLOR", "PERSIAN CALICO/BI-COLOR",
     "PERSIAN HIMALAYAN", "RAGAMUFFIN", "RAGDOLL", "SIBERIAN", "TURKISH ANGORA", "TURKISH VAN"
-  ]
+  ],
+  numberOfSaves: 3, // Default auto-save file rotation count (1-10 range)
+  saveCycle: 5 // Default auto-save frequency in minutes (1-60 range)
 };
 
 function App() {
@@ -125,7 +127,10 @@ function App() {
           placement_thresholds: {
             ...DEFAULT_SETTINGS.placement_thresholds,
             ...parsedSettings.placement_thresholds
-          }
+          },
+          // Ensure auto-save settings have defaults if not present
+          numberOfSaves: parsedSettings.numberOfSaves ?? DEFAULT_SETTINGS.numberOfSaves,
+          saveCycle: parsedSettings.saveCycle ?? DEFAULT_SETTINGS.saveCycle
         };
         console.log('Settings loaded from localStorage during initialization:', mergedSettings);
         return mergedSettings;
@@ -173,19 +178,7 @@ function App() {
   // Toast notification system
   const { toasts, removeToast, showSuccess, showError, showWarning, showInfo } = useToast();
 
-  // Auto-save notification handlers
-  const handleViewRecovery = () => {
-    // TODO: Implement recovery options functionality
-    showInfo('Recovery Options', 'Recovery options feature coming soon.');
-  };
-
-  const handleDismissAutoSave = () => {
-    // Hide the auto-save notification temporarily
-    // It will reappear on next auto-save
-    console.log('Auto-save notification dismissed');
-  };
-
-  // Handler to show auto-save files modal (used by File Restore icon and Test Auto-Saves button)
+  // Handler to show auto-save files modal (used by File Restore icon)
   const handleShowAutoSaveFiles = () => {
     setShowAutoSaveFiles(true);
   };
@@ -322,22 +315,29 @@ function App() {
     globalSettings,
   });
 
-  // Auto-save options configuration (matching SettingsPanel hardcoded values)
+  // Auto-save options configuration (using user-configured values from Settings Panel)
   const autoSaveOptions = {
-    numberOfFiles: 3, // Matches hardcoded value in SettingsPanel
-    saveFrequencyMinutes: 5, // Matches hardcoded value in SettingsPanel
+    numberOfFiles: globalSettings.numberOfSaves || 3, // Use user-configured value or fallback
+    saveFrequencyMinutes: globalSettings.saveCycle || 5, // Use user-configured value or fallback
     enabled: true
   };
 
   // Initialize auto-save with current form data (after all state is declared)
   const { status: autoSaveStatus, triggerManualSave } = useAutoSave(getShowState(), autoSaveOptions);
 
-  // Auto-save notification effect
+  // Auto-save notification effect with auto-hide
   useEffect(() => {
     // Show notification when auto-save becomes active and has a last save time
     if (autoSaveStatus.isActive && autoSaveStatus.lastSaveTime) {
       setIsAutoSaveVisible(true);
       setLastSavedTime(new Date(autoSaveStatus.lastSaveTime).toLocaleTimeString());
+      
+      // Auto-hide after 4.4 seconds (1.2s fade-in + 2s display + 1.2s fade-out)
+      const hideTimer = setTimeout(() => {
+        setIsAutoSaveVisible(false);
+      }, 4400);
+      
+      return () => clearTimeout(hideTimer);
     }
   }, [autoSaveStatus.isActive, autoSaveStatus.lastSaveTime]);
   
@@ -1048,20 +1048,12 @@ function App() {
         </div>
       </div>
 
-      {/* Auto-Save Debug Info */}
-      <div className="max-w-7xl mx-auto px-4">
-        <AutoSaveDebugInfo />
-      </div>
+
       
       {/* Auto-Save Notification Bar */}
       <AutoSaveNotificationBar 
         isVisible={isAutoSaveVisible}
         lastSavedTime={lastSavedTime}
-        onViewRecovery={handleViewRecovery}
-        onDismiss={handleDismissAutoSave}
-        onRestoreAutoSave={handleRestoreAutoSave}
-        onManualAutoSave={triggerManualSave}
-        onShowAutoSaves={handleShowAutoSaveFiles}
       />
 
       {/* Main Content */}
@@ -1106,6 +1098,7 @@ function App() {
         isOpen={showAutoSaveFiles}
         onClose={() => setShowAutoSaveFiles(false)}
         onRestore={handleRestoreAutoSave}
+        numberOfSaves={globalSettings.numberOfSaves || 3}
       />
     </div>
   )

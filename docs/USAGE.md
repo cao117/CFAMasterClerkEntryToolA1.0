@@ -29,14 +29,16 @@ The application now includes automatic saving functionality that works transpare
 - **Rotating Files**: Maintains 3 auto-save files, overwriting oldest when limit reached
 - **Platform Aware**: Uses appropriate storage method based on environment
 - **Real-time Updates**: Monitors form changes and saves current state
-- **Visual Indicators**: Shows auto-save status with pulsing indicator
+- **Visual Indicators**: Shows auto-save status with simplified notification bar
 
 **Auto-Save File Locations:**
 - **Desktop (Tauri)**: `%APPDATA%/com.cfa.masterclerk.entry/autosave1.xlsx`, `autosave2.xlsx`, `autosave3.xlsx`
 - **Browser**: localStorage keys `cfa_autosave1`, `cfa_autosave2`, `cfa_autosave3`
 
 **Auto-Save Behavior:**
-- Starts automatically when form has data
+- Starts timer automatically when form has data
+- Timer runs based on user-configured Save Cycle setting (1-60 minutes)
+- First auto-save occurs only after the full save cycle interval is reached
 - Cycles through files: autosave1 → autosave2 → autosave3 → autosave1 (repeat)
 - Creates complete Excel files identical to manual "Save to Excel"
 - No user intervention required - runs transparently in background
@@ -431,6 +433,15 @@ The settings panel features a newly redesigned, modern input system with the fol
 - **Hover States**: Enhanced hover effects with scale transforms and shadow changes
 - **Corner Accents**: Decorative corner elements that appear on hover
 - **Backdrop Blur**: Modern glassmorphism effect with backdrop blur
+
+### Auto-Save Settings
+Configure automatic file saving behavior:
+- **Number of Saves**: Set the number of auto-save files to maintain in rotation (1-10, default: 3)
+- **Save Cycle**: Set the frequency of auto-saves in minutes (1-60, default: 5)
+- **Input Validation**: Values are automatically capped within their respective ranges
+- **Real-time Updates**: Changes are applied immediately when you finish editing (on blur)
+- **Integration**: Auto-save process uses these user-configured values in real-time
+- **Platform Support**: Works with both Tauri (file system) and Browser (localStorage) environments
 
 ### General Settings
 Configure the maximum number of judges and cats for the show:

@@ -990,6 +990,67 @@ button.disabled:hover, button.disabled:focus {
   animation: spin 1s linear infinite;
 }
 
+/* Auto-Save Notification Animations */
+@keyframes autosave-fade-in {
+  0% {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes autosave-fade-out {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+}
+
+@keyframes autosave-icon-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 4px 12px 0 rgba(16, 185, 129, 0.3);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px 0 rgba(16, 185, 129, 0.4);
+  }
+}
+
+@keyframes autosave-text-slide {
+  0% {
+    opacity: 0;
+    transform: translateX(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-autosave-fade-in {
+  animation: autosave-fade-in 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.animate-autosave-fade-out {
+  animation: autosave-fade-out 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.animate-autosave-icon-pulse {
+  animation: autosave-icon-pulse 2s ease-in-out;
+}
+
+.animate-autosave-text-slide {
+  animation: autosave-text-slide 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
 /* Fallback screen zoom prevention - iOS Safari specific */
 .fallback-screen {
   touch-action: none !important;

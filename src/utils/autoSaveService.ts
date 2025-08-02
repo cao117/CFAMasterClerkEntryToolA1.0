@@ -49,12 +49,8 @@ export class AutoSaveService {
     // Convert frequency to milliseconds
     const intervalMs = frequencyMinutes * 60 * 1000;
     
-    // Perform initial save immediately (only on first load, not on every settings change)
-    if (!this.saveTimer) {
-      await this.performRotatingAutoSave(formData, numberOfFiles);
-    }
-    
-    // Set up recurring auto-save
+    // Set up recurring auto-save - timer starts but no immediate save on page load
+    // Auto-save will only execute after the first save cycle interval is reached
     this.saveTimer = setInterval(() => {
       if (this.currentFormData) {
         this.performRotatingAutoSave(this.currentFormData, numberOfFiles);
@@ -275,6 +271,80 @@ export class AutoSaveService {
         localStorage.removeItem(`cfa_autosave${i}`);
       }
       console.log('All auto-save files cleared from localStorage');
+    }
+  }
+
+  /**
+   * Cleanup excess auto-save files when numberOfSaves is reduced
+   * @param newNumberOfSaves - New number of files to keep
+   */
+  async cleanupExcessAutoSaveFiles(newNumberOfSaves: number): Promise<void> {
+    try {
+      if (isDesktop()) {
+        await this.cleanupExcessTauriFiles(newNumberOfSaves);
+      } else {
+        this.cleanupExcessBrowserFiles(newNumberOfSaves);
+      }
+      console.log(`Cleanup completed: keeping ${newNumberOfSaves} auto-save files`);
+    } catch (error) {
+      console.error('Failed to cleanup excess auto-save files:', error);
+    }
+  }
+
+  private cleanupExcessBrowserFiles(newNumberOfSaves: number): void {
+    // Remove excess localStorage entries
+    const keysToRemove: string[] = [];
+    
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('cfa_autosave')) {
+        // Extract file number from key (e.g., "cfa_autosave3" -> 3)
+        const match = key.match(/cfa_autosave(\d+)/);
+        if (match) {
+          const fileNumber = parseInt(match[1]);
+          if (fileNumber > newNumberOfSaves) {
+            keysToRemove.push(key);
+          }
+        }
+      }
+    }
+    
+    // Remove excess files
+    keysToRemove.forEach(key => {
+      localStorage.removeItem(key);
+      console.log(`Removed excess auto-save from localStorage: ${key}`);
+    });
+  }
+
+  private async cleanupExcessTauriFiles(newNumberOfSaves: number): Promise<void> {
+    try {
+      // Check if Tauri APIs are available
+      if (!window.__TAURI__?.path || !window.__TAURI__?.fs) {
+        console.warn('Tauri APIs not available for cleanup');
+        return;
+      }
+
+      const appDataPath = await window.__TAURI__.path.appDataDir();
+      
+      // Check for files beyond the new limit
+      for (let fileNumber = newNumberOfSaves + 1; fileNumber <= 10; fileNumber++) {
+        try {
+          const fileName = `autosave${fileNumber}.xlsx`;
+          const filePath = await window.__TAURI__.path.join(appDataPath, fileName);
+          
+          // Check if file exists before trying to remove it
+          if (await window.__TAURI__.fs.exists(filePath)) {
+            await window.__TAURI__.fs.removeFile(filePath);
+            console.log(`Removed excess auto-save file: ${fileName}`);
+          }
+        } catch (error) {
+          // File doesn't exist or couldn't be removed - continue with next file
+          console.log(`Auto-save file ${fileNumber} doesn't exist or couldn't be removed`);
+        }
+      }
+    } catch (error) {
+      console.error('Tauri cleanup error:', error);
+      throw error;
     }
   }
 }
