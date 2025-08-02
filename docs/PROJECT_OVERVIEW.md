@@ -370,6 +370,13 @@ The application uses React state management with localStorage persistence for se
 - **Platform Aware**: Uses appropriate storage method (localStorage for browser, file system for Tauri)
 - **Visual Indicators**: Shows auto-save status with notification bar
 
+### Recent Work Resume System
+- **Automatic Detection**: Detects recent work within 24 hours of the last save
+- **Startup Modal**: Presents resume option when returning to the application
+- **Seamless Integration**: Uses existing Recent Save infrastructure for data storage
+- **One-Click Restoration**: Provides instant resume functionality with existing Excel parsing
+- **Work Continuity**: Ensures seamless work continuity across browser sessions and page refreshes
+
 ---
 
 ## UI/UX Features

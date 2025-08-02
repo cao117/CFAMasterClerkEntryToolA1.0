@@ -11,6 +11,7 @@ import SettingsPanel from './components/SettingsPanel';
 import ToastContainer from './components/ToastContainer';
 import AutoSaveNotificationBar from './components/AutoSaveNotificationBar';
 import { AutoSaveFileList } from './components/AutoSaveFileList';
+import ResumeWorkModal from './components/ResumeWorkModal';
 
 
 import { useToast } from './hooks/useToast';
@@ -18,9 +19,10 @@ import { useScreenGuard } from './hooks/useScreenGuard';
 import { useAutoSave } from './hooks/useAutoSave';
 import { useRecentSave } from './hooks/useRecentSave';
 import { useFormEmptyDetection } from './hooks/useFormEmptyDetection';
+import { useRecentWorkDetection } from './hooks/useRecentWorkDetection';
 
 import { handleSaveToExcel } from './utils/excelExport';
-import { handleRestoreFromExcel } from './utils/excelImport';
+import { handleRestoreFromExcel, parseExcelAndRestoreState } from './utils/excelImport';
 
 import FallbackNotice from './components/FallbackNotice';
 import cfaLogo from './assets/cfa-logo-official.png';
@@ -199,12 +201,74 @@ function App() {
     setIsSettingsOpen(false);
   };
 
+  // Resume work modal handlers
+  const handleResumeWork = async () => {
+    try {
+      if (recentWork?.resumeData) {
+        // Parse the Recent Save Excel data using the same method as AutoSaveFileList
+        const { excelData } = recentWork.resumeData;
+        
+        if (!excelData) {
+          console.error('No Excel data found in recent work');
+          setShowResumeModal(false);
+          return;
+        }
+
+        // Convert base64 to buffer
+        const excelBuffer = base64ToBuffer(excelData);
+        
+        // Parse Excel data using existing Excel parsing logic
+        const result = parseExcelAndRestoreState(
+          excelBuffer,
+          (title, message) => {
+            console.log(`✅ Resume work Excel parsing success: ${title} - ${message}`);
+          },
+          (title, message) => {
+            console.error(`❌ Resume work Excel parsing error: ${title} - ${message}`);
+          }
+        );
+
+        if (result) {
+          // Use the existing auto-save restoration function
+          handleRestoreAutoSave(result);
+          showSuccess('Work Resumed', 'Your previous work has been successfully restored.');
+        } else {
+          console.error('Excel parsing returned null result');
+          showError('Resume Failed', 'Failed to parse the saved work data.');
+        }
+      }
+    } catch (error) {
+      console.error('Error resuming work:', error);
+      showError('Resume Failed', 'An error occurred while resuming your work.');
+    }
+    
+    setShowResumeModal(false);
+  };
+
+  // Helper function to convert base64 to buffer (same as AutoSaveFileList)
+  const base64ToBuffer = (base64: string): ArrayBuffer => {
+    const binaryString = atob(base64);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    return bytes.buffer;
+  };
+
+  const handleDeclineResume = () => {
+    setShowResumeModal(false);
+  };
+
   // Auto-save notification visibility
   const [isAutoSaveVisible, setIsAutoSaveVisible] = useState(false);
   const [lastSavedTime, setLastSavedTime] = useState('');
   
   // State for auto-save file list modal (shared between File Restore icon and Test Auto-Saves button)
   const [showAutoSaveFiles, setShowAutoSaveFiles] = useState(false);
+
+  // Resume work modal state
+  const [showResumeModal, setShowResumeModal] = useState(false);
+  const [isFullyLoaded, setIsFullyLoaded] = useState(false);
 
 
 
@@ -297,6 +361,9 @@ function App() {
   // Initialize recent save (runs independently from auto-save)
   const { getRecentSaveFile, clearRecentSaveFile, triggerEnhancedRecentSave } = useRecentSave(getShowState(), checkForData);
 
+  // Recent work detection hook
+  const recentWork = useRecentWorkDetection();
+
   // Enhanced save functions with empty form detection
   const enhancedAutoSave = useCallback(() => {
     triggerEnhancedAutoSave(checkForData);
@@ -353,6 +420,46 @@ function App() {
       }
     }));
   }, [showData.kittenCounts.lhKittens, showData.kittenCounts.shKittens]);
+
+  // 🚨 CRITICAL: Page load detection - wait for ALL initialization to complete
+  useEffect(() => {
+    const checkIfFullyLoaded = () => {
+      const conditions = {
+        settingsLoaded: !!globalSettings && Object.keys(globalSettings).length > 0,
+        appStateReady: !!showData && !!judges,
+        saveServicesReady: !!autoSaveStatus && !!recentWork,
+        formDetectionReady: !!checkForData,
+        // Add any other critical initialization states
+      };
+
+      console.log('🔍 Checking fully loaded conditions:', conditions);
+
+      const allConditionsMet = Object.values(conditions).every(condition => condition === true);
+      
+      if (allConditionsMet) {
+        console.log('✅ Page fully loaded - ready for resume modal check');
+        setIsFullyLoaded(true);
+      }
+    };
+
+    // Check multiple times with delays to ensure everything settles
+    const timer1 = setTimeout(checkIfFullyLoaded, 100);
+    const timer2 = setTimeout(checkIfFullyLoaded, 300);
+    const timer3 = setTimeout(checkIfFullyLoaded, 500);
+
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      clearTimeout(timer3);
+    };
+  }, [globalSettings, showData, judges, autoSaveStatus, recentWork, checkForData]);
+
+  // 🚨 CRITICAL: Only show modal AFTER page is FULLY loaded
+  useEffect(() => {
+    if (isFullyLoaded && recentWork?.hasRecentWork) {
+      setShowResumeModal(true);
+    }
+  }, [isFullyLoaded, recentWork]);
 
   // Auto-save and Tier 1 events are initialized earlier (moved up before useEffect)
 
@@ -1128,6 +1235,13 @@ function App() {
         clearRecentSaveFile={clearRecentSaveFile}
       />
 
+      {/* Resume Work Modal */}
+      <ResumeWorkModal
+        isOpen={showResumeModal}
+        onResume={handleResumeWork}
+        onDecline={handleDeclineResume}
+        timestamp={recentWork?.timestamp || ''}
+      />
 
     </div>
   )

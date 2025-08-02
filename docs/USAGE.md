@@ -8,6 +8,15 @@ This document provides comprehensive guidance on using the CFA Master Clerk Entr
 ## Application Startup
 
 The application is ready to use immediately upon launch. All file operations (Excel export/import) use platform-appropriate methods automatically without requiring manual directory configuration.
+
+### Recent Work Resume Feature
+
+When you return to the application after working on a form, the system automatically detects if you have recent work saved within the last 24 hours. If recent work is found, a modal will appear offering you the option to:
+
+- **Resume Work**: Restore your previous work exactly as you left it
+- **Start Fresh**: Begin with a clean, empty form
+
+This feature uses the same Recent Save data that's automatically created every 15 seconds while you work, ensuring you never lose your progress.
 ### Platform-Specific Behavior
 
 **Tauri Desktop Apps:**
@@ -54,6 +63,7 @@ The application now includes automatic saving functionality that works transpare
 - Runs silently without user notifications
 - Available in File Restore modal alongside auto-save files
 - **Empty Form Detection**: Automatically skips saves when no user input is detected across any visible tabs
+- **Recent Work Resume**: Automatically detects recent work within 24 hours and offers resume option on startup
 
 ---
 
