@@ -355,13 +355,19 @@ const BreedSheetsTab: React.FC<BreedSheetsTabProps> = (props) => {
 
   /**
    * Gets a breed entry value for specific group-hair length combination
+   * 
+   * This function accesses breed sheet data using dynamic key generation based on current selection.
+   * The key format must match the autosave storage format for proper data restoration.
+   * 
+   * @param judgeId - The judge ID for the breed entry
+   * @param breedKey - The breed key (e.g., "lh-AMERICAN BOBTAIL-LH")
+   * @param field - The field to retrieve ('bob', 'secondBest', 'bestCH', 'bestPR')
+   * @returns The value for the specified field or empty string if not found
    */
   const getBreedEntryValue = (judgeId: number, breedKey: string, field: 'bob' | 'secondBest' | 'bestCH' | 'bestPR'): string => {
     const judgeIdStr = judgeId.toString();
     const groupHairLengthKey = createGroupHairLengthKey(breedSheetsTabData.selectedGroup, breedSheetsTabData.selectedHairLength);
     const value = breedSheetsTabData.breedEntries[judgeIdStr]?.[groupHairLengthKey]?.[breedKey]?.[field] || '';
-    
-
     
     return value;
   };

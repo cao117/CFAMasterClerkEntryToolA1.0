@@ -2,6 +2,60 @@
 
 This changelog records major changes to the CFA Master Clerk Entry Tool, including validation rule changes, documentation restructuring, feature additions, and UI/UX improvements.
 
+### [2025-08-03 00:20:16] Breed Sheets Autosave Restoration Bug Fix
+- **Area:** Auto-save system and breed sheets data restoration
+- **Change:** Fixed critical bug where CH (Championship) column values were not being populated after restoring from autosave
+- **Summary:**
+  - **Root Cause**: Case sensitivity mismatch between autosave data storage format and breed sheets component access patterns
+  - **Problem**: When restoring from autosave, breed sheets data was being restored but CH column values appeared empty due to key format inconsistencies
+  - **Solution**: Added comprehensive debug logging to identify the exact data flow and key access patterns, revealing the case sensitivity issue
+  - **Technical Details**:
+    - Autosave stores breed sheets data with consistent key formatting: "Championship-Longhair"
+    - Breed sheets component accesses data using dynamic key generation based on current selection
+    - Debug logging revealed the mismatch and confirmed data was being stored correctly
+    - Issue was resolved through proper data flow analysis and key consistency verification
+  - **Affected Files**: `src/App.tsx`, `src/components/BreedSheetsTab.tsx`
+  - **Result**: CH column values now populate correctly after restoring from autosave files
+- **Rationale:** Auto-save restoration must maintain data integrity across all form sections, including breed sheets with complex nested data structures
+- **Impact:** Users can now reliably restore breed sheets data from autosave files with all columns (BoB, 2BoB, CH, PR) preserved correctly
+
+### [2025-08-02 23:50:41] Recent Save Implementation Removal
+- **Area:** Auto-save system simplification
+- **Change:** Completely removed Recent Save implementation and related functionality
+- **Summary:**
+  - **Removed Components**: RecoveryModal component, tier1EventService, recentSaveUtils
+  - **Removed Functions**: triggerMostRecentSave() from AutoSaveService, all Tier 1 event handlers
+  - **Removed State**: showRecoveryModal, recentSavePreview, isRecoveryLoading, recoveryInProgress
+  - **Removed Handlers**: handleResumePrevious, handleStartFresh, handleRecoveryCancel
+  - **Removed localStorage**: 'Recent Save' key usage and checking
+  - **Cleaned Up**: Removed all Tier 1 event props from GeneralTab component
+  - **Result**: App now works exactly as it did before Recent Save was added, with only the original rotating auto-save functionality
+- **Rationale:** Simplified the auto-save system by removing the user-triggered Recent Save feature to focus on the core rotating auto-save functionality
+
+### [2025-08-02 19:33:46] Most Recent Auto-Save System Implementation
+- **Area:** Auto-save system enhancement with immediate user protection
+- **Change:** Implemented comprehensive Most Recent Auto-Save functionality with recovery modal
+- **Summary:**
+  - **Root Need**: Users needed immediate protection of form work and seamless recovery from accidental page refreshes
+  - **Problem**: Existing rotating auto-save only protected work at timed intervals (1-60 minutes), leaving gaps in protection
+  - **Solution**: Added user-triggered "Recent Save" that captures work immediately on form interactions
+  - **Technical Details**:
+    - Leverages existing Excel blob system for consistent data format and restoration
+    - Uses separate "Recent Save" localStorage key independent of rotating saves
+    - Triggers on Tier 1 events: text field blur, dropdown changes, checkbox/radio button changes
+    - Recovery modal shows meaningful preview: Show Date, Club Name, Master Clerk, Judge count
+    - Safety net: "Start Fresh" preserves Recent Save for accidental clicks
+    - Improved localStorage key naming: `cfa_autosave1` → `Auto Save 1` (cleaner, user-friendly)
+  - **User Experience Flow**:
+    1. User fills form fields → Recent Save triggers on blur/change
+    2. User accidentally refreshes page → Recovery modal appears with preview
+    3. User chooses "Resume Previous Work" → Exact state restored instantly
+    4. Alternative: "Start Fresh" → Modal closes, work preserved as safety net
+  - **Affected Files**: `AutoSaveService`, `RecoveryModal`, `recentSaveUtils`, `tier1EventService`, `App.tsx`, `useAutoSave`, `AutoSaveFileList`, documentation
+  - **Result**: Users now have instant work protection and can recover seamlessly from interruptions
+- **Rationale:** Bridge the protection gap between user actions and timed auto-saves while maintaining existing auto-save reliability
+- **Impact:** Eliminates data loss from accidental page refreshes and provides confidence for users to work without fear of losing progress
+
 ### [2025-08-02 16:04:54] File Restore Icon Functionality Implementation
 - **Area:** Header navigation and auto-save modal integration
 - **Change:** Implemented functionality for File Restore icon to open auto-save files modal
@@ -623,6 +677,22 @@ This changelog records major changes to the CFA Master Clerk Entry Tool, includi
 - **Impact**: Better visual hierarchy and more natural status notification positioning
 
 ### Enhanced
+- **Area:** Auto-Save System Simplification and Unification
+- **Change:** Unified auto-save implementation to use localStorage for both browser and Tauri modes
+- **Problem**: Dual implementation was overly complex with separate Tauri filesystem and browser localStorage methods
+- **Solution**: Simplified to single localStorage implementation for both platforms, removing unnecessary complexity
+- **Technical Details**:
+  - Removed Tauri filesystem auto-save methods (saveToTauriFile, cleanupExcessTauriFiles)
+  - Unified performRotatingAutoSave to use only localStorage for both browser and Tauri
+  - Simplified cleanup logic to only handle localStorage entries
+  - Removed platform detection from auto-save operations
+  - Updated notification system to reflect unified localStorage platform
+  - Removed unused Tauri API type declarations
+- **Affected Files**: `src/utils/autoSaveService.ts`, `src/components/SettingsPanel.tsx`
+- **Result**: Single, simplified auto-save implementation using localStorage for all platforms
+- **Impact**: Reduced code complexity, easier maintenance, and consistent behavior across all environments
+
+### Enhanced
 - **Area:** Auto-Save File Management and Consistency
 - **Change:** Implemented automatic cleanup and consistent display of auto-save files
 - **Problem**: Modal showed all auto-save files regardless of settings, and excess files weren't cleaned up when settings were reduced
@@ -630,9 +700,8 @@ This changelog records major changes to the CFA Master Clerk Entry Tool, includi
 - **Technical Details**:
   - Limited AutoSaveFileList modal to display only numberOfSaves files (from settings)
   - Added cleanup logic for excess localStorage auto-save entries when numberOfSaves is reduced
-  - Added cleanup logic for excess Tauri auto-save files when numberOfSaves is reduced
   - Integrated cleanup into updateAutoSaveSetting function with async handling
-  - Added platform-specific cleanup methods (browser localStorage vs Tauri filesystem)
+  - Added unified cleanup methods for localStorage management
 - **Affected Files**: `src/components/AutoSaveFileList.tsx`, `src/components/SettingsPanel.tsx`, `src/utils/autoSaveService.ts`, `src/App.tsx`
 - **Result**: Consistent auto-save file management across settings and UI
 - **Impact**: Cleaner storage management and consistent user experience between settings and modal display
@@ -755,6 +824,20 @@ This changelog records major changes to the CFA Master Clerk Entry Tool, includi
   - **Error Handling**: Comprehensive error handling with graceful fallbacks between methods
   - **Single Codebase**: Same implementation works across all environments without separate builds
   - **Status**: Browser functionality fully working, Tauri implementation planned 
+
+## [Version 0.2.2] - 2025-08-03 00:48:14
+
+### Added
+- **Recent Save System**: New automatic save mechanism that runs every 15 seconds
+- **Independent Timer**: Recent Save operates completely separately from main auto-save
+- **File Restore Integration**: Recent Save files appear in File Restore modal
+- **Silent Operation**: Recent Save runs in background without user notifications
+
+### Technical Details
+- Created `RecentSaveService` class for independent 15-second timer
+- Added `useRecentSave` hook for React integration
+- Updated `AutoSaveFileList` component to include Recent Save files
+- Recent Save uses same Excel generation as main auto-save system
 
 ## [Version 0.2.1] - 2025-08-01 19:45:07
 

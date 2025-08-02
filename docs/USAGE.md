@@ -32,16 +32,26 @@ The application now includes automatic saving functionality that works transpare
 - **Visual Indicators**: Shows auto-save status with simplified notification bar
 
 **Auto-Save File Locations:**
-- **Desktop (Tauri)**: `%APPDATA%/com.cfa.masterclerk.entry/autosave1.xlsx`, `autosave2.xlsx`, `autosave3.xlsx`
-- **Browser**: localStorage keys `cfa_autosave1`, `cfa_autosave2`, `cfa_autosave3`
+- **Desktop (Tauri)**: `%APPDATA%/com.cfa.masterclerk.entry/Auto Save 1`, `Auto Save 2`, `Auto Save 3`
+- **Browser**: localStorage keys `Auto Save 1`, `Auto Save 2`, `Auto Save 3`
+- **Recent Save**: localStorage key `Recent Save` (automatic, every 15 seconds)
 
 **Auto-Save Behavior:**
 - Starts timer automatically when form has data
 - Timer runs based on user-configured Save Cycle setting (1-60 minutes)
 - First auto-save occurs only after the full save cycle interval is reached
-- Cycles through files: autosave1 → autosave2 → autosave3 → autosave1 (repeat)
+- Cycles through files: Auto Save 1 → Auto Save 2 → Auto Save 3 → Auto Save 1 (repeat)
 - Creates complete Excel files identical to manual "Save to Excel"
 - No user intervention required - runs transparently in background
+
+**Recent Save Behavior:**
+- Runs automatically every 15 seconds in the background
+- Independent of rotating auto-saves - uses separate "Recent Save" storage
+- Always replaces previous Recent Save (no rotation)
+- Starts after page is completely loaded
+- First save occurs 15 seconds after page load
+- Runs silently without user notifications
+- Available in File Restore modal alongside auto-save files
 
 ---
 
@@ -569,4 +579,8 @@ Planned improvements include:
 - **Advanced validation**: More sophisticated input validation rules
 - **Animation customization**: User-configurable animation speeds
 - **Accessibility improvements**: Enhanced screen reader support
-- **Mobile optimization**: Better touch interaction patterns 
+- **Mobile optimization**: Better touch interaction patterns
+
+---
+
+_Last updated: 2025-08-03_ 

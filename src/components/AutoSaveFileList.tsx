@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import type { AutoSaveEntry } from '../utils/autoSaveService';
+import type { AutoSaveEntry } from '../types/autoSave';
 import * as XLSX from 'xlsx';
 import { parseExcelAndRestoreState } from '../utils/excelImport';
 
@@ -16,6 +16,8 @@ interface AutoSaveFileListProps {
   onClose: () => void;
   onRestore: (formData: any) => void;
   numberOfSaves?: number; // Maximum number of files to display (from settings)
+  getRecentSaveFile?: () => Promise<any>;
+  clearRecentSaveFile?: () => Promise<void>;
 }
 
 /**
@@ -29,7 +31,9 @@ export function AutoSaveFileList({
   isOpen, 
   onClose, 
   onRestore,
-  numberOfSaves = 3
+  numberOfSaves = 3,
+  getRecentSaveFile,
+  clearRecentSaveFile
 }: AutoSaveFileListProps) {
   const [autoSaveFiles, setAutoSaveFiles] = useState<AutoSaveFile[]>([]);
   const [loading, setLoading] = useState(false);
@@ -47,7 +51,7 @@ export function AutoSaveFileList({
     // Scan localStorage for auto-save entries
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && key.startsWith('cfa_autosave')) {
+      if (key && key.startsWith('Auto Save ')) {
         try {
           const saved = localStorage.getItem(key);
           if (saved) {
@@ -60,7 +64,7 @@ export function AutoSaveFileList({
               key: key,
               fileNumber: parsed.fileNumber,
               timestamp: parsed.timestamp,
-              filename: parsed.filename || `${key}.xlsx`,
+              filename: parsed.filename || key,
               size: `${sizeKB} KB`
             });
           }
@@ -70,13 +74,38 @@ export function AutoSaveFileList({
       }
     }
     
+    // Check for Recent Save file
+    const recentSaveKey = 'Recent Save';
+    const recentSaveData = localStorage.getItem(recentSaveKey);
+    if (recentSaveData) {
+      try {
+        const parsed = JSON.parse(recentSaveData);
+        
+        // Calculate file size for display
+        const sizeKB = Math.round(parsed.excelData.length * 0.75 / 1024);
+        
+        files.push({
+          key: recentSaveKey,
+          fileNumber: parsed.fileNumber,
+          timestamp: parsed.timestamp,
+          filename: parsed.filename || recentSaveKey,
+          size: `${sizeKB} KB`
+        });
+      } catch (error) {
+        console.error(`Error reading ${recentSaveKey}:`, error);
+      }
+    }
+    
     // Sort by timestamp (newest first)
     files.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
     
-    // Limit display to numberOfSaves files to match settings
-    const limitedFiles = files.slice(0, numberOfSaves);
+    // Limit display to numberOfSaves files to match settings (but always include Recent Save if it exists)
+    const recentSaveFile = files.find(file => file.key === 'Recent Save');
+    const autoSaveFiles = files.filter(file => file.key.startsWith('Auto Save ')).slice(0, numberOfSaves);
     
-    setAutoSaveFiles(limitedFiles);
+    const finalFiles = recentSaveFile ? [recentSaveFile, ...autoSaveFiles] : autoSaveFiles;
+    
+    setAutoSaveFiles(finalFiles);
     setLoading(false);
   };
 
@@ -185,9 +214,37 @@ export function AutoSaveFileList({
 
   if (!isOpen) return null;
 
+  // Calculate dynamic height based on file count
+  const calculateModalHeight = () => {
+    // Base measurements (in pixels)
+    const headerHeight = 64; // h-16 (title + padding)
+    const footerHeight = 56; // h-14 (button + padding)
+    const fileItemHeight = 72; // p-3 (24px) + content height (~48px)
+    const padding = 48; // p-6 (24px top + 24px bottom)
+    const spacing = 8; // space-y-2 (8px between items)
+    
+    // Calculate content height
+    const contentHeight = autoSaveFiles.length * fileItemHeight + 
+                         (autoSaveFiles.length - 1) * spacing;
+    
+    // Calculate total modal height
+    const totalHeight = headerHeight + contentHeight + footerHeight + padding;
+    
+    // Apply constraints
+    const minHeight = headerHeight + fileItemHeight + footerHeight + padding; // 1 file minimum
+    const maxHeight = window.innerHeight * 0.8; // 80% of viewport height
+    
+    return Math.max(minHeight, Math.min(totalHeight, maxHeight));
+  };
+
+  const modalHeight = calculateModalHeight();
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+      <div 
+        className="bg-white rounded-lg p-6 max-w-md w-full mx-4"
+        style={{ height: `${modalHeight}px` }}
+      >
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold">Restore Auto-Save</h3>
           <button 
@@ -205,7 +262,7 @@ export function AutoSaveFileList({
             No auto-save files found
           </div>
         ) : (
-          <div className="space-y-2 max-h-60 overflow-y-auto">
+          <div className="space-y-2">
             {autoSaveFiles.map((file) => (
               <div
                 key={file.key}

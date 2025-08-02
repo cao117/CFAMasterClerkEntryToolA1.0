@@ -74,6 +74,7 @@ interface GeneralTabProps {
     short_hair_breeds: string[];
     long_hair_breeds: string[];
   };
+
 }
 
 // Replace ChevronDownCircleIcon and ChevronUpCircleIcon with integrated corner icon
@@ -130,7 +131,8 @@ export default function GeneralTab({
   onJudgeRingTypeChange,
   getShowState,
   onCSVImport,
-  globalSettings
+  globalSettings,
+
 }: GeneralTabProps) {
   // Ref to the component root for event delegation
   const containerRef = useRef<HTMLDivElement>(null);
@@ -258,6 +260,11 @@ export default function GeneralTab({
   // Update judges when numberOfJudges changes with proper validation
   // Uses dynamic maximum from settings panel instead of hardcoded 12
   useEffect(() => {
+    // Skip if numberOfJudges is 0 (likely during initialization or restoration)
+    if (showData.numberOfJudges === 0) {
+      return;
+    }
+    
     const currentCount = judges.length;
     let targetCount = showData.numberOfJudges;
     
@@ -281,19 +288,22 @@ export default function GeneralTab({
       }
     }
     
-    if (targetCount > currentCount) {
-      // Add new judges
-      const newJudges = Array.from({ length: targetCount - currentCount }, (_, i) => ({
-        id: currentCount + i + 1,
-        name: '',
-        acronym: '',
-        ringType: 'Allbreed',
-        ringNumber: currentCount + i + 1
-      }));
-      setJudges([...judges, ...newJudges]);
-    } else if (targetCount < currentCount) {
-      // Remove excess judges
-      setJudges(judges.slice(0, targetCount));
+    // Only proceed if we have a valid target count and judges array is stable
+    if (targetCount > 0 && targetCount !== currentCount) {
+      if (targetCount > currentCount) {
+        // Add new judges
+        const newJudges = Array.from({ length: targetCount - currentCount }, (_, i) => ({
+          id: currentCount + i + 1,
+          name: '',
+          acronym: '',
+          ringType: 'Allbreed',
+          ringNumber: currentCount + i + 1
+        }));
+        setJudges([...judges, ...newJudges]);
+      } else if (targetCount < currentCount) {
+        // Remove excess judges
+        setJudges(judges.slice(0, targetCount));
+      }
     }
   }, [showData.numberOfJudges, judges.length]);
 
@@ -832,8 +842,12 @@ export default function GeneralTab({
                       <input 
                         type="date"
                         value={showData.showDate}
-                        onChange={e => updateShowData('showDate', e.target.value)}
+                        onChange={(e) => {
+                          updateShowData('showDate', e.target.value);
+                        }}
                         onFocus={e => e.target.select()}
+                        onBlur={() => {
+                        }}
                         className={`text-sm font-medium rounded-md py-1 px-2 focus:outline-none transition-all duration-300 shadow-sm ${errors.showDate ? 'border-2 border-red-300 bg-red-50/80 focus:border-red-400 focus:ring-2 focus:ring-red-100' : 'border border-blue-200 bg-white focus:border-blue-400 focus:ring-1 focus:ring-blue-100'}`}
                         style={{ width: '150px' }}
                       />
@@ -849,9 +863,14 @@ export default function GeneralTab({
                         min="0" 
                         max={globalSettings.max_judges} 
                         value={safeNumberInput(showData.numberOfJudges)} 
-                        onChange={handleNumberOfJudgesChange}
+                        onChange={(e) => {
+                          handleNumberOfJudgesChange(e);
+                        }}
                         onFocus={e => { e.target.select(); handleNumberFocus(e); handleFieldFocus('numberOfJudges'); }}
-                        onBlur={e => { handleNumberBlur(e, 'numberOfJudges', 0); handleFieldBlur(); }}
+                        onBlur={(e) => {
+                          handleNumberBlur(e, 'numberOfJudges', 0);
+                          handleFieldBlur();
+                        }}
                         className={`text-center text-sm font-medium rounded-md py-1 px-2 focus:outline-none transition-all duration-300 shadow-sm ${errors.numberOfJudges ? 'border-2 border-red-300 bg-red-50/80 focus:border-red-400 focus:ring-2 focus:ring-red-100' : 'border border-blue-200 bg-white focus:border-blue-400 focus:ring-1 focus:ring-blue-100'}`}
                         style={{ width: '80px' }}
                       />
@@ -869,9 +888,13 @@ export default function GeneralTab({
                         ref={clubNameRef}
                         type="text" 
                         value={showData.clubName} 
-                        onChange={handleClubNameChange}
-                        onFocus={e => { e.target.select(); handleFieldFocus('clubName'); }}
-                        onBlur={handleFieldBlur}
+                                      onChange={(e) => {
+                handleClubNameChange(e);
+              }}
+              onFocus={e => { e.target.select(); handleFieldFocus('clubName'); }}
+              onBlur={(e) => {
+                handleFieldBlur();
+              }}
                         className={`text-sm font-medium rounded-md py-1 px-2 focus:outline-none transition-all duration-300 shadow-sm ${errors.clubName ? 'border-2 border-red-300 bg-red-50/80 focus:border-red-400 focus:ring-2 focus:ring-red-100 placeholder-red-400' : 'border border-blue-200 bg-white focus:border-blue-400 focus:ring-1 focus:ring-blue-100 placeholder-gray-400'}`}
                         placeholder="Enter club name"
                         style={{ width: '260px' }}
@@ -886,9 +909,13 @@ export default function GeneralTab({
                         ref={masterClerkRef}
                         type="text" 
                         value={showData.masterClerk} 
-                        onChange={handleMasterClerkChange}
+                        onChange={(e) => {
+                          handleMasterClerkChange(e);
+                        }}
                         onFocus={e => { e.target.select(); handleFieldFocus('masterClerk'); }}
-                        onBlur={handleFieldBlur}
+                        onBlur={(e) => {
+                          handleFieldBlur();
+                        }}
                         className={`text-sm font-medium rounded-md py-1 px-2 focus:outline-none transition-all duration-300 shadow-sm ${errors.masterClerk ? 'border-2 border-red-300 bg-red-50/80 focus:border-red-400 focus:ring-2 focus:ring-red-100 placeholder-red-400' : 'border border-blue-200 bg-white focus:border-blue-400 focus:ring-1 focus:ring-blue-100 placeholder-gray-400'}`}
                         placeholder="Enter master clerk name"
                         style={{ width: '260px' }}

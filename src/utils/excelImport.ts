@@ -768,6 +768,7 @@ function parseBreedSheetWorksheet(data: string[][], breedSheets: NonNullable<Imp
       currentHairLength = parts[1] === 'LH' ? 'Longhair' : 'Shorthair';
       
       // Convert to title case to match the stored data format
+      // FIXED: Ensure consistent case formatting for breed sheet keys
       const titleCaseGroup = currentGroup.charAt(0).toUpperCase() + currentGroup.slice(1).toLowerCase();
       currentSection = `${titleCaseGroup}-${currentHairLength}`;
       inBreedRows = false;

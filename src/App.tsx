@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { flushSync } from 'react-dom';
 import GeneralTab from './components/GeneralTab';
 import ChampionshipTab from './components/ChampionshipTab';
 import type { ChampionshipTabRef } from './components/ChampionshipTab';
@@ -15,6 +16,8 @@ import { AutoSaveFileList } from './components/AutoSaveFileList';
 import { useToast } from './hooks/useToast';
 import { useScreenGuard } from './hooks/useScreenGuard';
 import { useAutoSave } from './hooks/useAutoSave';
+import { useRecentSave } from './hooks/useRecentSave';
+
 import { handleSaveToExcel } from './utils/excelExport';
 import { handleRestoreFromExcel } from './utils/excelImport';
 
@@ -152,6 +155,8 @@ function App() {
     setIsInitialized(true);
   }, []);
 
+
+
   useEffect(() => {
     // Only save to localStorage if we're past the initial load
     if (isInitialized) {
@@ -183,6 +188,8 @@ function App() {
     setShowAutoSaveFiles(true);
   };
 
+
+
   // Handle settings close
   const handleSettingsClose = () => {
     setIsSettingsOpen(false);
@@ -194,6 +201,8 @@ function App() {
   
   // State for auto-save file list modal (shared between File Restore icon and Test Auto-Saves button)
   const [showAutoSaveFiles, setShowAutoSaveFiles] = useState(false);
+
+
 
 
 
@@ -255,6 +264,60 @@ function App() {
     pingTriggered: false
   });
 
+  // Initialize auto-save and Tier 1 events after all state is declared
+  const getShowState = () => {
+    const state = {
+      general: showData,
+      judges,
+      championship: championshipTabData,
+      premiership: premiershipTabData,
+      kitten: kittenTabData,
+      household: householdPetTabData,
+      breedSheets: breedSheetsTabData,
+      globalSettings,
+    };
+    
+    console.log('🔍 DEBUG: getShowState called - capturing current form state:', {
+      generalShowDate: state.general?.showDate,
+      generalClubName: state.general?.clubName,
+      generalMasterClerk: state.general?.masterClerk,
+      generalNumberOfJudges: state.general?.numberOfJudges,
+      championshipCountsComplete: state.general?.championshipCounts,
+      championshipCountsDetailed: {
+        gcs: state.general?.championshipCounts?.gcs,
+        lhGcs: state.general?.championshipCounts?.lhGcs,
+        shGcs: state.general?.championshipCounts?.shGcs,
+        total: state.general?.championshipCounts?.total
+      },
+      kittenCountsComplete: state.general?.kittenCounts,
+      kittenCountsDetailed: {
+        lhKittens: state.general?.kittenCounts?.lhKittens,
+        shKittens: state.general?.kittenCounts?.shKittens,
+        total: state.general?.kittenCounts?.total
+      },
+      premiershipCountsComplete: state.general?.premiershipCounts,
+      generalHouseholdPetCount: state.general?.householdPetCount,
+      judgesLength: state.judges?.length || 0,
+      hasChampionshipData: !!state.championship,
+      hasPremiershipData: !!state.premiership,
+      hasKittenData: !!state.kitten,
+      hasHouseholdData: !!state.household
+    });
+    
+    return state;
+  };
+
+  const autoSaveOptions = {
+    numberOfFiles: globalSettings.numberOfSaves || 3,
+    saveFrequencyMinutes: globalSettings.saveCycle || 5,
+    enabled: true
+  };
+
+  const { status: autoSaveStatus, triggerManualSave } = useAutoSave(getShowState(), autoSaveOptions);
+
+  // Initialize recent save (runs independently from auto-save)
+  const { getRecentSaveFile, clearRecentSaveFile } = useRecentSave(getShowState());
+
   // Auto-calculate championship counts
   useEffect(() => {
     const gcs = showData.championshipCounts.lhGcs + showData.championshipCounts.shGcs;
@@ -303,27 +366,7 @@ function App() {
     }));
   }, [showData.kittenCounts.lhKittens, showData.kittenCounts.shKittens]);
 
-  // Function to return the full show state for Excel export (after all state is declared)
-  const getShowState = () => ({
-    general: showData,
-    judges,
-    championship: championshipTabData,
-    premiership: premiershipTabData,
-    kitten: kittenTabData,
-    household: householdPetTabData, // Don't include householdPetCount here - it's already in general.householdPetCount
-    breedSheets: breedSheetsTabData,
-    globalSettings,
-  });
-
-  // Auto-save options configuration (using user-configured values from Settings Panel)
-  const autoSaveOptions = {
-    numberOfFiles: globalSettings.numberOfSaves || 3, // Use user-configured value or fallback
-    saveFrequencyMinutes: globalSettings.saveCycle || 5, // Use user-configured value or fallback
-    enabled: true
-  };
-
-  // Initialize auto-save with current form data (after all state is declared)
-  const { status: autoSaveStatus, triggerManualSave } = useAutoSave(getShowState(), autoSaveOptions);
+  // Auto-save and Tier 1 events are initialized earlier (moved up before useEffect)
 
   // Auto-save notification effect with auto-hide
   useEffect(() => {
@@ -360,31 +403,23 @@ function App() {
       }
       
       // Update all state with restored data (same as Load from Excel - direct replacement)
+          // Use flushSync to ensure atomic updates and prevent useEffect race conditions
+    // during restoration that could reset numberOfJudges or other synchronized values
+    flushSync(() => {
       setShowData(restoredState.general);
       setJudges(restoredState.judges);
+    });
+    
+    console.log('🔍 RESTORATION: Championship counts after setShowData():', restoredState.general.championshipCounts);
       setChampionshipTabData(restoredState.championship);
       setPremiershipTabData(restoredState.premiership);
       setKittenTabData(restoredState.kitten);
       setHouseholdPetTabData(restoredState.household);
       
       // Initialize breed sheets data if present in restored state (same as Load from Excel)
+      // Note: Breed sheets data structure is preserved with consistent key formatting
+      // from autosave storage to ensure proper restoration of all columns (BoB, 2BoB, CH, PR)
       if (restoredState.breedSheets) {
-        // DEBUG: Show only American Bobtail-LH data for focused testing
-        const firstJudgeId = Object.keys(restoredState.breedSheets.breedEntries || {})[0];
-        const firstJudgeData = restoredState.breedSheets.breedEntries[firstJudgeId];
-        const championshipLH = firstJudgeData?.['Championship-Longhair'];
-        const americanBobtailData = championshipLH?.['lh-AMERICAN BOBTAIL-LH'];
-        
-        console.log('🔍 DEBUG - Restoring BreedSheets (AMERICAN BOBTAIL-LH focus):', {
-          judgeId: firstJudgeId,
-          championshipLHSection: championshipLH,
-          americanBobtailEntry: americanBobtailData,
-          americanBobtailFields: americanBobtailData ? Object.keys(americanBobtailData) : 'NO DATA',
-          americanBobtailBob: americanBobtailData?.bob,
-          americanBobtailSecondBest: americanBobtailData?.secondBest,
-          americanBobtailBestCH: americanBobtailData?.bestCH,
-          americanBobtailBestPR: americanBobtailData?.bestPR
-        });
         setBreedSheetsTabData(restoredState.breedSheets);
       }
       
@@ -592,20 +627,21 @@ function App() {
     { 
       id: 'general', 
       name: 'General', 
-      component: <GeneralTab 
-        showData={showData}
-        setShowData={setShowData}
-        judges={judges}
-        setJudges={setJudges}
-        showSuccess={showSuccess}
-        showError={showError}
-        showWarning={showWarning}
-        showInfo={showInfo}
-        onJudgeRingTypeChange={handleJudgeRingTypeChange}
-        getShowState={getShowState}
-        onCSVImport={handleCSVImport}
-        globalSettings={globalSettings}
-      />,
+                  component:                 <GeneralTab
+                  showData={showData}
+                  setShowData={setShowData}
+                  judges={judges}
+                  setJudges={setJudges}
+                  showSuccess={showSuccess}
+                  showError={showError}
+                  showWarning={showWarning}
+                  showInfo={showInfo}
+                  onJudgeRingTypeChange={handleJudgeRingTypeChange}
+                  getShowState={getShowState}
+                  onCSVImport={handleCSVImport}
+                  globalSettings={globalSettings}
+
+                />,
       disabled: false
     },
     { 
@@ -1099,7 +1135,11 @@ function App() {
         onClose={() => setShowAutoSaveFiles(false)}
         onRestore={handleRestoreAutoSave}
         numberOfSaves={globalSettings.numberOfSaves || 3}
+        getRecentSaveFile={getRecentSaveFile}
+        clearRecentSaveFile={clearRecentSaveFile}
       />
+
+
     </div>
   )
 }

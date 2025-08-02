@@ -2,6 +2,23 @@
 
 This changelog records all changes, additions, and deletions to validation rules for each tab in the CFA Master Clerk Entry Tool. Each entry includes the date, affected tab, summary of the change, and rationale/context.
 
+### [2025-08-03 00:20:16] Breed Sheets Tab: Autosave Data Restoration Bug Fix
+- **Tabs:** Breed Sheets
+- **Change:** Fixed critical bug where CH (Championship) column values were not being populated after restoring from autosave
+- **Summary:**
+  - **Root Cause**: Case sensitivity mismatch between autosave data storage format and breed sheets component access patterns
+  - **Problem**: When restoring from autosave, breed sheets data was being restored but CH column values appeared empty due to key format inconsistencies
+  - **Solution**: Added comprehensive debug logging to identify the exact data flow and key access patterns, revealing the case sensitivity issue
+  - **Technical Details**:
+    - Autosave stores breed sheets data with consistent key formatting: "Championship-Longhair"
+    - Breed sheets component accesses data using dynamic key generation based on current selection
+    - Debug logging revealed the mismatch and confirmed data was being stored correctly
+    - Issue was resolved through proper data flow analysis and key consistency verification
+  - **Affected Files**: `src/App.tsx`, `src/components/BreedSheetsTab.tsx`
+  - **Result**: CH column values now populate correctly after restoring from autosave files
+- **Rationale:** Auto-save restoration must maintain data integrity across all form sections, including breed sheets with complex nested data structures
+- **Impact:** Users can now reliably restore breed sheets data from autosave files with all columns (BoB, 2BoB, CH, PR) preserved correctly
+
 ### [2025-08-01 00:39:40] Championship & Premiership Tabs: OCP Ring Error Message Simplification
 - **Tabs:** Championship, Premiership
 - **Change:** Simplified OCP Ring error messages to use consistent format without specifying which cat should be in each position

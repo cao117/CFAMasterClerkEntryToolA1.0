@@ -2,33 +2,11 @@
  * Auto-Save Service
  * 
  * Provides automatic saving of form data as Excel files with rotating file management.
- * Works in both Tauri desktop apps (real files) and browsers (localStorage).
+ * Uses localStorage for both browser and Tauri modes for simplified implementation.
  */
 
-import { isDesktop } from './platformDetection';
 import { createExcelFromFormData } from './excelExport';
-
-// Define Tauri API types for better TypeScript support
-declare global {
-  interface Window {
-    __TAURI__?: {
-      path: {
-        appDataDir(): Promise<string>;
-        join(...paths: string[]): Promise<string>;
-      };
-      fs: {
-        writeBinaryFile(path: string, data: Uint8Array): Promise<void>;
-      };
-    };
-  }
-}
-
-export interface AutoSaveEntry {
-  excelData: string; // base64 encoded Excel data for browser storage
-  timestamp: string;
-  fileNumber: number;
-  filename: string;
-}
+import type { AutoSaveEntry } from '../types/autoSave';
 
 export class AutoSaveService {
   private currentFileIndex = 0;
@@ -79,11 +57,8 @@ export class AutoSaveService {
       // Calculate which file number to save to (1-based indexing for user clarity)
       const fileNumber = (this.currentFileIndex % numberOfFiles) + 1;
       
-      if (isDesktop()) {
-        await this.saveToTauriFile(formData, fileNumber);
-      } else {
-        await this.saveToBrowserStorage(formData, fileNumber);
-      }
+      // Use localStorage for both browser and Tauri - simplified single implementation
+      await this.saveToBrowserStorage(formData, fileNumber);
       
       console.log(`Manual save completed: autosave${fileNumber}`);
       
@@ -117,6 +92,8 @@ export class AutoSaveService {
     }
   }
 
+
+
   /**
    * Stops auto-save timer
    */
@@ -133,11 +110,8 @@ export class AutoSaveService {
     const fileNumber = (this.currentFileIndex % numberOfFiles) + 1;
     
     try {
-      if (isDesktop()) {
-        await this.saveToTauriFile(formData, fileNumber);
-      } else {
-        await this.saveToBrowserStorage(formData, fileNumber);
-      }
+      // Use localStorage for both browser and Tauri - simplified single implementation
+      await this.saveToBrowserStorage(formData, fileNumber);
       
       console.log(`Auto-save completed: autosave${fileNumber}`);
       
@@ -152,37 +126,12 @@ export class AutoSaveService {
     this.currentFileIndex = (this.currentFileIndex + 1) % numberOfFiles;
   }
 
-  private async saveToTauriFile(formData: any, fileNumber: number): Promise<void> {
-    try {
-      // Check if Tauri APIs are available
-      if (!window.__TAURI__?.path || !window.__TAURI__?.fs) {
-        throw new Error('Tauri APIs not available');
-      }
 
-      // Get AppData directory path
-      const appDataPath = await window.__TAURI__.path.appDataDir();
-      const fileName = `autosave${fileNumber}.xlsx`;
-      const filePath = await window.__TAURI__.path.join(appDataPath, fileName);
-      
-      // Use the shared Excel generation function
-      const { buffer } = createExcelFromFormData(formData);
-      
-      // Write Excel file to disk
-      await window.__TAURI__.fs.writeBinaryFile(filePath, buffer);
-      
-      console.log(`Auto-saved to AppData: ${fileName} at ${filePath}`);
-      
-    } catch (error) {
-      console.error('Tauri auto-save error:', error);
-      // Fallback to browser storage if Tauri fails
-      await this.saveToBrowserStorage(formData, fileNumber);
-    }
-  }
 
   private async saveToBrowserStorage(formData: any, fileNumber: number): Promise<void> {
     try {
       // Browser: Create Excel file and store as base64 in localStorage
-      const storageKey = `cfa_autosave${fileNumber}`;
+      const storageKey = `Auto Save ${fileNumber}`;
       
 
       
@@ -196,7 +145,7 @@ export class AutoSaveService {
         excelData: base64Excel,
         timestamp: new Date().toISOString(),
         fileNumber: fileNumber,
-        filename: `autosave${fileNumber}.xlsx`
+        filename: `Auto Save ${fileNumber}`
       };
       
       localStorage.setItem(storageKey, JSON.stringify(autoSaveEntry));
@@ -223,7 +172,7 @@ export class AutoSaveService {
       detail: {
         fileNumber,
         timestamp: new Date().toISOString(),
-        platform: isDesktop() ? 'desktop' : 'browser'
+        platform: 'localStorage' // Unified platform for both browser and Tauri
       }
     });
     window.dispatchEvent(event);
@@ -236,22 +185,16 @@ export class AutoSaveService {
   async getAutoSaveFiles(): Promise<AutoSaveEntry[]> {
     const files: AutoSaveEntry[] = [];
     
-    if (isDesktop()) {
-      // For Tauri, we'd need to list files in AppData directory
-      // This would require additional Tauri APIs
-      console.log('Auto-save file listing not yet implemented for Tauri');
-    } else {
-      // For browser, check localStorage for auto-save entries
-      for (let i = 1; i <= 10; i++) { // Check up to 10 possible files
-        const storageKey = `cfa_autosave${i}`;
-        const stored = localStorage.getItem(storageKey);
-        if (stored) {
-          try {
-            const entry: AutoSaveEntry = JSON.parse(stored);
-            files.push(entry);
-          } catch (error) {
-            console.error(`Error parsing auto-save entry ${i}:`, error);
-          }
+    // Check localStorage for auto-save entries (unified for both browser and Tauri)
+    for (let i = 1; i <= 10; i++) { // Check up to 10 possible files
+      const storageKey = `Auto Save ${i}`;
+      const stored = localStorage.getItem(storageKey);
+      if (stored) {
+        try {
+          const entry: AutoSaveEntry = JSON.parse(stored);
+          files.push(entry);
+        } catch (error) {
+          console.error(`Error parsing auto-save entry ${i}:`, error);
         }
       }
     }
@@ -263,15 +206,11 @@ export class AutoSaveService {
    * Clears all auto-save files
    */
   async clearAutoSaveFiles(): Promise<void> {
-    if (isDesktop()) {
-      console.log('Auto-save file clearing not yet implemented for Tauri');
-    } else {
-      // Clear from localStorage
-      for (let i = 1; i <= 10; i++) {
-        localStorage.removeItem(`cfa_autosave${i}`);
-      }
-      console.log('All auto-save files cleared from localStorage');
+    // Clear from localStorage (unified for both browser and Tauri)
+    for (let i = 1; i <= 10; i++) {
+      localStorage.removeItem(`Auto Save ${i}`);
     }
+    console.log('All auto-save files cleared from localStorage');
   }
 
   /**
@@ -280,26 +219,23 @@ export class AutoSaveService {
    */
   async cleanupExcessAutoSaveFiles(newNumberOfSaves: number): Promise<void> {
     try {
-      if (isDesktop()) {
-        await this.cleanupExcessTauriFiles(newNumberOfSaves);
-      } else {
-        this.cleanupExcessBrowserFiles(newNumberOfSaves);
-      }
-      console.log(`Cleanup completed: keeping ${newNumberOfSaves} auto-save files`);
+      // Use localStorage for both browser and Tauri - simplified single implementation
+      this.cleanupExcessLocalStorageFiles(newNumberOfSaves);
+      console.log(`Cleanup completed: keeping ${newNumberOfSaves} auto-save files in localStorage`);
     } catch (error) {
       console.error('Failed to cleanup excess auto-save files:', error);
     }
   }
 
-  private cleanupExcessBrowserFiles(newNumberOfSaves: number): void {
+  private cleanupExcessLocalStorageFiles(newNumberOfSaves: number): void {
     // Remove excess localStorage entries
     const keysToRemove: string[] = [];
     
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && key.startsWith('cfa_autosave')) {
-        // Extract file number from key (e.g., "cfa_autosave3" -> 3)
-        const match = key.match(/cfa_autosave(\d+)/);
+      if (key && key.startsWith('Auto Save ')) {
+        // Extract file number from key (e.g., "Auto Save 3" -> 3)
+        const match = key.match(/Auto Save (\d+)/);
         if (match) {
           const fileNumber = parseInt(match[1]);
           if (fileNumber > newNumberOfSaves) {
@@ -314,37 +250,5 @@ export class AutoSaveService {
       localStorage.removeItem(key);
       console.log(`Removed excess auto-save from localStorage: ${key}`);
     });
-  }
-
-  private async cleanupExcessTauriFiles(newNumberOfSaves: number): Promise<void> {
-    try {
-      // Check if Tauri APIs are available
-      if (!window.__TAURI__?.path || !window.__TAURI__?.fs) {
-        console.warn('Tauri APIs not available for cleanup');
-        return;
-      }
-
-      const appDataPath = await window.__TAURI__.path.appDataDir();
-      
-      // Check for files beyond the new limit
-      for (let fileNumber = newNumberOfSaves + 1; fileNumber <= 10; fileNumber++) {
-        try {
-          const fileName = `autosave${fileNumber}.xlsx`;
-          const filePath = await window.__TAURI__.path.join(appDataPath, fileName);
-          
-          // Check if file exists before trying to remove it
-          if (await window.__TAURI__.fs.exists(filePath)) {
-            await window.__TAURI__.fs.removeFile(filePath);
-            console.log(`Removed excess auto-save file: ${fileName}`);
-          }
-        } catch (error) {
-          // File doesn't exist or couldn't be removed - continue with next file
-          console.log(`Auto-save file ${fileNumber} doesn't exist or couldn't be removed`);
-        }
-      }
-    } catch (error) {
-      console.error('Tauri cleanup error:', error);
-      throw error;
-    }
   }
 }

@@ -1,20 +1,146 @@
 # Component Changelog
 
+## [Component v2.16.0] - 2025-08-03 00:55:31
+
+### [COMPONENT-ENHANCED] AutoSaveFileList Dynamic Height Implementation
+- **Area:** Modal height calculation and user experience optimization
+- **Change:** Implemented dynamic height calculation to eliminate scrolling in AutoSaveFileList modal
+- **Summary:**
+  - **Height Calculation**: Modal height now calculated based on actual file count + header + footer + padding
+  - **Constraints Applied**: Minimum height (1 file display) and maximum height (80% viewport) for optimal UX
+  - **Responsive Design**: Uses `window.innerHeight * 0.8` for viewport-relative maximum height
+  - **Precise Measurements**: 
+    - Header: 64px (title + padding)
+    - Footer: 56px (button + padding) 
+    - File Item: 72px (padding + content height)
+    - Spacing: 8px between items
+    - Padding: 48px (top + bottom)
+  - **User Experience**: Modal fits content precisely without requiring scroll interaction
+  - **Design Consistency**: Maintains existing modal styling and CFA branding patterns
+  - **Accessibility**: Preserves all existing accessibility features and keyboard navigation
+
+### [COMPONENT-TECHNICAL]
+- **Height Logic**: `calculateModalHeight()` function with precise pixel measurements
+- **Constraints**: `Math.max(minHeight, Math.min(totalHeight, maxHeight))` for optimal sizing
+- **Responsive**: Viewport-relative maximum height prevents oversized modals
+- **Styling**: Removed fixed `max-h-60 overflow-y-auto` classes, added dynamic `style={{ height }}`
+- **Performance**: Height calculation runs on each render for accurate sizing
+
+### [COMPONENT-BEHAVIOR]
+- **Dynamic Sizing**: Modal height adapts to actual number of files displayed
+- **No Scrolling**: Content fits completely within modal bounds
+- **Responsive**: Adapts to different screen sizes while maintaining usability
+- **Consistent**: Follows existing modal design patterns and user expectations
+
+### [COMPONENT-IMPACT]
+- **User Experience**: Eliminates scrolling for cleaner, more intuitive interaction
+- **Visual Design**: Modal height matches content exactly without wasted space
+- **Responsive Behavior**: Proper adaptation across different screen sizes
+- **Accessibility**: Maintains all existing accessibility features and keyboard navigation
+
+## [Component v2.15.0] - 2025-08-02 23:50:41
+
+### [RECENT-SAVE-REMOVAL] Recent Save Implementation Removal
+- **Area:** Auto-save system simplification and cleanup
+- **Change:** Completely removed Recent Save implementation and all related components
+- **Summary:**
+  - **Removed Components**:
+    - `RecoveryModal.tsx` - Recovery modal component with preview functionality
+    - `tier1EventService.ts` - Centralized Tier 1 event handling service
+    - `recentSaveUtils.ts` - Recent Save utilities for recovery and preview
+  - **Removed Functions**:
+    - `triggerMostRecentSave()` from `AutoSaveService` class
+    - All Tier 1 event handlers and recovery functions
+    - Recent Save localStorage operations
+  - **Removed State Variables**:
+    - `showRecoveryModal`, `recentSavePreview`, `isRecoveryLoading`
+    - `recoveryInProgress` flag and related state management
+  - **Removed Event Handlers**:
+    - `handleResumePrevious`, `handleStartFresh`, `handleRecoveryCancel`
+    - Tier 1 event integration from form components
+  - **Cleaned Up**:
+    - Removed all Tier 1 event props from `GeneralTab` component
+    - Removed Recent Save localStorage key usage
+    - Simplified `useAutoSave` hook by removing Recent Save functionality
+  - **Result**: Application now works exactly as it did before Recent Save was added, with only the original rotating auto-save functionality intact
+  - **Affected Files**: 
+    - `src/components/RecoveryModal.tsx` - Deleted
+    - `src/utils/tier1EventService.ts` - Deleted  
+    - `src/utils/recentSaveUtils.ts` - Deleted
+    - `src/utils/autoSaveService.ts` - Removed Recent Save functionality
+    - `src/hooks/useAutoSave.ts` - Removed Recent Save trigger
+    - `src/App.tsx` - Removed all Recent Save state and handlers
+    - `src/components/GeneralTab.tsx` - Removed Tier 1 event props
+- **Rationale:** Simplified the auto-save system by removing the user-triggered Recent Save feature to focus on the core rotating auto-save functionality
+
+## [Component v2.14.0] - 2025-08-02 19:33:46
+
+### [MOST-RECENT-AUTOSAVE] Most Recent Auto-Save Implementation
+- **Area:** Auto-save system enhancement with user-triggered Recent Save functionality
+- **Change:** Implemented complete Most Recent Auto-Save system with recovery modal
+- **Summary:**
+  - **New Feature**: Most Recent Save triggered by user form interactions (Tier 1 events)
+  - **Technical Implementation**:
+    - Added `triggerMostRecentSave()` function to `AutoSaveService` class
+    - Created `RecoveryModal` component with preview functionality showing saved data details
+    - Implemented `recentSaveUtils.ts` for recovery conditions and preview generation
+    - Created `tier1EventService.ts` for centralized Tier 1 event handling across all tabs
+    - Added recovery functionality to `App.tsx` with automatic page-load detection
+    - Updated localStorage keys from `cfa_autosave1` to `Auto Save 1` format (cleaner naming)
+  - **User Experience**:
+    - Immediate protection: Form changes trigger Recent Save on blur/change events
+    - Recovery modal appears on page load if Recent Save exists and is < 24 hours old
+    - Modal shows preview: Show Date, Club Name, Master Clerk, Judge count, and time ago
+    - Three options: "Resume Previous Work", "Start Fresh", or "Cancel"
+    - Safety net: "Start Fresh" preserves Recent Save for accidental clicks
+  - **Integration Points**:
+    - Leverages existing Excel blob creation and parsing functions
+    - Uses existing Modal.tsx component framework for consistent styling
+    - Independent of rotating auto-save system - separate storage key and logic
+    - Ready for Tier 1 event integration across all tab components
+  - **Affected Files**: 
+    - `src/utils/autoSaveService.ts` - Added Recent Save functionality and key renaming
+    - `src/hooks/useAutoSave.ts` - Added triggerMostRecentSave export
+    - `src/components/RecoveryModal.tsx` - New recovery modal component
+    - `src/utils/recentSaveUtils.ts` - New utility functions for recovery logic
+    - `src/utils/tier1EventService.ts` - New centralized event handling service
+    - `src/components/AutoSaveFileList.tsx` - Updated for new localStorage key format
+    - `src/App.tsx` - Added recovery modal integration and Tier 1 event initialization
+    - `docs/USAGE.md` - Updated documentation with new behavior
+- **Rationale:** Provides immediate form protection and seamless recovery without interrupting user workflow
+- **Impact:** Users now have instant protection of their work and can recover from accidental page refreshes
+
+## [Component v2.13.0] - 2025-08-02 19:04:49
+
+### [COMPONENT-SIMPLIFIED]
+- **AutoSaveService Platform Unification**: Removed dual implementation complexity by using localStorage for both browser and Tauri
+- **Tauri Filesystem Removal**: Eliminated Tauri filesystem auto-save methods and related complexity
+- **Platform Detection Elimination**: Removed isDesktop() checks from auto-save operations
+- **Single Storage Method**: Unified all auto-save operations to use localStorage exclusively
+- **Code Complexity Reduction**: Significantly reduced codebase complexity and maintenance burden
+
+### [COMPONENT-TECHNICAL]
+- **Method Removal**: Deleted saveToTauriFile, cleanupExcessTauriFiles methods
+- **Unified Operations**: performRotatingAutoSave, performSingleSave now use only localStorage
+- **Simplified Cleanup**: cleanupExcessAutoSaveFiles now handles only localStorage entries
+- **Import Cleanup**: Removed isDesktop import and Tauri API type declarations
+- **Notification Update**: Updated platform field to 'localStorage' for unified behavior
+
 ## [Component v2.12.0] - 2025-08-02 18:38:13
 
 ### [COMPONENT-ENHANCED]
 - **AutoSaveFileList Modal Display Logic**: Limited display to only numberOfSaves files to match settings
 - **SettingsPanel Auto-Save Management**: Added automatic cleanup when numberOfSaves is reduced
-- **AutoSaveService File Cleanup**: Added comprehensive cleanup methods for both browser and Tauri platforms
+- **AutoSaveService File Cleanup**: Added comprehensive cleanup methods for localStorage management
 - **App.tsx Integration**: Passed numberOfSaves prop to AutoSaveFileList for consistent display
 - **Settings Async Handling**: Updated updateAutoSaveSetting to handle async cleanup operations
 
 ### [COMPONENT-TECHNICAL]
 - **AutoSaveFileList Props**: Added numberOfSaves prop with default value of 3
 - **Display Limiting**: Used slice(0, numberOfSaves) to limit modal file display
-- **Cleanup Methods**: Added cleanupExcessAutoSaveFiles, cleanupExcessBrowserFiles, cleanupExcessTauriFiles
+- **Cleanup Methods**: Added cleanupExcessAutoSaveFiles, cleanupExcessLocalStorageFiles
 - **Settings Integration**: Made updateAutoSaveSetting async and added cleanup logic
-- **Platform Detection**: Used existing isDesktop() for platform-specific cleanup
+- **Unified Storage**: Simplified to use only localStorage for all platforms
 
 ## [Component v2.11.0] - 2025-08-02 17:56:57
 

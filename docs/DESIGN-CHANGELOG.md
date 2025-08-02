@@ -1,5 +1,40 @@
 # Design Changelog
 
+## [Design v1.14.0] - 2025-08-03 00:55:31
+
+### [DESIGN-CHANGED]
+- **AutoSaveFileList Dynamic Height**: Implemented dynamic height calculation to eliminate scrolling
+- **Height Calculation**: Modal height now calculated based on actual file count + header + footer + padding
+- **Constraints**: Minimum height (1 file display) and maximum height (80% viewport) applied
+- **Responsive Design**: Maintains mobile-first responsive behavior with viewport-relative sizing
+- **User Experience**: Modal fits content precisely without requiring scroll interaction
+
+### [DESIGN-IMPLEMENTATION]
+- **Component Location**: `src/components/AutoSaveFileList.tsx` (updated height calculation)
+- **Height Logic**: Calculates based on file count × 72px + spacing + header (64px) + footer (56px) + padding (48px)
+- **Constraints**: Minimum height ensures modal doesn't look too small, maximum prevents oversized modals
+- **Responsive**: Uses `window.innerHeight * 0.8` for viewport-relative maximum height
+- **Design Consistency**: Maintains existing modal styling and CFA branding patterns
+
+### [DESIGN-RATIONALE]
+- **User Experience**: Eliminates scrolling for better usability and cleaner interaction
+- **Visual Precision**: Modal height matches content exactly without wasted space
+- **Responsive Behavior**: Adapts to different screen sizes while maintaining usability
+- **Design Consistency**: Follows existing modal height patterns and design system standards
+- **Accessibility**: Preserves all existing accessibility features and keyboard navigation
+
+### [DESIGN-IMPACT]
+- **Modal Behavior**: AutoSaveFileList modal now fits content precisely without scrolling
+- **Visual Design**: Maintains design system consistency while improving functionality
+- **Responsive Behavior**: Proper adaptation across different screen sizes
+- **User Interface**: More intuitive layout that adapts to actual content size
+
+### [MIGRATION NOTES]
+- No breaking changes to existing functionality
+- All existing styling and hover effects preserved
+- Height calculation is automatic and requires no user configuration
+- Modal behavior now adapts dynamically to file count
+
 ## [Design v1.13.0] - 2025-08-02 11:14:29
 
 ### [DESIGN-REMOVED]
