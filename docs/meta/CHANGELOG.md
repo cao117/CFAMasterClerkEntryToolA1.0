@@ -2,6 +2,41 @@
 
 This changelog records major changes to the CFA Master Clerk Entry Tool, including validation rule changes, documentation restructuring, feature additions, and UI/UX improvements.
 
+### [2025-08-02 16:04:54] File Restore Icon Functionality Implementation
+- **Area:** Header navigation and auto-save modal integration
+- **Change:** Implemented functionality for File Restore icon to open auto-save files modal
+- **Summary:**
+  - **Root Cause**: File Restore icon had no functionality - clicking did nothing
+  - **Problem**: Icon existed in header but was not connected to auto-save file list modal
+  - **Solution**: Lifted AutoSaveFileList modal state to App.tsx level for cross-component access
+  - **Technical Details**:
+    - Added `showAutoSaveFiles` state and `handleShowAutoSaveFiles` handler in App.tsx
+    - Moved AutoSaveFileList component from AutoSaveNotificationBar to App.tsx level
+    - Updated AutoSaveNotificationBar to accept external `onShowAutoSaves` prop
+    - Connected File Restore icon onClick to `handleShowAutoSaveFiles` function
+    - Both File Restore icon and Test Auto-Saves button now control same modal instance
+  - **Affected Files**: `src/App.tsx`, `src/components/AutoSaveNotificationBar.tsx`
+  - **Result**: File Restore icon now opens auto-save files modal, allowing users to restore from auto-saved files
+- **Rationale:** Header navigation should provide quick access to key functionality like auto-save file recovery
+- **Impact:** Users can now access auto-save file recovery from the main header, improving accessibility and user experience
+
+### [2025-08-02 15:40:03] BreedSheets CH/PR Column Import Bug Fix
+- **Area:** Excel import functionality for BreedSheets tab
+- **Change:** Fixed critical bug where CH (Championship) and PR (Premiership) column values were not being imported from Excel files
+- **Summary:**
+  - **Root Cause**: Case sensitivity mismatch in field assignment conditions during Excel import parsing
+  - **Problem**: When importing Excel files, BoB and 2BoB values loaded correctly but CH and PR column values appeared empty
+  - **Solution**: Fixed case mismatch between uppercase group names from Excel headers and title case conditions in code
+  - **Technical Details**:
+    - Excel headers "CHAMPIONSHIP LH" resulted in `currentGroup = "CHAMPIONSHIP"` (uppercase)
+    - Code conditions checked `if (currentGroup === 'Championship')` (title case) - never matched
+    - Fixed conditions to use uppercase: `if (currentGroup === 'CHAMPIONSHIP')`
+    - Applied same fix for Premiership: `if (currentGroup === 'PREMIERSHIP')`
+  - **Affected Files**: `src/utils/excelImport.ts`
+  - **Result**: CH and PR column values now import correctly from Excel files into BreedSheets form fields
+- **Rationale:** Import functionality must handle case sensitivity correctly to ensure all data fields are preserved
+- **Impact:** BreedSheets Excel import now works completely - all columns (BoB, 2BoB, CH, PR) import correctly
+
 ### [2025-07-31 23:23:01] OCP Ring Order Preservation Bug Fix
 - **Area:** Championship validation file
 - **Change:** Fixed critical bug where OCP Ring order preservation validation was not detecting errors correctly

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { isBrowser } from '../utils/platformDetection';
-import { AutoSaveFileList } from './AutoSaveFileList';
+
 
 /**
  * Props interface for the AutoSaveNotificationBar component
@@ -18,6 +18,8 @@ interface AutoSaveNotificationBarProps {
   onRestoreAutoSave?: (formData: any) => void;
   /** Callback function when manual auto-save is triggered */
   onManualAutoSave?: () => Promise<void>;
+  /** Callback function when show auto-saves is triggered (shared with File Restore icon) */
+  onShowAutoSaves?: () => void;
 }
 
 /**
@@ -36,24 +38,14 @@ const AutoSaveNotificationBar: React.FC<AutoSaveNotificationBarProps> = ({
   onViewRecovery,
   onDismiss,
   onRestoreAutoSave,
-  onManualAutoSave
+  onManualAutoSave,
+  onShowAutoSaves
 }) => {
-  const [showAutoSaves, setShowAutoSaves] = useState(false);
   
   // Don't render if not visible
   if (!isVisible) {
     return null;
   }
-  
-  const handleShowAutoSaves = () => {
-    setShowAutoSaves(true);
-  };
-  
-  const handleRestoreAutoSave = (data: any) => {
-    if (onRestoreAutoSave) {
-      onRestoreAutoSave(data);
-    }
-  };
 
   const handleManualAutoSave = async () => {
     if (!onManualAutoSave) {
@@ -71,13 +63,12 @@ const AutoSaveNotificationBar: React.FC<AutoSaveNotificationBarProps> = ({
   };
 
   return (
-    <>
-      <div 
-        className="w-full bg-gradient-to-r from-slate-50/90 via-white/95 to-emerald-50/90 backdrop-blur-md border-b border-slate-200/60 shadow-sm"
-        role="status"
-        aria-live="polite"
-        aria-label="Auto-save notification"
-      >
+    <div 
+      className="w-full bg-gradient-to-r from-slate-50/90 via-white/95 to-emerald-50/90 backdrop-blur-md border-b border-slate-200/60 shadow-sm"
+      role="status"
+      aria-live="polite"
+      aria-label="Auto-save notification"
+    >
       <div className="max-w-7xl mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           {/* Left side - Status information */}
@@ -133,7 +124,7 @@ const AutoSaveNotificationBar: React.FC<AutoSaveNotificationBarProps> = ({
             {/* Test Auto-Saves button - only visible in browser mode */}
             {isBrowser() && onRestoreAutoSave && (
               <button
-                onClick={handleShowAutoSaves}
+                onClick={onShowAutoSaves}
                 className="group relative px-4 py-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-blue-600 text-white text-xs font-bold rounded-xl border border-blue-400/50 shadow-lg transition-all duration-300 focus:outline-none hover:scale-105 hover:shadow-blue-200/40 hover:from-blue-600 hover:via-indigo-600 hover:to-blue-700 hover:border-blue-300 active:scale-95"
                 aria-label="Test auto-saves"
               >
@@ -178,14 +169,6 @@ const AutoSaveNotificationBar: React.FC<AutoSaveNotificationBarProps> = ({
         </div>
       </div>
     </div>
-      
-      {/* Auto-save file list modal */}
-      <AutoSaveFileList
-        isOpen={showAutoSaves}
-        onClose={() => setShowAutoSaves(false)}
-        onRestore={handleRestoreAutoSave}
-      />
-    </>
   );
 };
 

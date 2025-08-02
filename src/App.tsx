@@ -9,6 +9,7 @@ import BreedSheetsTab from './components/BreedSheetsTab';
 import SettingsPanel from './components/SettingsPanel';
 import ToastContainer from './components/ToastContainer';
 import AutoSaveNotificationBar from './components/AutoSaveNotificationBar';
+import { AutoSaveFileList } from './components/AutoSaveFileList';
 import { AutoSaveDebugInfo } from './components/AutoSaveDebugInfo';
 
 import { useToast } from './hooks/useToast';
@@ -184,6 +185,11 @@ function App() {
     console.log('Auto-save notification dismissed');
   };
 
+  // Handler to show auto-save files modal (used by File Restore icon and Test Auto-Saves button)
+  const handleShowAutoSaveFiles = () => {
+    setShowAutoSaveFiles(true);
+  };
+
   // Handle settings close
   const handleSettingsClose = () => {
     setIsSettingsOpen(false);
@@ -192,6 +198,9 @@ function App() {
   // Auto-save notification visibility
   const [isAutoSaveVisible, setIsAutoSaveVisible] = useState(false);
   const [lastSavedTime, setLastSavedTime] = useState('');
+  
+  // State for auto-save file list modal (shared between File Restore icon and Test Auto-Saves button)
+  const [showAutoSaveFiles, setShowAutoSaveFiles] = useState(false);
 
 
 
@@ -360,6 +369,22 @@ function App() {
       
       // Initialize breed sheets data if present in restored state (same as Load from Excel)
       if (restoredState.breedSheets) {
+        // DEBUG: Show only American Bobtail-LH data for focused testing
+        const firstJudgeId = Object.keys(restoredState.breedSheets.breedEntries || {})[0];
+        const firstJudgeData = restoredState.breedSheets.breedEntries[firstJudgeId];
+        const championshipLH = firstJudgeData?.['Championship-Longhair'];
+        const americanBobtailData = championshipLH?.['lh-AMERICAN BOBTAIL-LH'];
+        
+        console.log('🔍 DEBUG - Restoring BreedSheets (AMERICAN BOBTAIL-LH focus):', {
+          judgeId: firstJudgeId,
+          championshipLHSection: championshipLH,
+          americanBobtailEntry: americanBobtailData,
+          americanBobtailFields: americanBobtailData ? Object.keys(americanBobtailData) : 'NO DATA',
+          americanBobtailBob: americanBobtailData?.bob,
+          americanBobtailSecondBest: americanBobtailData?.secondBest,
+          americanBobtailBestCH: americanBobtailData?.bestCH,
+          americanBobtailBestPR: americanBobtailData?.bestPR
+        });
         setBreedSheetsTabData(restoredState.breedSheets);
       }
       
@@ -855,9 +880,9 @@ function App() {
               
               {/* File Restore Button */}
               <button
-                onClick={() => {/* TODO: Implement file restore functionality */}}
+                onClick={handleShowAutoSaveFiles}
                 className="w-10 h-10 flex items-center justify-center rounded-lg bg-[#C7B273]/20 hover:bg-[#C7B273]/30 transition-all duration-200 text-[#C7B273] hover:text-white border border-[#C7B273]/30 hover:border-[#C7B273]/50"
-                title="File Restore"
+                title="Test Auto-Saves"
               >
                 <svg width="20" height="20" fill="none" viewBox="0 0 24 24" className="w-5 h-5">
                   {/* Document with folded corner */}
@@ -1036,6 +1061,7 @@ function App() {
         onDismiss={handleDismissAutoSave}
         onRestoreAutoSave={handleRestoreAutoSave}
         onManualAutoSave={triggerManualSave}
+        onShowAutoSaves={handleShowAutoSaveFiles}
       />
 
       {/* Main Content */}
@@ -1074,6 +1100,13 @@ function App() {
           Version 0.2.0
         </div>
       </footer>
+
+      {/* Auto-Save File List Modal */}
+      <AutoSaveFileList
+        isOpen={showAutoSaveFiles}
+        onClose={() => setShowAutoSaveFiles(false)}
+        onRestore={handleRestoreAutoSave}
+      />
     </div>
   )
 }

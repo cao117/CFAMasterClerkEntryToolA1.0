@@ -223,12 +223,33 @@ export function exportShowToExcel(showState: any): { workbook: XLSX.WorkBook, fi
 
   // --- Breed Sheets Worksheets ---
   if (showState.breedSheets && showState.judges) {
+    console.log('🔍 DEBUG - Creating BreedSheets worksheets:', {
+      hasBreedSheets: !!showState.breedSheets,
+      judgeCount: showState.judges.length,
+      breedSheetsStructure: showState.breedSheets
+    });
+    
     for (const judge of showState.judges) {
       const breedSheetData = buildBreedSheetSection(showState.breedSheets, judge, showState.globalSettings);
+      
+      // DEBUG: Log what data is being added to the worksheet
+      console.log(`🔍 DEBUG - Creating worksheet BS_${judge.id}:`, {
+        judgeId: judge.id,
+        dataRowCount: breedSheetData.length,
+        dataPreview: breedSheetData.slice(0, 10),
+        worksheetName: `BS_${judge.id}`
+      });
+      
       // Always create worksheet for each judge, even if no data is entered (shows complete table structure)
       const breedSheetWS = XLSX.utils.aoa_to_sheet(breedSheetData);
       XLSX.utils.book_append_sheet(workbook, breedSheetWS, `BS_${judge.id}`);
     }
+  } else {
+    console.log('🔍 DEBUG - No BreedSheets or judges found:', {
+      hasBreedSheets: !!showState.breedSheets,
+      hasJudges: !!showState.judges,
+      judgeCount: showState.judges?.length || 0
+    });
   }
 
   // Filename: YYYYMMDD_HHMMSS_showname.xlsx
@@ -426,6 +447,14 @@ function buildBreedSheetSection(breedSheetsData: any, judge: any, globalSettings
   const judgeIdStr = judge.id.toString();
   const judgeEntries = breedSheetsData.breedEntries[judgeIdStr] || {};
 
+  // DEBUG: Log the input data structure for BreedSheets
+  console.log(`🔍 DEBUG - buildBreedSheetSection for Judge ${judge.id}:`, {
+    judgeIdStr,
+    judgeEntries,
+    breedSheetsData: breedSheetsData,
+    availableKeys: Object.keys(judgeEntries)
+  });
+
   // Get breed lists from global settings
   const lhBreeds = globalSettings?.long_hair_breeds || [];
   const shBreeds = globalSettings?.short_hair_breeds || [];
@@ -491,7 +520,21 @@ function buildBreedSheetSection(breedSheetsData: any, judge: any, globalSettings
         const row = [breed, breedEntry?.bob || '', breedEntry?.secondBest || ''];
         if (section.group !== 'Kitten') {
           const bestField = section.group === 'Championship' ? 'bestCH' : 'bestPR';
-          row.push(breedEntry?.[bestField] || '');
+          const bestValue = breedEntry?.[bestField] || '';
+          
+          // DEBUG: Log CH and PR field processing
+          if (bestValue) {
+            console.log(`🔍 DEBUG - Excel export processing ${bestField}:`, {
+              breed,
+              breedKey,
+              breedEntry,
+              bestField,
+              bestValue,
+              section: section.group
+            });
+          }
+          
+          row.push(bestValue);
         }
         rows.push(row);
       }
@@ -502,6 +545,24 @@ function buildBreedSheetSection(breedSheetsData: any, judge: any, globalSettings
       rows.push([]);
     }
   }
+
+  // DEBUG: Log the final rows structure for this judge with detailed content
+  const detailedRows = rows.map((row, index) => ({
+    rowIndex: index,
+    content: row,
+    hasChOrPr: row.length > 3 && row[3] && row[3] !== '',
+    columnCount: row.length
+  }));
+  
+  const rowsWithChPr = detailedRows.filter(r => r.hasChOrPr);
+  
+  console.log(`🔍 DEBUG - Final Excel rows for Judge ${judge.id}:`, {
+    totalRows: rows.length,
+    rowsWithChPrData: rowsWithChPr.length,
+    detailedRowsWithChPr: rowsWithChPr,
+    allDetailedRows: detailedRows.slice(0, 20), // Show first 20 rows with details
+    sampleDataRows: rows.filter(row => row.length > 1 && row[0] && !row[0].includes('CHAMPIONSHIP')).slice(0, 5)
+  });
 
   return rows;
 }

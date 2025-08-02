@@ -119,18 +119,34 @@ Based on your description, here's my understanding:
 I need to confirm this understanding before proceeding.
 
 FIRST QUESTION: Is this understanding of the issue location correct?
-[Wait for answer before asking about expected behavior]
 ```
 
-**QUESTIONING SEQUENCE (One by One):**
-1. First ask about issue location accuracy
-2. Wait for confirmation
-3. Then ask about expected behavior accuracy  
-4. Wait for confirmation
-5. Then ask about actual behavior accuracy
-6. Wait for confirmation
-7. Finally ask about any missing details
-8. Wait for confirmation
+**🛑 MANDATORY STOP PROTOCOL AFTER FIRST QUESTION:**
+```
+🛑 **STOPPING NOW - WAITING FOR USER CONFIRMATION**
+
+I MUST STOP HERE and wait for your answer to the first question before asking any additional questions or proceeding with any analysis.
+
+I will NOT:
+- Ask multiple questions at once
+- Continue with codebase analysis
+- Proceed to next debugging steps
+- Make any assumptions about your response
+
+I WILL ONLY:
+- Wait for your confirmation on the issue location
+- Ask the next question ONLY after you confirm this one
+- Continue one question at a time until all understanding is confirmed
+```
+
+**QUESTIONING SEQUENCE (One by One - MANDATORY STOPS):**
+1. First ask about issue location accuracy → **STOP AND WAIT FOR CONFIRMATION**
+2. Wait for confirmation → Then ask about expected behavior accuracy → **STOP AND WAIT FOR CONFIRMATION**
+3. Wait for confirmation → Then ask about actual behavior accuracy → **STOP AND WAIT FOR CONFIRMATION**
+4. Wait for confirmation → Finally ask about any missing details → **STOP AND WAIT FOR CONFIRMATION**
+5. Wait for confirmation → Only then proceed to next step
+
+**🚨 ABSOLUTE REQUIREMENT: STOP AFTER EACH QUESTION - NO EXCEPTIONS**
 
 **Only proceed when user confirms ALL aspects are correct**
 
@@ -443,12 +459,32 @@ Reply with "FIXED" if working, or paste new console output.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-### STEP 8: MANDATORY CLEANUP AND DOCUMENTATION (AFTER FIX CONFIRMED)
+### STEP 8: MANDATORY CLEANUP AND PROJECT DOCUMENTATION (AFTER FIX CONFIRMED)
 **CRITICAL: Only execute after user confirms "FIXED" - NEVER skip this step:**
 
-#### 8.1 IMMEDIATE DEBUG CODE CLEANUP
+#### 8.1 USER CONFIRMATION VERIFICATION
+**BEFORE removing any debug code, MANDATORY verification:**
 ```
-🧹 **REMOVING DEBUG CODE NOW**
+🛑 **DEBUG CODE REMOVAL CONFIRMATION REQUIRED**
+
+Before I remove any debugging code, I need explicit confirmation:
+
+USER CONFIRMATION REQUIRED: 
+"Please confirm that the issue is completely resolved and I can proceed to remove all debugging code and complete the documentation updates."
+
+I will NOT remove debugging code until you explicitly confirm:
+- The bug is completely fixed
+- No further debugging is needed
+- I have permission to clean up debug code
+- You are satisfied with the solution
+
+WAITING FOR YOUR CONFIRMATION BEFORE PROCEEDING WITH CLEANUP...
+```
+
+#### 8.2 DEBUG CODE CLEANUP (ONLY AFTER USER CONFIRMATION)
+**Execute ONLY after user explicitly confirms fix completion:**
+```
+🧹 **REMOVING DEBUG CODE NOW** (After User Confirmation)
 
 **Currently Removing**:
 - All console.log statements added for debugging
@@ -460,17 +496,7 @@ Reply with "FIXED" if working, or paste new console output.
 **Preserving**: Error handling improvements and useful production logging
 ```
 
-### STEP 8: MANDATORY CLEANUP AND PROJECT DOCUMENTATION (AFTER FIX CONFIRMED)
-**CRITICAL: Only execute after user confirms "FIXED" - NEVER skip this step:**
-
-#### 8.1 IMMEDIATE DEBUG CODE CLEANUP
-**Execute immediately - remove ALL debug code added:**
-- All console.log statements added for debugging
-- Temporary debugging variables
-- Debug-only code branches
-- Performance monitoring code
-
-#### 8.2 PROJECT DOCUMENTATION ENFORCEMENT - ANTI-DEGRADATION PROTOCOL
+#### 8.3 PROJECT DOCUMENTATION ENFORCEMENT - ANTI-DEGRADATION PROTOCOL
 **MANDATORY ATTENTION RESTORATION FOR PROJECT DOCUMENTATION:**
 ```
 🧠 **PROJECT DOCUMENTATION CHECKPOINT**: Reviewing what project docs need updating
@@ -491,7 +517,7 @@ Reply with "FIXED" if working, or paste new console output.
 - **Database Schema Documentation**: Update if data models were affected
 - **Error Handling Documentation**: Update if error codes or messages changed
 
-#### 8.3 PROJECT CHANGELOG UPDATES - INDUSTRY STANDARD
+#### 8.4 PROJECT CHANGELOG UPDATES - INDUSTRY STANDARD
 **MANDATORY changelog updates following semantic versioning principles:**
 
 **CHANGELOG.md Entry (User-Facing)**:
@@ -512,7 +538,7 @@ Reply with "FIXED" if working, or paste new console output.
 - **Breaking Changes**: [If any - clearly marked]
 ```
 
-#### 8.4 CODE DOCUMENTATION UPDATES - INDUSTRY PRACTICE
+#### 8.5 CODE DOCUMENTATION UPDATES - INDUSTRY PRACTICE
 **Update all code-level documentation affected by the fix:**
 - **Inline Comments**: Add comments explaining complex fix logic
 - **Function/Method Documentation**: Update JSDoc, docstrings, or equivalent  
@@ -520,7 +546,7 @@ Reply with "FIXED" if working, or paste new console output.
 - **Type Definitions**: Update TypeScript interfaces if modified
 - **Configuration Comments**: Update config file documentation
 
-#### 8.5 PROJECT DOCUMENTATION VERIFICATION
+#### 8.6 PROJECT DOCUMENTATION VERIFICATION
 **MANDATORY VERIFICATION - Ask yourself:**
 - "Did this fix affect any API endpoints or contracts?" → Update API docs
 - "Did this change user-facing behavior?" → Update user documentation  
@@ -535,7 +561,7 @@ Reply with "FIXED" if working, or paste new console output.
 - Update ANY missing project documentation
 - Only proceed when ALL project documentation is complete
 
-#### 8.6 ANTI-DRIFT PROJECT DOCUMENTATION CONFIRMATION
+#### 8.7 ANTI-DRIFT PROJECT DOCUMENTATION CONFIRMATION
 ```
 📋 **PROJECT DOCUMENTATION COMPLETION CONFIRMED**
 
@@ -580,9 +606,25 @@ Reply with "FIXED" if working, or paste new console output.
 - Am I tracking fix attempts correctly? [YES/NO]  
 - Should I be adding debug info instead of more fixes? [YES/NO]
 - Is my analysis based on evidence vs assumptions? [YES/NO]
+- Did I stop and wait for confirmation after each clarifying question? [YES/NO]
+- Am I continuing with analysis before understanding is confirmed? [YES/NO]
 - Do I need to refresh debugging context? [YES/NO]
 
 If ANY answer is NO: REQUEST DEBUGGING CONTEXT REFRESH
+```
+
+### CLARIFYING QUESTION PROTOCOL ENFORCEMENT
+```
+🛑 **MANDATORY QUESTION-BY-QUESTION PROTOCOL**:
+- ASK one clarifying question at a time
+- STOP immediately after asking the question  
+- WAIT for user's complete response
+- Do NOT continue with any codebase analysis
+- Do NOT proceed to next debugging steps
+- Do NOT ask additional questions until current one is answered
+- ONLY ask the next question after user confirms the current one
+
+If I catch myself violating this: STOP immediately and acknowledge the violation
 ```
 
 ### DEBUG INFO DECISION LOGIC
@@ -670,6 +712,11 @@ If uncertain about ANY answer:
 - Assuming runtime behavior without debug evidence
 - Making assumptions instead of asking clarifying questions one by one
 - Asking multiple questions simultaneously instead of systematically
+- **CONTINUING WITH ANALYSIS OR CODEBASE SEARCH AFTER ASKING A CLARIFYING QUESTION**
+- **NOT STOPPING AND WAITING FOR USER CONFIRMATION AFTER EACH QUESTION**
+- **PROCEEDING TO NEXT DEBUGGING STEPS WITHOUT CONFIRMED UNDERSTANDING**
+- **REMOVING DEBUG CODE WITHOUT EXPLICIT USER CONFIRMATION OF FIX COMPLETION**
+- **CLEANING UP DEBUG INFO BEFORE USER CONFIRMS THE BUG IS RESOLVED**
 - Any form of debugging attention degradation or cognitive shortcuts
 - Skipping debug info approach after 2 failed runtime analysis fixes
 - **SKIPPING ANY DOCUMENTATION UPDATES after confirmed fixes**

@@ -795,20 +795,42 @@ function parseBreedSheetWorksheet(data: string[][], breedSheets: NonNullable<Imp
       const secondBest = row[2]?.toString().trim() || '';
       const third = row[3]?.toString().trim() || '';
       
+
+      
       const breedEntry: any = {
         bob,
         secondBest
       };
       
       // Add CH or PR field based on group
-      if (currentGroup === 'Championship') {
+      // Note: currentGroup is uppercase from Excel headers (e.g., "CHAMPIONSHIP", "PREMIERSHIP")
+      if (currentGroup === 'CHAMPIONSHIP') {
         breedEntry.bestCH = third;
-      } else if (currentGroup === 'Premiership') {
+      } else if (currentGroup === 'PREMIERSHIP') {
         breedEntry.bestPR = third;
       }
       // Kitten doesn't have a third field
       
-      breedSheets.breedEntries[judgeIdStr][currentSection][breedKey] = breedEntry;
+      // Get existing entry to preserve data
+      const existingEntry = breedSheets.breedEntries[judgeIdStr][currentSection][breedKey];
+      
+      // Merge with existing data, preserving non-empty values
+      const mergedEntry: any = {
+        bob: breedEntry.bob || existingEntry?.bob || '',
+        secondBest: breedEntry.secondBest || existingEntry?.secondBest || ''
+      };
+      
+      // Preserve CH/PR fields if they exist in either entry
+      // Note: Must match uppercase currentGroup from Excel headers
+      if (currentGroup === 'CHAMPIONSHIP') {
+        mergedEntry.bestCH = breedEntry.bestCH || existingEntry?.bestCH || '';
+      } else if (currentGroup === 'PREMIERSHIP') {
+        mergedEntry.bestPR = breedEntry.bestPR || existingEntry?.bestPR || '';
+      }
+      
+      breedSheets.breedEntries[judgeIdStr][currentSection][breedKey] = mergedEntry;
+      
+
     }
   }
 }
