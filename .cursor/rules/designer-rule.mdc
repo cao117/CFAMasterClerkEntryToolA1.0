@@ -76,7 +76,7 @@ If requirement aspects remain unclear after internal analysis:
 
 **If ANY question cannot be answered clearly from Step 2 comprehensive review, STOP immediately**
 
-#### USER CLARIFICATION QUESTIONS (Ask ONE AT A TIME)
+#### USER CLARIFICATION QUESTIONS (Ask ONE AT A TIME) - MANDATORY -CRITICAL
 Only ask these if internal analysis from Step 2 review fails to provide clear answers:
 
 **If Design Purpose & Context unclear**: "What is the primary user goal this design should accomplish? What specific problem are we solving for users?"

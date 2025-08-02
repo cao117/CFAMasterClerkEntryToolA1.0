@@ -30,7 +30,7 @@ interface SettingsInputProps {
    * Glow color for focus/hover states (Tailwind color name, e.g. 'amber', 'teal', 'purple', etc.)
    * Defaults to 'amber' if not provided.
    */
-  glowColor?: 'amber' | 'teal' | 'purple' | 'pink' | 'emerald' | 'orange' | 'cyan' | 'blue' | 'yellow';
+  glowColor?: 'amber' | 'teal' | 'purple' | 'pink' | 'emerald' | 'orange' | 'cyan' | 'blue' | 'yellow' | 'indigo';
 }
 
 const colorMap = {
@@ -96,6 +96,13 @@ const colorMap = {
     shadow: 'focus:shadow-yellow-200/30',
     glow: 'from-yellow-400/10 via-amber-400/8 to-orange-400/10',
     inner: 'from-yellow-400/3 via-amber-400/2 to-orange-400/3',
+  },
+  indigo: {
+    ring: 'focus:ring-indigo-300/40',
+    border: 'focus:border-indigo-400/60',
+    shadow: 'focus:shadow-indigo-200/30',
+    glow: 'from-indigo-400/10 via-purple-400/8 to-blue-400/10',
+    inner: 'from-indigo-400/3 via-purple-400/2 to-blue-400/3',
   },
 };
 

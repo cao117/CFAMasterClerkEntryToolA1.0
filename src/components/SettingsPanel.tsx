@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import SettingsInput from './SettingsInput';
 import Modal from './Modal';
 
+
 // Settings data structure
 interface SettingsData {
   max_judges: number;
@@ -81,13 +82,15 @@ interface SettingsPanelProps {
 
 }
 
-type SettingsSection = 'general' | 'placement' | 'breed';
+type SettingsSection = 'general' | 'placement' | 'breed' | 'auto-save';
 
 export default function SettingsPanel({ isOpen, onClose, showSuccess, globalSettings, setGlobalSettings, currentNumberOfJudges }: SettingsPanelProps) {
   const [activeSection, setActiveSection] = useState<SettingsSection>('general');
   const [breedTab, setBreedTab] = useState<'SHORT HAIR' | 'LONG HAIR'>('SHORT HAIR');
   const modalRef = useRef<HTMLDivElement>(null);
   const [showMaxJudgesErrorModal, setShowMaxJudgesErrorModal] = useState(false);
+  
+
   
   // Local state for max_cats to prevent cascade updates
   const [localMaxCats, setLocalMaxCats] = useState(globalSettings.max_cats.toString());
@@ -96,6 +99,8 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess, globalSett
   useEffect(() => {
     setLocalMaxCats(globalSettings.max_cats.toString());
   }, [globalSettings.max_cats]);
+
+
   
 
   
@@ -392,6 +397,8 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess, globalSett
     setShowRestoreDefaultsModal(false);
     showSuccess('Defaults Restored', 'All settings have been restored to default values.');
   };
+
+
 
   // NOTE: Maximum Number of Rings field was removed as it was not needed for the application
   // The settings panel now only includes: max_judges, max_cats, placement_thresholds, and breed lists
@@ -874,6 +881,108 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess, globalSett
     );
   };
 
+  // Render Auto-Save Settings section with modern, fashionable design
+  const renderAutoSaveSection = () => (
+    <div className="space-y-8">
+      <div className="text-center">
+        <h3 className="text-2xl font-bold text-gray-800 mb-2 tracking-tight">Auto-Save Settings</h3>
+        <div className="w-24 h-1 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full mx-auto"></div>
+      </div>
+      
+      <div className="space-y-8">
+        {/* Save Location - Full Row Design */}
+        <div className="group relative">
+          {/* Animated background glow */}
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 rounded-3xl opacity-0 group-hover:opacity-100 transition-all duration-700 blur-2xl"></div>
+          
+          <div className="relative bg-white/90 backdrop-blur-sm border border-gray-200/60 rounded-3xl p-8 shadow-xl hover:shadow-2xl hover:shadow-emerald-200/30 transition-all duration-500 transform hover:scale-[1.02] group-hover:border-emerald-300/80">
+            {/* Decorative corner accent */}
+            <div className="absolute top-0 right-0 w-12 h-12 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-bl-3xl opacity-0 group-hover:opacity-100 transition-all duration-700"></div>
+            
+
+          </div>
+        </div>
+        
+        {/* Number of Saves and Save Cycle - Row Below */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Number of Saves - Modern Glassmorphism Design */}
+          <div className="group relative">
+            {/* Animated background glow */}
+            <div className="absolute inset-0 bg-gradient-to-br from-cyan-50 via-blue-50 to-indigo-50 rounded-3xl opacity-0 group-hover:opacity-100 transition-all duration-700 blur-2xl"></div>
+            
+            <div className="relative bg-white/90 backdrop-blur-sm border border-gray-200/60 rounded-3xl p-8 shadow-xl hover:shadow-2xl hover:shadow-cyan-200/30 transition-all duration-500 transform hover:scale-[1.02] group-hover:border-cyan-300/80">
+              {/* Decorative corner accent */}
+              <div className="absolute top-0 right-0 w-12 h-12 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-bl-3xl opacity-0 group-hover:opacity-100 transition-all duration-700"></div>
+              
+              <label className="block text-base font-semibold text-gray-700 mb-6 flex items-center justify-center">
+                <div className="p-3 bg-gradient-to-br from-cyan-100 to-blue-100 rounded-2xl mr-4 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                  </svg>
+                </div>
+                <span className="text-lg">Number of Saves</span>
+              </label>
+              
+              <div className="flex justify-center">
+                <SettingsInput
+                  type="number"
+                  min={1}
+                  max={10}
+                  value="3"
+                  onChange={(e) => {}}
+                  placeholder="3"
+                  width="md"
+                  glowColor="cyan"
+                />
+              </div>
+              
+              <div className="mt-4 text-center">
+                <p className="text-sm text-gray-600">Number of auto-save files to maintain in rotation</p>
+              </div>
+            </div>
+          </div>
+          
+          {/* Save Cycle - Modern Glassmorphism Design */}
+          <div className="group relative">
+            {/* Animated background glow */}
+            <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 rounded-3xl opacity-0 group-hover:opacity-100 transition-all duration-700 blur-2xl"></div>
+            
+            <div className="relative bg-white/90 backdrop-blur-sm border border-gray-200/60 rounded-3xl p-8 shadow-xl hover:shadow-2xl hover:shadow-indigo-200/30 transition-all duration-500 transform hover:scale-[1.02] group-hover:border-indigo-300/80">
+              {/* Decorative corner accent */}
+              <div className="absolute top-0 right-0 w-12 h-12 bg-gradient-to-br from-indigo-400 to-purple-500 rounded-bl-3xl opacity-0 group-hover:opacity-100 transition-all duration-700"></div>
+              
+              <label className="block text-base font-semibold text-gray-700 mb-6 flex items-center justify-center">
+                <div className="p-3 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-2xl mr-4 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <span className="text-lg">Save Cycle</span>
+              </label>
+              
+              <div className="flex justify-center">
+                <SettingsInput
+                  type="number"
+                  min={1}
+                  max={60}
+                  value="5"
+                  onChange={(e) => {}}
+                  placeholder="5"
+                  width="md"
+                  glowColor="indigo"
+                />
+              </div>
+              
+              <div className="mt-4 text-center">
+                <p className="text-sm text-gray-600">Save once every X minutes</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   if (!isOpen) return null;
 
   return (
@@ -914,6 +1023,70 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess, globalSett
             </div>
             
             <nav className="space-y-4 relative z-10">
+              <button
+                onClick={() => setActiveSection('auto-save')}
+                className={`group relative w-full text-left px-6 py-4 rounded-2xl font-semibold transition-all duration-500 transform hover:scale-105 ${
+                  activeSection === 'auto-save'
+                    ? 'bg-gradient-to-r from-amber-200 via-yellow-200 to-amber-200 text-gray-800 shadow-2xl shadow-amber-200/40 scale-105'
+                    : 'text-gray-700 hover:text-gray-900 bg-white/60 hover:bg-white/90 backdrop-blur-sm border border-transparent hover:border-amber-200/30 hover:shadow-xl hover:shadow-amber-200/20'
+                }`}
+              >
+                {/* Animated Background Glow */}
+                <div className={`absolute inset-0 rounded-2xl transition-all duration-500 ${
+                  activeSection === 'auto-save'
+                    ? 'bg-gradient-to-r from-amber-200/30 to-yellow-200/30 animate-pulse'
+                    : 'group-hover:bg-gradient-to-r group-hover:from-amber-200/10 group-hover:to-yellow-200/10'
+                }`}></div>
+                
+                <div className="relative flex items-center space-x-4">
+                  <div className={`p-2.5 rounded-xl transition-all duration-300 ${
+                    activeSection === 'auto-save'
+                      ? 'bg-gray-800/10 text-gray-800 shadow-lg'
+                      : 'bg-gray-100 group-hover:bg-amber-200/30 group-hover:text-amber-700 group-hover:shadow-md'
+                  }`}>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                    </svg>
+                  </div>
+                  <span className="font-medium">Auto-Save</span>
+                  {activeSection === 'auto-save' && (
+                    <div className="absolute right-2 w-2 h-2 bg-black rounded-full animate-ping"></div>
+                  )}
+                </div>
+              </button>
+              
+              <button
+                onClick={() => setActiveSection('breed')}
+                className={`group relative w-full text-left px-6 py-4 rounded-2xl font-semibold transition-all duration-500 transform hover:scale-105 ${
+                  activeSection === 'breed'
+                    ? 'bg-gradient-to-r from-amber-200 via-yellow-200 to-amber-200 text-gray-800 shadow-2xl shadow-amber-200/40 scale-105'
+                    : 'text-gray-700 hover:text-gray-900 bg-white/60 hover:bg-white/90 backdrop-blur-sm border border-transparent hover:border-amber-200/30 hover:shadow-xl hover:shadow-amber-200/20'
+                }`}
+              >
+                {/* Animated Background Glow */}
+                <div className={`absolute inset-0 rounded-2xl transition-all duration-500 ${
+                  activeSection === 'breed'
+                    ? 'bg-gradient-to-r from-amber-200/30 to-yellow-200/30 animate-pulse'
+                    : 'group-hover:bg-gradient-to-r group-hover:from-amber-200/10 group-hover:to-yellow-200/10'
+                }`}></div>
+                
+                <div className="relative flex items-center space-x-4">
+                  <div className={`p-2.5 rounded-xl transition-all duration-300 ${
+                    activeSection === 'breed'
+                      ? 'bg-gray-800/10 text-gray-800 shadow-lg'
+                      : 'bg-gray-100 group-hover:bg-amber-200/30 group-hover:text-amber-700 group-hover:shadow-md'
+                  }`}>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                    </svg>
+                  </div>
+                  <span className="font-medium">Breed List</span>
+                  {activeSection === 'breed' && (
+                    <div className="absolute right-2 w-2 h-2 bg-black rounded-full animate-ping"></div>
+                  )}
+                </div>
+              </button>
+              
               <button
                 onClick={() => setActiveSection('general')}
                 className={`group relative w-full text-left px-6 py-4 rounded-2xl font-semibold transition-all duration-500 transform hover:scale-105 ${
@@ -977,38 +1150,6 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess, globalSett
                   )}
                 </div>
               </button>
-              
-              <button
-                onClick={() => setActiveSection('breed')}
-                className={`group relative w-full text-left px-6 py-4 rounded-2xl font-semibold transition-all duration-500 transform hover:scale-105 ${
-                  activeSection === 'breed'
-                    ? 'bg-gradient-to-r from-amber-200 via-yellow-200 to-amber-200 text-gray-800 shadow-2xl shadow-amber-200/40 scale-105'
-                    : 'text-gray-700 hover:text-gray-900 bg-white/60 hover:bg-white/90 backdrop-blur-sm border border-transparent hover:border-amber-200/30 hover:shadow-xl hover:shadow-amber-200/20'
-                }`}
-              >
-                {/* Animated Background Glow */}
-                <div className={`absolute inset-0 rounded-2xl transition-all duration-500 ${
-                  activeSection === 'breed'
-                    ? 'bg-gradient-to-r from-amber-200/30 to-yellow-200/30 animate-pulse'
-                    : 'group-hover:bg-gradient-to-r group-hover:from-amber-200/10 group-hover:to-yellow-200/10'
-                }`}></div>
-                
-                <div className="relative flex items-center space-x-4">
-                  <div className={`p-2.5 rounded-xl transition-all duration-300 ${
-                    activeSection === 'breed'
-                      ? 'bg-gray-800/10 text-gray-800 shadow-lg'
-                      : 'bg-gray-100 group-hover:bg-amber-200/30 group-hover:text-amber-700 group-hover:shadow-md'
-                  }`}>
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                    </svg>
-                  </div>
-                  <span className="font-medium">Breed List</span>
-                  {activeSection === 'breed' && (
-                    <div className="absolute right-2 w-2 h-2 bg-black rounded-full animate-ping"></div>
-                  )}
-                </div>
-              </button>
             </nav>
           </div>
 
@@ -1017,6 +1158,7 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess, globalSett
             {activeSection === 'general' && renderGeneralSection()}
             {activeSection === 'placement' && renderPlacementSection()}
             {activeSection === 'breed' && renderBreedSection()}
+            {activeSection === 'auto-save' && renderAutoSaveSection()}
           </div>
         </div>
 

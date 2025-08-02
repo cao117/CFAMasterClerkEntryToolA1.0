@@ -460,168 +460,114 @@ Reply with "FIXED" if working, or paste new console output.
 **Preserving**: Error handling improvements and useful production logging
 ```
 
-#### 8.2 MANDATORY DOCUMENTATION UPDATES - EXECUTE IMMEDIATELY
-**TIMESTAMP RULE - MANDATORY**: Use mcp_time-tools_get_current_time for ALL timestamps
+### STEP 8: MANDATORY CLEANUP AND PROJECT DOCUMENTATION (AFTER FIX CONFIRMED)
+**CRITICAL: Only execute after user confirms "FIXED" - NEVER skip this step:**
 
-**STEP 8.2.1 - CREATE BUG-REPORT.md**
+#### 8.1 IMMEDIATE DEBUG CODE CLEANUP
+**Execute immediately - remove ALL debug code added:**
+- All console.log statements added for debugging
+- Temporary debugging variables
+- Debug-only code branches
+- Performance monitoring code
+
+#### 8.2 PROJECT DOCUMENTATION ENFORCEMENT - ANTI-DEGRADATION PROTOCOL
+**MANDATORY ATTENTION RESTORATION FOR PROJECT DOCUMENTATION:**
 ```
-Creating comprehensive bug report documentation:
-
-**BUG-REPORT.md Content**:
-- Issue description and reproduction steps
-- Root cause analysis with evidence
-- Solution implemented with rationale
-- Testing verification process
-- Files modified during resolution
-- Timestamp: [Call mcp_time-tools_get_current_time]
-```
-
-**STEP 8.2.2 - UPDATE DEBUGGING-LOG.md**
-```
-Documenting debugging methodology used:
-
-**DEBUGGING-LOG.md Content**:
-- Analysis process and tools used (Context 7, Chain of Thought, Debug Info)
-- Fix attempts made and results
-- Runtime evidence gathered (console outputs, debug data)
-- Decision points and methodology rationale
-- Timestamp: [Call mcp_time-tools_get_current_time]
+🧠 **PROJECT DOCUMENTATION CHECKPOINT**: Reviewing what project docs need updating
+📋 **REQUIREMENT REFRESH**: Project documentation updates are mandatory, not optional  
+🎯 **SCOPE CHECK**: All affected project documentation must be updated immediately
 ```
 
-**STEP 8.2.3 - CREATE ROOT-CAUSE-ANALYSIS.md**
+**TIMESTAMP RULE - MANDATORY**: Always use mcp_time-tools_get_current_time for ALL timestamps
+
+**EXECUTE ALL RELEVANT PROJECT DOCUMENTATION UPDATES NOW:**
+- **API Documentation**: Update if any endpoints, parameters, or responses changed
+- **README.md**: Update setup, usage, or feature descriptions if affected
+- **Technical Specifications**: Update system design docs if architecture changed  
+- **Validation Rules Documentation**: Update if validation logic was modified
+- **Configuration Documentation**: Update if settings or environment variables changed
+- **User Documentation**: Update if user-facing behavior changed
+- **Integration Documentation**: Update if external API integrations were modified
+- **Database Schema Documentation**: Update if data models were affected
+- **Error Handling Documentation**: Update if error codes or messages changed
+
+#### 8.3 PROJECT CHANGELOG UPDATES - INDUSTRY STANDARD
+**MANDATORY changelog updates following semantic versioning principles:**
+
+**CHANGELOG.md Entry (User-Facing)**:
 ```
-Documenting technical root cause:
+## [Version] - [YYYY-MM-DD from mcp_time-tools_get_current_time]
 
-**ROOT-CAUSE-ANALYSIS.md Content**:
-- Technical explanation of the actual problem
-- Code evidence and runtime data supporting conclusion
-- Why initial hypotheses were incorrect (if applicable)
-- Implementation details of the final solution
-- Timestamp: [Call mcp_time-tools_get_current_time]
-```
-
-**STEP 8.2.4 - UPDATE SOLUTION-VERIFICATION.md**
-```
-Documenting testing and verification:
-
-**SOLUTION-VERIFICATION.md Content**:
-- Manual testing approach used
-- User feedback and confirmation process
-- Debug info analysis results
-- Verification that solution addresses root cause
-- Timestamp: [Call mcp_time-tools_get_current_time]
-```
-
-#### 8.3 MANDATORY CHANGELOG UPDATES - EXECUTE IMMEDIATELY
-
-**STEP 8.3.1 - UPDATE CHANGELOG.md**
-```
-Adding user-facing bug fix entry:
-
-**CHANGELOG.md Entry**:
-- [YYYY-MM-DD HH:MM:SS] FIXED: [Brief user-facing description]
-- Issue: [What was broken from user perspective]
-- Resolution: [What now works correctly]
-- Impact: [Who benefits from this fix]
+### Fixed
+- [Brief description of what was broken and is now working]
+- [Impact on users and how they benefit]
 ```
 
-**STEP 8.3.2 - UPDATE DEBUG-METHODOLOGY-LOG.md**
+**API-CHANGELOG.md Entry (If API affected)**:
 ```
-Recording debugging approach used:
+## [Version] - [YYYY-MM-DD from mcp_time-tools_get_current_time]
 
-**DEBUG-METHODOLOGY-LOG.md Entry**:
-- [YYYY-MM-DD HH:MM:SS] DEBUGGING SESSION: [Bug type]
-- Approach: [Context 7 + Chain of Thought] OR [Debug Info Method]
-- Tools Used: [Specific MCP tools and analysis methods]
-- Success Factors: [What led to resolution]
+### Bug Fixes
+- **[Endpoint/Feature]**: [Description of fix]
+- **Breaking Changes**: [If any - clearly marked]
 ```
 
-**STEP 8.3.3 - UPDATE BUGFIX-CHANGELOG.md**
+#### 8.4 CODE DOCUMENTATION UPDATES - INDUSTRY PRACTICE
+**Update all code-level documentation affected by the fix:**
+- **Inline Comments**: Add comments explaining complex fix logic
+- **Function/Method Documentation**: Update JSDoc, docstrings, or equivalent  
+- **Component Documentation**: Update prop types, usage examples
+- **Type Definitions**: Update TypeScript interfaces if modified
+- **Configuration Comments**: Update config file documentation
+
+#### 8.5 PROJECT DOCUMENTATION VERIFICATION
+**MANDATORY VERIFICATION - Ask yourself:**
+- "Did this fix affect any API endpoints or contracts?" → Update API docs
+- "Did this change user-facing behavior?" → Update user documentation  
+- "Did this modify validation rules?" → Update validation documentation
+- "Did this change configuration requirements?" → Update setup docs
+- "Did this affect database queries or schema?" → Update data documentation
+- "Are there new error conditions or messages?" → Update error documentation
+
+**If uncertain about ANY answer:**
+- STOP immediately
+- Review ALL files changed during debugging
+- Update ANY missing project documentation
+- Only proceed when ALL project documentation is complete
+
+#### 8.6 ANTI-DRIFT PROJECT DOCUMENTATION CONFIRMATION
 ```
-Recording technical implementation details:
+📋 **PROJECT DOCUMENTATION COMPLETION CONFIRMED**
 
-**BUGFIX-CHANGELOG.md Entry**:
-- [YYYY-MM-DD HH:MM:SS] TECHNICAL FIX: [Code-level description]
-- Files Modified: [Complete list with line numbers if applicable]
-- Code Changes: [Specific implementation changes made]
-- Testing Evidence: [Debug data or manual testing that confirmed fix]
-```
+**VERIFICATION COMPLETE**: 
+- All affected project specifications updated
+- All relevant API documentation updated
+- All user-facing documentation updated  
+- All configuration documentation updated
+- Changelog entries added with proper timestamps
+- All code documentation updated for modified functions
+- No project documentation updates have been skipped
 
-#### 8.4 CODE-LEVEL DOCUMENTATION UPDATES - EXECUTE IMMEDIATELY
-
-**STEP 8.4.1 - ADD INLINE COMMENTS**
-```
-Adding explanatory comments to fixed code:
-
-**Inline Comments Being Added**:
-- Rationale for fix implementation
-- Explanation of why previous approach failed
-- Edge case handling documentation
-- Future maintenance notes
-```
-
-**STEP 8.4.2 - UPDATE FUNCTION/COMPONENT DOCUMENTATION**
-```
-Updating code documentation if behavior changed:
-
-**Documentation Updates**:
-- Function signatures and parameter documentation
-- Component prop documentation
-- API endpoint documentation
-- Error handling documentation
-```
-
-#### 8.5 DOCUMENTATION VERIFICATION AND CONFIRMATION
-**MANDATORY VERIFICATION CHECKLIST:**
-- [ ] **BUG-REPORT.md**: Created with complete issue details ✅
-- [ ] **DEBUGGING-LOG.md**: Updated with methodology used ✅
-- [ ] **ROOT-CAUSE-ANALYSIS.md**: Created with technical analysis ✅  
-- [ ] **SOLUTION-VERIFICATION.md**: Updated with testing details ✅
-- [ ] **CHANGELOG.md**: Updated with user-facing description ✅
-- [ ] **DEBUG-METHODOLOGY-LOG.md**: Updated with debugging approach ✅
-- [ ] **BUGFIX-CHANGELOG.md**: Updated with technical details ✅
-- [ ] **Inline Comments**: Added to all modified code ✅
-- [ ] **Function Documentation**: Updated for behavior changes ✅
-- [ ] **Timestamps**: All entries use mcp_time-tools_get_current_time ✅
-
-**AFTER ALL DOCUMENTATION COMPLETE:**
-```
-📋 **DOCUMENTATION VERIFICATION COMPLETE**
-
-**Files Created/Updated**:
-- BUG-REPORT.md: ✅ Created
-- DEBUGGING-LOG.md: ✅ Updated  
-- ROOT-CAUSE-ANALYSIS.md: ✅ Created
-- SOLUTION-VERIFICATION.md: ✅ Updated
-- CHANGELOG.md: ✅ Updated
-- DEBUG-METHODOLOGY-LOG.md: ✅ Updated
-- BUGFIX-CHANGELOG.md: ✅ Updated
-- Code Comments: ✅ Added to [X] files
-- Function Docs: ✅ Updated [X] functions
-
-**All documentation timestamps**: [Current timestamp from mcp_time-tools]
-**Documentation Status**: COMPLETE AND VERIFIED ✅
+**PROJECT DOCUMENTATION STATUS**: COMPLETE ✅
 ```
 
 **THEN ANNOUNCE:**
 ```
-✅ **COMPLETED**: STEP 8 - MANDATORY CLEANUP AND DOCUMENTATION
+✅ **COMPLETED**: STEP 8 - MANDATORY CLEANUP AND PROJECT DOCUMENTATION
 📍 **WHAT WAS DONE**: 
   - Debug code completely removed from [X] files
-  - BUG-REPORT.md created with full issue details
-  - DEBUGGING-LOG.md updated with methodology
-  - ROOT-CAUSE-ANALYSIS.md created with technical analysis
-  - SOLUTION-VERIFICATION.md updated with testing details
-  - CHANGELOG.md updated with user-facing description
-  - DEBUG-METHODOLOGY-LOG.md updated with debugging approach
-  - BUGFIX-CHANGELOG.md updated with technical implementation
+  - API documentation updated for affected endpoints
+  - README.md updated with any setup/usage changes
+  - Validation rules documentation updated
+  - CHANGELOG.md updated with user-facing bug fix entry
+  - API-CHANGELOG.md updated if API was affected
   - Inline comments added to [X] modified code files
-  - Function documentation updated for [X] changed functions
-🧠 **COMPLETE RECORD**: Full debugging process with evidence documented in 7 files
-📋 **VERIFICATION**: All 10 documentation requirements completed and verified
-🎉 **DEBUGGING PROCESS COMPLETE**: Bug fixed with comprehensive documentation
+  - Function/method documentation updated for [X] changed functions
+  - Configuration documentation updated if needed
+🧠 **PROJECT DOCS CURRENT**: All affected project documentation updated and synchronized
+📋 **VERIFICATION**: All project documentation requirements completed without shortcuts
+🎉 **DEBUGGING PROCESS COMPLETE**: Bug fixed with complete project documentation updates
 🔄 **DEBUG PROGRESS**: 8 of 8 debugging steps complete - FULLY FINISHED
-🔧 **FINAL STATUS**: [X] runtime attempts + debugging iterations - Success with complete docs
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
@@ -691,17 +637,15 @@ If uncertain about ANY answer:
 ### POST-FIX CHECKLIST  
 - [ ] **User Confirmed "FIXED"**: User explicitly confirmed issue resolved
 - [ ] **Debug Code Completely Removed**: All temporary debug statements cleaned up
-- [ ] **BUG-REPORT.md Created**: Complete issue description and resolution documented
-- [ ] **DEBUGGING-LOG.md Updated**: Full methodology and process documented
-- [ ] **ROOT-CAUSE-ANALYSIS.md Created**: Technical root cause with evidence documented
-- [ ] **SOLUTION-VERIFICATION.md Updated**: Testing approach and results documented
-- [ ] **CHANGELOG.md Updated**: User-facing bug fix description added
-- [ ] **DEBUG-METHODOLOGY-LOG.md Updated**: Debugging approach recorded
-- [ ] **BUGFIX-CHANGELOG.md Updated**: Technical implementation details recorded
-- [ ] **Inline Comments Added**: Explanatory comments added to all modified code
-- [ ] **Function Documentation Updated**: Documentation updated for any behavior changes
-- [ ] **All Timestamps Used mcp_time-tools**: All documentation uses proper timestamps
-- [ ] **Documentation Verification Complete**: All 10 documentation requirements verified
+- [ ] **API Documentation Updated**: Endpoints, parameters, responses updated if affected
+- [ ] **README.md Updated**: Setup, usage, features updated if changed
+- [ ] **Validation Rules Documentation Updated**: If validation logic was modified
+- [ ] **Configuration Documentation Updated**: If settings or environment changed
+- [ ] **CHANGELOG.md Updated**: User-facing bug fix description added with timestamp
+- [ ] **API-CHANGELOG.md Updated**: API changes documented if applicable
+- [ ] **Code Documentation Updated**: Inline comments and function docs updated
+- [ ] **All Timestamps Used mcp_time-tools**: All changelog entries use proper timestamps
+- [ ] **Project Documentation Verification Complete**: All affected project docs updated
 - [ ] **Attention Maintained**: Full debugging focus sustained throughout process
 
 ## DEBUGGING SUCCESS CRITERIA
@@ -712,10 +656,10 @@ If uncertain about ANY answer:
 - Runtime debugging approach used when static analysis insufficient
 - Debug info provides actual execution evidence vs assumptions
 - User confirms resolution through systematic manual testing
-- **ALL 7 documentation files created/updated with complete details**
-- **All code changes have explanatory inline comments**
-- **All timestamps use mcp_time-tools_get_current_time**
-- **Documentation verification checklist 100% complete**
+- **ALL affected project documentation updated (API docs, specs, README, validation rules)**
+- **Project changelogs updated following industry semantic versioning standards**
+- **All code documentation updated for modified functions and components**
+- **Documentation verification completed through anti-drift protocols**
 - Full attention maintained throughout entire debugging process
 
 **ABSOLUTE ZERO TOLERANCE**:
@@ -728,6 +672,8 @@ If uncertain about ANY answer:
 - Asking multiple questions simultaneously instead of systematically
 - Any form of debugging attention degradation or cognitive shortcuts
 - Skipping debug info approach after 2 failed runtime analysis fixes
+- **SKIPPING ANY DOCUMENTATION UPDATES after confirmed fixes**
+- **Not using mcp_time-tools_get_current_time for timestamps**
 - **SKIPPING ANY STEP 8 DOCUMENTATION REQUIREMENTS**
 - **Missing documentation updates after confirmed fixes**
 - **Not using mcp_time-tools_get_current_time for timestamps**

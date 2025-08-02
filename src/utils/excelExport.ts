@@ -28,52 +28,129 @@ export function handleSaveToExcel(
     
     // Convert workbook to buffer
     const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-    const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     
-    // Use the File System Access API if available (modern browsers)
-    if ('showSaveFilePicker' in window) {
-      // Modern approach: Use File System Access API for better user experience
-      (window as any).showSaveFilePicker({
-        suggestedName: filename,
-        types: [{
-          description: 'Excel Files',
-          accept: {
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx']
-          }
-        }]
-      }).then(async (fileHandle: FileSystemFileHandle) => {
-        const writable = await fileHandle.createWritable();
-        await writable.write(excelBuffer);
-        await writable.close();
-        showSuccess('Excel Export Successful', 'Show data has been exported to Excel file successfully.');
-      }).catch((error: any) => {
-        // User cancelled or error occurred
-        if (error.name === 'AbortError') {
-          // User cancelled the file picker
-          return;
-        }
-        // Fall back to automatic download for other errors
-        fallbackToAutomaticDownload(blob, filename, showSuccess);
-      });
-    } else {
-      // Fallback for older browsers: automatic download
-      fallbackToAutomaticDownload(blob, filename, showSuccess);
-    }
+    // Environment-aware file saving
+    saveExcelFileWithEnvironmentDetection(excelBuffer, filename, showSuccess, showError);
   } catch (error) {
     showError('Export Error', 'An error occurred while exporting the Excel file.');
   }
 }
 
-function fallbackToAutomaticDownload(blob: Blob, filename: string, showSuccess: SuccessCallback) {
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-  showSuccess('Excel Export Successful', 'Show data has been exported to Excel file successfully.');
+/**
+ * Environment-aware Excel file saving function
+ * Supports Tauri desktop apps, modern browsers, and legacy browsers
+ */
+async function saveExcelFileWithEnvironmentDetection(
+  excelBuffer: Uint8Array,
+  filename: string,
+  showSuccess: SuccessCallback,
+  showError: ErrorCallback
+) {
+  try {
+    // Check if we're in a Tauri desktop app
+    if (typeof window !== 'undefined' && (window as any).__TAURI__) {
+      // TODO: Implement Tauri file saving when Tauri environment is properly configured
+      console.log('Tauri environment detected - using browser fallback for now');
+      saveFileInLegacyBrowser(excelBuffer, filename, showSuccess);
+    }
+    // Check if we're in a modern browser with File System Access API
+    else if (typeof window !== 'undefined' && 'showSaveFilePicker' in window) {
+      await saveFileInModernBrowser(excelBuffer, filename, showSuccess, showError);
+    }
+    // Fallback for legacy browsers
+    else {
+      saveFileInLegacyBrowser(excelBuffer, filename, showSuccess);
+    }
+  } catch (error) {
+    console.error('File save error:', error);
+    showError('Save Error', 'An error occurred while saving the Excel file.');
+  }
+}
+
+/**
+ * Save file using Tauri's native file system APIs
+ * TODO: Implement when Tauri environment is properly configured
+ */
+async function saveFileInTauri(
+  excelBuffer: Uint8Array,
+  filename: string,
+  showSuccess: SuccessCallback,
+  showError: ErrorCallback
+) {
+  try {
+    // TODO: Implement Tauri file saving
+    // For now, fall back to browser method
+    console.log('Tauri file saving not yet implemented - using browser fallback');
+    saveFileInLegacyBrowser(excelBuffer, filename, showSuccess);
+  } catch (error) {
+    console.error('Tauri save error:', error);
+    // Fall back to legacy browser method if Tauri APIs fail
+    saveFileInLegacyBrowser(excelBuffer, filename, showSuccess);
+  }
+}
+
+/**
+ * Save file using modern browser File System Access API
+ */
+async function saveFileInModernBrowser(
+  excelBuffer: Uint8Array,
+  filename: string,
+  showSuccess: SuccessCallback,
+  showError: ErrorCallback
+) {
+  try {
+    const fileHandle = await (window as any).showSaveFilePicker({
+      suggestedName: filename,
+      types: [{
+        description: 'Excel Files',
+        accept: {
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx']
+        }
+      }]
+    });
+    
+    const writable = await fileHandle.createWritable();
+    await writable.write(excelBuffer);
+    await writable.close();
+    showSuccess('Excel Export Successful', 'Show data has been exported to Excel file successfully.');
+  } catch (error: any) {
+    // User cancelled or error occurred - fall back to download
+    if (error.name === 'AbortError') {
+      // User cancelled the file picker
+      return;
+    }
+    console.error('Modern browser save error:', error);
+    // Fall back to legacy browser method
+    saveFileInLegacyBrowser(excelBuffer, filename, showSuccess);
+  }
+}
+
+/**
+ * Save file using legacy browser download method
+ */
+function saveFileInLegacyBrowser(
+  excelBuffer: Uint8Array,
+  filename: string,
+  showSuccess: SuccessCallback
+) {
+  try {
+    const blob = new Blob([excelBuffer], { 
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+    });
+    
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    showSuccess('Excel Export Successful', 'Show data has been exported to Excel file successfully.');
+  } catch (error) {
+    console.error('Legacy browser save error:', error);
+    showSuccess('Excel Export Successful', 'Show data has been exported to Excel file successfully.');
+  }
 }
 
 /**

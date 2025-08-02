@@ -11,7 +11,14 @@
 
 ## Data Handling
 - **PapaParse 5.5.3**: Fast, reliable CSV parsing and generation
+- **SheetJS (xlsx) 0.18.5**: Excel file reading and writing with environment-aware support
 - **Faker.js 9.8.0**: Generate realistic test data for development
+
+## Cross-Platform Support
+- **Environment Detection**: Automatic detection of Tauri desktop apps vs web browsers
+- **Tauri APIs**: Native file system access for desktop apps (`@tauri-apps/api`)
+- **Browser APIs**: File System Access API and FileReader for web browsers
+- **Graceful Fallbacks**: Comprehensive error handling and fallback mechanisms
 
 ## Development Tools
 - **ESLint 9.29.0**: Code linting and quality enforcement

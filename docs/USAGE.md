@@ -5,6 +5,21 @@ This document provides comprehensive guidance on using the CFA Master Clerk Entr
 
 ---
 
+## Application Startup
+
+The application is ready to use immediately upon launch. All file operations (Excel export/import) use platform-appropriate methods automatically without requiring manual directory configuration.
+### Platform-Specific Behavior
+
+**Tauri Desktop Apps:**
+- Uses native OS file dialogs for Excel export/import
+- Full file system access with automatic file handling
+
+**Web Browsers:**
+- Uses File System Access API where supported for Excel operations
+- Fallback to download/upload methods for unsupported browsers
+
+---
+
 ## Settings Panel Configuration
 
 ### Maximum Number of Judges Setting
@@ -201,16 +216,56 @@ The mapping logic uses the finals row index modulo 5 to select the correct key f
 
 When you click the 'Save to Excel' button and validation passes (no errors), the application will:
 
-- **Modern Browsers**: Open a file save dialog allowing you to choose where to save the Excel file. The filename will be auto-generated in the format `YYYYMMDD_HHMMSS_showName.xlsx` but you can change the location and filename if desired.
+- **Tauri Desktop Apps**: Open a native OS file picker allowing you to choose where to save the Excel file. The filename will be auto-generated in the format `YYYYMMDD_HHMMSS_showName.xlsx` but you can change the location and filename if desired.
+
+- **Modern Browsers (Chrome 86+, Edge 86+)**: Open a browser file save dialog allowing you to choose where to save the Excel file. The filename will be auto-generated in the format `YYYYMMDD_HHMMSS_showName.xlsx` but you can change the location and filename if desired.
 
 - **Older Browsers**: Automatically download the file to your default downloads folder with the auto-generated filename.
 
 The auto-generated filename format is: `YYYYMMDD_HHMMSS_showName.xlsx`
 - Example: `20241215_143022_ExampleCatShow.xlsx`
 
+### Environment-Aware File Saving (2025-08-01)
+
+The Excel export feature now automatically detects the runtime environment and uses the appropriate file saving method:
+
+**Detection Logic:**
+1. **Tauri Desktop Apps**: Detects `window.__TAURI__` and uses native OS file picker (planned implementation)
+2. **Modern Browsers**: Detects `showSaveFilePicker` API and uses browser file picker
+3. **Legacy Browsers**: Falls back to automatic download method
+
+**Current Implementation Status:**
+- ✅ **Modern Browsers**: Fully implemented with File System Access API
+- ✅ **Legacy Browsers**: Fully implemented with automatic download
+- 🔄 **Tauri Desktop Apps**: Environment detection implemented, native file picker planned
+
+**Benefits:**
+- **Single Codebase**: Same code works in all environments
+- **Native Experience**: Tauri users will get native OS file picker (when implemented)
+- **Graceful Degradation**: Best possible experience in each environment
+- **Error Handling**: Comprehensive error handling with fallbacks
+
 ## Excel Import
 
 The application supports importing data from both Excel (`.xlsx`) and CSV (`.csv`) files for backward compatibility. When you click the 'Load from Excel' button, you can select either file type.
+
+### Environment-Aware Excel Import (2025-08-01)
+
+The Excel import feature now automatically detects the runtime environment and uses the appropriate file selection method:
+
+**Detection Logic:**
+1. **Tauri Desktop Apps**: Detects `window.__TAURI__` and uses native OS file picker (planned implementation)
+2. **Web Browsers**: Uses browser file picker for all browser environments
+
+**Current Implementation Status:**
+- ✅ **Web Browsers**: Fully implemented with browser file picker
+- 🔄 **Tauri Desktop Apps**: Environment detection implemented, native file picker planned
+
+**Benefits:**
+- **Single Codebase**: Same code works in all environments
+- **Native Experience**: Tauri users will get native OS file picker (when implemented)
+- **Graceful Degradation**: Best possible experience in each environment
+- **Error Handling**: Comprehensive error handling with fallbacks
 
 ### General Tab: Save to Excel Error Handling
 

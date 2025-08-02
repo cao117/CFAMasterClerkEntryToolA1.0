@@ -1,20 +1,24 @@
-import { useState, useEffect, useRef } from 'react'
-import GeneralTab from './components/GeneralTab'
-import ChampionshipTab from './components/ChampionshipTab'
-import type { ChampionshipTabRef } from './components/ChampionshipTab'
-import ToastContainer from './components/ToastContainer'
-import { useToast } from './hooks/useToast'
+import React, { useState, useEffect, useRef } from 'react';
+import GeneralTab from './components/GeneralTab';
+import ChampionshipTab from './components/ChampionshipTab';
+import type { ChampionshipTabRef } from './components/ChampionshipTab';
+import KittenTab from './components/KittenTab';
+import PremiershipTab from './components/PremiershipTab';
+import HouseholdPetTab from './components/HouseholdPetTab';
+import BreedSheetsTab from './components/BreedSheetsTab';
+import SettingsPanel from './components/SettingsPanel';
+import ToastContainer from './components/ToastContainer';
+import AutoSaveNotificationBar from './components/AutoSaveNotificationBar';
+
+import { useToast } from './hooks/useToast';
+import { useScreenGuard } from './hooks/useScreenGuard';
+import { handleSaveToExcel } from './utils/excelExport';
+import { handleRestoreFromExcel } from './utils/excelImport';
+
+import FallbackNotice from './components/FallbackNotice';
 import cfaLogo from './assets/cfa-logo-official.png';
-import PremiershipTab from './components/PremiershipTab'
-import KittenTab from './components/KittenTab'
-import HouseholdPetTab from './components/HouseholdPetTab'
-import BreedSheetsTab from './components/BreedSheetsTab'
-import type { BreedSheetsTabData } from './components/BreedSheetsTab'
-import SettingsPanel from './components/SettingsPanel'
-import Tooltip from './components/Tooltip'
-import { handleRestoreFromExcel } from './utils/excelImport'
-import FallbackNotice from './components/FallbackNotice'
-import { useScreenGuard } from './hooks/useScreenGuard'
+import type { BreedSheetsTabData } from './components/BreedSheetsTab';
+import Tooltip from './components/Tooltip';
 
 interface Judge {
   id: number;
@@ -101,6 +105,8 @@ function App() {
   const [zoomLevel, setZoomLevel] = useState(100); // Zoom level in percentage
   const [isSettingsOpen, setIsSettingsOpen] = useState(false); // Settings panel state
   
+  const [isAppReady, setIsAppReady] = useState(true);
+  
   // Global settings state with localStorage persistence
   const [globalSettings, setGlobalSettings] = useState(() => {
     // Load settings from localStorage synchronously during initialization
@@ -163,6 +169,37 @@ function App() {
 
   // Toast notification system
   const { toasts, removeToast, showSuccess, showError, showWarning, showInfo } = useToast();
+
+  // Auto-save notification state
+  const [isAutoSaveVisible, setIsAutoSaveVisible] = useState(false);
+  const [lastSavedTime, setLastSavedTime] = useState('2 minutes ago');
+
+  // Auto-save notification handlers
+  const handleViewRecovery = () => {
+    // TODO: Implement recovery options functionality
+    showInfo('Recovery Options', 'Recovery options feature coming soon.');
+  };
+
+  const handleDismissAutoSave = () => {
+    setIsAutoSaveVisible(false);
+  };
+
+  // Handle settings close
+  const handleSettingsClose = () => {
+    setIsSettingsOpen(false);
+  };
+
+  // Demo effect to show auto-save notification after 2 seconds
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsAutoSaveVisible(true);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
+
+
+
 
   // Ref for ChampionshipTab to call fillTestData
   const championshipTabRef = useRef<ChampionshipTabRef>(null);
@@ -763,6 +800,29 @@ function App() {
                 </button>
               </div>
               
+              {/* File Restore Button */}
+              <button
+                onClick={() => {/* TODO: Implement file restore functionality */}}
+                className="w-10 h-10 flex items-center justify-center rounded-lg bg-[#C7B273]/20 hover:bg-[#C7B273]/30 transition-all duration-200 text-[#C7B273] hover:text-white border border-[#C7B273]/30 hover:border-[#C7B273]/50"
+                title="File Restore"
+              >
+                <svg width="20" height="20" fill="none" viewBox="0 0 24 24" className="w-5 h-5">
+                  {/* Document with folded corner */}
+                  <rect x="4" y="4" width="14" height="18" rx="1" stroke="currentColor" strokeWidth="2" fill="none"/>
+                  <path d="M18 4L20 6L18 8" stroke="currentColor" strokeWidth="2" fill="none"/>
+                  
+                  {/* Document lines */}
+                  <path d="M6 8h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  <path d="M6 11h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  <path d="M6 14h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  
+                  {/* Refresh arrow circle */}
+                  <circle cx="16" cy="16" r="3" stroke="currentColor" strokeWidth="2" fill="none"/>
+                  <path d="M16 13L16 16L19 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M19 16L16 16L16 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+              
               {/* Settings Gear */}
               <button
                 onClick={() => setIsSettingsOpen(true)}
@@ -910,6 +970,14 @@ function App() {
         </div>
       </div>
 
+      {/* Auto-Save Notification Bar */}
+      <AutoSaveNotificationBar 
+        isVisible={isAutoSaveVisible}
+        lastSavedTime={lastSavedTime}
+        onViewRecovery={handleViewRecovery}
+        onDismiss={handleDismissAutoSave}
+      />
+
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div 
@@ -927,12 +995,14 @@ function App() {
       {/* Settings Panel */}
       <SettingsPanel
         isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
+        onClose={handleSettingsClose}
         showSuccess={showSuccess}
         globalSettings={globalSettings}
         setGlobalSettings={setGlobalSettings}
         currentNumberOfJudges={showData.numberOfJudges}
       />
+
+
       {/* App Version Badge Footer */}
       <footer className="fixed bottom-4 right-4 z-50">
         <div

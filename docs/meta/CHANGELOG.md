@@ -518,3 +518,62 @@ This changelog records major changes to the CFA Master Clerk Entry Tool, includi
   - Issue: All show count inputs (except HHP total count) were converting to 0 immediately when deleting text
   - Resolution: Inputs now preserve empty state during deletion and convert to 0 only when leaving focus
   - Impact: Improved user experience for data entry across all show count inputs 
+
+### [2025-08-01 15:26:58] Environment-Aware Excel Export (2025-08-01 15:26:58)
+- **Area:** src/utils/excelExport.ts
+- **Change:** Implemented cross-platform Excel file saving that automatically detects runtime environment:
+  - **Modern Browsers**: Uses File System Access API (`showSaveFilePicker`) for user-controlled file saving
+  - **Legacy Browsers**: Falls back to automatic download method
+  - **Tauri Desktop Apps**: Environment detection implemented, native file picker planned for future implementation
+  - **Detection Logic**: Automatically detects `window.__TAURI__` for Tauri apps and `showSaveFilePicker` for modern browsers
+  - **Error Handling**: Comprehensive error handling with graceful fallbacks between methods
+  - **Single Codebase**: Same implementation works across all environments without separate builds
+  - **Dependencies**: Added `@tauri-apps/api@2.7.0` for future Tauri desktop support
+  - **Type Safety**: Added TypeScript declarations for Tauri APIs in `src/types/tauri.d.ts`
+  - **Status**: Browser functionality fully working, Tauri implementation planned 
+
+### [2025-08-01 15:43:21] Environment-Aware Excel Import (2025-08-01 15:43:21)
+- **Area:** src/utils/excelImport.ts
+- **Change:** Implemented cross-platform Excel import that automatically detects runtime environment:
+  - **Web Browsers**: Uses browser file picker for file selection
+  - **Tauri Desktop Apps**: Environment detection implemented, native file picker planned for future implementation
+  - **Detection Logic**: Automatically detects `window.__TAURI__` for Tauri apps
+  - **Error Handling**: Comprehensive error handling with graceful fallbacks between methods
+  - **Single Codebase**: Same implementation works across all environments without separate builds
+  - **Status**: Browser functionality fully working, Tauri implementation planned 
+
+## [Version 0.2.1] - 2025-08-01 19:45:07
+
+### Added
+- **Application Startup Save Location Setup**: Implemented mandatory save location configuration on application startup
+  - **Startup Validation**: App checks save location validity on every load (path exists, is directory, has write permissions)
+  - **Blocking Modal**: Mandatory setup modal appears if no location is configured or location is invalid
+  - **Cross-Platform Support**: Works in both Tauri desktop apps and web browsers
+  - **Folder Picker**: Native OS folder picker for Tauri, File System Access API for browsers
+  - **Settings Integration**: Save location configuration integrated into Settings panel
+  - **Navigation Control**: App blocks access until save location is properly configured
+  - **Validation Logic**: Comprehensive validation including path existence, directory type, and write permissions
+  - **Error Handling**: Graceful fallbacks and user-friendly error messages for all scenarios
+
+### Technical Implementation
+- **New Utilities**: 
+  - `src/utils/saveLocationValidation.ts` - Cross-platform save location validation
+  - `src/utils/folderPicker.ts` - Cross-platform folder picker functionality
+- **New Components**:
+  - `src/components/StartupModal.tsx` - Blocking startup modal component
+- **Enhanced Components**:
+  - `src/components/SettingsPanel.tsx` - Added save location configuration with folder picker
+  - `src/App.tsx` - Added startup validation logic and app readiness state
+- **Tauri Configuration**: Updated capabilities to include dialog and file system permissions 
+
+### User Experience
+- **First-Time Setup**: New users see mandatory setup modal on first app load
+- **Location Validation**: App validates save location on every startup to ensure it's still accessible
+- **Settings Integration**: Users can configure save location through Settings panel with folder picker
+- **Success Feedback**: Clear success messages when save location is configured
+- **Error Recovery**: Helpful error messages guide users to fix invalid save locations 
+
+### Platform Support
+- **Tauri Desktop**: Native OS folder picker with full file system access
+- **Web Browsers**: File System Access API with graceful fallbacks for unsupported browsers
+- **Cross-Platform Consistency**: Same user experience regardless of platform 

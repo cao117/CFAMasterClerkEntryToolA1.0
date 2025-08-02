@@ -425,7 +425,8 @@ The following action buttons are present in the Championship and Premiership tab
   - **Location:** Bottom of Championship and Premiership tabs.
 
 - **Load from Excel**
-  - **Purpose:** Imports data from a previously saved Excel file, restoring all fields and voids for the current tab.
+  - **Purpose:** Imports data from a previously saved Excel file, restoring all fields and voids for the current tab with environment-aware file selection.
+  - **Environment Support:** Automatically detects runtime environment (Tauri desktop apps or web browsers) and uses appropriate file picker.
   - **Validation:** Imported data is validated upon load. Any errors are shown inline.
   - **Location:** Bottom of Championship and Premiership tabs.
 
@@ -436,15 +437,15 @@ The following action buttons are present in the Championship and Premiership tab
 
 ### General Tab
 
-- **Save to Excel**: Exports validated data for submission.
-- **Load from Excel**: Imports data from a previously saved Excel file.
+- **Save to Excel**: Exports validated data for submission with environment-aware file saving.
+- **Load from Excel**: Imports data from a previously saved Excel file with environment-aware file selection.
 - **Reset**: Clears all form data and returns to default values.
 - **Fill Test Data**: Populates the form with realistic test data for development and testing purposes.
 
 ### Workflow Notes
 
-- **Save to Excel**: Exports validated data for submission.
-- **Load from Excel**: Imports data from a previously saved Excel file.
+- **Save to Excel**: Exports validated data for submission with environment-aware file saving.
+- **Load from Excel**: Imports data from a previously saved Excel file with environment-aware file selection.
 - **Reset**: Clears all form data and returns to default values.
 - **Fill Test Data**: Populates the form with realistic test data for development and testing purposes.
 
@@ -457,8 +458,11 @@ The following action buttons are present in the Championship and Premiership tab
 ---
 
 ## Excel Export/Import
-- **Save to Excel**: Exports validated data for submission.
-- **Load from Excel**: Imports data from an Excel file, restoring all fields and voids.
+- **Save to Excel**: Exports validated data for submission with environment-aware file saving (supports Tauri desktop apps and web browsers).
+- **Load from Excel**: Imports data from an Excel file, restoring all fields and voids with environment-aware file selection (supports Tauri desktop apps and web browsers).
+- **Environment Detection**: Automatically detects runtime environment and uses appropriate file handling methods:
+  - **Tauri Desktop Apps**: Uses native OS file picker and file system APIs
+  - **Web Browsers**: Uses browser file picker and FileReader API
 - CSV schema and voiding logic are documented in `docs/specs/CSV_SCHEMA.md` and `docs/specs/CSV_EXPORT_VOID_QUESTION.md`.
 
 ---
@@ -487,4 +491,4 @@ The following action buttons are present in the Championship and Premiership tab
 
 ---
 
-_Last updated: 2024-12-19_ 
+_Last updated: 2025-08-01_ 

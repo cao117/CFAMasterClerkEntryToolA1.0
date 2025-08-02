@@ -860,12 +860,72 @@ export async function handleExcelFileImport(
 }
 
 /**
- * Handles Excel file selection dialog and import
+ * Environment-aware Excel file selection dialog and import
+ * Supports Tauri desktop apps and web browsers
  * @param showSuccess - Success callback function
  * @param showError - Error callback function
  * @returns Promise that resolves to the restored state or null
  */
 export async function handleRestoreFromExcel(
+  showSuccess: SuccessCallback,
+  showError: ErrorCallback
+): Promise<{ showState: ImportedShowState; settings: any } | null> {
+  try {
+    // Environment-aware file selection and import
+    return await selectAndImportExcelFileWithEnvironmentDetection(showSuccess, showError);
+  } catch (error) {
+    console.error('Excel import error:', error);
+    showError('Import Error', 'An error occurred while importing the Excel file.');
+    return null;
+  }
+}
+
+/**
+ * Environment-aware Excel file selection and import function
+ * Supports Tauri desktop apps, modern browsers, and legacy browsers
+ */
+async function selectAndImportExcelFileWithEnvironmentDetection(
+  showSuccess: SuccessCallback,
+  showError: ErrorCallback
+): Promise<{ showState: ImportedShowState; settings: any } | null> {
+  try {
+    // Check if we're in a Tauri desktop app
+    if (typeof window !== 'undefined' && (window as any).__TAURI__) {
+      return await selectAndImportExcelFileInTauri(showSuccess, showError);
+    }
+    // Use browser file picker for all browser environments
+    else {
+      return await selectAndImportExcelFileInBrowser(showSuccess, showError);
+    }
+  } catch (error) {
+    console.error('File selection error:', error);
+    showError('File Selection Error', 'An error occurred while selecting the Excel file.');
+    return null;
+  }
+}
+
+/**
+ * Select and import Excel file using Tauri's native file system APIs
+ */
+async function selectAndImportExcelFileInTauri(
+  showSuccess: SuccessCallback,
+  showError: ErrorCallback
+): Promise<{ showState: ImportedShowState; settings: any } | null> {
+  try {
+    // TODO: Implement Tauri file selection and reading when Tauri environment is properly configured
+    console.log('Tauri environment detected - using browser fallback for now');
+    return await selectAndImportExcelFileInBrowser(showSuccess, showError);
+  } catch (error) {
+    console.error('Tauri import error:', error);
+    showError('Import Error', 'An error occurred while importing the file in Tauri.');
+    return null;
+  }
+}
+
+/**
+ * Select and import Excel file using browser file picker
+ */
+async function selectAndImportExcelFileInBrowser(
   showSuccess: SuccessCallback,
   showError: ErrorCallback
 ): Promise<{ showState: ImportedShowState; settings: any } | null> {

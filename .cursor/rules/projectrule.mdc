@@ -1,7 +1,6 @@
 ---
-alwaysApply: true
+alwaysApply: false
 ---
-
 ## 🧠 ATTENTION RESTORATION - READ EVERY 3 EXCHANGES
 **NEVER FORGET THESE CONSTRAINTS:**
 - ZERO tolerance for skipping steps or documentation
@@ -66,6 +65,13 @@ After completing each step, MANDATORY announcement:
 - Only after receiving confirmation, ask next question if needed
 - Continue until ZERO ambiguity remains
 
+**STEP 1 CANNOT BE COMPLETED UNTIL:**
+- ZERO questions remain about requirements
+- User has explicitly confirmed: "Requirements are completely clear"
+- User has stated: "Proceed to STEP 2"
+
+**FORBIDDEN**: Moving to STEP 2 without explicit user permission
+
 **ANNOUNCE:**
 ```
 ✅ **COMPLETED**: STEP 1 - UNDERSTAND REQUIREMENTS COMPLETELY
@@ -109,8 +115,10 @@ Review systematically:
 **If conflicts found:**
 - STOP immediately
 - Document the conflict
-- Ask specific questions ONE AT A TIME
-- Wait for resolution
+- Ask ONE specific question about the conflict
+- WAIT for your complete answer - MANDATORY
+- Only ask next question after receiving confirmation - MANDATORY
+- Continue until ALL conflicts resolved
 - Summarize resolution explicitly
 
 **ANNOUNCE:**
@@ -163,50 +171,108 @@ Review systematically:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-## 🔧 QUALITY REQUIREMENTS - NON-NEGOTIABLE
+### STEP 6: MANDATORY CLEANUP AND PROJECT DOCUMENTATION (AFTER FIX CONFIRMED)
 
-### LINT ERROR RESOLUTION - ABSOLUTE ZERO TOLERANCE
-Run linting in exact order:
-1. TypeScript compiler (tsc) - fix ALL errors
-2. ESLint - resolve ALL warnings/errors
-3. Prettier - ensure perfect formatting  
-4. Project linters - address ALL issues
-
-After each linter, state: "[Linter name]: CLEAN ✅"
-NEVER proceed with ANY lint errors.
-
-### DOCUMENTATION MAINTENANCE - MANDATORY
-
-**DOCUMENTATION CHECKPOINT - Before every doc update:**
-- "DOCUMENTATION CHECKPOINT: Reviewing what needs updating"
-- "REQUIREMENT REFRESH: Documentation is mandatory"
-- "SCOPE CHECK: These docs need updates: [list]"
-
-**Use mcp_time-tools_get_current_time for ALL timestamps.**
-
-For EVERY code change, update ALL relevant:
-- API Documentation
-- README.md
-- Architecture Documentation
-- Validation Rules Documentation
-- Code Comments
-- Configuration Documentation
-
-**After each update:**
+#### 6.1 PROJECT DOCUMENTATION ENFORCEMENT - ANTI-DEGRADATION PROTOCOL
+**MANDATORY ATTENTION RESTORATION FOR PROJECT DOCUMENTATION:**
 ```
-📝 **DOC UPDATE**: [file] updated with [changes]
-🕐 **TIMESTAMP**: [from mcp_time-tools]
-✅ **VERIFIED**: Documentation matches code exactly
+🧠 **PROJECT DOCUMENTATION CHECKPOINT**: Reviewing what project docs need updating
+📋 **REQUIREMENT REFRESH**: Project documentation updates are mandatory, not optional  
+🎯 **SCOPE CHECK**: All affected project documentation must be updated immediately
 ```
 
-**FINAL ANNOUNCEMENT:**
+**TIMESTAMP RULE - MANDATORY**: Always use mcp_time-tools_get_current_time for ALL timestamps
+
+**EXECUTE ALL RELEVANT PROJECT DOCUMENTATION UPDATES NOW:**
+- **API Documentation**: Update if any endpoints, parameters, or responses changed
+- **README.md**: Update setup, usage, or feature descriptions if affected
+- **Technical Specifications**: Update system design docs if architecture changed  
+- **Validation Rules Documentation**: Update if validation logic was modified
+- **Configuration Documentation**: Update if settings or environment variables changed
+- **User Documentation**: Update if user-facing behavior changed
+- **Integration Documentation**: Update if external API integrations were modified
+- **Database Schema Documentation**: Update if data models were affected
+- **Error Handling Documentation**: Update if error codes or messages changed
+
+#### 6.2 PROJECT CHANGELOG UPDATES - INDUSTRY STANDARD
+**MANDATORY changelog updates following semantic versioning principles:**
+
+**CHANGELOG.md Entry (User-Facing)**:
 ```
-✅ **COMPLETED**: ALL DOCUMENTATION UPDATES
-📍 **FILES UPDATED**: [complete list]
-🧠 **VERIFICATION**: Each update verified against code
-⏭️ **NEXT STEP**: VERIFICATION CHECKLISTS
+## [Version] - [YYYY-MM-DD from mcp_time-tools_get_current_time]
+
+### Fixed
+- [Brief description of what was broken and is now working]
+- [Impact on users and how they benefit]
+```
+
+**API-CHANGELOG.md Entry (If API affected)**:
+```
+## [Version] - [YYYY-MM-DD from mcp_time-tools_get_current_time]
+
+### Bug Fixes
+- **[Endpoint/Feature]**: [Description of fix]
+- **Breaking Changes**: [If any - clearly marked]
+```
+
+#### 6.3 CODE DOCUMENTATION UPDATES - INDUSTRY PRACTICE
+**Update all code-level documentation affected by the fix:**
+- **Inline Comments**: Add comments explaining complex fix logic
+- **Function/Method Documentation**: Update JSDoc, docstrings, or equivalent  
+- **Component Documentation**: Update prop types, usage examples
+- **Type Definitions**: Update TypeScript interfaces if modified
+- **Configuration Comments**: Update config file documentation
+
+#### 6.4 PROJECT DOCUMENTATION VERIFICATION
+**MANDATORY VERIFICATION - Ask yourself:**
+- "Did this fix affect any API endpoints or contracts?" → Update API docs
+- "Did this change user-facing behavior?" → Update user documentation  
+- "Did this modify validation rules?" → Update validation documentation
+- "Did this change configuration requirements?" → Update setup docs
+- "Did this affect database queries or schema?" → Update data documentation
+- "Are there new error conditions or messages?" → Update error documentation
+
+**If uncertain about ANY answer:**
+- STOP immediately
+- Review ALL files changed during debugging
+- Update ANY missing project documentation
+- Only proceed when ALL project documentation is complete
+
+#### 6.5 ANTI-DRIFT PROJECT DOCUMENTATION CONFIRMATION
+```
+📋 **PROJECT DOCUMENTATION COMPLETION CONFIRMED**
+
+**VERIFICATION COMPLETE**: 
+- All affected project specifications updated
+- All relevant API documentation updated
+- All user-facing documentation updated  
+- All configuration documentation updated
+- Changelog entries added with proper timestamps
+- All code documentation updated for modified functions
+- No project documentation updates have been skipped
+
+**PROJECT DOCUMENTATION STATUS**: COMPLETE ✅
+```
+
+**THEN ANNOUNCE:**
+```
+✅ **COMPLETED**: STEP 8 - MANDATORY CLEANUP AND PROJECT DOCUMENTATION
+📍 **WHAT WAS DONE**: 
+  - Debug code completely removed from [X] files
+  - API documentation updated for affected endpoints
+  - README.md updated with any setup/usage changes
+  - Validation rules documentation updated
+  - CHANGELOG.md updated with user-facing bug fix entry
+  - API-CHANGELOG.md updated if API was affected
+  - Inline comments added to [X] modified code files
+  - Function/method documentation updated for [X] changed functions
+  - Configuration documentation updated if needed
+🧠 **PROJECT DOCS CURRENT**: All affected project documentation updated and synchronized
+📋 **VERIFICATION**: All project documentation requirements completed without shortcuts
+🎉 **DEBUGGING PROCESS COMPLETE**: Bug fixed with complete project documentation updates
+🔄 **DEBUG PROGRESS**: 8 of 8 debugging steps complete - FULLY FINISHED
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-```
+
 
 ## 🧠 ATTENTION MANAGEMENT
 
@@ -240,7 +306,11 @@ Before ANY decision, ask:
 - "Am I assuming something I should clarify?"
 - "Will this skip any mandatory steps?"
 
-If uncertain: STOP and ask for clarification.
+**If uncertain about ANY answer:**
+- STOP immediately
+- Ask ONE specific clarifying question
+- WAIT for your confirmation
+- Only proceed after receiving complete answer
 
 ## 📋 VERIFICATION CHECKLISTS
 
@@ -269,7 +339,7 @@ If uncertain: STOP and ask for clarification.
 - [ ] ALL lint errors resolved ✅
 - [ ] Security addressed ✅
 - [ ] Performance evaluated ✅
-- [ ] Documentation updated ✅
+- [ ] ALL project documentation updated ✅
 - [ ] No cognitive shortcuts ✅
 
 **ANNOUNCE:**
@@ -284,8 +354,8 @@ If uncertain: STOP and ask for clarification.
 ### POST-IMPLEMENTATION CHECKLIST
 - [ ] Code self-reviewed ✅
 - [ ] All tests passing ✅
-- [ ] Documentation complete ✅
-- [ ] Changelogs updated ✅
+- [ ] ALL project documentation updated ✅
+- [ ] Project changelogs updated with timestamps ✅
 - [ ] No technical debt ✅
 - [ ] Requirements 100% satisfied ✅
 - [ ] Attention maintained ✅
@@ -347,7 +417,10 @@ Stopping to restore attention:
 - Skipping ANY workflow step
 - Making assumptions vs asking questions
 - Any lint errors
-- Incomplete documentation updates
+- Incomplete PROJECT documentation updates
+- Not updating API docs when endpoints change
+- Not updating README.md when setup/usage changes
+- Not updating validation rules when business logic changes
 - Cognitive shortcuts or quick fixes
 - Technical debt without documentation
 - Any attention degradation

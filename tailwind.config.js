@@ -25,12 +25,8 @@ export default {
   plugins: [
     function({ addComponents }) {
       addComponents({
-        '.banner': {
-          '@apply bg-[url("/banner.svg")] bg-no-repeat w-full bg-cover bg-center h-full': {},
-        },
-        '.banner02': {
-          '@apply bg-[url("/banner02.svg")] bg-no-repeat w-full bg-cover bg-center h-full': {},
-        },
+        // Remove banner classes that reference non-existent files
+        // .banner and .banner02 classes removed - files don't exist
       })
     }
   ],
