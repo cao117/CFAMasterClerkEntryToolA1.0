@@ -360,9 +360,15 @@ If a higher-precedence error is present, lower-precedence errors/reminders are s
 ---
 
 ## State Management & Persistence
-- All tab data (including errors and voids) is managed in the top-level App state and passed as props to each tab component.
-- Data is preserved across tab switches.
-- Each tab can be reset independently, or the entire application can be reset from the General tab.
+
+The application uses React state management with localStorage persistence for settings and auto-save functionality. Form data is automatically saved to prevent data loss, with configurable save intervals and file rotation.
+
+### Auto-Save System
+- **Auto-Save**: Configurable frequency (1-60 minutes, default: 5 minutes) with rotating file management
+- **Recent Save**: Automatic saves every 15 seconds for immediate protection
+- **Empty Form Detection**: Prevents unnecessary saves when no user input exists across any visible tabs
+- **Platform Aware**: Uses appropriate storage method (localStorage for browser, file system for Tauri)
+- **Visual Indicators**: Shows auto-save status with notification bar
 
 ---
 

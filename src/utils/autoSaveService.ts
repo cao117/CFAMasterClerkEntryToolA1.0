@@ -18,8 +18,9 @@ export class AutoSaveService {
    * @param formData - Current form data to save
    * @param numberOfFiles - Number from existing "Number of files" setting
    * @param frequencyMinutes - Minutes from existing "Save frequency" setting
+   * @param checkForData - Optional function to check if form has any user input
    */
-  async startAutoSave(formData: any, numberOfFiles: number, frequencyMinutes: number): Promise<void> {
+  async startAutoSave(formData: any, numberOfFiles: number, frequencyMinutes: number, checkForData?: () => boolean): Promise<void> {
     // Clear any existing timer to prevent multiple timers running
     this.stopAutoSave();
     this.currentFormData = formData;
@@ -27,15 +28,23 @@ export class AutoSaveService {
     // Convert frequency to milliseconds
     const intervalMs = frequencyMinutes * 60 * 1000;
     
+    console.log(`🔍 DEBUG: Auto-save timer started - ${numberOfFiles} files, every ${frequencyMinutes} minutes, enhanced detection: ${!!checkForData}`);
+    
     // Set up recurring auto-save - timer starts but no immediate save on page load
     // Auto-save will only execute after the first save cycle interval is reached
     this.saveTimer = setInterval(() => {
       if (this.currentFormData) {
-        this.performRotatingAutoSave(this.currentFormData, numberOfFiles);
+        if (checkForData) {
+          // Use enhanced save with empty form detection
+          this.performEnhancedRotatingAutoSave(this.currentFormData, numberOfFiles, checkForData);
+        } else {
+          // Use original save without empty form detection
+          this.performRotatingAutoSave(this.currentFormData, numberOfFiles);
+        }
       }
     }, intervalMs);
     
-    console.log(`Auto-save started: ${numberOfFiles} files, every ${frequencyMinutes} minutes`);
+
   }
 
   /**
@@ -60,7 +69,7 @@ export class AutoSaveService {
       // Use localStorage for both browser and Tauri - simplified single implementation
       await this.saveToBrowserStorage(formData, fileNumber);
       
-      console.log(`Manual save completed: autosave${fileNumber}`);
+      console.log(`✅ AUTO-SAVE COMPLETED: autosave${fileNumber}`);
       
       // Trigger auto-save notification event for UI
       this.triggerAutoSaveNotification(fileNumber);
@@ -68,8 +77,25 @@ export class AutoSaveService {
       // Move to next file for next cycle
       this.currentFileIndex = (this.currentFileIndex + 1) % numberOfFiles;
     } catch (error) {
-      console.error(`Manual save failed:`, error);
+      console.error(`❌ AUTO-SAVE FAILED:`, error);
     }
+  }
+
+  /**
+   * Enhanced single save with empty form detection
+   * @param formData - Current form data to save
+   * @param checkForData - Function to check if form has any user input
+   */
+  async performEnhancedSingleSave(formData: any, checkForData: () => boolean): Promise<void> {
+    // Check if form has any data before saving
+    const formHasData = checkForData();
+    
+    if (!formHasData) {
+      return; // Skip this save round
+    }
+    
+    // Continue with existing save logic
+    await this.performSingleSave(formData);
   }
 
   /**
@@ -79,15 +105,10 @@ export class AutoSaveService {
    * @param numberOfFiles - Number of files in rotation (defaults to 3)
    */
   async performManualAutoSave(formData: any, numberOfFiles: number = 3): Promise<void> {
-    console.log('Manual auto-save triggered');
-    
     try {
       // Use the same rotation logic as automatic saves
       await this.performRotatingAutoSave(formData, numberOfFiles);
-      
-      console.log('Manual auto-save completed');
     } catch (error) {
-      console.error('Manual auto-save failed:', error);
       throw error;
     }
   }
@@ -101,7 +122,6 @@ export class AutoSaveService {
     if (this.saveTimer) {
       clearInterval(this.saveTimer);
       this.saveTimer = null;
-      console.log('Auto-save stopped');
     }
   }
 
@@ -113,17 +133,35 @@ export class AutoSaveService {
       // Use localStorage for both browser and Tauri - simplified single implementation
       await this.saveToBrowserStorage(formData, fileNumber);
       
-      console.log(`Auto-save completed: autosave${fileNumber}`);
+      console.log(`✅ AUTO-SAVE COMPLETED: autosave${fileNumber}`);
       
       // Trigger auto-save notification event for UI
       this.triggerAutoSaveNotification(fileNumber);
       
     } catch (error) {
-      console.error(`Auto-save failed for file ${fileNumber}:`, error);
+      console.error(`❌ AUTO-SAVE FAILED:`, error);
     }
     
     // Move to next file for next cycle
     this.currentFileIndex = (this.currentFileIndex + 1) % numberOfFiles;
+  }
+
+  /**
+   * Enhanced rotating auto-save with empty form detection
+   * @param formData - Current form data to save
+   * @param numberOfFiles - Number of files in rotation
+   * @param checkForData - Function to check if form has any user input
+   */
+  private async performEnhancedRotatingAutoSave(formData: any, numberOfFiles: number, checkForData: () => boolean): Promise<void> {
+    // Check if form has any data before saving
+    const formHasData = checkForData();
+    
+    if (!formHasData) {
+      return; // Skip this save round
+    }
+    
+    // Continue with existing rotating save logic
+    await this.performRotatingAutoSave(formData, numberOfFiles);
   }
 
 
@@ -149,10 +187,8 @@ export class AutoSaveService {
       };
       
       localStorage.setItem(storageKey, JSON.stringify(autoSaveEntry));
-      console.log(`Auto-saved to localStorage: ${storageKey}`);
       
     } catch (error) {
-      console.error('Browser auto-save error:', error);
       throw error;
     }
   }
@@ -194,7 +230,7 @@ export class AutoSaveService {
           const entry: AutoSaveEntry = JSON.parse(stored);
           files.push(entry);
         } catch (error) {
-          console.error(`Error parsing auto-save entry ${i}:`, error);
+          // Silent error handling for parsing issues
         }
       }
     }
@@ -210,7 +246,6 @@ export class AutoSaveService {
     for (let i = 1; i <= 10; i++) {
       localStorage.removeItem(`Auto Save ${i}`);
     }
-    console.log('All auto-save files cleared from localStorage');
   }
 
   /**
@@ -221,9 +256,8 @@ export class AutoSaveService {
     try {
       // Use localStorage for both browser and Tauri - simplified single implementation
       this.cleanupExcessLocalStorageFiles(newNumberOfSaves);
-      console.log(`Cleanup completed: keeping ${newNumberOfSaves} auto-save files in localStorage`);
     } catch (error) {
-      console.error('Failed to cleanup excess auto-save files:', error);
+      // Silent error handling for cleanup issues
     }
   }
 
@@ -248,7 +282,6 @@ export class AutoSaveService {
     // Remove excess files
     keysToRemove.forEach(key => {
       localStorage.removeItem(key);
-      console.log(`Removed excess auto-save from localStorage: ${key}`);
     });
   }
 }

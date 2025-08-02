@@ -43,6 +43,7 @@ The application now includes automatic saving functionality that works transpare
 - Cycles through files: Auto Save 1 → Auto Save 2 → Auto Save 3 → Auto Save 1 (repeat)
 - Creates complete Excel files identical to manual "Save to Excel"
 - No user intervention required - runs transparently in background
+- **Empty Form Detection**: Automatically skips saves when no user input is detected across any visible tabs
 
 **Recent Save Behavior:**
 - Runs automatically every 15 seconds in the background
@@ -52,6 +53,7 @@ The application now includes automatic saving functionality that works transpare
 - First save occurs 15 seconds after page load
 - Runs silently without user notifications
 - Available in File Restore modal alongside auto-save files
+- **Empty Form Detection**: Automatically skips saves when no user input is detected across any visible tabs
 
 ---
 

@@ -21,7 +21,7 @@ interface AutoSaveStatus {
   fileNumber: number | null; // current file number in rotation
 }
 
-export function useAutoSave(formData: any, options: UseAutoSaveOptions = {}) {
+export function useAutoSave(formData: any, options: UseAutoSaveOptions = {}, checkForData?: () => boolean) {
   const autoSaveService = useRef(new AutoSaveService());
   const [status, setStatus] = useState<AutoSaveStatus>({
     isActive: false,
@@ -58,7 +58,8 @@ export function useAutoSave(formData: any, options: UseAutoSaveOptions = {}) {
   useEffect(() => {
     // Start auto-save when we have form data and valid settings
     if (formData && enabled && numberOfFiles > 0 && saveFrequencyMinutes > 0) {
-      autoSaveService.current.startAutoSave(formData, numberOfFiles, saveFrequencyMinutes);
+      // Pass checkForData function to enable enhanced empty form detection
+      autoSaveService.current.startAutoSave(formData, numberOfFiles, saveFrequencyMinutes, checkForData);
       setStatus(prev => ({
         ...prev,
         isActive: true
@@ -75,7 +76,7 @@ export function useAutoSave(formData: any, options: UseAutoSaveOptions = {}) {
     return () => {
       autoSaveService.current.stopAutoSave();
     };
-  }, [numberOfFiles, saveFrequencyMinutes, enabled]); // Remove formData dependency to prevent restart on every form change
+  }, [numberOfFiles, saveFrequencyMinutes, enabled, checkForData]); // Re-run when checkForData changes
 
   useEffect(() => {
     // Update form data in service when it changes
@@ -99,7 +100,18 @@ export function useAutoSave(formData: any, options: UseAutoSaveOptions = {}) {
     }
   };
 
-
+  /**
+   * Enhanced auto-save wrapper with empty form detection
+   * @param checkForData - Function to check if form has any user input
+   */
+  const triggerEnhancedAutoSave = async (checkForData: () => boolean): Promise<void> => {
+    console.log('🔍 DEBUG: useAutoSave - triggerEnhancedAutoSave called');
+    if (formData && numberOfFiles > 0) {
+      await autoSaveService.current.performEnhancedSingleSave(formData, checkForData);
+    } else {
+      console.log('🔍 DEBUG: useAutoSave - triggerEnhancedAutoSave skipped (no formData or numberOfFiles)');
+    }
+  };
 
   // Get auto-save files
   const getAutoSaveFiles = async () => {
@@ -114,6 +126,7 @@ export function useAutoSave(formData: any, options: UseAutoSaveOptions = {}) {
   return {
     status,
     triggerManualSave,
+    triggerEnhancedAutoSave, // New enhanced wrapper
     getAutoSaveFiles,
     clearAutoSaveFiles,
     service: autoSaveService.current

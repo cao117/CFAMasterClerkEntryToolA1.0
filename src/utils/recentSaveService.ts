@@ -17,8 +17,9 @@ export class RecentSaveService {
   /**
    * Starts recent save with 15-second interval
    * @param formData - Current form data to save
+   * @param checkForData - Optional function to check if form has any user input
    */
-  async startRecentSave(formData: any): Promise<void> {
+  async startRecentSave(formData: any, checkForData?: () => boolean): Promise<void> {
     // Clear any existing timer to prevent multiple timers running
     this.stopRecentSave();
     this.currentFormData = formData;
@@ -32,15 +33,23 @@ export class RecentSaveService {
     // 15 seconds in milliseconds (hardcoded as per requirements)
     const intervalMs = 15 * 1000;
     
+    console.log(`🔍 DEBUG: Recent-save timer started - every 15 seconds, enhanced detection: ${!!checkForData}`);
+    
     // Set up recurring recent save - timer starts but no immediate save on page load
     // Recent save will only execute after the first 15-second interval is reached
     this.saveTimer = setInterval(() => {
       if (this.currentFormData) {
-        this.performRecentSave(this.currentFormData);
+        if (checkForData) {
+          // Use enhanced save with empty form detection
+          this.performEnhancedRecentSave(this.currentFormData, checkForData);
+        } else {
+          // Use original save without empty form detection
+          this.performRecentSave(this.currentFormData);
+        }
       }
     }, intervalMs);
     
-    console.log('Recent save started: every 15 seconds');
+
   }
 
   /**
@@ -58,7 +67,6 @@ export class RecentSaveService {
     if (this.saveTimer) {
       clearInterval(this.saveTimer);
       this.saveTimer = null;
-      console.log('Recent save stopped');
     }
   }
 
@@ -71,11 +79,28 @@ export class RecentSaveService {
       // Use localStorage for both browser and Tauri - simplified single implementation
       await this.saveToBrowserStorage(formData);
       
-      console.log('Recent save completed: Recent Save');
+      console.log('✅ RECENT-SAVE COMPLETED: Recent Save');
       
     } catch (error) {
-      console.error('Recent save failed:', error);
+      console.error('❌ RECENT-SAVE FAILED:', error);
     }
+  }
+
+  /**
+   * Enhanced recent save with empty form detection
+   * @param formData - Current form data to save
+   * @param checkForData - Function to check if form has any user input
+   */
+  async performEnhancedRecentSave(formData: any, checkForData: () => boolean): Promise<void> {
+    // Check if form has any data before saving
+    const formHasData = checkForData();
+    
+    if (!formHasData) {
+      return; // Skip this save round
+    }
+    
+    // Continue with existing recent save logic
+    await this.performRecentSave(formData);
   }
 
   /**
@@ -101,10 +126,8 @@ export class RecentSaveService {
       };
       
       localStorage.setItem(storageKey, JSON.stringify(autoSaveEntry));
-      console.log('Recent save stored in localStorage: Recent Save');
       
     } catch (error) {
-      console.error('Browser recent save error:', error);
       throw error;
     }
   }
@@ -139,7 +162,6 @@ export class RecentSaveService {
       
       return null;
     } catch (error) {
-      console.error('Error reading Recent Save file:', error);
       return null;
     }
   }
@@ -150,9 +172,8 @@ export class RecentSaveService {
   async clearRecentSaveFile(): Promise<void> {
     try {
       localStorage.removeItem('Recent Save');
-      console.log('Recent Save file cleared from localStorage');
     } catch (error) {
-      console.error('Failed to clear Recent Save file:', error);
+      // Silent error handling for clear issues
     }
   }
 } 

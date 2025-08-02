@@ -9,13 +9,14 @@
 import { useRef, useEffect } from 'react';
 import { RecentSaveService } from '../utils/recentSaveService';
 
-export function useRecentSave(formData: any) {
+export function useRecentSave(formData: any, checkForData?: () => boolean) {
   const recentSaveService = useRef(new RecentSaveService());
 
   useEffect(() => {
     // Start recent save when we have form data
     if (formData) {
-      recentSaveService.current.startRecentSave(formData);
+      // Pass checkForData function to enable enhanced empty form detection
+      recentSaveService.current.startRecentSave(formData, checkForData);
     } else {
       // Stop recent save if no data
       recentSaveService.current.stopRecentSave();
@@ -24,7 +25,7 @@ export function useRecentSave(formData: any) {
     return () => {
       recentSaveService.current.stopRecentSave();
     };
-  }, []); // Only run once on mount to start the service
+  }, [checkForData]); // Re-run when checkForData changes
 
   useEffect(() => {
     // Update form data in service when it changes
@@ -50,9 +51,23 @@ export function useRecentSave(formData: any) {
     await recentSaveService.current.clearRecentSaveFile();
   };
 
+  /**
+   * Enhanced recent-save wrapper with empty form detection
+   * @param checkForData - Function to check if form has any user input
+   */
+  const triggerEnhancedRecentSave = async (checkForData: () => boolean): Promise<void> => {
+    console.log('🔍 DEBUG: useRecentSave - triggerEnhancedRecentSave called');
+    if (formData) {
+      await recentSaveService.current.performEnhancedRecentSave(formData, checkForData);
+    } else {
+      console.log('🔍 DEBUG: useRecentSave - triggerEnhancedRecentSave skipped (no formData)');
+    }
+  };
+
   return {
     getRecentSaveFile,
     clearRecentSaveFile,
+    triggerEnhancedRecentSave, // New enhanced wrapper
     service: recentSaveService.current
   };
 } 

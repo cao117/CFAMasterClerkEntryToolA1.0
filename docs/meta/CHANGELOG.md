@@ -2,6 +2,39 @@
 
 This changelog records major changes to the CFA Master Clerk Entry Tool, including validation rule changes, documentation restructuring, feature additions, and UI/UX improvements.
 
+### [2025-08-03 02:05:56] Empty Form Detection for Save Prevention
+- **Area:** Auto-save and recent-save system enhancement
+- **Change:** Implemented DOM-based empty form detection to prevent unnecessary saves when no user input exists
+- **Problem**: Auto-save (5 min default) and recent-save (15 seconds) were creating empty save files when users hadn't entered any data
+- **Solution**: Added comprehensive empty form detection system using DOM event delegation
+- **Implementation Details**:
+  - Created `useFormEmptyDetection` hook with DOM event delegation
+  - Added enhanced wrapper functions `triggerEnhancedAutoSave` and `triggerEnhancedRecentSave`
+  - Integrated empty form detection into auto-save and recent-save services
+  - Added comprehensive debug logging throughout the save process
+  - Added user-friendly console logging when saves are skipped
+  - Works with conditional tab rendering (only checks visible tabs)
+  - Zero changes to existing save logic - just adds pre-checks
+- **Debug Features**:
+  - 🔍 DEBUG: Empty form detection logs show when detection is triggered and results
+  - 🔍 DEBUG: Auto-save logs show when saves are triggered, skipped, or completed
+  - 🔍 DEBUG: Recent-save logs show when saves are triggered, skipped, or completed
+  - ✅ DEBUG: Success indicators when saves proceed with user input
+  - ❌ DEBUG: Skip indicators when saves are prevented due to empty forms
+- **Fixes Applied**:
+  - **Default Values Problem**: Updated empty form detection to ignore auto-populated date inputs and default number values (0)
+  - **Recent Save Integration**: Fixed recent save service to properly use enhanced empty form detection
+  - **Auto-Save Integration**: Fixed auto-save service to properly use enhanced empty form detection
+  - **Enhanced Detection Logic**: 
+    - Skip date inputs (auto-populated)
+    - Skip number inputs with default value 0
+    - Only count positive numbers as user input
+    - Proper handling of checkboxes, radios, and selects
+- **Affected Files**: `src/hooks/useFormEmptyDetection.ts` (new), `src/hooks/useAutoSave.ts`, `src/hooks/useRecentSave.ts`, `src/utils/autoSaveService.ts`, `src/utils/recentSaveService.ts`, `src/App.tsx`
+- **Result**: Auto-save and recent-save now skip execution when no user input is detected, preventing empty save files
+- **Rationale**: Improve storage efficiency and prevent unnecessary file creation when users haven't started entering data
+- **Impact**: Users experience cleaner auto-save behavior with no empty files created, plus comprehensive debugging for development
+
 ### [2025-08-03 00:20:16] Breed Sheets Autosave Restoration Bug Fix
 - **Area:** Auto-save system and breed sheets data restoration
 - **Change:** Fixed critical bug where CH (Championship) column values were not being populated after restoring from autosave

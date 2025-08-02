@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { flushSync } from 'react-dom';
 import GeneralTab from './components/GeneralTab';
 import ChampionshipTab from './components/ChampionshipTab';
@@ -17,6 +17,7 @@ import { useToast } from './hooks/useToast';
 import { useScreenGuard } from './hooks/useScreenGuard';
 import { useAutoSave } from './hooks/useAutoSave';
 import { useRecentSave } from './hooks/useRecentSave';
+import { useFormEmptyDetection } from './hooks/useFormEmptyDetection';
 
 import { handleSaveToExcel } from './utils/excelExport';
 import { handleRestoreFromExcel } from './utils/excelImport';
@@ -107,6 +108,9 @@ const DEFAULT_SETTINGS = {
 function App() {
   // Screen guard hook to check if device meets minimum 1280px requirement
   const fallbackType = useScreenGuard();
+  
+  // Form empty detection hook
+  const { containerRef, checkForData } = useFormEmptyDetection();
   
   const [activeTab, setActiveTab] = useState('general');
   const [judges, setJudges] = useState<Judge[]>([]);
@@ -277,32 +281,7 @@ function App() {
       globalSettings,
     };
     
-    console.log('🔍 DEBUG: getShowState called - capturing current form state:', {
-      generalShowDate: state.general?.showDate,
-      generalClubName: state.general?.clubName,
-      generalMasterClerk: state.general?.masterClerk,
-      generalNumberOfJudges: state.general?.numberOfJudges,
-      championshipCountsComplete: state.general?.championshipCounts,
-      championshipCountsDetailed: {
-        gcs: state.general?.championshipCounts?.gcs,
-        lhGcs: state.general?.championshipCounts?.lhGcs,
-        shGcs: state.general?.championshipCounts?.shGcs,
-        total: state.general?.championshipCounts?.total
-      },
-      kittenCountsComplete: state.general?.kittenCounts,
-      kittenCountsDetailed: {
-        lhKittens: state.general?.kittenCounts?.lhKittens,
-        shKittens: state.general?.kittenCounts?.shKittens,
-        total: state.general?.kittenCounts?.total
-      },
-      premiershipCountsComplete: state.general?.premiershipCounts,
-      generalHouseholdPetCount: state.general?.householdPetCount,
-      judgesLength: state.judges?.length || 0,
-      hasChampionshipData: !!state.championship,
-      hasPremiershipData: !!state.premiership,
-      hasKittenData: !!state.kitten,
-      hasHouseholdData: !!state.household
-    });
+
     
     return state;
   };
@@ -313,10 +292,19 @@ function App() {
     enabled: true
   };
 
-  const { status: autoSaveStatus, triggerManualSave } = useAutoSave(getShowState(), autoSaveOptions);
+  const { status: autoSaveStatus, triggerManualSave, triggerEnhancedAutoSave } = useAutoSave(getShowState(), autoSaveOptions, checkForData);
 
   // Initialize recent save (runs independently from auto-save)
-  const { getRecentSaveFile, clearRecentSaveFile } = useRecentSave(getShowState());
+  const { getRecentSaveFile, clearRecentSaveFile, triggerEnhancedRecentSave } = useRecentSave(getShowState(), checkForData);
+
+  // Enhanced save functions with empty form detection
+  const enhancedAutoSave = useCallback(() => {
+    triggerEnhancedAutoSave(checkForData);
+  }, [triggerEnhancedAutoSave, checkForData]);
+
+  const enhancedRecentSave = useCallback(() => {
+    triggerEnhancedRecentSave(checkForData);
+  }, [triggerEnhancedRecentSave, checkForData]);
 
   // Auto-calculate championship counts
   useEffect(() => {
@@ -1095,6 +1083,7 @@ function App() {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div 
+          ref={containerRef}
           className="cfa-card cfa-card-hover"
           style={{ 
             transform: `scale(${zoomLevel / 100})`,
