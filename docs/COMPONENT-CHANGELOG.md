@@ -1,5 +1,32 @@
 # Component Changelog
 
+## [Component v2.3.0] - 2025-08-02 12:03:35
+
+### [COMPONENT-ADDED]
+- **AutoSaveService**: Platform-aware auto-save service class with rotating file management
+- **useAutoSave Hook**: React hook for integrating auto-save with form components
+- **Platform Detection**: Utility for detecting Tauri desktop vs browser environments
+- **Auto-Save Status Indicator**: Visual indicator showing auto-save activity in GeneralTab
+
+### [COMPONENT-ENHANCED]
+- **Excel Export**: Refactored to use shared Excel generation utility for consistency
+- **App Component**: Integrated auto-save functionality with existing form state management
+- **Settings Integration**: Auto-save uses hardcoded settings values (3 files, 5 minutes)
+
+### [COMPONENT-TECHNICAL]
+- **Platform Detection**: `src/utils/platformDetection.ts` - Reliable environment detection
+- **Auto-Save Service**: `src/utils/autoSaveService.ts` - Rotating file management with localStorage fallback
+- **Auto-Save Hook**: `src/hooks/useAutoSave.ts` - React integration with status monitoring
+- **Excel Generation**: Extracted reusable `createExcelFromFormData()` function
+- **Tauri Configuration**: Updated filesystem permissions for AppData directory access
+
+### [COMPONENT-BEHAVIOR]
+- **Desktop Mode**: Creates actual Excel files in AppData directory with rotation
+- **Browser Mode**: Stores Excel files as base64 in localStorage with rotation
+- **Real-time Integration**: Auto-save triggers automatically when form data changes
+- **Status Monitoring**: Custom events and visual indicators for auto-save activity
+- **Error Handling**: Graceful fallbacks between Tauri and browser implementations
+
 ## [Component v1.10.0] - 2025-08-01 19:45:07
 
 ### [COMPONENT-ADDED]

@@ -1,5 +1,25 @@
 # Design Changelog
 
+## [Design v1.13.0] - 2025-08-02 11:14:29
+
+### [DESIGN-REMOVED]
+- **Save Location Settings**: Completely removed file directory/save location configuration from Settings panel
+- **Startup Modal**: Removed mandatory save location setup modal from application startup
+- **File Directory UI**: Removed "File Directory" section from Auto-Save settings tab
+- **Folder Selection**: Removed "Choose Folder" button and associated folder picker functionality
+
+### [DESIGN-RATIONALE]
+- **Simplified UX**: Application now starts immediately without requiring manual directory configuration
+- **Platform-Aware**: File operations use platform-appropriate methods automatically (native dialogs for desktop, browser APIs for web)
+- **Reduced Complexity**: Eliminates user confusion about save location requirements
+- **Modern Approach**: Leverages platform capabilities for better user experience
+
+### [DESIGN-IMPACT]
+- **Startup Flow**: Application is ready to use immediately upon launch
+- **Settings Panel**: Auto-Save section now focuses on auto-save timing and frequency settings only
+- **File Operations**: Excel export/import operations use platform-native file handling
+- **User Experience**: Streamlined workflow without mandatory setup steps
+
 ## [Design v1.12.0] - 2025-01-15 20:30:00
 
 ### [DESIGN-CHANGED]

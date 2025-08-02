@@ -1523,6 +1523,16 @@ export default function GeneralTab({
           </div>
         </div>
 
+        {/* Auto-Save Status Indicator */}
+        <div className="text-center mb-4">
+          <div className="inline-flex items-center px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200">
+            <div className="w-2 h-2 bg-emerald-500 rounded-full mr-2 animate-pulse"></div>
+            <span className="text-sm text-emerald-700 font-medium">
+              Auto-save: Active (every 5 min, 3 files)
+            </span>
+          </div>
+        </div>
+
         {/* Premium Action Buttons */}
         <ActionButtons
           onSaveToExcel={handleSaveToCSVClick}

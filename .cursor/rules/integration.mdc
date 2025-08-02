@@ -1,0 +1,230 @@
+# Cursor AI Code Integration Guide
+
+## Core Principle: Integrate, Don't Replace
+
+When provided with sample code or implementing new functionality, **ALWAYS integrate with existing codebase patterns rather than creating wholesale replacements**.
+
+## Pre-Implementation Analysis
+
+### 1. Codebase Structure Assessment
+Before writing any code, analyze:
+- **File organization patterns** - Where do similar utilities/components live?
+- **Naming conventions** - How are functions, variables, and files named?
+- **Architectural decisions** - What patterns does the codebase follow?
+- **Import/export patterns** - How are modules structured and exported?
+- **Error handling approaches** - What error notification systems exist?
+- **State management patterns** - How is application state handled?
+
+### 2. Existing Implementation Detection
+Search for existing implementations of the functionality you're about to add:
+
+```typescript
+// Search patterns to look for:
+// - Similar function names or purposes
+// - Related utility functions
+// - Existing third-party library usage
+// - Similar UI components or hooks
+// - Related type definitions or interfaces
+// - Environment/platform detection utilities
+// - Similar data processing or API calls
+```
+
+### 3. Duplication Prevention Checklist
+Before implementing, verify:
+- [ ] No existing functionality that serves the same purpose
+- [ ] No existing utilities that can be extended
+- [ ] No existing components that can be enhanced
+- [ ] No existing types/interfaces that can be reused
+- [ ] No existing error handling that should be maintained
+- [ ] No existing state management that should be preserved
+
+## Integration Strategies
+
+### When Sample Code is Provided
+
+#### ✅ DO: Adapt and Integrate
+```typescript
+// If existing function exists, enhance it:
+export function existingFunction(params) {
+  // Preserve existing logic
+  const existingResult = currentImplementation(params);
+  
+  // Add new functionality from sample
+  if (newCondition) {
+    return enhancedLogic(existingResult);
+  }
+  
+  return existingResult;
+}
+```
+
+#### ❌ DON'T: Replace Wholesale
+```typescript
+// Don't create completely new implementations
+export function newFunction() {
+  // This ignores existing patterns and creates duplication
+}
+```
+
+### Enhancement Patterns
+
+#### 1. Conditional Enhancement
+Add new logic while preserving existing behavior:
+```typescript
+export function enhancedFunction(params) {
+  // Preserve existing core logic
+  const baseResult = existingCoreLogic(params);
+  
+  // Add conditional new functionality
+  if (shouldUseNewFeature(params)) {
+    return applyNewLogic(baseResult);
+  }
+  
+  return baseResult;
+}
+```
+
+#### 2. Parameter Extension
+Extend existing functions with backward compatibility:
+```typescript
+export function existingFunction(
+  originalParam: OriginalType,
+  newParam?: NewType // Optional new parameter
+) {
+  // Existing logic remains unchanged
+  const result = originalImplementation(originalParam);
+  
+  // New functionality only when new parameter provided
+  if (newParam) {
+    return enhanceWithNewParam(result, newParam);
+  }
+  
+  return result;
+}
+```
+
+#### 3. Feature Flag Enhancement
+Add feature-specific logic to existing functions:
+```typescript
+export function enhancedFunction(params) {
+  // Preserve existing core functionality
+  const baseResult = existingImplementation(params);
+  
+  // Add new feature logic when conditions are met
+  if (shouldApplyNewFeature(params)) {
+    return applyEnhancement(baseResult, params);
+  }
+  
+  return baseResult;
+}
+```
+
+## Code Style Preservation
+
+### 1. Match Existing Patterns
+- **TypeScript interfaces**: Follow existing naming and structure conventions
+- **React components**: Maintain existing prop patterns and component structure
+- **CSS/Styling**: Use existing Tailwind patterns or styled-components approach
+- **Error handling**: Integrate with existing error boundary or notification systems
+- **Loading states**: Use existing loading indicators and state management
+
+### 2. Consistent Naming
+- Follow existing function naming conventions (camelCase, kebab-case, etc.)
+- Match existing variable naming patterns
+- Use existing prefix/suffix conventions
+- Maintain existing file naming standards
+
+### 3. Import/Export Consistency
+- Follow existing module export patterns (named vs default exports)
+- Maintain existing import grouping and ordering
+- Use existing path alias conventions
+- Follow existing barrel export patterns
+
+## Integration Workflow
+
+### Step 1: Analyze
+1. Identify the feature/functionality to implement
+2. Search codebase for related existing implementations
+3. Document existing patterns and conventions
+4. Identify integration points and potential conflicts
+
+### Step 2: Plan Integration
+1. Determine if enhancement or new implementation is needed
+2. Plan backward compatibility preservation
+3. Identify testing requirements
+4. Plan gradual migration if replacing existing code
+
+### Step 3: Implement
+1. Start with minimal changes to existing code
+2. Add new functionality incrementally
+3. Maintain existing interfaces and contracts
+4. Test both new and existing functionality
+
+### Step 4: Validate
+1. Ensure no existing functionality is broken
+2. Verify new functionality works as expected
+3. Check that code style remains consistent
+4. Validate integration with existing error handling
+
+## Sample Code Integration Rules
+
+When sample code is provided:
+
+### 1. Extract Concepts, Not Code
+- Understand the **purpose** and **approach** of the sample
+- Identify the **key algorithms** or **logic patterns**
+- Note any **best practices** or **architectural decisions**
+- **Don't copy-paste** - adapt to existing codebase
+
+### 2. Map to Existing Structure
+- Find where similar functionality lives in the current codebase
+- Identify existing functions/components that can be enhanced
+- Determine how sample concepts fit into existing architecture
+- Plan integration points with existing state management
+
+### 3. Adapt Interfaces
+- Match existing parameter patterns and types
+- Maintain existing return value structures
+- Preserve existing error handling signatures
+- Keep existing callback and event patterns
+
+### 4. Preserve Existing Behavior
+- Ensure all existing functionality continues to work
+- Maintain backward compatibility
+- Keep existing performance characteristics
+- Preserve existing accessibility features
+
+## Common Integration Anti-Patterns
+
+### ❌ Avoid These Mistakes:
+1. **Creating duplicate utilities** when existing ones can be extended
+2. **Ignoring existing error handling** patterns
+3. **Introducing inconsistent naming** conventions
+4. **Breaking existing interfaces** without migration plan
+5. **Copy-pasting sample code** without adaptation
+6. **Creating parallel implementations** instead of unified solutions
+7. **Ignoring existing state management** patterns
+8. **Not testing existing functionality** after changes
+
+## Success Metrics
+
+A successful integration should:
+- ✅ Add new functionality without breaking existing features
+- ✅ Maintain consistent code style and patterns
+- ✅ Reuse existing utilities and components where possible
+- ✅ Follow established architectural decisions
+- ✅ Preserve existing error handling and user experience
+- ✅ Be easily maintainable by the existing development team
+- ✅ Require minimal changes to existing code
+
+## Quick Reference Checklist
+
+Before implementing any feature:
+- [ ] **Analyzed** existing codebase structure and patterns
+- [ ] **Searched** for existing similar functionality
+- [ ] **Identified** integration points and enhancement opportunities
+- [ ] **Planned** backward compatibility preservation
+- [ ] **Adapted** sample code concepts to existing patterns
+- [ ] **Tested** both new and existing functionality
+- [ ] **Validated** code style consistency
+- [ ] **Documented** any new patterns or breaking changes

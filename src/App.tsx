@@ -9,9 +9,11 @@ import BreedSheetsTab from './components/BreedSheetsTab';
 import SettingsPanel from './components/SettingsPanel';
 import ToastContainer from './components/ToastContainer';
 import AutoSaveNotificationBar from './components/AutoSaveNotificationBar';
+import { AutoSaveDebugInfo } from './components/AutoSaveDebugInfo';
 
 import { useToast } from './hooks/useToast';
 import { useScreenGuard } from './hooks/useScreenGuard';
+import { useAutoSave } from './hooks/useAutoSave';
 import { handleSaveToExcel } from './utils/excelExport';
 import { handleRestoreFromExcel } from './utils/excelImport';
 
@@ -170,10 +172,6 @@ function App() {
   // Toast notification system
   const { toasts, removeToast, showSuccess, showError, showWarning, showInfo } = useToast();
 
-  // Auto-save notification state
-  const [isAutoSaveVisible, setIsAutoSaveVisible] = useState(false);
-  const [lastSavedTime, setLastSavedTime] = useState('2 minutes ago');
-
   // Auto-save notification handlers
   const handleViewRecovery = () => {
     // TODO: Implement recovery options functionality
@@ -181,7 +179,9 @@ function App() {
   };
 
   const handleDismissAutoSave = () => {
-    setIsAutoSaveVisible(false);
+    // Hide the auto-save notification temporarily
+    // It will reappear on next auto-save
+    console.log('Auto-save notification dismissed');
   };
 
   // Handle settings close
@@ -189,13 +189,9 @@ function App() {
     setIsSettingsOpen(false);
   };
 
-  // Demo effect to show auto-save notification after 2 seconds
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsAutoSaveVisible(true);
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, []);
+  // Auto-save notification visibility
+  const [isAutoSaveVisible, setIsAutoSaveVisible] = useState(false);
+  const [lastSavedTime, setLastSavedTime] = useState('');
 
 
 
@@ -304,6 +300,76 @@ function App() {
       }
     }));
   }, [showData.kittenCounts.lhKittens, showData.kittenCounts.shKittens]);
+
+  // Function to return the full show state for Excel export (after all state is declared)
+  const getShowState = () => ({
+    general: showData,
+    judges,
+    championship: championshipTabData,
+    premiership: premiershipTabData,
+    kitten: kittenTabData,
+    household: householdPetTabData, // Don't include householdPetCount here - it's already in general.householdPetCount
+    breedSheets: breedSheetsTabData,
+    globalSettings,
+  });
+
+  // Auto-save options configuration (matching SettingsPanel hardcoded values)
+  const autoSaveOptions = {
+    numberOfFiles: 3, // Matches hardcoded value in SettingsPanel
+    saveFrequencyMinutes: 5, // Matches hardcoded value in SettingsPanel
+    enabled: true
+  };
+
+  // Initialize auto-save with current form data (after all state is declared)
+  const { status: autoSaveStatus, triggerManualSave } = useAutoSave(getShowState(), autoSaveOptions);
+
+  // Auto-save notification effect
+  useEffect(() => {
+    // Show notification when auto-save becomes active and has a last save time
+    if (autoSaveStatus.isActive && autoSaveStatus.lastSaveTime) {
+      setIsAutoSaveVisible(true);
+      setLastSavedTime(new Date(autoSaveStatus.lastSaveTime).toLocaleTimeString());
+    }
+  }, [autoSaveStatus.isActive, autoSaveStatus.lastSaveTime]);
+  
+  // Handler for restoring from auto-save file
+  const handleRestoreAutoSave = (result: any) => {
+    if (!result || !result.showState) {
+      console.error('Invalid auto-save data format');
+      return;
+    }
+    
+    try {
+      const { showState: restoredState, settings: importedSettings } = result;
+      
+      // Update global settings if imported (same as Load from Excel)
+      if (importedSettings) {
+        setGlobalSettings((prev: any) => ({
+          ...prev,
+          ...importedSettings
+        }));
+      }
+      
+      // Update all state with restored data (same as Load from Excel - direct replacement)
+      setShowData(restoredState.general);
+      setJudges(restoredState.judges);
+      setChampionshipTabData(restoredState.championship);
+      setPremiershipTabData(restoredState.premiership);
+      setKittenTabData(restoredState.kitten);
+      setHouseholdPetTabData(restoredState.household);
+      
+      // Initialize breed sheets data if present in restored state (same as Load from Excel)
+      if (restoredState.breedSheets) {
+        setBreedSheetsTabData(restoredState.breedSheets);
+      }
+      
+      // Show success toast (equivalent to Load from Excel success callback)
+      showSuccess('Auto-save Restored', 'Show data has been successfully restored from auto-save file.');
+    } catch (error) {
+      console.error('Error restoring auto-save:', error);
+      showError('Restore Failed', 'An error occurred while restoring from auto-save file.');
+    }
+  };
 
   // Update number of judges when judges array changes
   useEffect(() => {
@@ -463,20 +529,7 @@ function App() {
     resetColumns(setKittenTabData as React.Dispatch<React.SetStateAction<unknown>>, 'kitten');
   };
 
-  // Function to return the full show state for Excel export
-  const getShowState = () => ({
-    general: showData,
-    judges,
-    championship: championshipTabData,
-    premiership: premiershipTabData,
-    kitten: kittenTabData,
-    household: {
-      householdPetCount: showData.householdPetCount,
-      ...householdPetTabData,
-    },
-    breedSheets: breedSheetsTabData,
-    globalSettings,
-  });
+
 
   // Function to handle Excel import and restore application state
   const handleCSVImport = async () => {
@@ -970,12 +1023,19 @@ function App() {
         </div>
       </div>
 
+      {/* Auto-Save Debug Info */}
+      <div className="max-w-7xl mx-auto px-4">
+        <AutoSaveDebugInfo />
+      </div>
+      
       {/* Auto-Save Notification Bar */}
       <AutoSaveNotificationBar 
         isVisible={isAutoSaveVisible}
         lastSavedTime={lastSavedTime}
         onViewRecovery={handleViewRecovery}
         onDismiss={handleDismissAutoSave}
+        onRestoreAutoSave={handleRestoreAutoSave}
+        onManualAutoSave={triggerManualSave}
       />
 
       {/* Main Content */}

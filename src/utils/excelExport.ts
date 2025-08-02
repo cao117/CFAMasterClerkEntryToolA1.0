@@ -2,6 +2,7 @@
 // Converts show data to Excel format with multiple worksheets
 
 import * as XLSX from 'xlsx';
+import { isDesktop } from './platformDetection';
 
 export interface GetShowStateFunction {
   (): any;
@@ -15,6 +16,24 @@ export interface ErrorCallback {
   (title: string, message: string): void;
 }
 
+/**
+ * Creates Excel buffer from form data - reusable for both manual save and auto-save
+ * @param showState - The complete show state object
+ * @returns Promise<{buffer: Uint8Array, filename: string}> - Excel data ready for saving
+ */
+export function createExcelFromFormData(showState: any): { buffer: Uint8Array, filename: string } {
+  // Use the comprehensive exportShowToExcel function
+  const { workbook, filename } = exportShowToExcel(showState);
+  
+  // Convert workbook to buffer
+  const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+  
+  return {
+    buffer: new Uint8Array(excelBuffer),
+    filename
+  };
+}
+
 export function handleSaveToExcel(
   getShowState: GetShowStateFunction,
   showSuccess: SuccessCallback,
@@ -23,14 +42,11 @@ export function handleSaveToExcel(
   try {
     const showState = getShowState();
     
-    // Use the comprehensive exportShowToExcel function
-    const { workbook, filename } = exportShowToExcel(showState);
-    
-    // Convert workbook to buffer
-    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    // Use the new shared Excel generation function
+    const { buffer, filename } = createExcelFromFormData(showState);
     
     // Environment-aware file saving
-    saveExcelFileWithEnvironmentDetection(excelBuffer, filename, showSuccess, showError);
+    saveExcelFileWithEnvironmentDetection(buffer, filename, showSuccess, showError);
   } catch (error) {
     showError('Export Error', 'An error occurred while exporting the Excel file.');
   }
@@ -47,8 +63,8 @@ async function saveExcelFileWithEnvironmentDetection(
   showError: ErrorCallback
 ) {
   try {
-    // Check if we're in a Tauri desktop app
-    if (typeof window !== 'undefined' && (window as any).__TAURI__) {
+    // Use our new platform detection utility
+    if (isDesktop()) {
       // TODO: Implement Tauri file saving when Tauri environment is properly configured
       console.log('Tauri environment detected - using browser fallback for now');
       saveFileInLegacyBrowser(excelBuffer, filename, showSuccess);

@@ -22,6 +22,28 @@
       "csp": null
     }
   },
+  "plugins": {
+    "fs": {
+      "scope": [
+        "$APPDATA/**",
+        "$APPDATA/*"
+      ]
+    }
+  },
+  "allowlist": {
+    "fs": {
+      "all": false,
+      "readFile": true,
+      "writeFile": true,
+      "readDir": true,
+      "scope": [
+        "$APPDATA/**"
+      ]
+    },
+    "path": {
+      "all": true
+    }
+  },
   "bundle": {
     "active": true,
     "targets": "all",

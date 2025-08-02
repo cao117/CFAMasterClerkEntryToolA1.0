@@ -13,10 +13,33 @@ The application is ready to use immediately upon launch. All file operations (Ex
 **Tauri Desktop Apps:**
 - Uses native OS file dialogs for Excel export/import
 - Full file system access with automatic file handling
+- **Auto-save**: Creates actual Excel files in AppData directory with 3-file rotation
 
 **Web Browsers:**
 - Uses File System Access API where supported for Excel operations
 - Fallback to download/upload methods for unsupported browsers
+- **Auto-save**: Stores Excel files as base64 in localStorage with 3-file rotation
+
+### Auto-Save System
+
+The application now includes automatic saving functionality that works transparently in the background:
+
+**Auto-Save Features:**
+- **Automatic Operation**: Saves form data every 5 minutes automatically
+- **Rotating Files**: Maintains 3 auto-save files, overwriting oldest when limit reached
+- **Platform Aware**: Uses appropriate storage method based on environment
+- **Real-time Updates**: Monitors form changes and saves current state
+- **Visual Indicators**: Shows auto-save status with pulsing indicator
+
+**Auto-Save File Locations:**
+- **Desktop (Tauri)**: `%APPDATA%/com.cfa.masterclerk.entry/autosave1.xlsx`, `autosave2.xlsx`, `autosave3.xlsx`
+- **Browser**: localStorage keys `cfa_autosave1`, `cfa_autosave2`, `cfa_autosave3`
+
+**Auto-Save Behavior:**
+- Starts automatically when form has data
+- Cycles through files: autosave1 → autosave2 → autosave3 → autosave1 (repeat)
+- Creates complete Excel files identical to manual "Save to Excel"
+- No user intervention required - runs transparently in background
 
 ---
 

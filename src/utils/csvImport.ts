@@ -682,13 +682,16 @@ function parseCellValue(cellValue: string): { catNumber: string; status: string;
  * Validates the restored state to ensure it contains valid data
  */
 function validateRestoredState(state: ImportedShowState): boolean {
-  // Basic validation - check if essential fields are present
-  const hasShowDate = !!state.general.showDate;
-  const hasClubName = !!state.general.clubName;
-  const hasMasterClerk = !!state.general.masterClerk;
-  const hasJudges = state.judges.length > 0;
-  
-  return !!(hasShowDate && hasClubName && hasMasterClerk && hasJudges);
+  // Relaxed validation - only check if basic structure exists (support auto-save incomplete data)
+  return !!(
+    state.general && 
+    typeof state.general === 'object' &&
+    Array.isArray(state.judges) &&
+    state.championship && 
+    typeof state.championship === 'object' &&
+    state.premiership && 
+    typeof state.premiership === 'object'
+  );
 }
 
 /**
