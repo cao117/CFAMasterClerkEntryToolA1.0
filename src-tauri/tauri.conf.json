@@ -9,17 +9,22 @@
     "frontendDist": "../dist"
   },
   "app": {
+    "withGlobalTauri": true,
     "windows": [
       {
         "title": "CFA_MC_Entry_v0.1",
-        "width": 800,
-        "height": 600,
+        "width": 1280,
+        "height": 800,
+        "minWidth": 1280,
         "resizable": true,
-        "fullscreen": true
+        "fullscreen": false,
+        "decorations": false,
+        "devtools": true,
+        "maximized": true
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:;"
     }
   },
   "plugins": {
@@ -28,20 +33,6 @@
         "$APPDATA/**",
         "$APPDATA/*"
       ]
-    }
-  },
-  "allowlist": {
-    "fs": {
-      "all": false,
-      "readFile": true,
-      "writeFile": true,
-      "readDir": true,
-      "scope": [
-        "$APPDATA/**"
-      ]
-    },
-    "path": {
-      "all": true
     }
   },
   "bundle": {

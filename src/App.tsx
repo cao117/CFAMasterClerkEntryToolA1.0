@@ -12,6 +12,7 @@ import ToastContainer from './components/ToastContainer';
 import AutoSaveNotificationBar from './components/AutoSaveNotificationBar';
 import { AutoSaveFileList } from './components/AutoSaveFileList';
 import ResumeWorkModal from './components/ResumeWorkModal';
+import { TitleBar } from './components/TitleBar';
 
 
 import { useToast } from './hooks/useToast';
@@ -20,6 +21,7 @@ import { useAutoSave } from './hooks/useAutoSave';
 import { useRecentSave } from './hooks/useRecentSave';
 import { useFormEmptyDetection } from './hooks/useFormEmptyDetection';
 import { useRecentWorkDetection } from './hooks/useRecentWorkDetection';
+import { useGlobalShortcuts } from './hooks/useGlobalShortcuts';
 
 import { handleSaveToExcel } from './utils/excelExport';
 import { handleRestoreFromExcel, parseExcelAndRestoreState } from './utils/excelImport';
@@ -113,6 +115,9 @@ function App() {
   
   // Form empty detection hook
   const { containerRef, checkForData } = useFormEmptyDetection();
+  
+  // Global shortcuts hook for cross-platform keyboard shortcuts
+  useGlobalShortcuts();
   
   const [activeTab, setActiveTab] = useState('general');
   const [judges, setJudges] = useState<Judge[]>([]);
@@ -933,170 +938,173 @@ function App() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Toast Notifications */}
-      <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
+      <TitleBar />
+      
+      <div className="pt-12">
+        {/* Toast Notifications */}
+        <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
 
-      {/* Header */}
-      <header className="cfa-header">
-        <div className="max-w-7xl mx-auto px-8 py-8">
-          <div className="flex items-center justify-between">
-            {/* Logo */}
-            <div className="flex items-center">
-              <img src={cfaLogo} alt="CFA Logo" className="h-12 w-auto" />
-            </div>
-            
-            {/* Centered Title */}
-            <div className="flex-1 flex flex-col items-center justify-center">
-              <h1
-                className="text-3xl md:text-4xl font-bold modern-header-gradient text-center"
-                style={{
-                  background: 'linear-gradient(90deg, #a89256 0%, #d6cfa1 60%, #e5e4e2 100%)',
-                  color: '#b7a97a',
-                  WebkitBackgroundClip: 'text',
-                  backgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  textShadow: '0 2px 8px #b7a97a33',
-                  fontFamily: 'Inter, Arial, Helvetica Neue, sans-serif',
-                  letterSpacing: '0.01em',
-                  margin: 0,
-                  padding: 0,
-                }}
-              >
-                CFA Master Clerk Entry Tool
-              </h1>
-              <p
-                className="mt-1 text-sm md:text-base font-normal text-center"
-                style={{
-                  color: '#d6d5ce', // soft platinum/muted gray
-                  fontWeight: 400,
-                  letterSpacing: '0.03em',
-                  fontFamily: 'Inter, Arial, Helvetica Neue, sans-serif',
-                  background: 'none',
-                  border: 'none',
-                  boxShadow: 'none',
-                  margin: 0,
-                  padding: 0,
-                }}
-              >
-                Professional Cat Show Data Management
-              </p>
-            </div>
-            
-            {/* Zoom Controls and Settings */}
-            <div className="flex items-center gap-3">
-              {/* Zoom Controls */}
-              <div className="flex items-center gap-2 bg-black/20 backdrop-blur-sm rounded-lg px-3 py-2 border border-[#C7B273]/30">
-                <button
-                  onClick={handleZoomOut}
-                  className="w-8 h-8 flex items-center justify-center rounded-md bg-[#C7B273]/20 hover:bg-[#C7B273]/30 transition-colors duration-200 text-[#C7B273] hover:text-white"
-                  title="Zoom Out (Shift + Scroll)"
+        {/* Header */}
+        <header className="cfa-header">
+          <div className="max-w-7xl mx-auto px-8 py-8">
+            <div className="flex items-center justify-between">
+              {/* Logo */}
+              <div className="flex items-center">
+                <img src={cfaLogo} alt="CFA Logo" className="h-12 w-auto" />
+              </div>
+              
+              {/* Centered Title */}
+              <div className="flex-1 flex flex-col items-center justify-center">
+                <h1
+                  className="text-3xl md:text-4xl font-bold modern-header-gradient text-center"
+                  style={{
+                    background: 'linear-gradient(90deg, #a89256 0%, #d6cfa1 60%, #e5e4e2 100%)',
+                    color: '#b7a97a',
+                    WebkitBackgroundClip: 'text',
+                    backgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    textShadow: '0 2px 8px #b7a97a33',
+                    fontFamily: 'Inter, Arial, Helvetica Neue, sans-serif',
+                    letterSpacing: '0.01em',
+                    margin: 0,
+                    padding: 0,
+                  }}
                 >
-                  <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
-                    <path d="M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  CFA Master Clerk Entry Tool
+                </h1>
+                <p
+                  className="mt-1 text-sm md:text-base font-normal text-center"
+                  style={{
+                    color: '#d6d5ce', // soft platinum/muted gray
+                    fontWeight: 400,
+                    letterSpacing: '0.03em',
+                    fontFamily: 'Inter, Arial, Helvetica Neue, sans-serif',
+                    background: 'none',
+                    border: 'none',
+                    boxShadow: 'none',
+                    margin: 0,
+                    padding: 0,
+                  }}
+                >
+                  Professional Cat Show Data Management
+                </p>
+              </div>
+              
+              {/* Zoom Controls and Settings */}
+              <div className="flex items-center gap-3">
+                {/* Zoom Controls */}
+                <div className="flex items-center gap-2 bg-black/20 backdrop-blur-sm rounded-lg px-3 py-2 border border-[#C7B273]/30">
+                  <button
+                    onClick={handleZoomOut}
+                    className="w-8 h-8 flex items-center justify-center rounded-md bg-[#C7B273]/20 hover:bg-[#C7B273]/30 transition-colors duration-200 text-[#C7B273] hover:text-white"
+                    title="Zoom Out (Shift + Scroll)"
+                  >
+                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
+                      <path d="M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                    </svg>
+                  </button>
+                  <span className="text-sm font-medium text-[#C7B273] min-w-[3rem] text-center">
+                    {zoomLevel}%
+                  </span>
+                  <button
+                    onClick={handleZoomIn}
+                    className="w-8 h-8 flex items-center justify-center rounded-md bg-[#C7B273]/20 hover:bg-[#C7B273]/30 transition-colors duration-200 text-[#C7B273] hover:text-white"
+                    title="Zoom In (Shift + Scroll)"
+                  >
+                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
+                      <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                    </svg>
+                  </button>
+                </div>
+                
+                {/* File Restore Button */}
+                <button
+                  onClick={handleShowAutoSaveFiles}
+                  className="w-10 h-10 flex items-center justify-center rounded-lg bg-[#C7B273]/20 hover:bg-[#C7B273]/30 transition-all duration-200 text-[#C7B273] hover:text-white border border-[#C7B273]/30 hover:border-[#C7B273]/50"
+                  title="Test Auto-Saves"
+                >
+                  <svg width="20" height="20" fill="none" viewBox="0 0 24 24" className="w-5 h-5">
+                    {/* Document with folded corner */}
+                    <rect x="4" y="4" width="14" height="18" rx="1" stroke="currentColor" strokeWidth="2" fill="none"/>
+                    <path d="M18 4L20 6L18 8" stroke="currentColor" strokeWidth="2" fill="none"/>
+                    
+                    {/* Document lines */}
+                    <path d="M6 8h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                    <path d="M6 11h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                    <path d="M6 14h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                    
+                    {/* Refresh arrow circle */}
+                    <circle cx="16" cy="16" r="3" stroke="currentColor" strokeWidth="2" fill="none"/>
+                    <path d="M16 13L16 16L19 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M19 16L16 16L16 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </button>
-                <span className="text-sm font-medium text-[#C7B273] min-w-[3rem] text-center">
-                  {zoomLevel}%
-                </span>
+                
+                {/* Settings Gear */}
                 <button
-                  onClick={handleZoomIn}
-                  className="w-8 h-8 flex items-center justify-center rounded-md bg-[#C7B273]/20 hover:bg-[#C7B273]/30 transition-colors duration-200 text-[#C7B273] hover:text-white"
-                  title="Zoom In (Shift + Scroll)"
+                  onClick={() => setIsSettingsOpen(true)}
+                  className="w-10 h-10 flex items-center justify-center rounded-lg bg-[#C7B273]/20 hover:bg-[#C7B273]/30 transition-all duration-200 text-[#C7B273] hover:text-white border border-[#C7B273]/30 hover:border-[#C7B273]/50"
+                  title="Settings"
                 >
-                  <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
-                    <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
+                    <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke="currentColor" strokeWidth="2"/>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1Z" stroke="currentColor" strokeWidth="2"/>
                   </svg>
                 </button>
               </div>
-              
-              {/* File Restore Button */}
-              <button
-                onClick={handleShowAutoSaveFiles}
-                className="w-10 h-10 flex items-center justify-center rounded-lg bg-[#C7B273]/20 hover:bg-[#C7B273]/30 transition-all duration-200 text-[#C7B273] hover:text-white border border-[#C7B273]/30 hover:border-[#C7B273]/50"
-                title="Test Auto-Saves"
-              >
-                <svg width="20" height="20" fill="none" viewBox="0 0 24 24" className="w-5 h-5">
-                  {/* Document with folded corner */}
-                  <rect x="4" y="4" width="14" height="18" rx="1" stroke="currentColor" strokeWidth="2" fill="none"/>
-                  <path d="M18 4L20 6L18 8" stroke="currentColor" strokeWidth="2" fill="none"/>
-                  
-                  {/* Document lines */}
-                  <path d="M6 8h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  <path d="M6 11h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  <path d="M6 14h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  
-                  {/* Refresh arrow circle */}
-                  <circle cx="16" cy="16" r="3" stroke="currentColor" strokeWidth="2" fill="none"/>
-                  <path d="M16 13L16 16L19 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M19 16L16 16L16 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </button>
-              
-              {/* Settings Gear */}
-              <button
-                onClick={() => setIsSettingsOpen(true)}
-                className="w-10 h-10 flex items-center justify-center rounded-lg bg-[#C7B273]/20 hover:bg-[#C7B273]/30 transition-all duration-200 text-[#C7B273] hover:text-white border border-[#C7B273]/30 hover:border-[#C7B273]/50"
-                title="Settings"
-              >
-                <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
-                  <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke="currentColor" strokeWidth="2"/>
-                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1Z" stroke="currentColor" strokeWidth="2"/>
-                </svg>
-              </button>
             </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* Tab Navigation */}
-      {/* --- Refined, business-class tab bar --- */}
-      <div className="w-full flex justify-center items-center py-4" style={{ background: 'rgba(20,20,20,0.92)', borderBottom: '2px solid #C7B273' }}>
-        <div className="flex gap-2 px-2">
-          {/* General Tab */}
-          <button
-            className={`flex items-center gap-2 px-5 py-2 rounded-full font-bold text-base transition-all duration-200 focus:outline-none modern-tab-font border-b-2 ${activeTab === 'general' ? 'border-[#C7B273] text-[#C7B273] shadow-gold' : 'border-transparent text-gray-200 hover:border-[#C7B273] hover:text-[#C7B273]'}`}
-            onClick={() => setActiveTab('general')}
-            aria-current={activeTab === 'general'}
-          >
-            <svg width="18" height="18" fill="none" viewBox="0 0 20 20"><rect x="3" y="7" width="14" height="10" rx="2" stroke="#C7B273" strokeWidth="2"/><rect x="7" y="3" width="6" height="4" rx="1" stroke="#C7B273" strokeWidth="2"/></svg>
-            General
-          </button>
-          {/* Championship Tab */}
-          {championshipTabDisabled ? (
-            <Tooltip content="Complete General Info to unlock.">
+        {/* Tab Navigation */}
+        {/* --- Refined, business-class tab bar --- */}
+        <div className="w-full flex justify-center items-center py-4" style={{ background: 'rgba(20,20,20,0.92)', borderBottom: '2px solid #C7B273' }}>
+          <div className="flex gap-2 px-2">
+            {/* General Tab */}
+            <button
+              className={`flex items-center gap-2 px-5 py-2 rounded-full font-bold text-base transition-all duration-200 focus:outline-none modern-tab-font border-b-2 ${activeTab === 'general' ? 'border-[#C7B273] text-[#C7B273] shadow-gold' : 'border-transparent text-gray-200 hover:border-[#C7B273] hover:text-[#C7B273]'}`}
+              onClick={() => setActiveTab('general')}
+              aria-current={activeTab === 'general'}
+            >
+              <svg width="18" height="18" fill="none" viewBox="0 0 20 20"><rect x="3" y="7" width="14" height="10" rx="2" stroke="#C7B273" strokeWidth="2"/><rect x="7" y="3" width="6" height="4" rx="1" stroke="#C7B273" strokeWidth="2"/></svg>
+              General
+            </button>
+            {/* Championship Tab */}
+            {championshipTabDisabled ? (
+              <Tooltip content="Complete General Info to unlock.">
+                <button
+                  className={`flex items-center gap-2 px-5 py-2 rounded-full font-bold text-base transition-all duration-200 focus:outline-none modern-tab-font border-b-2 disabled`}
+                  aria-disabled="true"
+                  tabIndex={-1}
+                >
+                  <svg width="18" height="18" fill="none" viewBox="0 0 20 20"><path d="M10 2l2.39 4.84 5.34.78-3.87 3.77.91 5.32L10 13.27l-4.77 2.51.91-5.32-3.87-3.77 5.34-.78L10 2z" stroke="#C7B273" strokeWidth="2" fill="none"/></svg>
+                  Championship
+                </button>
+              </Tooltip>
+            ) : (
               <button
-                className={`flex items-center gap-2 px-5 py-2 rounded-full font-bold text-base transition-all duration-200 focus:outline-none modern-tab-font border-b-2 disabled`}
-                aria-disabled="true"
-                tabIndex={-1}
+                className={`flex items-center gap-2 px-5 py-2 rounded-full font-bold text-base transition-all duration-200 focus:outline-none modern-tab-font border-b-2 ${activeTab === 'championship' ? 'border-[#C7B273] text-[#C7B273] shadow-gold' : 'border-transparent text-gray-200 hover:border-[#C7B273] hover:text-[#C7B273]'}`}
+                onClick={() => setActiveTab('championship')}
+                aria-disabled={false}
+                tabIndex={0}
               >
                 <svg width="18" height="18" fill="none" viewBox="0 0 20 20"><path d="M10 2l2.39 4.84 5.34.78-3.87 3.77.91 5.32L10 13.27l-4.77 2.51.91-5.32-3.87-3.77 5.34-.78L10 2z" stroke="#C7B273" strokeWidth="2" fill="none"/></svg>
                 Championship
               </button>
-            </Tooltip>
-          ) : (
-            <button
-              className={`flex items-center gap-2 px-5 py-2 rounded-full font-bold text-base transition-all duration-200 focus:outline-none modern-tab-font border-b-2 ${activeTab === 'championship' ? 'border-[#C7B273] text-[#C7B273] shadow-gold' : 'border-transparent text-gray-200 hover:border-[#C7B273] hover:text-[#C7B273]'}`}
-              onClick={() => setActiveTab('championship')}
-              aria-disabled={false}
-              tabIndex={0}
-            >
-              <svg width="18" height="18" fill="none" viewBox="0 0 20 20"><path d="M10 2l2.39 4.84 5.34.78-3.87 3.77.91 5.32L10 13.27l-4.77 2.51.91-5.32-3.87-3.77 5.34-.78L10 2z" stroke="#C7B273" strokeWidth="2" fill="none"/></svg>
-              Championship
-            </button>
-          )}
-          {/* Kittens Tab */}
-          {kittenTabDisabled ? (
-            <Tooltip content="Complete General Info to unlock.">
-              <button
-                className={`flex items-center gap-2 px-5 py-2 rounded-full font-bold text-base transition-all duration-200 focus:outline-none modern-tab-font border-b-2 disabled`}
-                aria-disabled="true"
-                tabIndex={-1}
-              >
-                <svg width="18" height="18" fill="none" viewBox="0 0 20 20"><ellipse cx="10" cy="13" rx="6" ry="4" stroke="#C7B273" strokeWidth="2"/><circle cx="7" cy="8" r="2" stroke="#C7B273" strokeWidth="2"/><circle cx="13" cy="8" r="2" stroke="#C7B273" strokeWidth="2"/></svg>
-                Kittens
-              </button>
-            </Tooltip>
-          ) : (
+            )}
+            {/* Kittens Tab */}
+            {kittenTabDisabled ? (
+              <Tooltip content="Complete General Info to unlock.">
+                <button
+                  className={`flex items-center gap-2 px-5 py-2 rounded-full font-bold text-base transition-all duration-200 focus:outline-none modern-tab-font border-b-2 disabled`}
+                  aria-disabled="true"
+                  tabIndex={-1}
+                >
+                  <svg width="18" height="18" fill="none" viewBox="0 0 20 20"><ellipse cx="10" cy="13" rx="6" ry="4" stroke="#C7B273" strokeWidth="2"/><circle cx="7" cy="8" r="2" stroke="#C7B273" strokeWidth="2"/><circle cx="13" cy="8" r="2" stroke="#C7B273" strokeWidth="2"/></svg>
+                  Kittens
+                </button>
+              </Tooltip>
+            ) : (
                   <button
               className={`flex items-center gap-2 px-5 py-2 rounded-full font-bold text-base transition-all duration-200 focus:outline-none modern-tab-font border-b-2 ${activeTab === 'kitten' ? 'border-[#C7B273] text-[#C7B273] shadow-gold' : 'border-transparent text-gray-200 hover:border-[#C7B273] hover:text-[#C7B273]'}`}
               onClick={() => setActiveTab('kitten')}
@@ -1106,145 +1114,144 @@ function App() {
               <svg width="18" height="18" fill="none" viewBox="0 0 20 20"><ellipse cx="10" cy="13" rx="6" ry="4" stroke="#C7B273" strokeWidth="2"/><circle cx="7" cy="8" r="2" stroke="#C7B273" strokeWidth="2"/><circle cx="13" cy="8" r="2" stroke="#C7B273" strokeWidth="2"/></svg>
               Kittens
                   </button>
-          )}
-          {/* Premiership Tab */}
-          {premiershipTabDisabled ? (
-            <Tooltip content="Complete General Info to unlock.">
+            )}
+            {/* Premiership Tab */}
+            {premiershipTabDisabled ? (
+              <Tooltip content="Complete General Info to unlock.">
+                <button
+                  className={`flex items-center gap-2 px-5 py-2 rounded-full font-bold text-base transition-all duration-200 focus:outline-none modern-tab-font border-b-2 disabled`}
+                  aria-disabled="true"
+                  tabIndex={-1}
+                >
+                  <svg width="18" height="18" fill="none" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" stroke="#C7B273" strokeWidth="2"/><text x="10" y="15" textAnchor="middle" fontSize="10" fill="#C7B273">PR</text></svg>
+                  Premiership
+                </button>
+              </Tooltip>
+            ) : (
               <button
-                className={`flex items-center gap-2 px-5 py-2 rounded-full font-bold text-base transition-all duration-200 focus:outline-none modern-tab-font border-b-2 disabled`}
-                aria-disabled="true"
-                tabIndex={-1}
+                className={`flex items-center gap-2 px-5 py-2 rounded-full font-bold text-base transition-all duration-200 focus:outline-none modern-tab-font border-b-2 ${activeTab === 'premiership' ? 'border-[#C7B273] text-[#C7B273] shadow-gold' : 'border-transparent text-gray-200 hover:border-[#C7B273] hover:text-[#C7B273]'}`}
+                onClick={() => setActiveTab('premiership')}
+                aria-disabled={false}
+                tabIndex={0}
               >
                 <svg width="18" height="18" fill="none" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" stroke="#C7B273" strokeWidth="2"/><text x="10" y="15" textAnchor="middle" fontSize="10" fill="#C7B273">PR</text></svg>
                 Premiership
               </button>
-            </Tooltip>
-          ) : (
-            <button
-              className={`flex items-center gap-2 px-5 py-2 rounded-full font-bold text-base transition-all duration-200 focus:outline-none modern-tab-font border-b-2 ${activeTab === 'premiership' ? 'border-[#C7B273] text-[#C7B273] shadow-gold' : 'border-transparent text-gray-200 hover:border-[#C7B273] hover:text-[#C7B273]'}`}
-              onClick={() => setActiveTab('premiership')}
-              aria-disabled={false}
-              tabIndex={0}
-            >
-              <svg width="18" height="18" fill="none" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" stroke="#C7B273" strokeWidth="2"/><text x="10" y="15" textAnchor="middle" fontSize="10" fill="#C7B273">PR</text></svg>
-              Premiership
-            </button>
-          )}
-          {/* Household Pet Tab */}
-          {showData.householdPetCount <= 0 || !isShowInfoValid(showData) || !areJudgesValid(judges) ? (
-            <Tooltip content="Complete General Info to unlock.">
+            )}
+            {/* Household Pet Tab */}
+            {showData.householdPetCount <= 0 || !isShowInfoValid(showData) || !areJudgesValid(judges) ? (
+              <Tooltip content="Complete General Info to unlock.">
+                <button
+                  className={`flex items-center gap-2 px-5 py-2 rounded-full font-bold text-base transition-all duration-200 focus:outline-none modern-tab-font border-b-2 disabled`}
+                  aria-disabled="true"
+                  tabIndex={-1}
+                >
+                  <svg width="18" height="18" fill="none" viewBox="0 0 20 20"><rect x="4" y="8" width="12" height="8" rx="2" stroke="#C7B273" strokeWidth="2"/><ellipse cx="10" cy="6" rx="4" ry="3" stroke="#C7B273" strokeWidth="2"/></svg>
+                  Household Pet
+                </button>
+              </Tooltip>
+            ) : (
               <button
-                className={`flex items-center gap-2 px-5 py-2 rounded-full font-bold text-base transition-all duration-200 focus:outline-none modern-tab-font border-b-2 disabled`}
-                aria-disabled="true"
-                tabIndex={-1}
+                className={`flex items-center gap-2 px-5 py-2 rounded-full font-bold text-base transition-all duration-200 focus:outline-none modern-tab-font border-b-2 ${activeTab === 'household' ? 'border-[#C7B273] text-[#C7B273] shadow-gold' : 'border-transparent text-gray-200 hover:border-[#C7B273] hover:text-[#C7B273]'}`}
+                onClick={() => setActiveTab('household')}
+                aria-disabled={false}
+                tabIndex={0}
               >
                 <svg width="18" height="18" fill="none" viewBox="0 0 20 20"><rect x="4" y="8" width="12" height="8" rx="2" stroke="#C7B273" strokeWidth="2"/><ellipse cx="10" cy="6" rx="4" ry="3" stroke="#C7B273" strokeWidth="2"/></svg>
                 Household Pet
               </button>
-            </Tooltip>
-          ) : (
-            <button
-              className={`flex items-center gap-2 px-5 py-2 rounded-full font-bold text-base transition-all duration-200 focus:outline-none modern-tab-font border-b-2 ${activeTab === 'household' ? 'border-[#C7B273] text-[#C7B273] shadow-gold' : 'border-transparent text-gray-200 hover:border-[#C7B273] hover:text-[#C7B273]'}`}
-              onClick={() => setActiveTab('household')}
-              aria-disabled={false}
-              tabIndex={0}
-            >
-              <svg width="18" height="18" fill="none" viewBox="0 0 20 20"><rect x="4" y="8" width="12" height="8" rx="2" stroke="#C7B273" strokeWidth="2"/><ellipse cx="10" cy="6" rx="4" ry="3" stroke="#C7B273" strokeWidth="2"/></svg>
-              Household Pet
-            </button>
-          )}
-          {/* Breed Sheets Tab */}
-          {!isShowInfoValid(showData) || !areJudgesValid(judges) ? (
-            <Tooltip content="Complete General Info to unlock.">
+            )}
+            {/* Breed Sheets Tab */}
+            {!isShowInfoValid(showData) || !areJudgesValid(judges) ? (
+              <Tooltip content="Complete General Info to unlock.">
+                <button
+                  className={`flex items-center gap-2 px-5 py-2 rounded-full font-bold text-base transition-all duration-200 focus:outline-none modern-tab-font border-b-2 disabled`}
+                  aria-disabled="true"
+                  tabIndex={-1}
+                >
+                  <svg width="18" height="18" fill="none" viewBox="0 0 20 20"><path d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" stroke="#C7B273" strokeWidth="2"/></svg>
+                  Breed Sheets
+                </button>
+              </Tooltip>
+            ) : (
               <button
-                className={`flex items-center gap-2 px-5 py-2 rounded-full font-bold text-base transition-all duration-200 focus:outline-none modern-tab-font border-b-2 disabled`}
-                aria-disabled="true"
-                tabIndex={-1}
+                className={`flex items-center gap-2 px-5 py-2 rounded-full font-bold text-base transition-all duration-200 focus:outline-none modern-tab-font border-b-2 ${activeTab === 'breedsheets' ? 'border-[#C7B273] text-[#C7B273] shadow-gold' : 'border-transparent text-gray-200 hover:border-[#C7B273] hover:text-[#C7B273]'}`}
+                onClick={() => setActiveTab('breedsheets')}
+                aria-disabled={false}
+                tabIndex={0}
               >
                 <svg width="18" height="18" fill="none" viewBox="0 0 20 20"><path d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" stroke="#C7B273" strokeWidth="2"/></svg>
                 Breed Sheets
               </button>
-            </Tooltip>
-          ) : (
-            <button
-              className={`flex items-center gap-2 px-5 py-2 rounded-full font-bold text-base transition-all duration-200 focus:outline-none modern-tab-font border-b-2 ${activeTab === 'breedsheets' ? 'border-[#C7B273] text-[#C7B273] shadow-gold' : 'border-transparent text-gray-200 hover:border-[#C7B273] hover:text-[#C7B273]'}`}
-              onClick={() => setActiveTab('breedsheets')}
-              aria-disabled={false}
-              tabIndex={0}
-            >
-              <svg width="18" height="18" fill="none" viewBox="0 0 20 20"><path d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" stroke="#C7B273" strokeWidth="2"/></svg>
-              Breed Sheets
-            </button>
-          )}
+            )}
+          </div>
         </div>
+
+        
+        {/* Auto-Save Notification Bar */}
+        <AutoSaveNotificationBar 
+          isVisible={isAutoSaveVisible}
+          lastSavedTime={lastSavedTime}
+        />
+
+        {/* Main Content */}
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div 
+            ref={containerRef}
+            className="cfa-card cfa-card-hover"
+            style={{ 
+              transform: `scale(${zoomLevel / 100})`,
+              transformOrigin: 'top center',
+              transition: 'transform 0.2s ease-in-out'
+            }}
+          >
+            {tabs.find(tab => tab.id === activeTab)?.component}
+          </div>
+        </div>
+
+        {/* Settings Panel */}
+        <SettingsPanel
+          isOpen={isSettingsOpen}
+          onClose={handleSettingsClose}
+          showSuccess={showSuccess}
+          globalSettings={globalSettings}
+          setGlobalSettings={setGlobalSettings}
+          currentNumberOfJudges={showData.numberOfJudges}
+        />
+
+
+        {/* App Version Badge Footer */}
+        <footer className="fixed bottom-4 right-4 z-50">
+          <div
+            className="flex items-center px-4 py-1.5 rounded-full bg-black/70 border border-[#C7B273] shadow-lg text-[#C7B273] font-semibold text-sm backdrop-blur-md transition-all duration-200 hover:shadow-gold cursor-pointer select-none"
+            title="App Version"
+            style={{ boxShadow: '0 2px 12px 0 #C7B27355, 0 0 8px 2px #C7B27322' }}
+          >
+            <svg width="10" height="10" fill="#C7B273" className="mr-2" viewBox="0 0 10 10"><circle cx="5" cy="5" r="5"/></svg>
+            Version 0.2.0
+          </div>
+        </footer>
+
+        {/* Auto-Save File List Modal */}
+        <AutoSaveFileList
+          isOpen={showAutoSaveFiles}
+          onClose={() => setShowAutoSaveFiles(false)}
+          onRestore={handleRestoreAutoSave}
+          numberOfSaves={globalSettings.numberOfSaves || 3}
+          getRecentSaveFile={getRecentSaveFile}
+          clearRecentSaveFile={clearRecentSaveFile}
+        />
+
+        {/* Resume Work Modal */}
+        <ResumeWorkModal
+          isOpen={showResumeModal}
+          onResume={handleResumeWork}
+          onDecline={handleDeclineResume}
+          timestamp={recentWork?.timestamp || ''}
+        />
       </div>
-
-
-      
-      {/* Auto-Save Notification Bar */}
-      <AutoSaveNotificationBar 
-        isVisible={isAutoSaveVisible}
-        lastSavedTime={lastSavedTime}
-      />
-
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div 
-          ref={containerRef}
-          className="cfa-card cfa-card-hover"
-          style={{ 
-            transform: `scale(${zoomLevel / 100})`,
-            transformOrigin: 'top center',
-            transition: 'transform 0.2s ease-in-out'
-          }}
-        >
-          {tabs.find(tab => tab.id === activeTab)?.component}
-        </div>
-      </div>
-
-      {/* Settings Panel */}
-      <SettingsPanel
-        isOpen={isSettingsOpen}
-        onClose={handleSettingsClose}
-        showSuccess={showSuccess}
-        globalSettings={globalSettings}
-        setGlobalSettings={setGlobalSettings}
-        currentNumberOfJudges={showData.numberOfJudges}
-      />
-
-
-      {/* App Version Badge Footer */}
-      <footer className="fixed bottom-4 right-4 z-50">
-        <div
-          className="flex items-center px-4 py-1.5 rounded-full bg-black/70 border border-[#C7B273] shadow-lg text-[#C7B273] font-semibold text-sm backdrop-blur-md transition-all duration-200 hover:shadow-gold cursor-pointer select-none"
-          title="App Version"
-          style={{ boxShadow: '0 2px 12px 0 #C7B27355, 0 0 8px 2px #C7B27322' }}
-        >
-          <svg width="10" height="10" fill="#C7B273" className="mr-2" viewBox="0 0 10 10"><circle cx="5" cy="5" r="5"/></svg>
-          Version 0.2.0
-        </div>
-      </footer>
-
-      {/* Auto-Save File List Modal */}
-      <AutoSaveFileList
-        isOpen={showAutoSaveFiles}
-        onClose={() => setShowAutoSaveFiles(false)}
-        onRestore={handleRestoreAutoSave}
-        numberOfSaves={globalSettings.numberOfSaves || 3}
-        getRecentSaveFile={getRecentSaveFile}
-        clearRecentSaveFile={clearRecentSaveFile}
-      />
-
-      {/* Resume Work Modal */}
-      <ResumeWorkModal
-        isOpen={showResumeModal}
-        onResume={handleResumeWork}
-        onDecline={handleDeclineResume}
-        timestamp={recentWork?.timestamp || ''}
-      />
-
     </div>
-  )
+  );
 }
 
 export default App

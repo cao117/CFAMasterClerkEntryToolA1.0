@@ -939,19 +939,6 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess, globalSett
       </div>
       
       <div className="space-y-8">
-        {/* Save Location - Full Row Design */}
-        <div className="group relative">
-          {/* Animated background glow */}
-          <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 rounded-3xl opacity-0 group-hover:opacity-100 transition-all duration-700 blur-2xl"></div>
-          
-          <div className="relative bg-white/90 backdrop-blur-sm border border-gray-200/60 rounded-3xl p-8 shadow-xl hover:shadow-2xl hover:shadow-emerald-200/30 transition-all duration-500 transform hover:scale-[1.02] group-hover:border-emerald-300/80">
-            {/* Decorative corner accent */}
-            <div className="absolute top-0 right-0 w-12 h-12 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-bl-3xl opacity-0 group-hover:opacity-100 transition-all duration-700"></div>
-            
-
-          </div>
-        </div>
-        
         {/* Number of Saves and Save Cycle - Row Below */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Number of Saves - Modern Glassmorphism Design */}

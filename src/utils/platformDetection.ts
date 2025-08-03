@@ -58,7 +58,20 @@ export const getPlatformType = (): 'desktop' | 'modern-browser' | 'legacy-browse
 /**
  * Type guard for Tauri environment
  * Useful for TypeScript type narrowing
+ * FIXED: Now properly detects Tauri environment by checking for __TAURI__ global
  */
 export const isTauriEnvironment = (): boolean => {
-  return isDesktop() && hasTauriAPIs();
+  // Check if we're in a browser environment first
+  if (typeof window === 'undefined') {
+    return false;
+  }
+  
+  // Check for Tauri global object
+  const hasTauriGlobal = (window as any).__TAURI__ !== undefined;
+  
+  // Additional check for Tauri window APIs
+  const hasTauriWindowAPIs = hasTauriGlobal && 
+    typeof (window as any).__TAURI__?.window !== 'undefined';
+  
+  return hasTauriGlobal && hasTauriWindowAPIs;
 };

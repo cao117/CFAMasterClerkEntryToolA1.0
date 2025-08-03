@@ -1,5 +1,285 @@
 # Design Changelog
 
+## [Design v1.21.0] - 2025-08-03 19:33:11
+
+### [DESIGN-REFINED]
+- **Color Consistency Enhancement**: Improved visual harmony by making all window control buttons use consistent CFA gold base color
+- **Close Button Refinement**: Changed close button from red base to CFA gold base with fitting red shade on hover
+- **Visual Harmony**: All three window controls now share consistent base color for better visual cohesion
+- **Hover State Enhancement**: Close button now transitions from CFA gold to red on hover for appropriate destructive action indication
+
+### [DESIGN-IMPLEMENTATION]
+- **Base Color Consistency**: All buttons now use CFA gold (`#C7B273`) as base color
+- **Close Button Background**: Changed from red gradient to CFA gold gradient background
+- **Close Button Border**: Changed from red border to CFA gold border for consistency
+- **Hover State Refinement**: Close button transitions to red (`text-red-400`) on hover
+- **Visual Cohesion**: Maintained elegant glassmorphism while improving color consistency
+
+### [DESIGN-RATIONALE]
+- **Visual Harmony**: Consistent base colors create better visual cohesion across all controls
+- **Brand Consistency**: All buttons now follow CFA gold color system consistently
+- **User Experience**: Clear visual distinction between normal and destructive actions
+- **Design Excellence**: Maintains elegant aesthetics while improving color consistency
+- **Accessibility**: Consistent color patterns improve visual recognition and usability
+
+### [DESIGN-IMPACT]
+- **Visual Cohesion**: All window controls now share consistent base color for better harmony
+- **Brand Alignment**: Enhanced consistency with CFA color system throughout
+- **User Clarity**: Clear distinction between normal actions (gold) and destructive action (red on hover)
+- **Design Refinement**: Improved visual balance while maintaining elegant interactions
+
+### [MIGRATION NOTES]
+- **Color Change**: Close button now uses CFA gold base instead of red base
+- **Hover Enhancement**: Close button transitions to red on hover for appropriate feedback
+- **Visual Consistency**: All buttons now share consistent base styling
+- **No Breaking Changes**: All existing functionality preserved with improved visual consistency
+
+---
+
+## [Design v1.20.0] - 2025-08-03 19:29:31
+
+### [DESIGN-REFINED]
+- **Elegant TitleBar Refinement**: Completely redesigned window controls with sophisticated, elegant styling
+- **Proper Icon Proportions**: Reduced button size from 44px to 36px (9x9) to prevent icon edge touching
+- **Refined Visual Design**: Replaced bland/chunky appearance with elegant glassmorphism and sophisticated effects
+- **Enhanced Spacing**: Increased gap between controls from 8px to 12px for better visual breathing room
+- **Sophisticated Interactions**: Multi-layered hover effects with gradient overlays and ring animations
+- **Premium Aesthetics**: Rounded-xl corners, refined gradients, and elegant color transitions
+
+### [DESIGN-IMPLEMENTATION]
+- **Button Sizing**: Reduced from `w-11 h-11` to `w-9 h-9` for proper proportions
+- **Icon Sizing**: Reduced from 18px to 14px to prevent edge touching
+- **Spacing Enhancement**: Increased gap from `gap-2` to `gap-3` for elegant spacing
+- **Visual Effects**: Added gradient overlays, ring effects, and sophisticated hover states
+- **Color Refinement**: Enhanced CFA gold gradients with proper opacity levels
+- **Border Radius**: Changed from `rounded-lg` to `rounded-xl` for more elegant appearance
+
+### [DESIGN-RATIONALE]
+- **Proportional Excellence**: Proper icon sizing prevents visual crowding and edge touching
+- **Elegant Aesthetics**: Sophisticated glassmorphism creates premium, refined appearance
+- **Visual Hierarchy**: Increased spacing and refined effects improve visual clarity
+- **Brand Consistency**: Maintains CFA color system while adding elegant sophistication
+- **User Experience**: Smooth, refined interactions provide premium desktop feel
+- **Accessibility**: Maintains all existing accessibility features with enhanced visual feedback
+
+### [DESIGN-IMPACT]
+- **Visual Excellence**: Elegant, sophisticated design elevates application to premium standards
+- **Proportional Harmony**: Proper sizing and spacing create balanced, refined appearance
+- **Interaction Quality**: Smooth, multi-layered effects provide premium user experience
+- **Brand Perception**: Refined aesthetics enhance professional desktop application feel
+
+### [MIGRATION NOTES]
+- **Button Size Change**: Reduced from 44px to 36px for better proportions
+- **Icon Size Change**: Reduced from 18px to 14px to prevent edge touching
+- **Spacing Enhancement**: Increased gap between controls for elegant spacing
+- **Visual Effects**: Enhanced with gradient overlays and ring animations
+- **No Breaking Changes**: All existing functionality preserved with refined visual design
+
+---
+
+## [Design v1.19.0] - 2025-08-03 19:12:10
+
+### [DESIGN-IMPLEMENTED]
+- **Premium TitleBar Redesign**: Completely redesigned custom window title bar with premium glassmorphism styling
+- **Minimalist Layout**: Removed left-side branding (logo and text) for clean, modern aesthetic
+- **Premium Window Controls**: Enhanced right-side window controls with sophisticated glassmorphism design
+- **Advanced Visual Effects**: Multi-layered glassmorphism with backdrop blur, gradient overlays, and ring effects
+- **Enhanced Interactions**: Smooth 300ms transitions with hover states, focus rings, and color transitions
+- **Maximized Default State**: Application now starts maximized by default for better user experience
+
+### [DESIGN-IMPLEMENTATION]
+- **Layout Changes**: Changed from `justify-between` to `justify-end` layout, removed left-side branding elements
+- **Premium Button Design**: Implemented 44px (11x11) buttons with glassmorphism backgrounds and layered effects
+- **Visual Effects**: Added gradient overlays, ring effects, and sophisticated hover states for each control
+- **Color System**: Extended CFA color system with gold accents for minimize/maximize, red for close button
+- **Tauri Configuration**: Added `maximized: true` to window configuration for default maximized state
+- **Enhanced Backdrop**: Increased backdrop blur from 8px to 12px for more premium glassmorphism effect
+
+### [DESIGN-RATIONALE]
+- **Premium Experience**: Sophisticated glassmorphism design creates premium desktop application feel
+- **Minimalist Aesthetic**: Clean, uncluttered design focuses attention on application content
+- **Visual Hierarchy**: Right-aligned controls follow modern desktop application conventions
+- **Brand Consistency**: Maintains CFA color system while creating premium visual experience
+- **User Experience**: Maximized default state provides optimal workspace utilization
+- **Accessibility**: Maintains all existing accessibility features with enhanced visual feedback
+
+### [DESIGN-IMPACT]
+- **Desktop Experience**: Premium glassmorphism design enhances native desktop application feel
+- **Visual Design**: Sophisticated multi-layered effects create modern, premium aesthetic
+- **User Interface**: Clean, minimalist design reduces visual clutter and improves focus
+- **Brand Perception**: Premium styling elevates application to professional desktop software standards
+
+### [MIGRATION NOTES]
+- **Layout Changes**: TitleBar now uses right-aligned layout with removed left-side branding
+- **Button Sizing**: Window control buttons increased from 40px to 44px for better touch targets
+- **Visual Effects**: Enhanced glassmorphism with multi-layered hover states and transitions
+- **Default State**: Application now starts maximized by default
+- **No Breaking Changes**: All existing functionality preserved with enhanced visual design
+
+---
+
+## [Design v1.18.0] - 2025-08-03 19:03:44
+
+### [DESIGN-IMPLEMENTED]
+- **Cross-Platform Global Shortcuts**: Implemented system-wide keyboard shortcuts for window management
+- **Platform-Specific Shortcuts**: Alt+F4 (Windows/Linux), Cmd+M/Cmd+Q (macOS) for window controls
+- **Tauri Plugin Integration**: Added global-shortcut and os plugins for cross-platform functionality
+- **Hook-Based Architecture**: Created useGlobalShortcuts hook following established patterns
+- **Automatic Cleanup**: Proper unregistration of shortcuts on component unmount
+- **Error Handling**: Comprehensive error handling with console logging for debugging
+
+### [DESIGN-IMPLEMENTATION]
+- **Dependencies Added**: @tauri-apps/plugin-global-shortcut and @tauri-apps/plugin-os npm packages
+- **Rust Dependencies**: Added tauri-plugin-global-shortcut and tauri-plugin-os to Cargo.toml
+- **Plugin Initialization**: Added plugin setup in src-tauri/src/lib.rs with desktop-only configuration
+- **Permissions Updated**: Added global-shortcut:default and os:default permissions to capabilities
+- **Hook Creation**: Created src/hooks/useGlobalShortcuts.ts with platform detection and shortcut registration
+- **App Integration**: Integrated useGlobalShortcuts hook in App.tsx for automatic initialization
+
+### [DESIGN-RATIONALE]
+- **User Experience**: Provides familiar system-wide keyboard shortcuts for desktop users
+- **Platform Consistency**: Follows platform conventions (Alt+F4 on Windows, Cmd+Q on macOS)
+- **Integration**: Works alongside existing TitleBar window controls without conflicts
+- **Performance**: Only registers shortcuts in Tauri environment, no browser overhead
+- **Maintainability**: Follows established hook-based architecture and error handling patterns
+- **Debugging**: Comprehensive logging for troubleshooting shortcut registration and execution
+
+### [DESIGN-IMPACT]
+- **Desktop Experience**: Enhanced native desktop feel with system-wide keyboard shortcuts
+- **User Productivity**: Faster window management through keyboard shortcuts
+- **Platform Behavior**: Seamless integration with existing platform detection system
+- **Development Experience**: Improved debugging capabilities with detailed console logging
+
+### [MIGRATION NOTES]
+- **New Dependencies**: Added global shortcut and OS detection plugins to both npm and Rust dependencies
+- **Permission Changes**: Updated capabilities to include global-shortcut and os permissions
+- **Hook Integration**: useGlobalShortcuts hook automatically initializes in App.tsx
+- **No Breaking Changes**: Existing functionality preserved, only adds new keyboard shortcut capabilities
+- **Development Impact**: Global shortcuts only work in Tauri environment, no browser functionality
+
+---
+
+## [Design v1.17.0] - 2025-08-03 18:22:08
+
+### [DESIGN-FIXED]
+- **Tauri v2 Configuration**: Fixed missing `withGlobalTauri: true` setting in `src-tauri/tauri.conf.json`
+- **Global Object Access**: Enabled `window.__TAURI__` global object for proper platform detection
+- **TitleBar Functionality**: Resolved issue preventing TitleBar component from detecting Tauri environment
+- **Platform Detection**: Fixed `isTauriEnvironment()` function to work correctly in Tauri v2
+
+### [DESIGN-IMPLEMENTATION]
+- **Configuration Update**: Added `"withGlobalTauri": true` to app section in `src-tauri/tauri.conf.json`
+- **Tauri v2 Compliance**: Ensures proper Tauri v2 configuration for global object access
+- **Platform Detection**: Enables existing `isTauriEnvironment()` function to work correctly
+- **TitleBar Integration**: Allows TitleBar component to render and function properly in Tauri environment
+
+### [DESIGN-RATIONALE]
+- **Tauri v2 Requirement**: `withGlobalTauri: true` is mandatory for `window.__TAURI__` to be available
+- **Platform Detection**: Enables proper detection of Tauri environment vs browser environment
+- **TitleBar Functionality**: Allows window controls (minimize, maximize, close) to work correctly
+- **API Access**: Enables access to Tauri APIs for file operations and window management
+
+### [DESIGN-IMPACT]
+- **Desktop Experience**: TitleBar component now functions properly in Tauri environment
+- **Platform Detection**: `isTauriEnvironment()` function now returns correct values
+- **Window Controls**: Minimize, maximize, and close buttons now work correctly
+- **API Access**: All Tauri APIs now accessible through `window.__TAURI__` global object
+
+### [MIGRATION NOTES]
+- **Configuration Change**: Added `withGlobalTauri: true` to app section in tauri.conf.json
+- **Tauri v2 Compliance**: Ensures proper Tauri v2 configuration standards
+- **No Breaking Changes**: Existing functionality preserved, only enables missing features
+- **Development Impact**: TitleBar and platform detection now work correctly in development and production
+
+---
+
+## [Design v1.16.0] - 2025-08-03 18:19:45
+
+### [DESIGN-IMPLEMENTED]
+- **TitleBar Component**: Successfully implemented custom window title bar for Tauri desktop environment
+- **Tauri Configuration**: Updated `src-tauri/tauri.conf.json` with `decorations: false` to enable custom title bar
+- **Platform Detection**: Integrated existing `isTauriEnvironment()` function for consistent platform detection
+- **Window Controls**: Implemented minimize, maximize/restore, and close buttons with Lucide React icons
+- **Draggable Region**: Full title bar area draggable except for control buttons with proper CSS styling
+- **CFA Branding**: Integrated CFA logo and app name with existing brand colors and design patterns
+- **Layout Integration**: Added TitleBar to App.tsx with proper padding (`pt-12`) to accommodate fixed positioning
+
+### [DESIGN-IMPLEMENTATION]
+- **Component Location**: `src/components/TitleBar.tsx` (new component)
+- **Tauri Configuration**: Updated `src-tauri/tauri.conf.json` with `decorations: false`
+- **App Integration**: Added TitleBar import and integration in `src/App.tsx`
+- **Platform Awareness**: Only renders in Tauri environment using existing `isTauriEnvironment()` function
+- **Icon Library**: Used existing Lucide React icons (Minimize, Maximize2, X)
+- **Styling**: Glassmorphism design with backdrop blur, CFA gold accents, and proper z-index layering
+- **Accessibility**: Proper ARIA labels, title attributes, and keyboard navigation support
+
+### [DESIGN-RATIONALE]
+- **Premium Experience**: Provides native desktop feel with custom title bar in Tauri environment
+- **Brand Consistency**: Maintains CFA branding and existing design system patterns
+- **Platform Awareness**: Only renders in Tauri environment, never in browser
+- **User Experience**: Familiar window controls with modern visual design
+- **Accessibility**: Follows WCAG standards with proper semantic markup
+- **Performance**: Efficient platform detection using existing utility functions
+
+### [DESIGN-IMPACT]
+- **Desktop Experience**: Enhanced native desktop feel with custom title bar in Tauri environment
+- **Visual Design**: Maintains design system consistency while adding premium desktop features
+- **Platform Behavior**: Seamless integration with existing platform detection system
+- **User Interface**: Professional desktop application appearance in Tauri environment
+
+### [MIGRATION NOTES]
+- **Tauri Configuration**: Window decorations disabled (`decorations: false`) to enable custom title bar
+- **Desktop Experience**: Native window controls replaced with custom title bar in Tauri environment
+- **Browser Compatibility**: No changes to browser experience - title bar only renders in Tauri
+- **Platform Behavior**: Seamless integration with existing platform detection system
+- **Layout Changes**: Added `pt-12` padding to main content area to accommodate fixed title bar
+
+---
+
+## [Design v1.15.0] - 2025-01-15 21:30:00
+
+### [DESIGN-ADDED]
+- **TitleBar Component**: Premium glassy custom window title bar for Tauri desktop environment
+- **Platform Detection**: Reuses existing `isTauriEnvironment()` function for consistent platform detection
+- **Glassmorphism Design**: Dark semi-transparent background with backdrop blur and subtle shadow
+- **CFA Branding**: Integrates CFA logo and app name with existing brand colors
+- **Window Controls**: Modern minimize, maximize/restore, and close buttons with Lucide icons
+- **Draggable Region**: Full title bar area draggable except for control buttons
+- **Accessibility**: Proper ARIA labels and title attributes for all interactive elements
+
+### [DESIGN-IMPLEMENTATION]
+- **Component Location**: `src/components/TitleBar.tsx` (new component)
+- **Utility Location**: `src/utils/isTauriEnvironment.ts` (re-exports existing function)
+- **Integration**: Added to main App.tsx layout at the very top
+- **Tauri Configuration**: Updated `src-tauri/tauri.conf.json` with `decorations: false` for custom title bar
+- **Design System**: Extends existing CFA brand colors and glassmorphism patterns
+- **Icon Library**: Added Lucide React for modern, consistent iconography
+- **Responsive Design**: Fixed 48px height with proper spacing and alignment
+- **Visual Effects**: Hover states, focus states, and smooth transitions for all controls
+
+### [DESIGN-RATIONALE]
+- **Premium Experience**: Provides native desktop feel with custom title bar
+- **Brand Consistency**: Maintains CFA branding and existing design system patterns
+- **Platform Awareness**: Only renders in Tauri environment, never in browser
+- **User Experience**: Familiar window controls with modern visual design
+- **Accessibility**: Follows WCAG standards with proper semantic markup
+- **Performance**: Efficient platform detection using existing utility functions
+
+### [DESIGN-IMPACT]
+- **Desktop Experience**: Enhanced native desktop feel with custom title bar
+- **Visual Design**: Maintains design system consistency while adding premium desktop features
+- **Platform Behavior**: Seamless integration with existing platform detection system
+- **User Interface**: Professional desktop application appearance in Tauri environment
+
+### [MIGRATION NOTES]
+- **Tauri Configuration**: Window decorations disabled (`decorations: false`) to enable custom title bar
+- **Desktop Experience**: Native window controls replaced with custom title bar in Tauri environment
+- **Browser Compatibility**: No changes to browser experience - title bar only renders in Tauri
+- **Platform Behavior**: Seamless integration with existing platform detection system
+- **New Dependency**: lucide-react for modern iconography
+
+---
+
 ## [Design v1.14.0] - 2025-08-03 00:55:31
 
 ### [DESIGN-CHANGED]
