@@ -202,7 +202,8 @@ export function AutoSaveFileList({
       
     } catch (error) {
       console.error('Failed to restore auto-save:', error);
-      alert(`Failed to restore auto-save file: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      alert(`Failed to restore auto-save file: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
@@ -214,88 +215,81 @@ export function AutoSaveFileList({
 
   if (!isOpen) return null;
 
-  // Calculate dynamic height based on file count
-  const calculateModalHeight = () => {
-    // Base measurements (in pixels)
-    const headerHeight = 64; // h-16 (title + padding)
-    const footerHeight = 56; // h-14 (button + padding)
-    const fileItemHeight = 72; // p-3 (24px) + content height (~48px)
-    const padding = 48; // p-6 (24px top + 24px bottom)
-    const spacing = 8; // space-y-2 (8px between items)
-    
-    // Calculate content height
-    const contentHeight = autoSaveFiles.length * fileItemHeight + 
-                         (autoSaveFiles.length - 1) * spacing;
-    
-    // Calculate total modal height
-    const totalHeight = headerHeight + contentHeight + footerHeight + padding;
-    
-    // Apply constraints
-    const minHeight = headerHeight + fileItemHeight + footerHeight + padding; // 1 file minimum
-    const maxHeight = window.innerHeight * 0.8; // 80% of viewport height
-    
-    return Math.max(minHeight, Math.min(totalHeight, maxHeight));
-  };
-
-  const modalHeight = calculateModalHeight();
-
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div 
-        className="bg-white rounded-lg p-6 max-w-md w-full mx-4"
-        style={{ height: `${modalHeight}px` }}
+        className="bg-white rounded-lg p-6 max-w-md w-full mx-4 max-h-[80vh] flex flex-col"
       >
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold">Restore Auto-Save</h3>
           <button 
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
+            className="group relative w-6 h-6 rounded-full bg-blue-50 hover:bg-blue-100 flex items-center justify-center transition-all duration-300 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-400 shadow-sm hover:shadow-md"
+            aria-label="Close modal"
           >
-            ✕
+            <svg 
+              className="w-3 h-3 text-blue-500 group-hover:text-blue-700 transition-all duration-300 group-hover:rotate-90" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeWidth={2.5} 
+                d="M6 18L18 6M6 6l12 12" 
+              />
+            </svg>
+            {/* Premium glow effect */}
+            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-200/50 to-blue-100/50 opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm"></div>
+            {/* Subtle border effect */}
+            <div className="absolute inset-0 rounded-full border border-blue-200/30 group-hover:border-blue-300/50 transition-all duration-300"></div>
           </button>
         </div>
         
-        {loading ? (
-          <div className="text-center py-4">Loading...</div>
-        ) : autoSaveFiles.length === 0 ? (
-          <div className="text-center py-4 text-gray-500">
-            No auto-save files found
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {autoSaveFiles.map((file) => (
-              <div
-                key={file.key}
-                className="border rounded p-3 hover:bg-gray-50 cursor-pointer flex items-center justify-between"
-                onClick={() => handleRestore(file)}
-              >
-                <div className="flex items-center space-x-3">
-                  {/* Excel file icon */}
-                  <div className="w-8 h-8 bg-green-100 rounded flex items-center justify-center">
-                    <span className="text-green-600 text-xs font-bold">XLS</span>
-                  </div>
-                  
-                  <div>
-                    <div className="font-medium text-sm">{file.filename}</div>
-                    <div className="text-xs text-gray-500">
-                      {formatDate(file.timestamp)} • {file.size}
+        <div className="flex-1 overflow-y-auto">
+          {loading ? (
+            <div className="text-center py-4">Loading...</div>
+          ) : autoSaveFiles.length === 0 ? (
+            <div className="text-center py-4 text-gray-500">
+              No auto-save files found
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {autoSaveFiles.map((file) => (
+                <div
+                  key={file.key}
+                  className="border rounded p-3 hover:bg-gray-50 cursor-pointer flex items-center justify-between"
+                  onClick={() => handleRestore(file)}
+                >
+                  <div className="flex items-center space-x-3">
+                    {/* Excel file icon */}
+                    <div className="w-8 h-8 bg-green-100 rounded flex items-center justify-center">
+                      <span className="text-green-600 text-xs font-bold">XLS</span>
+                    </div>
+                    
+                    <div>
+                      <div className="font-medium text-sm">{file.filename}</div>
+                      <div className="text-xs text-gray-500">
+                        {formatDate(file.timestamp)} • {file.size}
+                      </div>
                     </div>
                   </div>
+                  
+                  <button 
+                    className="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRestore(file);
+                    }}
+                  >
+                    Restore
+                  </button>
                 </div>
-                
-                <button 
-                  className="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleRestore(file);
-                  }}
-                >
-                  Restore
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
         
         <div className="mt-4 flex justify-end">
           <button 

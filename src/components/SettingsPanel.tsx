@@ -1064,12 +1064,27 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess, globalSett
           
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-lg hover:bg-gray-100"
+            className="group relative w-6 h-6 rounded-full bg-gray-50 hover:bg-gray-100 flex items-center justify-center transition-all duration-300 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-gray-400 shadow-sm hover:shadow-md"
             title="Close Settings"
+            aria-label="Close Settings"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <svg 
+              className="w-3 h-3 text-gray-500 group-hover:text-gray-700 transition-all duration-300 group-hover:rotate-90" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeWidth={2.5} 
+                d="M6 18L18 6M6 6l12 12" 
+              />
             </svg>
+            {/* Premium glow effect */}
+            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-gray-200/50 to-gray-100/50 opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm"></div>
+            {/* Subtle border effect */}
+            <div className="absolute inset-0 rounded-full border border-gray-200/30 group-hover:border-gray-300/50 transition-all duration-300"></div>
           </button>
         </div>
 
