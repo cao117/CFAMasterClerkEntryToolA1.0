@@ -1,0 +1,41 @@
+name: 'Build macOS App'
+
+on:
+  push:
+    branches: [ dev ]  # Only triggers on dev branch pushes
+  workflow_dispatch:  # Allows manual trigger from any branch
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    permissions:
+      contents: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 'lts/*'
+        cache: 'npm'  # Change to 'yarn' or 'pnpm' if you use those
+
+    - name: Setup Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+    - name: Install dependencies
+      run: npm install  # Change to yarn or pnpm if needed
+
+    - name: Build Tauri app
+      uses: tauri-apps/tauri-action@v0
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tagName: 'v__VERSION__'
+        releaseName: 'macOS Release v__VERSION__'
+        releaseBody: 'macOS app built with GitHub Actions'
+        releaseDraft: false
+        prerelease: false
