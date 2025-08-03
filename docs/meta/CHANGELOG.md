@@ -946,3 +946,66 @@ This changelog records major changes to the CFA Master Clerk Entry Tool, includi
 - **Tauri Desktop**: Native OS folder picker with full file system access
 - **Web Browsers**: File System Access API with graceful fallbacks for unsupported browsers
 - **Cross-Platform Consistency**: Same user experience regardless of platform 
+
+## [0.3.1] - 2025-08-04
+
+### Fixed
+- **Tauri 2.6.2 Compatibility**: Fixed fs plugin configuration error by removing incompatible `scope` field from `tauri.conf.json`
+- **File System Permissions**: Updated capabilities configuration to use proper fs permissions for read/write operations
+- **Build Process**: Resolved compilation error that prevented Tauri dev from running
+
+### Technical Details
+- Removed `plugins.fs.scope` configuration from `tauri.conf.json` (incompatible with Tauri 2.6.2)
+- Updated `src-tauri/capabilities/default.json` with proper fs permissions:
+  - `fs:allow-read-file` with `**` path allowance
+  - `fs:allow-write-file` with `**` path allowance  
+  - `fs:allow-read-text-file` with `**` path allowance
+  - `fs:allow-write-text-file` with `**` path allowance
+- Maintained dialog permissions for file picker functionality
+
+## [0.3.2] - 2025-08-04
+
+### Fixed
+- **Save Dialog Default Directory**: Fixed "Save to Excel" dialog to always open in default directory instead of remembering last directory
+- **Consistent File Dialog Behavior**: Save and Load dialogs now both use the same default directory pattern
+- **User Experience**: Save dialog now consistently opens in app data directory like the load dialog
+
+### Technical Details
+- Modified `saveFileInTauri` function in `src/utils/excelExport.ts`
+- Changed from `defaultPath: join(appDataPath, filename)` to `defaultPath: appDataPath`
+- Removed unused `join` import from `@tauri-apps/api/path`
+- Now matches the pattern used in `selectAndImportExcelFileInTauri` function
+
+## [0.3.3] - 2025-08-04
+
+### Fixed
+- **Save Dialog OS Memory**: Fixed "Save to Excel" dialog to prevent OS from remembering last directory
+- **OS-Level Dialog Behavior**: Removed defaultPath to force dialog to open in system default location
+- **User Experience**: Save dialog now consistently opens in system default directory instead of last used location
+
+### Technical Details
+- Modified `saveFileInTauri` function in `src/utils/excelExport.ts`
+- Removed `defaultPath` parameter entirely from save dialog options
+- Removed unused `appDataDir` import from `@tauri-apps/api/path`
+- Now uses OS default directory behavior instead of app data directory
+
+## [0.3.4] - 2025-08-04
+
+### Fixed
+- **Save Dialog DefaultPath Implementation**: Implemented Tauri 2.0 defaultPath behavior for consistent save dialog location
+- **Always Open from DefaultPath**: Save dialog now always opens from the app data directory, even if user previously chose another location
+- **User Experience**: Consistent behavior where save dialog always starts in the same default location
+
+### Technical Details
+- Modified `saveFileInTauri` function in `src/utils/excelExport.ts`
+- Added `defaultPath: join(appDataPath, filename)` to save dialog options
+- Re-added `appDataDir` and `join` imports from `@tauri-apps/api/path`
+- Uses Tauri 2.0 defaultPath behavior: if defaultPath is a path to a non-existing file, dialog uses its parent directory and populates filename input
+- Ensures dialog always opens in app data directory with filename prefilled
+- **Added comprehensive debugging logs** to track defaultPath behavior and verify implementation
+
+### Debugging Information
+- Added debug logs to track app data path, default path creation, and dialog behavior
+- Added verification logs to confirm defaultPath is honored on each dialog invocation
+- Added environment detection logs to verify Tauri environment is detected correctly
+- Added file save verification logs to track successful saves and path validation

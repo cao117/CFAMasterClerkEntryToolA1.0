@@ -143,11 +143,7 @@ export function AutoSaveFileList({
         throw new Error(`Failed to convert base64 to buffer: ${conversionError}`);
       }
       
-      // Parse Excel data using existing Excel parsing logic (same as Load from Excel)
-      console.log('🔍 DEBUG: About to call parseExcelAndRestoreState');
-      console.log('🔍 DEBUG: Excel buffer type:', typeof excelBuffer);
-      console.log('🔍 DEBUG: Excel buffer constructor:', excelBuffer.constructor.name);
-      console.log('🔍 DEBUG: Excel buffer byteLength:', excelBuffer.byteLength);
+
       
       let result;
       try {
@@ -162,33 +158,10 @@ export function AutoSaveFileList({
           } // Error callback
         );
         
-        console.log('🔍 DEBUG: parseExcelAndRestoreState returned:', result);
-        console.log('🔍 DEBUG: Result type:', typeof result);
-        console.log('🔍 DEBUG: Result is null?', result === null);
-        console.log('🔍 DEBUG: Result is undefined?', result === undefined);
-        
-        if (result) {
-          console.log('🔍 DEBUG: Result has showState?', !!result.showState);
-          console.log('🔍 DEBUG: Result has settings?', !!result.settings);
-          
-          if (result.showState) {
-            console.log('🔍 DEBUG: showState.general exists?', !!result.showState.general);
-            console.log('🔍 DEBUG: showState.judges exists?', !!result.showState.judges);
-            console.log('🔍 DEBUG: showState.judges length:', result.showState.judges?.length || 0);
-            
-            if (result.showState.general) {
-              console.log('🔍 DEBUG: general.showDate:', result.showState.general.showDate);
-              console.log('🔍 DEBUG: general.clubName:', result.showState.general.clubName);
-              console.log('🔍 DEBUG: general.masterClerk:', result.showState.general.masterClerk);
-              console.log('🔍 DEBUG: general.householdPetCount:', result.showState.general.householdPetCount);
-            }
-            
-            console.log('🔍 DEBUG: showState.household structure:', result.showState.household);
-          }
-        }
+
         
       } catch (parseError) {
-        console.error('🔍 DEBUG: Exception thrown by parseExcelAndRestoreState:', parseError);
+
         throw new Error(`Excel parsing exception: ${parseError}`);
       }
       
