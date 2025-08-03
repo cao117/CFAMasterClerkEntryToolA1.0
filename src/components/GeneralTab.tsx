@@ -568,6 +568,7 @@ export default function GeneralTab({
   };
 
   const handleSaveToCSVClick = () => {
+    
     // Ensure judges are properly ordered before validation and export
     const sortedJudges = [...judges].sort((a, b) => a.ringNumber - b.ringNumber);
     const reindexedJudges = sortedJudges.map((judge, index) => ({
@@ -1317,7 +1318,7 @@ export default function GeneralTab({
                             </svg>
                         </div>
                 <div>
-                  <span className="text-2xl font-bold text-gray-900 tracking-tight" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>Judge Information</span>
+                  <span className="text-2xl font-bold text-gray-900 tracking-tight" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>Judging Informations</span>
                 </div>
               </div>
               <CornerCollapseIcon expanded={!isJudgeInfoCollapsed} onClick={() => setIsJudgeInfoCollapsed(v => !v)} label={isJudgeInfoCollapsed ? 'Expand section' : 'Collapse section'} gradient="linear-gradient(135deg, #6366f1 60%, #8b5cf6 100%)" />

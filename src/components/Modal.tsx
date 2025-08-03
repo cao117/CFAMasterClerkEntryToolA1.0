@@ -136,17 +136,56 @@ export default function Modal({
         onClick={e => e.stopPropagation()}
         >
           {/* Header */}
-          <div className={`flex items-center p-6 border-b ${styles.border}`}>
-            <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${styles.iconBg}`}>
-              <div className={styles.icon}>
-                {getIcon()}
+          <div className={`flex items-center justify-between p-6 border-b ${styles.border}`}>
+            <div className="flex items-center">
+              <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${styles.iconBg}`}>
+                <div className={styles.icon}>
+                  {getIcon()}
+                </div>
+              </div>
+              <div className="ml-4">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {title}
+                </h3>
               </div>
             </div>
-            <div className="ml-4">
-              <h3 className="text-lg font-semibold text-gray-900">
-                {title}
-              </h3>
-            </div>
+            
+            {/* Premium X Button - Top Right */}
+            <button
+              onClick={onClose}
+              className={`group relative w-6 h-6 rounded-full bg-gray-50 hover:bg-gray-100 flex items-center justify-center transition-all duration-300 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-gray-400 shadow-sm hover:shadow-md`}
+              aria-label="Close modal"
+            >
+              <svg 
+                className={`w-3 h-3 transition-all duration-300 group-hover:rotate-90 ${
+                  type === 'alert' ? 'text-red-500 group-hover:text-red-700' :
+                  type === 'warning' ? 'text-yellow-500 group-hover:text-yellow-700' :
+                  'text-gray-500 group-hover:text-gray-700'
+                }`}
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  strokeWidth={2.5} 
+                  d="M6 18L18 6M6 6l12 12" 
+                />
+              </svg>
+              {/* Premium glow effect */}
+              <div className={`absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 blur-sm ${
+                type === 'alert' ? 'bg-gradient-to-r from-red-200/50 to-red-100/50' :
+                type === 'warning' ? 'bg-gradient-to-r from-yellow-200/50 to-yellow-100/50' :
+                'bg-gradient-to-r from-gray-200/50 to-gray-100/50'
+              }`}></div>
+              {/* Subtle border effect */}
+              <div className={`absolute inset-0 rounded-full border transition-all duration-300 ${
+                type === 'alert' ? 'border-red-200/30 group-hover:border-red-300/50' :
+                type === 'warning' ? 'border-yellow-200/30 group-hover:border-yellow-300/50' :
+                'border-gray-200/30 group-hover:border-gray-300/50'
+              }`}></div>
+            </button>
           </div>
           {/* Content */}
           <div className="p-6">
@@ -156,21 +195,13 @@ export default function Modal({
           </div>
           {/* Footer */}
           <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200">
-            {showCancel && (
-              <button
-                onClick={handleCancel}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200"
-              >
-                {cancelText}
-              </button>
-            )}
             <button
               onClick={handleConfirm}
               className={`px-4 py-2 text-sm font-medium text-white rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors duration-200 ${styles.button}`}
             >
               {confirmText}
             </button>
-        </div>
+          </div>
       </div>
     </div>
   );

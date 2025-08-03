@@ -915,8 +915,10 @@ async function selectAndImportExcelFileWithEnvironmentDetection(
   showError: ErrorCallback
 ): Promise<{ showState: ImportedShowState; settings: any } | null> {
   try {
-    // Check if we're in a Tauri desktop app
-    if (typeof window !== 'undefined' && (window as any).__TAURI__) {
+    // Use existing environment detection function
+    const { isTauriEnvironment } = await import('./platformDetection');
+    
+    if (isTauriEnvironment()) {
       return await selectAndImportExcelFileInTauri(showSuccess, showError);
     }
     // Use browser file picker for all browser environments
@@ -938,9 +940,40 @@ async function selectAndImportExcelFileInTauri(
   showError: ErrorCallback
 ): Promise<{ showState: ImportedShowState; settings: any } | null> {
   try {
-    // TODO: Implement Tauri file selection and reading when Tauri environment is properly configured
-    console.log('Tauri environment detected - using browser fallback for now');
-    return await selectAndImportExcelFileInBrowser(showSuccess, showError);
+    const { open } = await import('@tauri-apps/plugin-dialog');
+    const { readFile } = await import('@tauri-apps/plugin-fs');
+    const { appDataDir } = await import('@tauri-apps/api/path');
+    
+    // Get app data directory as default location
+    const appDataPath = await appDataDir();
+    
+    // Create default path with a sample filename in app data directory
+    // This ensures dialog always opens in the same directory as save dialog
+    const { join } = await import('@tauri-apps/api/path');
+    const defaultPath = await join(appDataPath, '*.xlsx');
+    
+    const selected = await open({
+      multiple: false,
+      directory: false,
+      defaultPath,
+      filters: [
+        { name: 'Excel Files', extensions: ['xlsx', 'xls'] },
+        { name: 'All Files', extensions: ['*'] }
+      ]
+    });
+
+    if (selected && typeof selected === 'string') {
+      // Read using Tauri filesystem API
+      const fileContents = await readFile(selected);
+      
+      // Convert Excel buffer to data using existing logic
+      const result = parseExcelAndRestoreState(fileContents, showSuccess, showError);
+      
+      console.log('File loaded from:', selected);
+      return result;
+    }
+    
+    return null; // User cancelled
   } catch (error) {
     console.error('Tauri import error:', error);
     showError('Import Error', 'An error occurred while importing the file in Tauri.');

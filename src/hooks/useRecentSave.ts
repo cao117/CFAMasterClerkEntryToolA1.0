@@ -56,11 +56,11 @@ export function useRecentSave(formData: any, checkForData?: () => boolean) {
    * @param checkForData - Function to check if form has any user input
    */
   const triggerEnhancedRecentSave = async (checkForData: () => boolean): Promise<void> => {
-    console.log('🔍 DEBUG: useRecentSave - triggerEnhancedRecentSave called');
+
     if (formData) {
       await recentSaveService.current.performEnhancedRecentSave(formData, checkForData);
     } else {
-      console.log('🔍 DEBUG: useRecentSave - triggerEnhancedRecentSave skipped (no formData)');
+
     }
   };
 

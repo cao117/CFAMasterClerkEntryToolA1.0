@@ -667,16 +667,18 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [columns.length, numAwardRows]);
 
-    // Action button handlers
-    const handleSaveToCSVClick = () => {
-      // Check for validation errors before CSV export
-      if (Object.keys(errors).length > 0) {
-        setIsCSVErrorModalOpen(true);
-        return;
-      }
-      // Export the full show state for Excel export
-      handleSaveToExcel(getShowState, showSuccess, showError);
-    };
+      // Action button handlers
+  const handleSaveToCSVClick = () => {
+    // Check for validation errors before CSV export
+    const errors = validateChampionshipTab(championshipTabData, judges);
+    setErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      setIsCSVErrorModalOpen(true);
+      return;
+    }
+    // Export the full show state for Excel export
+    handleSaveToExcel(getShowState, showSuccess, showError);
+  };
 
     const handleRestoreFromCSVClick = () => {
       onCSVImport();

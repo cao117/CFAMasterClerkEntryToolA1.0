@@ -1,8 +1,10 @@
 // Excel export utility for CFA Master Clerk Entry Tool
 // Converts show data to Excel format with multiple worksheets
 
+
+
 import * as XLSX from 'xlsx';
-import { isDesktop } from './platformDetection';
+import { isTauriEnvironment } from './platformDetection';
 
 export interface GetShowStateFunction {
   (): any;
@@ -63,11 +65,10 @@ async function saveExcelFileWithEnvironmentDetection(
   showError: ErrorCallback
 ) {
   try {
-    // Use our new platform detection utility
-    if (isDesktop()) {
-      // TODO: Implement Tauri file saving when Tauri environment is properly configured
-      console.log('Tauri environment detected - using browser fallback for now');
-      saveFileInLegacyBrowser(excelBuffer, filename, showSuccess);
+    // Use our existing platform detection utility
+    if (isTauriEnvironment()) {
+      // Use Tauri native file saving
+      await saveFileInTauri(excelBuffer, filename, showSuccess, showError);
     }
     // Check if we're in a modern browser with File System Access API
     else if (typeof window !== 'undefined' && 'showSaveFilePicker' in window) {
@@ -78,14 +79,12 @@ async function saveExcelFileWithEnvironmentDetection(
       saveFileInLegacyBrowser(excelBuffer, filename, showSuccess);
     }
   } catch (error) {
-    console.error('File save error:', error);
     showError('Save Error', 'An error occurred while saving the Excel file.');
   }
 }
 
 /**
  * Save file using Tauri's native file system APIs
- * TODO: Implement when Tauri environment is properly configured
  */
 async function saveFileInTauri(
   excelBuffer: Uint8Array,
@@ -94,14 +93,33 @@ async function saveFileInTauri(
   showError: ErrorCallback
 ) {
   try {
-    // TODO: Implement Tauri file saving
-    // For now, fall back to browser method
-    console.log('Tauri file saving not yet implemented - using browser fallback');
-    saveFileInLegacyBrowser(excelBuffer, filename, showSuccess);
+    const { save } = await import('@tauri-apps/plugin-dialog');
+    const { writeFile } = await import('@tauri-apps/plugin-fs');
+    const { appDataDir, join } = await import('@tauri-apps/api/path');
+    
+    // Get app data directory as default location
+    const appDataPath = await appDataDir();
+    
+    // Create default path with filename in app data directory
+    // This ensures dialog always opens in defaultPath, even if user picks another location
+    const defaultPath = await join(appDataPath, filename);
+    
+    const filePath = await save({
+      defaultPath,
+      filters: [
+        { name: 'Excel Files', extensions: ['xlsx', 'xls'] },
+        { name: 'All Files', extensions: ['*'] }
+      ]
+    });
+
+    if (filePath) {
+      // Write using Tauri filesystem API
+      await writeFile(filePath, excelBuffer);
+      
+      showSuccess('File Saved', `Excel file saved successfully to ${filePath}`);
+    }
   } catch (error) {
-    console.error('Tauri save error:', error);
-    // Fall back to legacy browser method if Tauri APIs fail
-    saveFileInLegacyBrowser(excelBuffer, filename, showSuccess);
+    showError('Save Error', 'An error occurred while saving the Excel file.');
   }
 }
 
@@ -223,33 +241,17 @@ export function exportShowToExcel(showState: any): { workbook: XLSX.WorkBook, fi
 
   // --- Breed Sheets Worksheets ---
   if (showState.breedSheets && showState.judges) {
-    console.log('🔍 DEBUG - Creating BreedSheets worksheets:', {
-      hasBreedSheets: !!showState.breedSheets,
-      judgeCount: showState.judges.length,
-      breedSheetsStructure: showState.breedSheets
-    });
+
     
     for (const judge of showState.judges) {
       const breedSheetData = buildBreedSheetSection(showState.breedSheets, judge, showState.globalSettings);
       
-      // DEBUG: Log what data is being added to the worksheet
-      console.log(`🔍 DEBUG - Creating worksheet BS_${judge.id}:`, {
-        judgeId: judge.id,
-        dataRowCount: breedSheetData.length,
-        dataPreview: breedSheetData.slice(0, 10),
-        worksheetName: `BS_${judge.id}`
-      });
+
       
       // Always create worksheet for each judge, even if no data is entered (shows complete table structure)
       const breedSheetWS = XLSX.utils.aoa_to_sheet(breedSheetData);
       XLSX.utils.book_append_sheet(workbook, breedSheetWS, `BS_${judge.id}`);
     }
-  } else {
-    console.log('🔍 DEBUG - No BreedSheets or judges found:', {
-      hasBreedSheets: !!showState.breedSheets,
-      hasJudges: !!showState.judges,
-      judgeCount: showState.judges?.length || 0
-    });
   }
 
   // Filename: YYYYMMDD_HHMMSS_showname.xlsx
@@ -448,12 +450,7 @@ function buildBreedSheetSection(breedSheetsData: any, judge: any, globalSettings
   const judgeEntries = breedSheetsData.breedEntries[judgeIdStr] || {};
 
   // DEBUG: Log the input data structure for BreedSheets
-  console.log(`🔍 DEBUG - buildBreedSheetSection for Judge ${judge.id}:`, {
-    judgeIdStr,
-    judgeEntries,
-    breedSheetsData: breedSheetsData,
-    availableKeys: Object.keys(judgeEntries)
-  });
+
 
   // Get breed lists from global settings
   const lhBreeds = globalSettings?.long_hair_breeds || [];
@@ -522,17 +519,7 @@ function buildBreedSheetSection(breedSheetsData: any, judge: any, globalSettings
           const bestField = section.group === 'Championship' ? 'bestCH' : 'bestPR';
           const bestValue = breedEntry?.[bestField] || '';
           
-          // DEBUG: Log CH and PR field processing
-          if (bestValue) {
-            console.log(`🔍 DEBUG - Excel export processing ${bestField}:`, {
-              breed,
-              breedKey,
-              breedEntry,
-              bestField,
-              bestValue,
-              section: section.group
-            });
-          }
+
           
           row.push(bestValue);
         }
@@ -556,13 +543,7 @@ function buildBreedSheetSection(breedSheetsData: any, judge: any, globalSettings
   
   const rowsWithChPr = detailedRows.filter(r => r.hasChOrPr);
   
-  console.log(`🔍 DEBUG - Final Excel rows for Judge ${judge.id}:`, {
-    totalRows: rows.length,
-    rowsWithChPrData: rowsWithChPr.length,
-    detailedRowsWithChPr: rowsWithChPr,
-    allDetailedRows: detailedRows.slice(0, 20), // Show first 20 rows with details
-    sampleDataRows: rows.filter(row => row.length > 1 && row[0] && !row[0].includes('CHAMPIONSHIP')).slice(0, 5)
-  });
+
 
   return rows;
 }

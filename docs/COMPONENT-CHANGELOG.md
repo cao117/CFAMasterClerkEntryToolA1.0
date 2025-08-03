@@ -24,17 +24,7 @@ This document tracks changes to individual components and hooks in the CFA Maste
 
 ## Hooks
 
-### useGlobalShortcuts (NEW)
-- **Created**: 2025-08-03 19:03:44
-- **Purpose**: Cross-platform global keyboard shortcuts for window management
-- **Features**:
-  - Platform-specific shortcuts (Alt+F4 on Windows/Linux, Cmd+M/Cmd+Q on macOS)
-  - Automatic cleanup on component unmount
-  - Error handling with console logging
-  - Only registers shortcuts in Tauri environment
-  - Integrates with existing window control functions
-- **Integration**: Used by App.tsx for system-wide keyboard shortcuts
-- **Files**: `src/hooks/useGlobalShortcuts.ts`
+
 
 ### useFormEmptyDetection (NEW)
 - **Created**: 2025-08-03 02:05:56

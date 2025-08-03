@@ -1,5 +1,22 @@
 # Design Changelog
 
+## [Design v1.22.0] - 2025-08-04
+
+### DESIGN-FIXED
+- **Tauri 2.0 DefaultPath Implementation**: Implemented consistent save dialog behavior using Tauri 2.0 defaultPath
+  - **Problem**: User wanted save dialog to always open from defaultPath, even if user previously chose another location
+  - **Solution**: Added defaultPath using app data directory + filename pattern on every dialog invocation
+  - **Impact**: Save dialog now always opens in app data directory with filename prefilled
+  - **Files Modified**: 
+    - `src/utils/excelExport.ts` (added defaultPath implementation)
+
+### Technical Implementation
+- **Tauri 2.0 Behavior**: Uses official defaultPath property for consistent directory opening
+- **App Directory**: Always uses appDataPath as the default directory location
+- **Filename Prefilling**: Uses join(appDataPath, filename) to prefill filename in dialog
+- **Consistent Invocation**: defaultPath is specified on every save dialog call
+- **User Experience**: Dialog always opens in same default location regardless of previous user choices
+
 ## [Design v1.21.0] - 2025-08-03 19:33:11
 
 ### [DESIGN-REFINED]
@@ -118,66 +135,22 @@
 
 ---
 
-## [Design v1.18.0] - 2025-08-03 19:03:44
+## [Design v1.19.0] - 2025-08-04
 
-### [DESIGN-IMPLEMENTED]
-- **Cross-Platform Global Shortcuts**: Implemented system-wide keyboard shortcuts for window management
-- **Platform-Specific Shortcuts**: Alt+F4 (Windows/Linux), Cmd+M/Cmd+Q (macOS) for window controls
-- **Tauri Plugin Integration**: Added global-shortcut and os plugins for cross-platform functionality
-- **Hook-Based Architecture**: Created useGlobalShortcuts hook following established patterns
-- **Automatic Cleanup**: Proper unregistration of shortcuts on component unmount
-- **Error Handling**: Comprehensive error handling with console logging for debugging
+### DESIGN-FIXED
+- **Tauri 2.6.2 Configuration**: Fixed fs plugin configuration compatibility issue
+  - **Problem**: `scope` field in `tauri.conf.json` not recognized by Tauri 2.6.2
+  - **Solution**: Removed incompatible scope configuration, updated capabilities-based permissions
+  - **Impact**: Build process now works correctly, file operations functional
+  - **Files Modified**: 
+    - `src-tauri/tauri.conf.json` (removed plugins.fs.scope)
+    - `src-tauri/capabilities/default.json` (updated fs permissions)
 
-### [DESIGN-IMPLEMENTATION]
-- **Dependencies Added**: @tauri-apps/plugin-global-shortcut and @tauri-apps/plugin-os npm packages
-- **Rust Dependencies**: Added tauri-plugin-global-shortcut and tauri-plugin-os to Cargo.toml
-- **Plugin Initialization**: Added plugin setup in src-tauri/src/lib.rs with desktop-only configuration
-- **Permissions Updated**: Added global-shortcut:default and os:default permissions to capabilities
-- **Hook Creation**: Created src/hooks/useGlobalShortcuts.ts with platform detection and shortcut registration
-- **App Integration**: Integrated useGlobalShortcuts hook in App.tsx for automatic initialization
-
-### [DESIGN-RATIONALE]
-- **User Experience**: Provides familiar system-wide keyboard shortcuts for desktop users
-- **Platform Consistency**: Follows platform conventions (Alt+F4 on Windows, Cmd+Q on macOS)
-- **Integration**: Works alongside existing TitleBar window controls without conflicts
-- **Performance**: Only registers shortcuts in Tauri environment, no browser overhead
-- **Maintainability**: Follows established hook-based architecture and error handling patterns
-- **Debugging**: Comprehensive logging for troubleshooting shortcut registration and execution
-
-### [DESIGN-IMPACT]
-- **Desktop Experience**: Enhanced native desktop feel with system-wide keyboard shortcuts
-- **User Productivity**: Faster window management through keyboard shortcuts
-- **Platform Behavior**: Seamless integration with existing platform detection system
-- **Development Experience**: Improved debugging capabilities with detailed console logging
-
-### [MIGRATION NOTES]
-- **New Dependencies**: Added global shortcut and OS detection plugins to both npm and Rust dependencies
-- **Permission Changes**: Updated capabilities to include global-shortcut and os permissions
-- **Hook Integration**: useGlobalShortcuts hook automatically initializes in App.tsx
-- **No Breaking Changes**: Existing functionality preserved, only adds new keyboard shortcut capabilities
-- **Development Impact**: Global shortcuts only work in Tauri environment, no browser functionality
-
----
-
-## [Design v1.17.0] - 2025-08-03 18:22:08
-
-### [DESIGN-FIXED]
-- **Tauri v2 Configuration**: Fixed missing `withGlobalTauri: true` setting in `src-tauri/tauri.conf.json`
-- **Global Object Access**: Enabled `window.__TAURI__` global object for proper platform detection
-- **TitleBar Functionality**: Resolved issue preventing TitleBar component from detecting Tauri environment
-- **Platform Detection**: Fixed `isTauriEnvironment()` function to work correctly in Tauri v2
-
-### [DESIGN-IMPLEMENTATION]
-- **Configuration Update**: Added `"withGlobalTauri": true` to app section in `src-tauri/tauri.conf.json`
-- **Tauri v2 Compliance**: Ensures proper Tauri v2 configuration for global object access
-- **Platform Detection**: Enables existing `isTauriEnvironment()` function to work correctly
-- **TitleBar Integration**: Allows TitleBar component to render and function properly in Tauri environment
-
-### [DESIGN-RATIONALE]
-- **Tauri v2 Requirement**: `withGlobalTauri: true` is mandatory for `window.__TAURI__` to be available
-- **Platform Detection**: Enables proper detection of Tauri environment vs browser environment
-- **TitleBar Functionality**: Allows window controls (minimize, maximize, close) to work correctly
-- **API Access**: Enables access to Tauri APIs for file operations and window management
+### Technical Implementation
+- **Configuration Pattern**: Moved from plugin-level scope to capabilities-based permissions
+- **Permission Model**: Using `fs:allow-read-file`, `fs:allow-write-file`, etc. with `**` path allowance
+- **Backward Compatibility**: Maintained existing file operation functionality
+- **Security**: Proper permission granularity for file system access
 
 ### [DESIGN-IMPACT]
 - **Desktop Experience**: TitleBar component now functions properly in Tauri environment

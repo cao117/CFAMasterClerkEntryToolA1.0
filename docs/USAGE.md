@@ -522,13 +522,6 @@ interface SettingsInputProps {
 
 ## Keyboard Shortcuts
 
-### Global Window Controls
-- **Windows/Linux**: 
-  - **Alt+F4**: Close the application
-- **macOS**: 
-  - **Cmd+M**: Minimize the application
-  - **Cmd+Q**: Quit the application
-
 ### Settings Panel
 - **Escape**: Close the settings panel
 - **Enter**: Save changes in input fields

@@ -402,17 +402,7 @@ const BreedSheetsTab: React.FC<BreedSheetsTabProps> = (props) => {
     const key = getInputKey(breedKey, field);
     const localValue = localInputState[key];
     
-    // DEBUG: Log CH and PR field updates
-    if (field === 'bestCH' || field === 'bestPR') {
-      console.log(`🔍 DEBUG - handleInputBlur for ${field}:`, {
-        judgeId,
-        breedKey,
-        field,
-        key,
-        localValue,
-        currentState: getBreedEntryValue(judgeId, breedKey, field)
-      });
-    }
+
     
     // Always update model with localValue if defined
     if (localValue !== undefined) {
@@ -440,18 +430,7 @@ const BreedSheetsTab: React.FC<BreedSheetsTabProps> = (props) => {
           }
         };
 
-        // DEBUG: Log the updated state structure for CH and PR fields
-        if (field === 'bestCH' || field === 'bestPR') {
-          console.log(`🔍 DEBUG - State update for ${field}:`, {
-            judgeIdStr,
-            groupHairLengthKey,
-            breedKey,
-            field,
-            localValue,
-            updatedBreedEntry: updatedEntries[judgeIdStr][groupHairLengthKey][breedKey],
-            fullUpdatedEntries: updatedEntries
-          });
-        }
+
 
         // Run validation immediately with updated data
         const validationInput = {
@@ -603,13 +582,7 @@ const BreedSheetsTab: React.FC<BreedSheetsTabProps> = (props) => {
       return;
     }
 
-    // DEBUG: Log the BreedSheets data being exported
     const showState = getShowState();
-    console.log('🔍 DEBUG - BreedSheets export data:', {
-      breedSheetsData: showState.breedSheets,
-      judgeEntries: showState.breedSheets?.breedEntries,
-      allJudges: Object.keys(showState.breedSheets?.breedEntries || {})
-    });
 
     // Export the full show state for Excel export
     handleSaveToExcel(getShowState, showSuccess, showError);

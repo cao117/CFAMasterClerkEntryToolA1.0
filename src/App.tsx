@@ -21,7 +21,7 @@ import { useAutoSave } from './hooks/useAutoSave';
 import { useRecentSave } from './hooks/useRecentSave';
 import { useFormEmptyDetection } from './hooks/useFormEmptyDetection';
 import { useRecentWorkDetection } from './hooks/useRecentWorkDetection';
-import { useGlobalShortcuts } from './hooks/useGlobalShortcuts';
+
 
 import { handleSaveToExcel } from './utils/excelExport';
 import { handleRestoreFromExcel, parseExcelAndRestoreState } from './utils/excelImport';
@@ -116,8 +116,8 @@ function App() {
   // Form empty detection hook
   const { containerRef, checkForData } = useFormEmptyDetection();
   
-  // Global shortcuts hook for cross-platform keyboard shortcuts
-  useGlobalShortcuts();
+
+
   
   const [activeTab, setActiveTab] = useState('general');
   const [judges, setJudges] = useState<Judge[]>([]);

@@ -105,11 +105,11 @@ export function useAutoSave(formData: any, options: UseAutoSaveOptions = {}, che
    * @param checkForData - Function to check if form has any user input
    */
   const triggerEnhancedAutoSave = async (checkForData: () => boolean): Promise<void> => {
-    console.log('🔍 DEBUG: useAutoSave - triggerEnhancedAutoSave called');
+
     if (formData && numberOfFiles > 0) {
       await autoSaveService.current.performEnhancedSingleSave(formData, checkForData);
     } else {
-      console.log('🔍 DEBUG: useAutoSave - triggerEnhancedAutoSave skipped (no formData or numberOfFiles)');
+
     }
   };
 
