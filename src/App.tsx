@@ -1229,7 +1229,7 @@ function App() {
             style={{ boxShadow: '0 2px 12px 0 #C7B27355, 0 0 8px 2px #C7B27322' }}
           >
             <svg width="10" height="10" fill="#C7B273" className="mr-2" viewBox="0 0 10 10"><circle cx="5" cy="5" r="5"/></svg>
-            Version 0.2.0
+            Version 0.3.0
           </div>
         </footer>
 
