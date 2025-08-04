@@ -25,6 +25,7 @@ import { useRecentWorkDetection } from './hooks/useRecentWorkDetection';
 
 import { handleSaveToExcel } from './utils/excelExport';
 import { handleRestoreFromExcel, parseExcelAndRestoreState } from './utils/excelImport';
+import { isTauriEnvironment } from './utils/platformDetection';
 
 import FallbackNotice from './components/FallbackNotice';
 import cfaLogo from './assets/cfa-logo-official.png';
@@ -940,7 +941,7 @@ function App() {
     <div className="min-h-screen bg-white">
       <TitleBar />
       
-      <div className="pt-12">
+      <div className={isTauriEnvironment() ? "pt-12" : ""}>
         {/* Toast Notifications */}
         <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
 

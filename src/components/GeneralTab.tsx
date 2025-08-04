@@ -1318,7 +1318,7 @@ export default function GeneralTab({
                             </svg>
                         </div>
                 <div>
-                  <span className="text-2xl font-bold text-gray-900 tracking-tight" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>Judging Informations</span>
+                  <span className="text-2xl font-bold text-gray-900 tracking-tight" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>Judge Information</span>
                 </div>
               </div>
               <CornerCollapseIcon expanded={!isJudgeInfoCollapsed} onClick={() => setIsJudgeInfoCollapsed(v => !v)} label={isJudgeInfoCollapsed ? 'Expand section' : 'Collapse section'} gradient="linear-gradient(135deg, #6366f1 60%, #8b5cf6 100%)" />
