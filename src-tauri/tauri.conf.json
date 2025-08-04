@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "CFA_MC_Entry_v0.1",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "identifier": "com.cfa.masterclerk.entry",
   "build": {
     "beforeBuildCommand": "npm run build",
