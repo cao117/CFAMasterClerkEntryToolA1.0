@@ -1230,6 +1230,7 @@ function App() {
           >
             <svg width="10" height="10" fill="#C7B273" className="mr-2" viewBox="0 0 10 10"><circle cx="5" cy="5" r="5"/></svg>
             Version 0.3.0
+
           </div>
         </footer>
 

@@ -1,113 +1,92 @@
 # Component Changelog
 
-This document tracks changes to individual components and hooks in the CFA Master Clerk Entry Tool.
+This document tracks changes to individual components in the CFA Entry application.
 
-## Components
+## CustomSelect Component
 
-### TitleBar (COLOR REFINED)
-- **Updated**: 2025-08-03 19:33:11
-- **Purpose**: Elegant, sophisticated window title bar with consistent color harmony and refined hover states
-- **Changes**:
-  - Improved color consistency by making all buttons use CFA gold base color
-  - Changed close button from red base to CFA gold base for visual harmony
-  - Enhanced close button hover state to transition from gold to red for appropriate destructive action indication
-  - Maintained elegant glassmorphism while improving visual cohesion
-  - All buttons now share consistent base styling for better brand alignment
-- **Features**:
-  - Consistent CFA gold base color across all window controls
-  - Elegant glassmorphism design with backdrop blur and gradient effects
-  - Sophisticated multi-layered hover states with appropriate color transitions
-  - Close button transitions to red on hover for clear destructive action indication
-  - Maintains all existing functionality and accessibility features
-- **Integration**: Enhanced visual consistency while preserving all window control functionality
-- **Files**: `src/components/TitleBar.tsx`
+### Version 1.2.1 - 2025-08-04
 
-## Hooks
+#### Major Improvements
+- **React Portal Implementation**: Migrated dropdown rendering from table cell to document.body using createPortal for proper stacking context isolation
+- **Smart Positioning**: Enhanced dropdown positioning logic to dynamically position above or below trigger based on available viewport space
+- **Dynamic Height Calculation**: Implemented real-time dropdown height measurement using scrollHeight for accurate positioning calculations
+- **Button Ref Targeting**: Updated ref targeting from container div to button element for precise positioning calculations
+- **Scroll Behavior**: Added scroll event handling to close dropdown when user scrolls, preventing positioning issues with fixed portal positioning
 
+#### Technical Changes
+- **Portal Rendering**: Dropdown now renders at document.body level using createPortal
+- **Position Calculation**: Uses getBoundingClientRect() on button element for accurate positioning
+- **Height Measurement**: Implements useEffect to measure actual dropdown height using scrollHeight
+- **Scroll Handling**: Added scroll event listener to close dropdown on scroll for better UX
+- **Z-Index Management**: Increased z-index to z-50 for proper layering above ActionButtons
 
+#### Bug Fixes
+- **Stacking Context Issue**: Resolved dropdown covering ActionButtons by rendering outside table DOM
+- **Positioning Accuracy**: Fixed positioning offset by targeting button element instead of container
+- **Height Calculation**: Replaced fixed CSS max-height with dynamic actual height measurement
+- **Scroll Positioning**: Fixed dropdown staying in wrong position when page scrolls
 
-### useFormEmptyDetection (NEW)
-- **Created**: 2025-08-03 02:05:56
-- **Purpose**: DOM-based empty form detection using event delegation
-- **Features**:
-  - Monitors all form inputs across all tabs for user data
-  - Uses single event listener for performance efficiency
-  - Handles different input types (text, checkbox, radio, select)
-  - Works with conditional tab rendering (only visible tabs)
-  - Returns containerRef for DOM attachment and checkForData function
-- **Integration**: Used by auto-save and recent-save systems to prevent unnecessary saves
-- **Files**: `src/hooks/useFormEmptyDetection.ts`
+#### API Changes
+- **New Props**: Added dropdownRef for internal height measurement
+- **New State**: Added dropdownHeight and dropdownRect state variables
+- **New Effects**: Added useEffect for height measurement and scroll handling
 
-### useAutoSave
-- **Updated**: 2025-08-03 02:05:56
-- **Change**: Added `triggerEnhancedAutoSave` wrapper function with empty form detection
-- **Purpose**: Prevents auto-save execution when no user input exists
-- **Integration**: Works with existing auto-save service and settings
+#### Performance Improvements
+- **Reduced DOM Manipulation**: Portal rendering minimizes DOM changes
+- **Efficient Positioning**: Real-time height calculation prevents layout shifts
+- **Memory Management**: Proper cleanup of scroll event listeners
 
-### useRecentSave
-- **Updated**: 2025-08-03 02:05:56
-- **Change**: Added `triggerEnhancedRecentSave` wrapper function with empty form detection
-- **Purpose**: Prevents recent-save execution when no user input exists
-- **Integration**: Works with existing recent-save service
+### Version 1.2.0 - 2025-08-04
 
-### useRecentWorkDetection (NEW)
-- **Created**: 2025-08-03 03:12:39
-- **Purpose**: Detects recent work within 24 hours using Recent Save localStorage
-- **Features**:
-  - Checks Recent Save localStorage structure for recent work
-  - Validates timestamp is within 24 hours
-  - Formats timestamp to required format: "21:30   Oct. 27th, 2025"
-  - Returns work data and formatted timestamp
-  - Handles error cases gracefully
-- **Integration**: Used by App.tsx for startup work detection
-- **Files**: `src/hooks/useRecentWorkDetection.ts`
+#### Initial Release
+- **Basic Dropdown Functionality**: Standard dropdown with options selection
+- **Theme Support**: Configurable border and text colors
+- **Accessibility**: ARIA labels and keyboard navigation
+- **Responsive Design**: Adapts to different screen sizes
 
-## Services
+## GeneralTab Component
 
-### AutoSaveService
-- **Updated**: 2025-08-03 02:05:56
-- **Changes**:
-  - Added `performEnhancedSingleSave` method with empty form detection
-  - Added `performEnhancedRotatingAutoSave` method with empty form detection
-  - Updated `startAutoSave` to accept optional `checkForData` function
-- **Purpose**: Integrate empty form detection into auto-save workflow
+### Version 1.2.1 - 2025-08-04
 
-### RecentSaveService
-- **Updated**: 2025-08-03 02:05:56
-- **Changes**:
-  - Added `performEnhancedRecentSave` method with empty form detection
-  - Updated `startRecentSave` to accept optional `checkForData` function
-- **Purpose**: Integrate empty form detection into recent-save workflow
+#### Integration Updates
+- **CustomSelect Integration**: Updated to use new portal-based CustomSelect component
+- **Z-Index Management**: Ensured ActionButtons remain above dropdown elements
+- **Container Overflow**: Added overflow-visible to prevent dropdown clipping
 
-## Components
+### Version 1.2.0 - 2025-08-04
 
-### ResumeWorkModal (NEW)
-- **Created**: 2025-08-03 03:12:39
-- **Purpose**: Modal component for offering to resume recent work on startup
-- **Features**:
-  - Displays formatted timestamp of recent work
-  - Offers "Resume Work" and "Start Fresh" options
-  - Uses existing modal backdrop and dialog styling
-  - Includes proper keyboard navigation (Escape key)
-  - Prevents body scroll when open
-- **Integration**: Used by App.tsx for startup work resume functionality
-- **Files**: `src/components/ResumeWorkModal.tsx`
+#### Initial Release
+- **Judge Information Table**: Comprehensive judge management interface
+- **Show Information Section**: Date, club name, master clerk management
+- **Show Count Management**: Championship, kitten, premiership tracking
+- **Action Buttons**: Excel import/export and data management
 
-### App
-- **Updated**: 2025-08-03 02:05:56
-- **Changes**:
-  - Integrated `useFormEmptyDetection` hook
-  - Added `containerRef` to main content div for DOM monitoring
-  - Added enhanced save functions with empty form detection
-  - Updated imports to include `useCallback` and new hook
-- **Purpose**: Enable empty form detection across all tabs
+## ActionButtons Component
 
-### App (Recent Work Resume)
-- **Updated**: 2025-08-03 03:12:39
-- **Changes**:
-  - Integrated `useRecentWorkDetection` hook for startup work detection
-  - Added `ResumeWorkModal` component for startup modal
-  - Added page load detection logic to ensure modal appears after complete initialization
-  - Added resume work handlers with Excel data parsing
-  - Added proper error handling and user feedback
-- **Purpose**: Enable seamless work resume functionality on startup 
+### Version 1.2.1 - 2025-08-04
+
+#### Z-Index Management
+- **Proper Layering**: Ensured buttons appear above dropdown elements
+- **Stacking Context**: Positioned relative to prevent z-index conflicts
+
+### Version 1.2.0 - 2025-08-04
+
+#### Initial Release
+- **Excel Integration**: Save to Excel and Load from Excel functionality
+- **Data Management**: Reset and Fill Test Data actions
+- **Modern Design**: Gradient buttons with hover effects
+- **Responsive Layout**: Flexbox layout with proper spacing
+
+## SettingsPanel Component
+
+### Version 1.2.0 - 2025-08-04
+
+#### Initial Release
+- **Configuration Management**: Settings for judges, cats, and thresholds
+- **Breed List Management**: Add, edit, and remove breed names
+- **Auto-save Settings**: Configure automatic file saving behavior
+- **Modern UI**: Glassmorphism design with smooth animations
+
+---
+
+_Last updated: 2025-08-04_ 

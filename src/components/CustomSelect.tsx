@@ -1,8 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 /**
  * CustomSelect - A modern, accessible, fully custom dropdown select component.
  * Now supports theme border and text color for perfect parity across all tabs.
+ * Features smart positioning to prevent dropdown clipping in constrained containers.
+ * Uses React Portal to render dropdown outside table DOM for proper z-index layering.
  * @param {string} borderColor - Tailwind border color class for the select box (e.g., 'border-violet-300')
  * @param {string} focusBorderColor - Tailwind border color class for focus state (e.g., 'focus:border-violet-500')
  * @param {string} textColor - Tailwind text color class for the select value (e.g., 'text-violet-700')
@@ -46,7 +49,62 @@ const CustomSelect: React.FC<{
 }) => {
   const [open, setOpen] = useState(false);
   const [highlighted, setHighlighted] = useState(-1);
+  const [dropdownPosition, setDropdownPosition] = useState<'above' | 'below'>('below');
+  const [dropdownRect, setDropdownRect] = useState<DOMRect | null>(null);
+  const [dropdownHeight, setDropdownHeight] = useState<number>(0);
   const ref = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLUListElement>(null);
+
+  /**
+   * Calculate optimal dropdown position based on available viewport space
+   * @param triggerElement - The dropdown trigger element
+   */
+  const calculateDropdownPosition = (triggerElement: HTMLElement) => {
+    const rect = triggerElement.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    const estimatedDropdownHeight = Math.min(options.length * 40, 240); // ~6 options * 40px each, max 240px
+    
+    // Position above if insufficient space below and sufficient space above
+    if (spaceBelow < estimatedDropdownHeight && spaceAbove > estimatedDropdownHeight) {
+      setDropdownPosition('above');
+    } else {
+      setDropdownPosition('below');
+    }
+  };
+
+  /**
+   * Handle dropdown toggle with smart positioning and portal positioning
+   */
+  const handleDropdownToggle = () => {
+    if (!open && buttonRef.current) {
+      calculateDropdownPosition(buttonRef.current);
+      setDropdownRect(buttonRef.current.getBoundingClientRect());
+    }
+    setOpen(!open);
+  };
+
+  // Update dropdown height when it opens
+  useEffect(() => {
+    if (open && dropdownRef.current) {
+      setDropdownHeight(dropdownRef.current.scrollHeight);
+    }
+  }, [open]);
+
+  // Close dropdown on scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      if (open) {
+        setOpen(false); // Close dropdown when user scrolls
+      }
+    };
+
+    if (open) {
+      window.addEventListener('scroll', handleScroll, true);
+      return () => window.removeEventListener('scroll', handleScroll, true);
+    }
+  }, [open]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -60,7 +118,7 @@ const CustomSelect: React.FC<{
   // Keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!open && (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ')) {
-      setOpen(true);
+      handleDropdownToggle();
       setHighlighted(options.findIndex(opt => opt === value));
       e.preventDefault();
     } else if (open) {
@@ -99,9 +157,10 @@ const CustomSelect: React.FC<{
       onKeyDown={handleKeyDown}
     >
       <button
+        ref={buttonRef}
         type="button"
         className={`w-full flex items-center justify-between rounded-full px-3 py-1.5 bg-white text-sm font-medium transition-all duration-200 outline-none focus:outline-none border ${borderColor} ${focusBorderColor} ${textColor} text-[15px] font-medium h-9 min-w-[70px] ${open ? 'scale-[1.02]' : ''}`}
-        onClick={() => setOpen(o => !o)}
+        onClick={handleDropdownToggle}
         aria-haspopup="listbox"
         aria-expanded={open}
         style={{ boxShadow: open ? '0 0 0 2px rgba(0,0,0,0.04)' : undefined }}
@@ -114,9 +173,18 @@ const CustomSelect: React.FC<{
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </button>
-      {open && (
+      {open && createPortal(
         <ul
-          className={`absolute z-20 mt-1 w-full rounded-xl bg-white py-1 max-h-[384px] overflow-auto animate-fade-in text-base font-semibold outline-none ${dropdownMenuClassName}`}
+          ref={dropdownRef}
+          className={`fixed z-50 rounded-xl bg-white py-1 max-h-[384px] overflow-auto animate-fade-in text-base font-semibold outline-none shadow-lg border border-gray-200 ${dropdownMenuClassName}`}
+          style={{
+            left: dropdownRect?.left || 0,
+            top: dropdownPosition === 'above' 
+              ? (dropdownRect?.top || 0) - (dropdownHeight + 8)  // Use actual height
+              : (dropdownRect?.bottom || 0) + 4,                 // Position below with gap
+            width: dropdownRect?.width || 'auto',
+            minWidth: dropdownRect?.width || 'auto'
+          }}
           role="listbox"
         >
           {options.map((opt, i) => (
@@ -138,7 +206,8 @@ const CustomSelect: React.FC<{
               {opt}
             </li>
           ))}
-        </ul>
+        </ul>,
+        document.body
       )}
     </div>
   );

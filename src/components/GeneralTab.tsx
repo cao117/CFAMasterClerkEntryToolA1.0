@@ -1306,7 +1306,7 @@ export default function GeneralTab({
         <div className="group relative">
           {/* Sophisticated background glow */}
           <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 via-purple-50 to-blue-50 rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-500 blur-xl pointer-events-none"></div>
-          <div className="relative bg-white border border-gray-200 rounded-2xl p-8 shadow-lg hover:shadow-xl hover:shadow-indigo-100/30 transition-all duration-300 transform hover:scale-[1.005] group-hover:border-indigo-200">
+          <div className="relative bg-white border border-gray-200 rounded-2xl p-8 shadow-lg hover:shadow-xl hover:shadow-indigo-100/30 transition-all duration-300 group-hover:border-indigo-200 overflow-visible z-10">
             {/* Decorative accent */}
             <div className="absolute top-0 right-0 w-6 h-6 bg-gradient-to-br from-indigo-400 to-purple-500 rounded-bl-2xl opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
             
@@ -1421,7 +1421,7 @@ export default function GeneralTab({
                 
                 {/* Judge table - Sophisticated indigo/purple theme */}
                 {judges.length > 0 && (
-                  <div className="overflow-x-auto">
+                  <div className="overflow-visible">
                     <table className="min-w-full rounded-2xl bg-white shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300">
                 <thead>
                         <tr className="bg-gradient-to-r from-indigo-50 via-purple-50 to-blue-50 border-b border-indigo-200">
@@ -1494,7 +1494,7 @@ export default function GeneralTab({
                                  
                               />
                             </td>
-                            <td className="px-4 py-3 align-middle">
+                            <td className="px-4 py-3 align-middle relative overflow-visible">
                               {/* Ring type dropdown - custom select component for specialty types */}
                               <CustomSelect 
                                 options={["Longhair", "Shorthair", "Allbreed", "Double Specialty", "Super Specialty", "OCP Ring"]} 

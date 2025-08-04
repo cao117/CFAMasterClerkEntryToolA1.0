@@ -26,7 +26,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
   resetButtonText = 'Reset',
 }) => {
   return (
-    <div className="flex flex-wrap gap-3 justify-center mt-12">
+    <div className="flex flex-wrap gap-3 justify-center mt-12 relative z-50">
       <div className="flex gap-3">
         {/* Save to Excel Button */}
         <button
