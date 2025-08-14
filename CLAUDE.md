@@ -133,3 +133,143 @@ The application uses a complex lifted state pattern where the main App component
 - **Settings Persistence**: Global settings auto-save to localStorage with proper merging
 - **Window Management**: Frameless Tauri window requires custom title bar implementation
 - **Data Integrity**: Excel import/export includes settings - ensure consistency across operations
+
+# Mandatory Documentation Rules
+
+## Overview
+
+This project maintains comprehensive documentation across multiple domains. **ALL** confirmed changes (fixes, implementations, UI designs) MUST be properly documented in the relevant sections. This is not optional.
+
+## Documentation Triggers
+
+### 1. Fix Confirmed
+When any bug fix, validation fix, or error correction is confirmed working:
+
+**MANDATORY Updates:**
+- **Primary**: Update relevant `docs/validation/VALIDATION_[TAB].md` if validation-related
+- **Primary**: Add entry to `docs/validation/VALIDATION_CHANGELOG.md` with detailed technical information
+- **Secondary**: Update `docs/meta/BUGFIX-CHANGELOG.md` with summary
+- **If Component**: Update `docs/COMPONENT-CHANGELOG.md`
+- **Cross-Reference**: Update any affected documentation with references to the fix
+
+**Example Fix Documentation Pattern:**
+```markdown
+### [YYYY-MM-DD] Tab Name: Brief Fix Description
+- **Tabs:** Affected tabs
+- **Change:** What was fixed
+- **Root Cause:** Technical cause
+- **Solution:** How it was resolved
+- **Files Modified:** List of changed files
+- **Impact:** User-facing result
+```
+
+### 2. Implementation Confirmed
+When any new feature, function, or system implementation is confirmed working:
+
+**MANDATORY Updates:**
+- **Primary**: Update `docs/PROJECT_OVERVIEW.md` if architecture changes
+- **Primary**: Update relevant `docs/specs/` files (FOLDER_STRUCTURE.md, TECHNOLOGY_STACK.md)
+- **Primary**: Add entry to `docs/COMPONENT-CHANGELOG.md` for component changes
+- **If Validation**: Create/update `docs/validation/VALIDATION_[DOMAIN].md`
+- **If API**: Update relevant specification files
+- **Cross-Reference**: Update CLAUDE.md sections if development patterns change
+
+### 3. UI Design Confirmed
+When any UI/UX design, layout, or visual change is confirmed:
+
+**MANDATORY Updates:**
+- **Primary**: Add entry to `docs/DESIGN-CHANGELOG.md` with implementation details
+- **Secondary**: Update `docs/COMPONENT-CHANGELOG.md` if components affected
+- **If New Patterns**: Update relevant sections in `docs/PROJECT_OVERVIEW.md`
+- **Cross-Reference**: Update any user guides in `docs/guides/`
+
+**Design Documentation Pattern:**
+```markdown
+### [Design vX.Y.Z] - YYYY-MM-DD
+### [DESIGN-CATEGORY]
+- **Brief Description**: What changed visually
+- **Problem**: What design issue was addressed
+- **Solution**: How it was implemented
+- **Impact**: User experience improvement
+- **Files Modified**: List of changed files
+```
+
+### 4. "Document Previous Changes" Command
+When user explicitly requests documentation of previous changes:
+
+**MANDATORY Process:**
+1. **Review ALL changelogs** for recent undocumented changes
+2. **Audit documentation gaps** across all domains
+3. **Update missing documentation** following established patterns
+4. **Verify cross-references** between related documents
+5. **Ensure consistency** across validation, component, design, and technical docs
+
+## Documentation Structure Reference
+
+### Root Documentation (`docs/`)
+- **PROJECT_OVERVIEW.md**: Architecture, features, comprehensive project documentation
+- **DESIGN-CHANGELOG.md**: UI/UX changes, visual design evolution
+- **COMPONENT-CHANGELOG.md**: Component-specific changes and updates
+- **USAGE.md**: User guides and operational instructions
+- **SCREEN_SIZE_REQUIREMENTS.md**: Technical requirements
+
+### Guides (`docs/guides/`)
+- **SETUP_AND_INSTALLATION.md**: Installation and setup procedures
+- **TEST_DATA.md**: Testing documentation and data generation
+
+### Meta Documentation (`docs/meta/`)
+- **BUGFIX-CHANGELOG.md**: Bug fix tracking and resolution history
+- **DEBUG-METHODOLOGY-LOG.md**: Debugging procedures and methodologies
+- **CONTRIBUTING.md**: Development guidelines and standards
+- **LICENSE.md**: Legal and licensing information
+- **ROOT-CAUSE-ANALYSIS.md**: Deep technical analysis documentation
+- **SOLUTION-VERIFICATION.md**: Solution testing and verification procedures
+
+### Technical Specifications (`docs/specs/`)
+- **FOLDER_STRUCTURE.md**: Project organization and architecture
+- **TECHNOLOGY_STACK.md**: Technology specifications and versions
+- **CSV_SCHEMA.md**: Data format specifications
+- **PACKAGING.md**: Build and distribution specifications
+- **SHOW_PROCESS_FOR_FINALS.md**: Business logic documentation
+
+### Validation Documentation (`docs/validation/`)
+- **VALIDATION_CHANGELOG.md**: All validation rule changes (CRITICAL for fixes)
+- **VALIDATION_CHAMPIONSHIP.md**: Championship tab validation rules
+- **VALIDATION_PREMIERSHIP.md**: Premiership tab validation rules
+- **VALIDATION_KITTEN.md**: Kitten tab validation rules
+- **VALIDATION_HOUSEHOLD.md**: Household Pet tab validation rules
+- **VALIDATION_BREED_SHEETS.md**: Breed Sheets tab validation rules
+- **VALIDATION_GENERAL.md**: General tab validation rules
+- **VALIDATION_OCP_RING.md**: OCP Ring cross-column validation
+- **VALIDATION_SUPER_SPECIALTY.md**: Super Specialty cross-column validation
+
+## Documentation Standards
+
+### Changelog Entry Requirements
+- **Date**: Always include date in YYYY-MM-DD format
+- **Affected Components**: Clearly identify what was changed
+- **Technical Details**: Include root cause, solution, files modified
+- **Impact Statement**: Describe user-facing or system impact
+- **Cross-References**: Link to related documentation
+
+### Cross-Reference Maintenance
+- **Update Related Docs**: When updating one document, check for related content in other docs
+- **Consistent Terminology**: Use consistent terms across all documentation
+- **Link Accuracy**: Verify all internal links remain valid after changes
+
+### Documentation Quality Standards
+- **Completeness**: Cover all aspects of the change
+- **Accuracy**: Ensure technical details are correct
+- **Clarity**: Write for appropriate audience (developer vs user)
+- **Consistency**: Follow established patterns and formatting
+- **Timeliness**: Update documentation immediately when changes are confirmed
+
+## Enforcement
+
+**Non-Negotiable Rule**: No change is considered complete until its documentation is updated. This includes:
+- Code fixes without validation documentation updates
+- New implementations without architectural documentation
+- UI changes without design changelog entries
+- Any change without appropriate changelog entries
+
+**Quality Check**: Before marking any task complete, verify that all relevant documentation has been updated according to these rules.
