@@ -656,15 +656,27 @@ function transformTabData(tabData: any, judges: any[], tabType: string, showStat
         };
         
         for (let colIdx = 0; colIdx < columns.length; colIdx++) {
+          const col = columns[colIdx];
           const key = `${colIdx}-${pos}`;
-          const catNumber = tabData[section.key]?.[key] || '';
-          const voided = tabData[section.voidKey]?.[key] || false;
           
-          row.columns.push({
-            catNumber: catNumber,
-            status: '', // Finals don't have status
-            voided: !!voided
-          } as any);
+          // Check if this section should be enabled for this column
+          if (section.enabledFor(col)) {
+            const catNumber = tabData[section.key]?.[key] || '';
+            const voided = tabData[section.voidKey]?.[key] || false;
+            
+            row.columns.push({
+              catNumber: catNumber,
+              status: '', // Finals don't have status
+              voided: !!voided
+            } as any);
+          } else {
+            // For disabled sections, push empty data
+            row.columns.push({
+              catNumber: '',
+              status: '',
+              voided: false
+            } as any);
+          }
         }
         placements.push(row);
       }
@@ -741,15 +753,27 @@ function transformTabData(tabData: any, judges: any[], tabType: string, showStat
         };
         
         for (let colIdx = 0; colIdx < columns.length; colIdx++) {
+          const col = columns[colIdx];
           const key = `${colIdx}-${pos}`;
-          const catNumber = tabData[section.key]?.[key] || '';
-          const voided = tabData[section.voidKey]?.[key] || false;
           
-          row.columns.push({
-            catNumber: catNumber,
-            status: '', // Finals don't have status
-            voided: !!voided
-          } as any);
+          // Check if this section should be enabled for this column
+          if (section.enabledFor(col)) {
+            const catNumber = tabData[section.key]?.[key] || '';
+            const voided = tabData[section.voidKey]?.[key] || false;
+            
+            row.columns.push({
+              catNumber: catNumber,
+              status: '', // Finals don't have status
+              voided: !!voided
+            } as any);
+          } else {
+            // For disabled sections, push empty data
+            row.columns.push({
+              catNumber: '',
+              status: '',
+              voided: false
+            } as any);
+          }
         }
         placements.push(row);
       }

@@ -2,6 +2,33 @@
 
 This changelog records all changes, additions, and deletions to validation rules for each tab in the CFA Master Clerk Entry Tool. Each entry includes the date, affected tab, summary of the change, and rationale/context.
 
+### [2025-08-14] Championship & Premiership Tabs: SSP Ring Excel Export Duplication Fix
+- **Tabs:** Championship, Premiership
+- **Change:** Fixed Excel export duplication issue where SSP ring data appeared in both LH/SH columns and AB column sections
+- **Summary:**
+  - **Root Cause**: Excel export function's `enabledFor` logic was defined but not actually used during data population
+  - **Problem**: 
+    - Super Specialty rings exported identical data to both LH/SH columns AND AB column Best LH CH/PR and Best SH CH/PR sections
+    - Users saw duplicate cat numbers (e.g., "1,2,3" in both LH column and AB column Best LH CH section)
+    - Violated business rule that SSP AB column should only contain data unique to AB, not duplicate LH/SH data
+  - **Solution**: 
+    - Modified `transformTabData` function in `excelExport.ts` to properly apply `enabledFor` checks during data population
+    - Added conditional logic to export empty data for disabled sections rather than duplicating values
+    - Preserved existing `enabledFor` functions that correctly identify SSP AB column restrictions
+  - **Technical Details**:
+    - Lines 658-680 (Championship) and 755-777 (Premiership): Added `section.enabledFor(col)` checks in data population loops
+    - For SSP rings: AB column Best LH CH and Best SH CH sections now export as empty strings
+    - For SSP rings: LH and SH columns retain entered data as expected
+    - Other ring types (Allbreed, Double Specialty, OCP) unaffected
+  - **Affected Files**: `src/utils/excelExport.ts`
+  - **Result**: SSP rings now export LH/SH data only to their respective columns, with empty AB column duplicate sections
+- **Files Modified**: 
+  - `src/utils/excelExport.ts` - Fixed data population logic to respect enabledFor functions
+  - `docs/validation/VALIDATION_CHANGELOG.md` - Added this documentation entry
+- **Testing**: Manual verification confirmed SSP rings export without duplication while other ring types continue to work correctly
+- **Rationale**: Excel export should reflect business logic where SSP AB columns contain only AB-specific data, not duplicates of LH/SH sections
+- **Impact**: Users now receive clean Excel exports for SSP rings without confusing duplicate data entries
+
 ### [2025-08-14] Championship Tab: OCP & SSP Duplicate Error Precedence Fix
 - **Tabs:** Championship
 - **Change:** Fixed critical bug where duplicate errors were not taking precedence over OCP/SSP specific validation errors

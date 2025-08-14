@@ -9,6 +9,19 @@ Super Specialty rings consist of three columns with the same judge ID:
 - **Shorthair column**: Judges all short hair cats and gives placements  
 - **Allbreed column**: Combines both long hair and short hair cats for final placements
 
+## Excel Export Behavior
+
+### Data Export Rules (Updated 2025-08-14)
+
+Super Specialty rings follow specific export rules to prevent data duplication:
+
+- **Show Awards Section**: All columns (LH, SH, AB) export their respective entered data
+- **Best AB CH/PR Section**: Only AB column exports data
+- **Best LH CH/PR Section**: Only LH column exports data, **AB column exports empty**
+- **Best SH CH/PR Section**: Only SH column exports data, **AB column exports empty**
+
+**Rationale**: The LH and SH columns already contain the specialty-specific data. The AB column Best LH CH/PR and Best SH CH/PR sections would duplicate this data, so they are intentionally left empty in Excel exports to maintain data clarity and prevent confusion.
+
 ## Validation Scope
 
 Super Specialty cross-column validation **ONLY** applies to:

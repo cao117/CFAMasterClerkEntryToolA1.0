@@ -17,6 +17,7 @@
       "Bash(wsl:*)"
     ],
     "deny": [],
-    "ask": []
+    "ask": [],
+    "defaultMode": "acceptEdits"
   }
 }

@@ -24,3 +24,6 @@ dist-ssr
 *.sw?
 yyy/cfa-tool
 .vercel
+
+# Temporary files and directories
+temp/

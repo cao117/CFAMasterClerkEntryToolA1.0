@@ -2,6 +2,32 @@
 
 This document tracks changes to individual components in the CFA Entry application.
 
+## Excel Export Utility
+
+### Version 1.1.0 - 2025-08-14
+
+#### Major Bug Fix
+- **SSP Ring Export Duplication**: Fixed critical Excel export issue where Super Specialty ring data was duplicated between LH/SH columns and AB column sections
+
+#### Technical Changes
+- **enabledFor Logic Application**: Modified `transformTabData` function to properly apply existing `enabledFor` checks during data population
+- **Conditional Data Population**: Added logic to export empty values for disabled sections instead of duplicating data
+- **Championship Section**: Lines 658-680 updated with `section.enabledFor(col)` validation
+- **Premiership Section**: Lines 755-777 updated with `section.enabledFor(col)` validation
+
+#### Bug Fixes
+- **Data Duplication**: SSP rings no longer export LH/SH data to both specialty columns AND AB column sections
+- **Business Rule Compliance**: AB column now correctly contains only AB-specific data for SSP rings
+- **Export Integrity**: Maintains data separation between LH, SH, and AB sections as intended
+
+#### Impact
+- **SSP Rings**: AB column Best LH CH/PR and Best SH CH/PR sections export as empty
+- **Other Ring Types**: Allbreed, Double Specialty, OCP rings unaffected
+- **Data Consistency**: Excel exports now match UI data entry patterns
+
+#### Files Modified
+- `src/utils/excelExport.ts` - Fixed data population logic in transformTabData function
+
 ## CustomSelect Component
 
 ### Version 1.2.1 - 2025-08-04

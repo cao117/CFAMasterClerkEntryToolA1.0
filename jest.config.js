@@ -19,7 +19,7 @@ export default {
   transform: {
     '^.+\\.(ts|tsx)$': 'ts-jest',
   },
-  moduleNameMapping: {
+  moduleNameMapper: {
     '\\.(css|less|scss)$': 'identity-obj-proxy'
   },
   extensionsToTreatAsEsm: ['.ts', '.tsx'],
