@@ -964,18 +964,27 @@ function validateOCPRankedCatsPriority(
 
 /**
  * Gets ranked cats from Allbreed column for OCP validation
- * Ranked cats = PR in top 10/15 or AB PR or LH PR or SH PR
+ * Ranked cats = PR cats in top 10/15 Show Awards or AB PR or LH PR or SH PR
+ * Note: GP cats are NOT considered ranked for OCP because they are not eligible for OCP placement
  */
 function getOCPRankedCatsFromColumn(input: PremiershipValidationInput, colIdx: number): Set<string> {
   const rankedCats = new Set<string>();
   
-  // Collect from Show Awards (PR and GP cats in top 10/15)
+  // Collect from Show Awards (Only PR cats in top 10/15 for OCP validation)
+  // GP cats are not eligible for OCP placement, so they should not be considered "ranked" for OCP
+  console.log(`Getting ranked cats from AB column ${colIdx}:`);
   Object.keys(input.showAwards).forEach(key => {
     const [col, row] = key.split('-').map(Number);
     if (col === colIdx && row < 10) { // Top 10 for OCP validation
       const cell = input.showAwards[key];
-      if (cell.catNumber && !isVoidInput(cell.catNumber) && (cell.status === 'PR' || cell.status === 'GP')) {
-        rankedCats.add(cell.catNumber);
+      if (cell && cell.catNumber && !isVoidInput(cell.catNumber)) {
+        console.log(`  Row ${row}: Cat #${cell.catNumber}, status: ${cell.status}`);
+        if (cell.status === 'PR') { // Only PR cats are ranked for OCP, not GP
+          rankedCats.add(cell.catNumber.trim());
+          console.log(`    Added ${cell.catNumber} as ranked cat (PR only)`);
+        } else if (cell.status === 'GP') {
+          console.log(`    Skipped ${cell.catNumber} - GP cats not eligible for OCP`);
+        }
       }
     }
   });

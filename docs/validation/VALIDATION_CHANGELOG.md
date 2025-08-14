@@ -2,6 +2,36 @@
 
 This changelog records all changes, additions, and deletions to validation rules for each tab in the CFA Master Clerk Entry Tool. Each entry includes the date, affected tab, summary of the change, and rationale/context.
 
+### [2025-08-14] Championship & Premiership Tabs: OCP Ring Filler Error Logic Fix
+- **Tabs:** Championship, Premiership
+- **Change:** Fixed OCP ring filler validation to exclude non-eligible cats (GC/GP) from ranked cats consideration
+- **Summary:**
+  - **Root Cause**: OCP filler validation incorrectly included GC cats (Championship) and GP cats (Premiership) as "ranked cats" requiring placement before filler cats
+  - **Problem**: 
+    - Championship OCP: GC cats (1,2,3,4) incorrectly included in ranked cats list, causing false filler errors
+    - Premiership OCP: GP cats incorrectly included in ranked cats list, causing false filler errors
+    - Users saw errors like "1,2,3,4 not placed yet" when these cats should not be considered for OCP placement
+    - OCP columns are status-specific (CH-only in Championship, PR-only in Premiership) but validation treated all statuses as eligible
+  - **Solution**: 
+    - Championship: Modified `getOCPRankedCatsFromColumn` to only consider CH cats as ranked (excluded GC cats)
+    - Premiership: Modified `getOCPRankedCatsFromColumn` to only consider PR cats as ranked (excluded GP cats)
+    - Added explicit logging to show when GC/GP cats are skipped vs CH/PR cats added
+    - Updated function documentation to clarify OCP eligibility requirements
+  - **Technical Details**:
+    - Championship (lines 1565-1570): Changed `cell.status === 'GC' || cell.status === 'CH'` to `cell.status === 'CH'`
+    - Premiership (lines 981-986): Changed `cell.status === 'PR' || cell.status === 'GP'` to `cell.status === 'PR'`
+    - Both tabs: Added logging and explicit GC/GP exclusion logic
+    - Updated documentation comments to reflect OCP eligibility rules
+  - **Affected Files**: `src/validation/championshipValidation.ts`, `src/validation/premiershipValidation.ts`
+  - **Result**: OCP filler validation now correctly considers only eligible cats (CH/PR) as ranked, eliminating false filler errors
+- **Files Modified**: 
+  - `src/validation/championshipValidation.ts` - Fixed OCP ranked cats logic in getOCPRankedCatsFromColumn function
+  - `src/validation/premiershipValidation.ts` - Fixed OCP ranked cats logic in getOCPRankedCatsFromColumn function
+  - `docs/validation/VALIDATION_CHANGELOG.md` - Added this documentation entry
+- **Testing**: Manual verification confirmed that GC/GP cats no longer trigger false OCP filler errors
+- **Rationale**: OCP columns are status-specific and only cats with qualifying status (CH/PR) should be considered for OCP placement validation
+- **Impact**: Users now see accurate OCP filler validation that respects status eligibility rules
+
 ### [2025-08-14] Championship & Premiership Tabs: SSP Ring Excel Import AB Column Population
 - **Tabs:** Championship, Premiership
 - **Change:** Implemented Excel import logic to properly populate SSP ring AB column Best LH/SH sections from LH/SH column data
