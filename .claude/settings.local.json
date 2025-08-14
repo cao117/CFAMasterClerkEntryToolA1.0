@@ -14,7 +14,8 @@
       "Bash(env)",
       "mcp__puppeteer__puppeteer_navigate",
       "mcp__sequential-thinking__sequentialthinking",
-      "Bash(wsl:*)"
+      "Bash(wsl:*)",
+      "Bash(rm:*)"
     ],
     "deny": [],
     "ask": [],

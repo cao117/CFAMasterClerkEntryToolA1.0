@@ -602,9 +602,16 @@ function transformTabData(tabData: any, judges: any[], tabType: string, showStat
         const cellData = tabData.showAwards?.[key] || { catNumber: '', status: 'GC' };
         const voided = tabData.voidedShowAwards?.[key] || false;
         
+        // Apply OCP status forcing logic (same as UI components)
+        const col = columns[colIdx];
+        let finalStatus = cellData.status || 'GC';
+        if (col?.specialty === 'OCP' && cellData.catNumber && cellData.catNumber.trim().toUpperCase() !== 'VOID') {
+          finalStatus = 'CH'; // OCP rings are locked to CH status in Championship tab
+        }
+        
         row.columns.push({
           catNumber: cellData.catNumber || '',
-          status: cellData.status || 'GC',
+          status: finalStatus,
           voided: !!voided
         } as any);
       }
@@ -699,9 +706,16 @@ function transformTabData(tabData: any, judges: any[], tabType: string, showStat
         const cellData = tabData.showAwards?.[key] || { catNumber: '', status: 'GP' };
         const voided = tabData.voidedShowAwards?.[key] || false;
         
+        // Apply OCP status forcing logic (same as UI components)
+        const col = columns[colIdx];
+        let finalStatus = cellData.status || 'GP';
+        if (col?.specialty === 'OCP' && cellData.catNumber && cellData.catNumber.trim().toUpperCase() !== 'VOID') {
+          finalStatus = 'PR'; // OCP rings are locked to PR status in Premiership tab
+        }
+        
         row.columns.push({
           catNumber: cellData.catNumber || '',
-          status: cellData.status || 'GP',
+          status: finalStatus,
           voided: !!voided
         } as any);
       }
