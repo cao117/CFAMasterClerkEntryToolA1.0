@@ -2,6 +2,32 @@
 
 This document tracks changes to individual components in the CFA Entry application.
 
+## Excel Import Utility
+
+### Version 1.1.0 - 2025-08-14
+
+#### Major Enhancement
+- **SSP Ring Import AB Column Population**: Implemented logic to properly populate SSP AB column Best LH/SH sections from LH/SH column data during Excel import
+
+#### Technical Changes
+- **Enhanced populateSuperSpecialtyABColumns**: Updated function to copy LH/SH Best section data to corresponding AB column sections
+- **Data Flow Logic**: LH column Best LH CH/PR → AB column Best LH CH/PR sections
+- **Data Flow Logic**: SH column Best SH CH/PR → AB column Best SH CH/PR sections
+- **Championship/Premiership Support**: Lines 942-958 implement SSP-specific import logic
+
+#### Features
+- **Round-Trip Consistency**: Ensures export → import cycles maintain proper AB column data
+- **Validation Compatibility**: AB column data restoration enables full SSP validation functionality
+- **Data Integrity**: Maintains business logic expectations for AB column content
+
+#### Impact
+- **SSP Rings**: AB column properly populated with LH/SH specific data after import
+- **Other Ring Types**: Allbreed, Double Specialty, OCP rings unaffected
+- **User Experience**: Complete functionality preserved across export/import operations
+
+#### Files Modified
+- `src/utils/excelImport.ts` - Enhanced SSP AB column population logic in populateTabSuperSpecialtyAB function
+
 ## Excel Export Utility
 
 ### Version 1.1.0 - 2025-08-14

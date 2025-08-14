@@ -9,7 +9,7 @@ Super Specialty rings consist of three columns with the same judge ID:
 - **Shorthair column**: Judges all short hair cats and gives placements  
 - **Allbreed column**: Combines both long hair and short hair cats for final placements
 
-## Excel Export Behavior
+## Excel Export/Import Behavior
 
 ### Data Export Rules (Updated 2025-08-14)
 
@@ -20,7 +20,36 @@ Super Specialty rings follow specific export rules to prevent data duplication:
 - **Best LH CH/PR Section**: Only LH column exports data, **AB column exports empty**
 - **Best SH CH/PR Section**: Only SH column exports data, **AB column exports empty**
 
-**Rationale**: The LH and SH columns already contain the specialty-specific data. The AB column Best LH CH/PR and Best SH CH/PR sections would duplicate this data, so they are intentionally left empty in Excel exports to maintain data clarity and prevent confusion.
+**Export Rationale**: The LH and SH columns already contain the specialty-specific data. The AB column Best LH CH/PR and Best SH CH/PR sections would duplicate this data, so they are intentionally left empty in Excel exports to maintain data clarity and prevent confusion.
+
+### Data Import Rules (Updated 2025-08-14)
+
+Super Specialty rings follow specific import rules to restore proper AB column functionality:
+
+- **Show Awards Section**: All columns (LH, SH, AB) import their respective data unchanged
+- **Best AB CH/PR Section**: AB column imports data unchanged  
+- **Best LH CH/PR Section**: **AB column populated from LH column Best LH CH/PR data**
+- **Best SH CH/PR Section**: **AB column populated from SH column Best SH CH/PR data**
+
+**Import Rationale**: Since AB column Best LH/SH sections are exported as empty, the import process must restore this data from the LH/SH columns to maintain proper validation functionality and UI behavior. This ensures round-trip consistency while preserving the business logic that AB column contains LH/SH specific data.
+
+### Round-Trip Data Flow Example
+
+**User Input:**
+- LH Column Best LH CH: "1,2,3"
+- SH Column Best SH CH: "4,5,6"
+
+**Excel Export:**
+- LH Column Best LH CH: "1,2,3"  
+- SH Column Best SH CH: "4,5,6"
+- AB Column Best LH CH: *empty*
+- AB Column Best SH CH: *empty*
+
+**Excel Import:**
+- LH Column Best LH CH: "1,2,3"
+- SH Column Best SH CH: "4,5,6"  
+- AB Column Best LH CH: "1,2,3" ✅ (restored from LH)
+- AB Column Best SH CH: "4,5,6" ✅ (restored from SH)
 
 ## Validation Scope
 

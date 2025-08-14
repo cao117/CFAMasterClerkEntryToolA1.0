@@ -1,5 +1,18 @@
 # Bugfix Changelog
 
+## [2025-08-14 23:00:00] TECHNICAL ENHANCEMENT: SSP Ring Excel Import AB Column Population
+- **Files Modified**: `src/utils/excelImport.ts`
+- **Code Changes**:
+  - Enhanced `populateTabSuperSpecialtyAB()` function (lines 942-958): Updated data copying logic to properly populate AB column from LH/SH columns
+  - Fixed Championship section: LH column Best LH CH data → AB column Best LH CH sections
+  - Fixed Premiership section: LH column Best LH PR data → AB column Best LH PR sections  
+  - Fixed Championship section: SH column Best SH CH data → AB column Best SH CH sections
+  - Fixed Premiership section: SH column Best SH PR data → AB column Best SH PR sections
+  - Updated documentation to clarify SSP-specific import behavior and round-trip consistency
+- **Testing Evidence**: Round-trip consistency verified (export → import → proper AB column data restoration)
+- **Root Cause**: Excel import needed to restore AB column data that was intentionally exported as empty to prevent duplication
+- **Impact**: SSP rings now maintain complete AB column functionality after Excel import, enabling proper validation and UI behavior
+
 ## [2025-08-14 22:35:00] TECHNICAL FIX: SSP Ring Excel Export Data Duplication
 - **Files Modified**: `src/utils/excelExport.ts`
 - **Code Changes**:

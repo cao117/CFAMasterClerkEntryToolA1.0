@@ -2,6 +2,33 @@
 
 This changelog records all changes, additions, and deletions to validation rules for each tab in the CFA Master Clerk Entry Tool. Each entry includes the date, affected tab, summary of the change, and rationale/context.
 
+### [2025-08-14] Championship & Premiership Tabs: SSP Ring Excel Import AB Column Population
+- **Tabs:** Championship, Premiership
+- **Change:** Implemented Excel import logic to properly populate SSP ring AB column Best LH/SH sections from LH/SH column data
+- **Summary:**
+  - **Root Cause**: Excel export saves SSP AB column Best LH/SH sections as empty (to prevent duplication), but import needed to restore expected AB column data
+  - **Problem**: 
+    - After Excel export/import cycle, SSP AB column Best LH CH/PR and Best SH CH/PR sections remained empty
+    - UI validation and business logic expect AB column to contain LH/SH specific data for proper cross-column validation
+    - Users lost AB column data functionality after importing previously exported files
+  - **Solution**: 
+    - Enhanced `populateSuperSpecialtyABColumns` function in `excelImport.ts` to copy LH/SH Best section data to corresponding AB column sections
+    - Added specific logic to copy LH column Best LH CH/PR data to AB column Best LH CH/PR sections
+    - Added specific logic to copy SH column Best SH CH/PR data to AB column Best SH CH/PR sections
+  - **Technical Details**:
+    - Lines 942-958: Updated data copying logic in `populateTabSuperSpecialtyAB` function
+    - For SSP rings: LH column Best LH CH/PR → AB column Best LH CH/PR sections
+    - For SSP rings: SH column Best SH CH/PR → AB column Best SH CH/PR sections  
+    - Other ring types (Allbreed, Double Specialty, OCP) unaffected
+  - **Affected Files**: `src/utils/excelImport.ts`
+  - **Result**: SSP rings now maintain proper AB column data after Excel import, enabling full validation and UI functionality
+- **Files Modified**: 
+  - `src/utils/excelImport.ts` - Enhanced SSP ring AB column population logic
+  - `docs/validation/VALIDATION_CHANGELOG.md` - Added this documentation entry
+- **Testing**: Round-trip consistency verified (export → import → proper AB column data restoration)
+- **Rationale**: AB column must contain LH/SH specific data for SSP validation logic and UI consistency to function properly
+- **Impact**: Users can now export and import SSP ring data while maintaining complete functionality and data integrity
+
 ### [2025-08-14] Championship & Premiership Tabs: SSP Ring Excel Export Duplication Fix
 - **Tabs:** Championship, Premiership
 - **Change:** Fixed Excel export duplication issue where SSP ring data appeared in both LH/SH columns and AB column sections

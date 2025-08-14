@@ -855,6 +855,13 @@ function validateRestoredState(state: ImportedShowState): boolean {
 /**
  * Populate Super Specialty AB columns from LH/SH columns for Best CH/PR sections
  * This is called after all worksheets are parsed to populate AB column data from LH/SH columns
+ * 
+ * For SSP rings:
+ * - LH column Best LH CH/PR data → AB column Best LH CH/PR sections
+ * - SH column Best SH CH/PR data → AB column Best SH CH/PR sections
+ * 
+ * This ensures that when an Excel file is imported, the AB column contains the appropriate
+ * LH and SH specific data, even though it was exported as empty from the Excel export.
  */
 function populateSuperSpecialtyABColumns(restoredState: ImportedShowState) {
   // Find Super Specialty judges
@@ -932,22 +939,22 @@ function populateTabSuperSpecialtyAB(tabData: any, columns: { judge: any; specia
   // Process each Super Specialty ring
   superSpecialtyRings.forEach(ring => {
     if (tabType === 'championship') {
-      // Copy LH Champions Finals to AB Champions Finals (Best LH CH sections)
-      copyFinalsData(tabData.lhChampionsFinals, tabData.championsFinals, ring.longhairColIdx, ring.allbreedColIdx);
-      copyFinalsData(tabData.voidedLHChampionsFinals, tabData.voidedChampionsFinals, ring.longhairColIdx, ring.allbreedColIdx);
+      // Copy LH column Best LH CH data to AB column Best LH CH sections
+      copyFinalsData(tabData.lhChampionsFinals, tabData.lhChampionsFinals, ring.longhairColIdx, ring.allbreedColIdx);
+      copyFinalsData(tabData.voidedLHChampionsFinals, tabData.voidedLHChampionsFinals, ring.longhairColIdx, ring.allbreedColIdx);
       
-      // Copy SH Champions Finals to AB Champions Finals (Best SH CH sections) 
-      copyFinalsData(tabData.shChampionsFinals, tabData.championsFinals, ring.shorthairColIdx, ring.allbreedColIdx);
-      copyFinalsData(tabData.voidedSHChampionsFinals, tabData.voidedChampionsFinals, ring.shorthairColIdx, ring.allbreedColIdx);
+      // Copy SH column Best SH CH data to AB column Best SH CH sections
+      copyFinalsData(tabData.shChampionsFinals, tabData.shChampionsFinals, ring.shorthairColIdx, ring.allbreedColIdx);
+      copyFinalsData(tabData.voidedSHChampionsFinals, tabData.voidedSHChampionsFinals, ring.shorthairColIdx, ring.allbreedColIdx);
 
     } else if (tabType === 'premiership') {
-      // Copy LH Premiers Finals to AB Premiers Finals (Best LH PR sections)
-      copyFinalsData(tabData.lhPremiersFinals, tabData.abPremiersFinals, ring.longhairColIdx, ring.allbreedColIdx);
-      copyFinalsData(tabData.voidedLHPremiersFinals, tabData.voidedABPremiersFinals, ring.longhairColIdx, ring.allbreedColIdx);
+      // Copy LH column Best LH PR data to AB column Best LH PR sections
+      copyFinalsData(tabData.lhPremiersFinals, tabData.lhPremiersFinals, ring.longhairColIdx, ring.allbreedColIdx);
+      copyFinalsData(tabData.voidedLHPremiersFinals, tabData.voidedLHPremiersFinals, ring.longhairColIdx, ring.allbreedColIdx);
       
-      // Copy SH Premiers Finals to AB Premiers Finals (Best SH PR sections)
-      copyFinalsData(tabData.shPremiersFinals, tabData.abPremiersFinals, ring.shorthairColIdx, ring.allbreedColIdx);
-      copyFinalsData(tabData.voidedSHPremiersFinals, tabData.voidedABPremiersFinals, ring.shorthairColIdx, ring.allbreedColIdx);
+      // Copy SH column Best SH PR data to AB column Best SH PR sections
+      copyFinalsData(tabData.shPremiersFinals, tabData.shPremiersFinals, ring.shorthairColIdx, ring.allbreedColIdx);
+      copyFinalsData(tabData.voidedSHPremiersFinals, tabData.voidedSHPremiersFinals, ring.shorthairColIdx, ring.allbreedColIdx);
     }
   });
 }
