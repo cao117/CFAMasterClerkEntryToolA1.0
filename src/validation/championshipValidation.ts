@@ -1076,6 +1076,10 @@ export function validateChampionshipTab(input: ChampionshipValidationInput, maxC
   const ocpRingErrors = validateOCPRingCrossColumn(input, maxCats);
   Object.assign(errors, ocpRingErrors);
 
+  // Super Specialty cross-column validation (runs AFTER all existing validation)
+  const superSpecialtyErrors = validateSuperSpecialtyCrossColumn(input, maxCats);
+  Object.assign(errors, superSpecialtyErrors);
+
   return errors;
 }
 
@@ -1750,5 +1754,548 @@ function getOrderedSHCHCatsFromSHChampionsFinals(
   });
   
   return orderedCats.filter(cat => cat); // Remove empty slots
+}
+
+/**
+ * Validates Super Specialty cross-column relationships for Championship tab
+ * This function runs AFTER all existing validation is complete
+ * Only applies to Super Specialty ring judges (3 columns: LH + SH + AB with same judge ID)
+ */
+export function validateSuperSpecialtyCrossColumn(input: ChampionshipValidationInput, maxCats: number): { [key: string]: string } {
+  const errors: { [key: string]: string } = {};
+  
+  // Only run for Super Specialty judges
+  const superSpecialtyRings = findSuperSpecialtyRings(input.columns);
+  
+  // Debug logging to see if Super Specialty rings are detected
+  console.log('Super Specialty validation (CH) - Input columns:', input.columns);
+  console.log('Super Specialty validation (CH) - Found rings:', superSpecialtyRings);
+  
+  for (const ringInfo of superSpecialtyRings) {
+    const { lhColIdx, shColIdx, abColIdx, judge } = ringInfo;
+    
+    console.log('Processing Super Specialty ring (CH):', { lhColIdx, shColIdx, abColIdx });
+    
+    // 1. Title/Award Consistency Validation
+    const titleErrors = validateTitleConsistencyCH(input, lhColIdx, shColIdx, abColIdx);
+    Object.assign(errors, titleErrors);
+    
+    // 2. Ranked Cats Priority Validation
+    const priorityErrors = validateRankedCatsPriorityCH(input, lhColIdx, shColIdx, abColIdx);
+    Object.assign(errors, priorityErrors);
+    
+    // 3. Order Preservation Within Hair Length Validation
+    const orderErrors = validateOrderPreservationCH(input, lhColIdx, shColIdx, abColIdx);
+    Object.assign(errors, orderErrors);
+    
+    // 4. Specialty Finals Consistency Validation
+    const finalsErrors = validateSpecialtyFinalsConsistencyCH(input, lhColIdx, shColIdx, abColIdx);
+    Object.assign(errors, finalsErrors);
+    
+    // 5. Cross-Column Duplicate Prevention Validation
+    const duplicateErrors = validateCrossColumnDuplicatesCH(input, lhColIdx, shColIdx, abColIdx);
+    Object.assign(errors, duplicateErrors);
+  }
+  
+  return errors;
+}
+
+/**
+ * Cross-Column Duplicate Prevention Validation for Championship (matches PR validateCrossColumnDuplicates)
+ * Rule: A cat number cannot be both longhair and shorthair in the same Super Specialty ring
+ */
+function validateCrossColumnDuplicatesCH(
+  input: ChampionshipValidationInput,
+  longhairColIdx: number,
+  shorthairColIdx: number,
+  allbreedColIdx: number
+): { [key: string]: string } {
+  const errors: { [key: string]: string } = {};
+  
+  console.log('validateCrossColumnDuplicatesCH called for ring:', { longhairColIdx, shorthairColIdx, allbreedColIdx });
+  
+  // Collect cats from Longhair column
+  const lhCats: Set<string> = new Set();
+  for (let rowIdx = 0; rowIdx < 15; rowIdx++) {
+    const key = `${longhairColIdx}-${rowIdx}`;
+    const cell = input.showAwards[key];
+    if (cell && cell.catNumber && !isVoidInput(cell.catNumber)) {
+      const catNumber = cell.catNumber.trim();
+      lhCats.add(catNumber);
+      console.log(`LH cat collected (CH): ${catNumber} at position ${rowIdx}`);
+    }
+  }
+  
+  console.log('LH cats collected (CH):', Array.from(lhCats));
+  
+  // Check if any LH cats appear in SH column
+  for (let rowIdx = 0; rowIdx < 15; rowIdx++) {
+    const key = `${shorthairColIdx}-${rowIdx}`;
+    const cell = input.showAwards[key];
+    if (cell && cell.catNumber && !isVoidInput(cell.catNumber)) {
+      const catNumber = cell.catNumber.trim();
+      
+      if (lhCats.has(catNumber)) {
+        console.log(`Duplicate found (CH): Cat #${catNumber} appears in both LH and SH columns`);
+        
+        // Mark error in SH column
+        errors[key] = `Duplicate: Cat #${catNumber} cannot be both longhair and shorthair`;
+        
+        // Mark error in LH column (find the position)
+        for (let lhRowIdx = 0; lhRowIdx < 15; lhRowIdx++) {
+          const lhKey = `${longhairColIdx}-${lhRowIdx}`;
+          const lhCell = input.showAwards[lhKey];
+          if (lhCell && lhCell.catNumber && lhCell.catNumber.trim() === catNumber) {
+            errors[lhKey] = `Duplicate: Cat #${catNumber} cannot be both longhair and shorthair`;
+            break;
+          }
+        }
+      }
+    }
+  }
+  
+  console.log('Cross-column duplicate validation (CH) errors:', errors);
+  return errors;
+}
+
+/**
+ * Title/Award Consistency Validation for Championship - Show Awards + Finals sections
+ * Rule: Same cat cannot have different titles (status) across columns
+ */
+function validateTitleConsistencyCH(
+  input: ChampionshipValidationInput,
+  longhairColIdx: number,
+  shorthairColIdx: number,
+  allbreedColIdx: number
+): { [key: string]: string } {
+  const errors: { [key: string]: string } = {};
+  
+  // Get all cat numbers and their titles from all three columns
+  const catTitles: { [catNumber: string]: { [column: string]: string } } = {};
+  
+  // Collect titles from Longhair column
+  collectTitlesFromColumnCH(input, longhairColIdx, 'Longhair', catTitles);
+  
+  // Collect titles from Shorthair column
+  collectTitlesFromColumnCH(input, shorthairColIdx, 'Shorthair', catTitles);
+  
+  // Collect titles from Allbreed column
+  collectTitlesFromColumnCH(input, allbreedColIdx, 'Allbreed', catTitles);
+  
+  // Check for title inconsistencies
+  Object.entries(catTitles).forEach(([catNumber, titles]) => {
+    const uniqueTitles = Array.from(new Set(Object.values(titles)));
+    if (uniqueTitles.length > 1) {
+      // Find all cells with this cat number and mark them with error
+      markTitleInconsistencyErrorsCH(input, catNumber, longhairColIdx, shorthairColIdx, allbreedColIdx, errors);
+    }
+  });
+  
+  return errors;
+}
+
+/**
+ * Collects titles for a specific cat number from a column
+ */
+function collectTitlesFromColumnCH(
+  input: ChampionshipValidationInput,
+  colIdx: number,
+  columnType: string,
+  catTitles: { [catNumber: string]: { [column: string]: string } }
+): void {
+  // Check Show Awards section
+  for (let rowIdx = 0; rowIdx < 15; rowIdx++) {
+    const key = `${colIdx}-${rowIdx}`;
+    const cell = input.showAwards[key];
+    if (cell && cell.catNumber && !isVoidInput(cell.catNumber)) {
+      const catNumber = cell.catNumber.trim();
+      if (!catTitles[catNumber]) catTitles[catNumber] = {};
+      catTitles[catNumber][columnType] = cell.status;
+    }
+  }
+  
+  // Check Finals sections based on column type
+  if (columnType === 'Allbreed') {
+    // AB CH cats are stored in championsFinals
+    Object.keys(input.championsFinals).forEach(key => {
+      const [col, row] = key.split('-').map(Number);
+      if (col === colIdx) {
+        const catNumber = input.championsFinals[key];
+        if (catNumber && !isVoidInput(catNumber)) {
+          if (!catTitles[catNumber]) catTitles[catNumber] = {};
+          catTitles[catNumber][columnType] = 'CH'; // Finals cats are CH
+        }
+      }
+    });
+  } else if (columnType === 'Longhair') {
+    // LH CH cats are stored in lhChampionsFinals
+    Object.keys(input.lhChampionsFinals).forEach(key => {
+      const [col, row] = key.split('-').map(Number);
+      if (col === colIdx) {
+        const catNumber = input.lhChampionsFinals[key];
+        if (catNumber && !isVoidInput(catNumber)) {
+          if (!catTitles[catNumber]) catTitles[catNumber] = {};
+          catTitles[catNumber][columnType] = 'CH'; // Finals cats are CH
+        }
+      }
+    });
+  } else if (columnType === 'Shorthair') {
+    // SH CH cats are stored in shChampionsFinals
+    Object.keys(input.shChampionsFinals).forEach(key => {
+      const [col, row] = key.split('-').map(Number);
+      if (col === colIdx) {
+        const catNumber = input.shChampionsFinals[key];
+        if (catNumber && !isVoidInput(catNumber)) {
+          if (!catTitles[catNumber]) catTitles[catNumber] = {};
+          catTitles[catNumber][columnType] = 'CH'; // Finals cats are CH
+        }
+      }
+    });
+  }
+}
+
+/**
+ * Marks title inconsistency errors for all occurrences of a cat number
+ */
+function markTitleInconsistencyErrorsCH(
+  input: ChampionshipValidationInput,
+  catNumber: string,
+  longhairColIdx: number,
+  shorthairColIdx: number,
+  allbreedColIdx: number,
+  errors: { [key: string]: string }
+): void {
+  const errorMessage = `Title inconsistency: Cat #${catNumber} has different titles across Super Specialty columns`;
+  
+  // Mark errors in Show Awards
+  [longhairColIdx, shorthairColIdx, allbreedColIdx].forEach(colIdx => {
+    for (let rowIdx = 0; rowIdx < 15; rowIdx++) {
+      const key = `${colIdx}-${rowIdx}`;
+      const cell = input.showAwards[key];
+      if (cell && cell.catNumber && cell.catNumber.trim() === catNumber) {
+        errors[key] = errorMessage;
+      }
+    }
+  });
+  
+  // Mark errors in Finals sections
+  Object.keys(input.championsFinals).forEach(key => {
+    if (input.championsFinals[key] && input.championsFinals[key].trim() === catNumber) {
+      errors[`champions-${key}`] = errorMessage;
+    }
+  });
+  
+  Object.keys(input.lhChampionsFinals).forEach(key => {
+    if (input.lhChampionsFinals[key] && input.lhChampionsFinals[key].trim() === catNumber) {
+      errors[`lhChampions-${key}`] = errorMessage;
+    }
+  });
+  
+  Object.keys(input.shChampionsFinals).forEach(key => {
+    if (input.shChampionsFinals[key] && input.shChampionsFinals[key].trim() === catNumber) {
+      errors[`shChampions-${key}`] = errorMessage;
+    }
+  });
+}
+
+/**
+ * Ranked Cats Priority Validation for Championship - Show Awards section
+ * Rule: Filler cats (cats not ranked in specialty columns) cannot be placed before ranked cats
+ */
+function validateRankedCatsPriorityCH(
+  input: ChampionshipValidationInput,
+  longhairColIdx: number,
+  shorthairColIdx: number,
+  allbreedColIdx: number
+): { [key: string]: string } {
+  const errors: { [key: string]: string } = {};
+  
+  // Get ranked cats from specialty columns
+  const longhairRankedCats = getRankedCatsFromColumnCH(input, longhairColIdx);
+  const shorthairRankedCats = getRankedCatsFromColumnCH(input, shorthairColIdx);
+  
+  console.log('Ranked cats validation (CH) - LH cats:', Array.from(longhairRankedCats));
+  console.log('Ranked cats validation (CH) - SH cats:', Array.from(shorthairRankedCats));
+  
+  // Check Allbreed column for violations
+  checkRankedCatsPriorityInColumnCH(input, allbreedColIdx, longhairRankedCats, shorthairRankedCats, errors);
+  
+  console.log('Ranked cats validation (CH) - Errors found:', errors);
+  
+  return errors;
+}
+
+/**
+ * Gets ranked cats from a column (cats that appear in Show Awards)
+ */
+function getRankedCatsFromColumnCH(input: ChampionshipValidationInput, colIdx: number): Set<string> {
+  const rankedCats = new Set<string>();
+  
+  for (let rowIdx = 0; rowIdx < 15; rowIdx++) {
+    const key = `${colIdx}-${rowIdx}`;
+    const cell = input.showAwards[key];
+    if (cell && cell.catNumber && !isVoidInput(cell.catNumber)) {
+      rankedCats.add(cell.catNumber.trim());
+    }
+  }
+  
+  return rankedCats;
+}
+
+/**
+ * Checks ranked cats priority in Allbreed column
+ * Rule: Filler cats (cats not ranked in specialty columns) cannot be placed before ranked cats
+ */
+function checkRankedCatsPriorityInColumnCH(
+  input: ChampionshipValidationInput,
+  colIdx: number,
+  longhairRankedCats: Set<string>,
+  shorthairRankedCats: Set<string>,
+  errors: { [key: string]: string }
+): void {
+  const allRankedCats = new Set([...longhairRankedCats, ...shorthairRankedCats]);
+  
+  console.log('Checking ranked cats priority (CH) for column', colIdx);
+  console.log('All ranked cats (CH):', Array.from(allRankedCats));
+  
+  // Check each position in the Allbreed column
+  console.log(`Checking Allbreed column (CH) ${colIdx} for cats:`);
+  for (let rowIdx = 0; rowIdx < 15; rowIdx++) {
+    const key = `${colIdx}-${rowIdx}`;
+    const cell = input.showAwards[key];
+    if (cell && cell.catNumber && !isVoidInput(cell.catNumber)) {
+      const catNumber = cell.catNumber.trim();
+      console.log(`  Row ${rowIdx}: Cat #${catNumber}, is ranked: ${allRankedCats.has(catNumber)}`);
+      
+      // If this is a filler cat (not ranked in specialty columns)
+      if (!allRankedCats.has(catNumber)) {
+        console.log(`  Found filler cat (CH) ${catNumber} at position ${rowIdx}`);
+        
+        // Check if there are any ranked cats that should be placed before this position
+        // by looking at the ranked cats list and checking if any should come before this position
+        const rankedCatsArray = Array.from(allRankedCats);
+        if (rankedCatsArray.length > 0) {
+          console.log(`    There are ${rankedCatsArray.length} ranked cats that should be placed first: ${rankedCatsArray.join(', ')}`);
+          console.log(`    Filler cat ${catNumber} at position ${rowIdx} violates the rule - ranked cats should come first!`);
+          errors[key] = `Filler cat placed before ranked cats: Cat #${catNumber} is not ranked in specialty columns but appears in Allbreed before ranked cats`;
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Order Preservation Validation for Championship - Show Awards section
+ * Rule: Cats must preserve LH/SH order in AB Show Awards column
+ */
+function validateOrderPreservationCH(
+  input: ChampionshipValidationInput,
+  longhairColIdx: number,
+  shorthairColIdx: number,
+  allbreedColIdx: number
+): { [key: string]: string } {
+  const errors: { [key: string]: string } = {};
+  
+  // Validate Longhair order preservation
+  validateHairLengthOrderPreservationCH(input, longhairColIdx, allbreedColIdx, 'Longhair', errors);
+  
+  // Validate Shorthair order preservation
+  validateHairLengthOrderPreservationCH(input, shorthairColIdx, allbreedColIdx, 'Shorthair', errors);
+  
+  return errors;
+}
+
+/**
+ * Validates order preservation for a specific hair length
+ */
+function validateHairLengthOrderPreservationCH(
+  input: ChampionshipValidationInput,
+  specialtyColIdx: number,
+  allbreedColIdx: number,
+  hairLength: string,
+  errors: { [key: string]: string }
+): void {
+  // Get ordered cats from specialty column
+  const specialtyOrder = getOrderedCatsFromColumnCH(input, specialtyColIdx);
+  
+  // Check order preservation in Allbreed column
+  checkOrderPreservationInAllbreedCH(input, allbreedColIdx, specialtyOrder, hairLength, errors);
+}
+
+/**
+ * Gets ordered cats from a column
+ */
+function getOrderedCatsFromColumnCH(input: ChampionshipValidationInput, colIdx: number): string[] {
+  const orderedCats: string[] = [];
+  
+  for (let rowIdx = 0; rowIdx < 15; rowIdx++) {
+    const key = `${colIdx}-${rowIdx}`;
+    const cell = input.showAwards[key];
+    if (cell && cell.catNumber && !isVoidInput(cell.catNumber)) {
+      orderedCats.push(cell.catNumber.trim());
+    }
+  }
+  
+  return orderedCats;
+}
+
+/**
+ * Checks order preservation in Allbreed column
+ */
+function checkOrderPreservationInAllbreedCH(
+  input: ChampionshipValidationInput,
+  colIdx: number,
+  specialtyOrder: string[],
+  hairLength: string,
+  errors: { [key: string]: string }
+): void {
+  const allbreedCats: string[] = [];
+  
+  // Get cats from Allbreed column
+  for (let rowIdx = 0; rowIdx < 15; rowIdx++) {
+    const key = `${colIdx}-${rowIdx}`;
+    const cell = input.showAwards[key];
+    if (cell && cell.catNumber && !isVoidInput(cell.catNumber)) {
+      allbreedCats.push(cell.catNumber.trim());
+    }
+  }
+  
+  // Check if specialty cats appear in correct order in Allbreed
+  let specialtyIndex = 0;
+  for (let allbreedIndex = 0; allbreedIndex < allbreedCats.length; allbreedIndex++) {
+    const allbreedCat = allbreedCats[allbreedIndex];
+    
+    if (specialtyOrder.includes(allbreedCat)) {
+      // This cat should appear in the same order as in specialty
+      const expectedSpecialtyIndex = specialtyOrder.indexOf(allbreedCat);
+      if (expectedSpecialtyIndex !== specialtyIndex) {
+        // Order violation found
+        const key = `${colIdx}-${allbreedIndex}`;
+        errors[key] = `Order violation: ${allbreedCat} is out of order in Allbreed. Must preserve order from ${hairLength} column`;
+      }
+      specialtyIndex++;
+    }
+  }
+}
+
+/**
+ * Specialty Finals Consistency Validation for Championship - Finals sections only
+ * Rule: LH/SH finals consistency with AB column finals
+ */
+function validateSpecialtyFinalsConsistencyCH(
+  input: ChampionshipValidationInput,
+  longhairColIdx: number,
+  shorthairColIdx: number,
+  allbreedColIdx: number
+): { [key: string]: string } {
+  const errors: { [key: string]: string } = {};
+  
+  // Validate Longhair finals consistency (LH CH section to LH CH section)
+  validateHairLengthFinalsConsistencyCH(input, longhairColIdx, allbreedColIdx, 'Longhair', 'lhChampionsFinals', errors);
+  
+  // Validate Shorthair finals consistency (SH CH section to SH CH section)
+  validateHairLengthFinalsConsistencyCH(input, shorthairColIdx, allbreedColIdx, 'Shorthair', 'shChampionsFinals', errors);
+  
+  return errors;
+}
+
+/**
+ * Validates finals consistency for a specific hair length
+ */
+function validateHairLengthFinalsConsistencyCH(
+  input: ChampionshipValidationInput,
+  specialtyColIdx: number,
+  allbreedColIdx: number,
+  hairLength: string,
+  finalsSection: 'lhChampionsFinals' | 'shChampionsFinals',
+  errors: { [key: string]: string }
+): void {
+  // Check each position individually (0, 1, 2, 3, 4, etc.)
+  for (let pos = 0; pos < 15; pos++) {
+    const specialtyKey = `${specialtyColIdx}-${pos}`;
+    const allbreedKey = `${allbreedColIdx}-${pos}`;
+    
+    const specialtyValue = (input as any)[finalsSection][specialtyKey];
+    const allbreedValue = (input as any)[finalsSection][allbreedKey];
+    
+    // Check if there's a mismatch between specialty and allbreed for the same position
+    if (specialtyValue !== allbreedValue) {
+      if (specialtyValue && !allbreedValue) {
+        // Specialty has value but allbreed doesn't
+        const sectionName = finalsSection === 'lhChampionsFinals' ? 'lhChampions' : 'shChampions';
+        const errorKey = `${sectionName}-${allbreedColIdx}-${pos}`;
+        errors[errorKey] = `Finals inconsistency: ${hairLength} specialty has ${specialtyValue} but Allbreed column is missing this cat for position ${pos + 1}`;
+      } else if (!specialtyValue && allbreedValue) {
+        // Allbreed has value but specialty doesn't
+        const sectionName = finalsSection === 'lhChampionsFinals' ? 'lhChampions' : 'shChampions';
+        const errorKey = `${sectionName}-${allbreedColIdx}-${pos}`;
+        errors[errorKey] = `Finals inconsistency: Allbreed column has ${allbreedValue} but ${hairLength} specialty is missing this cat for position ${pos + 1}`;
+      } else if (specialtyValue && allbreedValue && specialtyValue !== allbreedValue) {
+        // Both have values but they're different
+        const sectionName = finalsSection === 'lhChampionsFinals' ? 'lhChampions' : 'shChampions';
+        const errorKey = `${sectionName}-${allbreedColIdx}-${pos}`;
+        errors[errorKey] = `Finals inconsistency: ${hairLength} specialty has ${specialtyValue} but Allbreed column has ${allbreedValue} for position ${pos + 1}`;
+      }
+    }
+  }
+}
+
+/**
+ * Finds Super Specialty rings (3 columns: LH + SH + AB with same judge ID)
+ */
+function findSuperSpecialtyRings(columns: { judge: Judge; specialty: string }[]): Array<{
+  lhColIdx: number;
+  shColIdx: number;
+  abColIdx: number;
+  judge: Judge;
+}> {
+  const rings: Array<{
+    lhColIdx: number;
+    shColIdx: number;
+    abColIdx: number;
+    judge: Judge;
+  }> = [];
+  
+  // Group columns by judge ID
+  const judgeColumns: { [judgeId: number]: Array<{ colIdx: number; specialty: string }> } = {};
+  
+  columns.forEach((column, colIdx) => {
+    const judgeId = column.judge.id;
+    if (!judgeColumns[judgeId]) {
+      judgeColumns[judgeId] = [];
+    }
+    judgeColumns[judgeId].push({ colIdx, specialty: column.specialty });
+  });
+  
+  console.log('findSuperSpecialtyRings (CH) - judgeColumns:', judgeColumns);
+  
+  // Find Super Specialty judges (3 columns: LH + SH + AB with same judge ID)
+  Object.entries(judgeColumns).forEach(([judgeId, judgeColumns]) => {
+    console.log(`Checking judge ${judgeId} with ${judgeColumns.length} columns:`, judgeColumns);
+    
+    if (judgeColumns.length >= 3) {
+      const longhair = judgeColumns.find(col => col.specialty === 'Longhair');
+      const shorthair = judgeColumns.find(col => col.specialty === 'Shorthair');
+      const allbreed = judgeColumns.find(col => col.specialty === 'Allbreed');
+      
+      console.log(`Judge ${judgeId} specialties found:`, { longhair, shorthair, allbreed });
+      
+      if (longhair && shorthair && allbreed) {
+        const judge = columns.find(col => col.judge.id === parseInt(judgeId))?.judge;
+        if (judge) {
+          console.log(`Super Specialty ring detected for judge ${judge.name} (${judge.acronym})`);
+          rings.push({
+            lhColIdx: longhair.colIdx,
+            shColIdx: shorthair.colIdx,
+            abColIdx: allbreed.colIdx,
+            judge: judge
+          });
+        }
+      }
+    }
+  });
+  
+  console.log('findSuperSpecialtyRings (CH) - final rings:', rings);
+  return rings;
 }
 

@@ -670,7 +670,7 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
       // Action button handlers
   const handleSaveToCSVClick = () => {
     // Check for validation errors before CSV export
-    const errors = validateChampionshipTab(championshipTabData, judges);
+    const errors = validateChampionshipTab(prepareValidationInput(), globalSettings.max_cats);
     setErrors(errors);
     if (Object.keys(errors).length > 0) {
       setIsCSVErrorModalOpen(true);

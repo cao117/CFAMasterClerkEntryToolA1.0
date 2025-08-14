@@ -257,6 +257,9 @@ export function parseExcelAndRestoreState(
       parseTabWorksheet(data, restoredState.household, 'household');
     }
 
+    // Post-processing: Populate Super Specialty AB columns from LH/SH columns
+    populateSuperSpecialtyABColumns(restoredState);
+
     // Parse Breed Sheets worksheets (BS_1, BS_2, etc.)
     const breedSheetWorksheets = sheetNames.filter(name => name.startsWith('BS_'));
     if (breedSheetWorksheets.length > 0) {
@@ -847,6 +850,126 @@ function validateRestoredState(state: ImportedShowState): boolean {
     state.premiership && 
     typeof state.premiership === 'object'
   );
+}
+
+/**
+ * Populate Super Specialty AB columns from LH/SH columns for Best CH/PR sections
+ * This is called after all worksheets are parsed to populate AB column data from LH/SH columns
+ */
+function populateSuperSpecialtyABColumns(restoredState: ImportedShowState) {
+  // Find Super Specialty judges
+  const superSpecialtyJudges = restoredState.judges.filter(judge => judge.ringType === 'Super Specialty');
+  
+  if (superSpecialtyJudges.length === 0) {
+    return; // No Super Specialty judges, nothing to do
+  }
+
+  // Build column mapping (similar logic from excelExport.ts)
+  const columns: { judge: any; specialty: string }[] = [];
+  restoredState.judges.forEach(judge => {
+    if (judge.ringType === 'Super Specialty') {
+      columns.push({ judge, specialty: 'Longhair' });
+      columns.push({ judge, specialty: 'Shorthair' });
+      columns.push({ judge, specialty: 'Allbreed' });
+    } else if (judge.ringType === 'Double Specialty') {
+      columns.push({ judge, specialty: 'Longhair' });
+      columns.push({ judge, specialty: 'Shorthair' });
+    } else if (judge.ringType === 'OCP Ring') {
+      columns.push({ judge, specialty: 'Allbreed' });
+      columns.push({ judge, specialty: 'OCP' });
+    } else {
+      columns.push({ judge, specialty: judge.ringType });
+    }
+  });
+
+  // Process Championship data
+  populateTabSuperSpecialtyAB(restoredState.championship, columns, 'championship');
+  
+  // Process Premiership data
+  populateTabSuperSpecialtyAB(restoredState.premiership, columns, 'premiership');
+
+  // Note: Kitten tab doesn't have Best CH/PR sections, so no processing needed
+}
+
+/**
+ * Helper function to populate AB column data from LH/SH columns for a specific tab
+ */
+function populateTabSuperSpecialtyAB(tabData: any, columns: { judge: any; specialty: string }[], tabType: string) {
+  // Find Super Specialty rings (3 columns with same judge ID)
+  const superSpecialtyRings: Array<{
+    longhairColIdx: number;
+    shorthairColIdx: number;
+    allbreedColIdx: number;
+  }> = [];
+
+  // Group columns by judge ID
+  const judgeGroups: { [judgeId: string]: Array<{ colIdx: number; specialty: string; judge: any }> } = {};
+  columns.forEach((col, colIdx) => {
+    const judgeId = col.judge.id.toString();
+    if (!judgeGroups[judgeId]) {
+      judgeGroups[judgeId] = [];
+    }
+    judgeGroups[judgeId].push({ colIdx, specialty: col.specialty, judge: col.judge });
+  });
+
+  // Find Super Specialty rings (3 columns with same judge ID)
+  Object.values(judgeGroups).forEach(judgeColumns => {
+    if (judgeColumns.length === 3) {
+      const longhair = judgeColumns.find(col => col.specialty === 'Longhair');
+      const shorthair = judgeColumns.find(col => col.specialty === 'Shorthair');
+      const allbreed = judgeColumns.find(col => col.specialty === 'Allbreed');
+
+      if (longhair && shorthair && allbreed && longhair.judge.ringType === 'Super Specialty') {
+        superSpecialtyRings.push({
+          longhairColIdx: longhair.colIdx,
+          shorthairColIdx: shorthair.colIdx,
+          allbreedColIdx: allbreed.colIdx
+        });
+      }
+    }
+  });
+
+  // Process each Super Specialty ring
+  superSpecialtyRings.forEach(ring => {
+    if (tabType === 'championship') {
+      // Copy LH Champions Finals to AB Champions Finals (Best LH CH sections)
+      copyFinalsData(tabData.lhChampionsFinals, tabData.championsFinals, ring.longhairColIdx, ring.allbreedColIdx);
+      copyFinalsData(tabData.voidedLHChampionsFinals, tabData.voidedChampionsFinals, ring.longhairColIdx, ring.allbreedColIdx);
+      
+      // Copy SH Champions Finals to AB Champions Finals (Best SH CH sections) 
+      copyFinalsData(tabData.shChampionsFinals, tabData.championsFinals, ring.shorthairColIdx, ring.allbreedColIdx);
+      copyFinalsData(tabData.voidedSHChampionsFinals, tabData.voidedChampionsFinals, ring.shorthairColIdx, ring.allbreedColIdx);
+
+    } else if (tabType === 'premiership') {
+      // Copy LH Premiers Finals to AB Premiers Finals (Best LH PR sections)
+      copyFinalsData(tabData.lhPremiersFinals, tabData.abPremiersFinals, ring.longhairColIdx, ring.allbreedColIdx);
+      copyFinalsData(tabData.voidedLHPremiersFinals, tabData.voidedABPremiersFinals, ring.longhairColIdx, ring.allbreedColIdx);
+      
+      // Copy SH Premiers Finals to AB Premiers Finals (Best SH PR sections)
+      copyFinalsData(tabData.shPremiersFinals, tabData.abPremiersFinals, ring.shorthairColIdx, ring.allbreedColIdx);
+      copyFinalsData(tabData.voidedSHPremiersFinals, tabData.voidedABPremiersFinals, ring.shorthairColIdx, ring.allbreedColIdx);
+    }
+  });
+}
+
+/**
+ * Helper function to copy finals data from source column to destination column
+ */
+function copyFinalsData(sourceData: any, destData: any, sourceColIdx: number, destColIdx: number) {
+  if (!sourceData || !destData) return;
+  
+  // Copy all positions for this column
+  Object.keys(sourceData).forEach(key => {
+    // Key format is "colIdx-pos" (e.g., "0-0", "1-2")
+    const [keyColIdx, pos] = key.split('-');
+    if (parseInt(keyColIdx) === sourceColIdx) {
+      // Copy to destination column at same position
+      const destKey = `${destColIdx}-${pos}`;
+      if (sourceData[key]) {
+        destData[destKey] = sourceData[key];
+      }
+    }
+  });
 } 
 
 /**

@@ -626,13 +626,25 @@ function transformTabData(tabData: any, judges: any[], tabType: string, showStat
         key: 'lhChampionsFinals', 
         voidKey: 'voidedLHChampionsFinals',
         labels: ['Best LH CH', '2nd Best LH CH', '3rd Best LH CH', '4th Best LH CH', '5th Best LH CH'].slice(0, finalsRowCount),
-        enabledFor: (col: any) => col.specialty === 'Longhair' || col.specialty === 'Allbreed'
+        enabledFor: (col: any) => {
+          // For Super Specialty: skip AB column for Best LH CH sections (duplicates LH column)
+          if (col.judge.ringType === 'Super Specialty' && col.specialty === 'Allbreed') {
+            return false;
+          }
+          return col.specialty === 'Longhair' || col.specialty === 'Allbreed';
+        }
       },
       { 
         key: 'shChampionsFinals', 
         voidKey: 'voidedSHChampionsFinals',
         labels: ['Best SH CH', '2nd Best SH CH', '3rd Best SH CH', '4th Best SH CH', '5th Best SH CH'].slice(0, finalsRowCount),
-        enabledFor: (col: any) => col.specialty === 'Shorthair' || col.specialty === 'Allbreed'
+        enabledFor: (col: any) => {
+          // For Super Specialty: skip AB column for Best SH CH sections (duplicates SH column)
+          if (col.judge.ringType === 'Super Specialty' && col.specialty === 'Allbreed') {
+            return false;
+          }
+          return col.specialty === 'Shorthair' || col.specialty === 'Allbreed';
+        }
       }
     ];
 
@@ -699,13 +711,25 @@ function transformTabData(tabData: any, judges: any[], tabType: string, showStat
         key: 'lhPremiersFinals', 
         voidKey: 'voidedLHPremiersFinals',
         labels: ['Best LH PR', '2nd Best LH PR', '3rd Best LH PR'].slice(0, finalsRowCount),
-        enabledFor: (col: any) => col.specialty === 'Longhair' || col.specialty === 'Allbreed'
+        enabledFor: (col: any) => {
+          // For Super Specialty: skip AB column for Best LH PR sections (duplicates LH column)
+          if (col.judge.ringType === 'Super Specialty' && col.specialty === 'Allbreed') {
+            return false;
+          }
+          return col.specialty === 'Longhair' || col.specialty === 'Allbreed';
+        }
       },
       { 
         key: 'shPremiersFinals', 
         voidKey: 'voidedSHPremiersFinals',
         labels: ['Best SH PR', '2nd Best SH PR', '3rd Best SH PR'].slice(0, finalsRowCount),
-        enabledFor: (col: any) => col.specialty === 'Shorthair' || col.specialty === 'Allbreed'
+        enabledFor: (col: any) => {
+          // For Super Specialty: skip AB column for Best SH PR sections (duplicates SH column)
+          if (col.judge.ringType === 'Super Specialty' && col.specialty === 'Allbreed') {
+            return false;
+          }
+          return col.specialty === 'Shorthair' || col.specialty === 'Allbreed';
+        }
       }
     ];
 

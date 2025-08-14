@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(claude config list)",
+      "Bash(claude mcp:*)",
+      "Bash(where claude)",
+      "WebSearch",
+      "Bash(npm run lint)",
+      "Bash(npx eslint:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run dev:*)",
+      "Bash(grep:*)",
+      "WebFetch(domain:docs.anthropic.com)",
+      "Bash(env)",
+      "mcp__puppeteer__puppeteer_navigate",
+      "mcp__sequential-thinking__sequentialthinking"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
