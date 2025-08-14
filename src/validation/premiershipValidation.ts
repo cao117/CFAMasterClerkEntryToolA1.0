@@ -694,12 +694,12 @@ export function validatePremiershipTab(input: PremiershipValidationInput, maxCat
 
   // Super Specialty cross-column validation (runs AFTER all existing validation)
   console.log('About to call Super Specialty validation...');
-  const superSpecialtyErrors = validateSuperSpecialtyCrossColumn(input, maxCats);
+  const superSpecialtyErrors = validateSuperSpecialtyCrossColumn(input, maxCats, errors);
   console.log('Super Specialty validation completed, errors:', superSpecialtyErrors);
   Object.assign(errors, superSpecialtyErrors);
 
   // OCP Ring cross-column validation (runs AFTER all existing validation)
-  const ocpRingErrors = validateOCPRingCrossColumn(input, maxCats);
+  const ocpRingErrors = validateOCPRingCrossColumn(input, maxCats, errors);
   Object.assign(errors, ocpRingErrors);
 
   return errors;
@@ -725,7 +725,7 @@ function isVoidInput(catNumber: string): boolean {
  * This function runs AFTER all existing validation is complete
  * Only applies to OCP Ring judges (2 columns: Allbreed + OCP with same judge ID)
  */
-export function validateOCPRingCrossColumn(input: PremiershipValidationInput, maxCats: number): { [key: string]: string } {
+export function validateOCPRingCrossColumn(input: PremiershipValidationInput, maxCats: number, allExistingErrors: { [key: string]: string } = {}): { [key: string]: string } {
   const errors: { [key: string]: string } = {};
   
   // Only run for OCP Ring judges
@@ -734,16 +734,16 @@ export function validateOCPRingCrossColumn(input: PremiershipValidationInput, ma
   for (const ringInfo of ocpRings) {
     const { allbreedColIdx, ocpColIdx } = ringInfo;
     
-    // 1. Title/Award Consistency Validation
-    const titleErrors = validateOCPTitleConsistency(input, allbreedColIdx, ocpColIdx);
+    // 1. Title/Award Consistency Validation (respect existing errors)
+    const titleErrors = validateOCPTitleConsistency(input, allbreedColIdx, ocpColIdx, allExistingErrors, {});
     Object.assign(errors, titleErrors);
     
-    // 2. Ranked Cats Priority Validation (skip for cats with title inconsistencies)
-    const priorityErrors = validateOCPRankedCatsPriority(input, allbreedColIdx, ocpColIdx, titleErrors);
+    // 2. Ranked Cats Priority Validation (pass existing errors to respect validation precedence)
+    const priorityErrors = validateOCPRankedCatsPriority(input, allbreedColIdx, ocpColIdx, { ...allExistingErrors, ...errors }, {});
     Object.assign(errors, priorityErrors);
     
-    // 3. Order Preservation Validation
-    const orderErrors = validateOCPOrderPreservation(input, allbreedColIdx, ocpColIdx);
+    // 3. Order Preservation Validation (pass existing errors to respect validation precedence)
+    const orderErrors = validateOCPOrderPreservation(input, allbreedColIdx, ocpColIdx, { ...allExistingErrors, ...errors });
     Object.assign(errors, orderErrors);
   }
   
@@ -803,7 +803,9 @@ function findOCPRings(columns: { judge: Judge; specialty: string }[]): Array<{
 function validateOCPTitleConsistency(
   input: PremiershipValidationInput,
   allbreedColIdx: number,
-  ocpColIdx: number
+  ocpColIdx: number,
+  allExistingErrors: { [key: string]: string } = {},
+  currentErrors: { [key: string]: string } = {}
 ): { [key: string]: string } {
   const errors: { [key: string]: string } = {};
   
@@ -817,13 +819,12 @@ function validateOCPTitleConsistency(
   collectOCPTitlesFromColumn(input, ocpColIdx, 'OCP', catTitles);
   
   // Check for title inconsistencies
-  Object.keys(catTitles).forEach(catNumber => {
-    const titles = catTitles[catNumber];
+  Object.entries(catTitles).forEach(([catNumber, titles]) => {
     if (titles.Allbreed && titles.OCP && titles.Allbreed !== titles.OCP) {
       // Cannot have same cat # labeled GP in AB column and PR in OCP column
       if ((titles.Allbreed === 'GP' && titles.OCP === 'PR') || 
           (titles.Allbreed === 'PR' && titles.OCP === 'GP')) {
-        markOCPTitleInconsistencyErrors(input, catNumber, allbreedColIdx, ocpColIdx, errors);
+        markOCPTitleInconsistencyErrors(input, catNumber, allbreedColIdx, ocpColIdx, errors, allExistingErrors, currentErrors);
       }
     }
   });
@@ -900,17 +901,22 @@ function markOCPTitleInconsistencyErrors(
   catNumber: string,
   allbreedColIdx: number,
   ocpColIdx: number,
-  errors: { [key: string]: string }
+  errors: { [key: string]: string },
+  allExistingErrors: { [key: string]: string } = {},
+  currentErrors: { [key: string]: string } = {}
 ): void {
   const errorMessage = `Title inconsistency: Cat #${catNumber} has different titles across OCP Ring columns`;
   
   // Mark errors in Allbreed column
   Object.keys(input.showAwards).forEach(key => {
     const [col, row] = key.split('-').map(Number);
-    if (col === allbreedColIdx) {
+    if (col === allbreedColIdx && row < 10) {
       const cell = input.showAwards[key];
       if (cell.catNumber === catNumber && !isVoidInput(cell.catNumber)) {
-        errors[key] = errorMessage;
+        // Respect duplicate error precedence - only set if no existing error
+        if (!allExistingErrors[key] && !currentErrors[key]) {
+          errors[key] = errorMessage;
+        }
       }
     }
   });
@@ -918,10 +924,13 @@ function markOCPTitleInconsistencyErrors(
   // Mark errors in OCP column
   Object.keys(input.showAwards).forEach(key => {
     const [col, row] = key.split('-').map(Number);
-    if (col === ocpColIdx) {
+    if (col === ocpColIdx && row < 10) {
       const cell = input.showAwards[key];
       if (cell.catNumber === catNumber && !isVoidInput(cell.catNumber)) {
-        errors[key] = errorMessage;
+        // Respect duplicate error precedence - only set if no existing error
+        if (!allExistingErrors[key] && !currentErrors[key]) {
+          errors[key] = errorMessage;
+        }
       }
     }
   });
@@ -935,16 +944,20 @@ function validateOCPRankedCatsPriority(
   input: PremiershipValidationInput,
   allbreedColIdx: number,
   ocpColIdx: number,
-  titleErrors: { [key: string]: string } = {}
+  titleErrors: { [key: string]: string } = {},
+  allExistingErrors: { [key: string]: string } = {}
 ): { [key: string]: string } {
   const errors: { [key: string]: string } = {};
   
   // Get ranked cats from Allbreed column (Show Awards + Finals)
   const rankedCats = getOCPRankedCatsFromColumn(input, allbreedColIdx);
   
+  console.log('Ranked cats validation (PR) - AB cats:', Array.from(rankedCats));
+  
   // Check OCP column for filler cats appearing before ranked cats
-  // Skip validation for cats that have title inconsistencies
-  checkOCPRankedCatsPriorityInColumn(input, ocpColIdx, rankedCats, errors, titleErrors);
+  checkOCPRankedCatsPriorityInColumn(input, ocpColIdx, rankedCats, errors, titleErrors, allExistingErrors);
+  
+  console.log('Ranked cats validation (PR) - Errors found:', errors);
   
   return errors;
 }
@@ -1009,30 +1022,62 @@ function checkOCPRankedCatsPriorityInColumn(
   colIdx: number,
   rankedCats: Set<string>,
   errors: { [key: string]: string },
-  titleErrors: { [key: string]: string } = {}
+  titleErrors: { [key: string]: string } = {},
+  allExistingErrors: { [key: string]: string } = {}
 ): void {
-  let firstRankedCatFound = false;
+  console.log('Checking OCP ranked cats priority (PR) for column', colIdx);
+  console.log('All ranked cats (PR):', Array.from(rankedCats));
   
-  // Check Show Awards in OCP column
+  // Collect all placed cats and separate into ranked/filler
+  const placedCats: Array<{cat: string, position: number, isRanked: boolean}> = [];
+  
   for (let row = 0; row < 10; row++) { // OCP has exactly 10 placements
     const key = `${colIdx}-${row}`;
     const cell = input.showAwards[key];
     
     if (cell && cell.catNumber && !isVoidInput(cell.catNumber)) {
-      // Skip validation for cats that have title inconsistencies
+      // Skip validation for cats that have title inconsistencies  
       if (titleErrors[key]) {
         continue;
       }
       
-      if (rankedCats.has(cell.catNumber)) {
-        firstRankedCatFound = true;
-      } else if (firstRankedCatFound) {
-        // Filler cat appears after ranked cats - this is valid
-        continue;
-      } else {
-        // Filler cat appears before ranked cats - this is invalid
-        errors[key] = `Filler cat placed before ranked cats: Cat #${cell.catNumber} is not ranked in Allbreed column but appears in OCP before ranked cats`;
+      const isRanked = rankedCats.has(cell.catNumber);
+      placedCats.push({
+        cat: cell.catNumber,
+        position: row,
+        isRanked: isRanked
+      });
+      
+      console.log(`  Position ${row}: Cat ${cell.catNumber}, ranked: ${isRanked}`);
+    }
+  }
+  
+  // Check if any filler cats appear before all ranked cats are placed
+  const rankedCatsInOCP = placedCats.filter(cat => cat.isRanked);
+  const fillerCats = placedCats.filter(cat => !cat.isRanked);
+  
+  console.log('Ranked cats in OCP:', rankedCatsInOCP.map(c => c.cat));
+  console.log('Filler cats in OCP:', fillerCats.map(c => c.cat));
+  
+  for (const fillerCat of fillerCats) {
+    // Find all ranked cats that should be placed but appear after this filler cat
+    const unplacedRankedCats = Array.from(rankedCats).filter(rankedCat => {
+      const placedRankedCat = rankedCatsInOCP.find(placed => placed.cat === rankedCat);
+      return !placedRankedCat || placedRankedCat.position > fillerCat.position;
+    });
+    
+    if (unplacedRankedCats.length > 0) {
+      const key = `${colIdx}-${fillerCat.position}`;
+      if (unplacedRankedCats.length === Array.from(rankedCats).length) {
+        // If ALL ranked cats are unplaced, this filler violates the rule
+        console.log(`    Filler cat ${fillerCat.cat} at position ${fillerCat.position} violates rule - ranked cats ${unplacedRankedCats.join(', ')} should be placed first!`);
+        // Respect duplicate error precedence - only set if no existing error
+        if (!errors[key]) {
+          errors[key] = `Filler cat placed before ranked cats: Cat #${fillerCat.cat} is not ranked in Allbreed column but appears in OCP before all ranked cats are placed (${unplacedRankedCats.join(', ')} not placed yet)`;
+        }
       }
+    } else {
+      console.log(`    Filler cat ${fillerCat.cat} at position ${fillerCat.position} is valid - all ranked cats placed before it`);
     }
   }
 }
@@ -1044,7 +1089,8 @@ function checkOCPRankedCatsPriorityInColumn(
 function validateOCPOrderPreservation(
   input: PremiershipValidationInput,
   allbreedColIdx: number,
-  ocpColIdx: number
+  ocpColIdx: number,
+  allExistingErrors: { [key: string]: string } = {}
 ): { [key: string]: string } {
   const errors: { [key: string]: string } = {};
   
@@ -1054,11 +1100,11 @@ function validateOCPOrderPreservation(
   const lhPrOrder = getOrderedLHPRCatsFromLHPremiersFinals(input, allbreedColIdx);
   const shPrOrder = getOrderedSHPRCatsFromSHPremiersFinals(input, allbreedColIdx);
   
-  // Check order preservation in OCP column (4 sections in sequence)
-  checkOCPOrderPreservationInColumn(input, ocpColIdx, showAwardsPrOrder, 'Show Awards PR', errors);
-  checkOCPOrderPreservationInColumn(input, ocpColIdx, abPrOrder, 'AB PR', errors);
-  checkOCPOrderPreservationInColumn(input, ocpColIdx, lhPrOrder, 'LH PR', errors);
-  checkOCPOrderPreservationInColumn(input, ocpColIdx, shPrOrder, 'SH PR', errors);
+  // Check order preservation in OCP column (4 sections in sequence like PR tab)
+  checkOCPOrderPreservationInColumn(input, ocpColIdx, showAwardsPrOrder, 'Show Awards PR', errors, allExistingErrors);
+  checkOCPOrderPreservationInColumn(input, ocpColIdx, abPrOrder, 'AB PR', errors, allExistingErrors);
+  checkOCPOrderPreservationInColumn(input, ocpColIdx, lhPrOrder, 'LH PR', errors, allExistingErrors);
+  checkOCPOrderPreservationInColumn(input, ocpColIdx, shPrOrder, 'SH PR', errors, allExistingErrors);
   
   return errors;
 }
@@ -1098,7 +1144,8 @@ function checkOCPOrderPreservationInColumn(
   colIdx: number,
   specialtyOrder: string[],
   hairLength: string,
-  errors: { [key: string]: string }
+  errors: { [key: string]: string },
+  allExistingErrors: { [key: string]: string } = {}
 ): void {
   if (specialtyOrder.length === 0) return;
   
@@ -1125,7 +1172,10 @@ function checkOCPOrderPreservationInColumn(
       // If OCP position has a cat but it doesn't match the AB PR cat for this position
       if (ocpCat && abPRCat && ocpCat !== abPRCat) {
         const errorKey = `${colIdx}-${i}`;
-        errors[errorKey] = `Order violation: ${ocpCat} is out of order in OCP. Must preserve order from AB PR column`;
+        // Skip if there's already an error (duplicate, title, etc.) - respect validation precedence
+        if (!allExistingErrors[errorKey] && !errors[errorKey]) {
+          errors[errorKey] = `Order violation: ${ocpCat} is out of order in OCP. Must preserve order from AB PR column`;
+        }
       }
     }
   } else if (hairLength === 'LH PR' || hairLength === 'SH PR') {
@@ -1136,7 +1186,10 @@ function checkOCPOrderPreservationInColumn(
       if (currentIndex !== -1 && currentIndex < lastSpecialtyIndex) {
         // Order violation found
         const errorKey = `${colIdx}-${currentIndex}`;
-        errors[errorKey] = `Order violation: ${specialtyCat} is out of order in OCP. Must preserve order from ${hairLength} column`;
+        // Skip if there's already an error (duplicate, title, etc.) - respect validation precedence
+        if (!allExistingErrors[errorKey] && !errors[errorKey]) {
+          errors[errorKey] = `Order violation: ${specialtyCat} is out of order in OCP. Must preserve order from ${hairLength} column`;
+        }
         break;
       }
       if (currentIndex !== -1) {
@@ -1151,7 +1204,10 @@ function checkOCPOrderPreservationInColumn(
       if (currentIndex !== -1 && currentIndex < lastSpecialtyIndex) {
         // Order violation found
         const errorKey = `${colIdx}-${currentIndex}`;
-        errors[errorKey] = `Order violation: ${specialtyCat} is out of order in OCP. Must preserve order from ${hairLength} column`;
+        // Skip if there's already an error (duplicate, title, etc.) - respect validation precedence
+        if (!allExistingErrors[errorKey] && !errors[errorKey]) {
+          errors[errorKey] = `Order violation: ${specialtyCat} is out of order in OCP. Must preserve order from ${hairLength} column`;
+        }
         break;
       }
       if (currentIndex !== -1) {
@@ -1166,7 +1222,7 @@ function checkOCPOrderPreservationInColumn(
  * This function runs AFTER all existing validation is complete
  * Only applies to Super Specialty rings (3 columns with same judge ID)
  */
-export function validateSuperSpecialtyCrossColumn(input: PremiershipValidationInput, maxCats: number): { [key: string]: string } {
+export function validateSuperSpecialtyCrossColumn(input: PremiershipValidationInput, maxCats: number, allExistingErrors: { [key: string]: string } = {}): { [key: string]: string } {
   const errors: { [key: string]: string } = {};
   
   // Only run for Super Specialty rings
@@ -1181,24 +1237,24 @@ export function validateSuperSpecialtyCrossColumn(input: PremiershipValidationIn
     
     console.log('Processing Super Specialty ring:', { longhairColIdx, shorthairColIdx, allbreedColIdx });
     
-    // 1. Title/Award Consistency Validation
-    const titleErrors = validateTitleConsistency(input, longhairColIdx, shorthairColIdx, allbreedColIdx);
+    // 1. Title/Award Consistency Validation (respect existing errors)
+    const titleErrors = validateTitleConsistency(input, longhairColIdx, shorthairColIdx, allbreedColIdx, allExistingErrors, {});
     Object.assign(errors, titleErrors);
     
-    // 2. Ranked Cats Priority Validation
-    const priorityErrors = validateRankedCatsPriority(input, longhairColIdx, shorthairColIdx, allbreedColIdx);
+    // 2. Ranked Cats Priority Validation (pass existing errors to respect validation precedence)
+    const priorityErrors = validateRankedCatsPriority(input, longhairColIdx, shorthairColIdx, allbreedColIdx, { ...allExistingErrors, ...errors });
     Object.assign(errors, priorityErrors);
     
-    // 3. Order Preservation Within Hair Length Validation
-    const orderErrors = validateOrderPreservation(input, longhairColIdx, shorthairColIdx, allbreedColIdx);
+    // 3. Order Preservation Within Hair Length Validation (pass existing errors to respect validation precedence)
+    const orderErrors = validateOrderPreservation(input, longhairColIdx, shorthairColIdx, allbreedColIdx, { ...allExistingErrors, ...errors });
     Object.assign(errors, orderErrors);
     
-    // 4. Specialty Finals Consistency Validation (NEW)
-    const finalsErrors = validateSpecialtyFinalsConsistency(input, longhairColIdx, shorthairColIdx, allbreedColIdx);
+    // 4. Specialty Finals Consistency Validation (pass existing errors to respect validation precedence)
+    const finalsErrors = validateSpecialtyFinalsConsistency(input, longhairColIdx, shorthairColIdx, allbreedColIdx, { ...allExistingErrors, ...errors });
     Object.assign(errors, finalsErrors);
     
-    // 5. Cross-Column Duplicate Prevention Validation (NEW)
-    const duplicateErrors = validateCrossColumnDuplicates(input, longhairColIdx, shorthairColIdx, allbreedColIdx);
+    // 5. Cross-Column Duplicate Prevention Validation (pass existing errors to respect validation precedence)
+    const duplicateErrors = validateCrossColumnDuplicates(input, longhairColIdx, shorthairColIdx, allbreedColIdx, { ...allExistingErrors, ...errors });
     Object.assign(errors, duplicateErrors);
   }
   
@@ -1274,7 +1330,9 @@ function validateTitleConsistency(
   input: PremiershipValidationInput,
   longhairColIdx: number,
   shorthairColIdx: number,
-  allbreedColIdx: number
+  allbreedColIdx: number,
+  allExistingErrors: { [key: string]: string } = {},
+  currentErrors: { [key: string]: string } = {}
 ): { [key: string]: string } {
   const errors: { [key: string]: string } = {};
   
@@ -1292,10 +1350,10 @@ function validateTitleConsistency(
   
   // Check for title inconsistencies
   Object.entries(catTitles).forEach(([catNumber, titles]) => {
-    const uniqueTitles = [...new Set(Object.values(titles))];
+    const uniqueTitles = Array.from(new Set(Object.values(titles)));
     if (uniqueTitles.length > 1) {
       // Find all cells with this cat number and mark them with error
-      markTitleInconsistencyErrors(input, catNumber, longhairColIdx, shorthairColIdx, allbreedColIdx, errors);
+      markTitleInconsistencyErrors(input, catNumber, longhairColIdx, shorthairColIdx, allbreedColIdx, errors, allExistingErrors, currentErrors);
     }
   });
   
@@ -1351,7 +1409,9 @@ function markTitleInconsistencyErrors(
   longhairColIdx: number,
   shorthairColIdx: number,
   allbreedColIdx: number,
-  errors: { [key: string]: string }
+  errors: { [key: string]: string },
+  allExistingErrors: { [key: string]: string } = {},
+  currentErrors: { [key: string]: string } = {}
 ): void {
   const columns = [longhairColIdx, shorthairColIdx, allbreedColIdx];
   
@@ -1361,7 +1421,10 @@ function markTitleInconsistencyErrors(
       const key = `${colIdx}-${rowIdx}`;
       const cell = input.showAwards[key];
       if (cell && cell.catNumber && cell.catNumber.trim() === catNumber) {
-        errors[key] = `Title inconsistency: Cat #${catNumber} has different titles across Super Specialty columns`;
+        // Respect duplicate error precedence - only set if no existing error
+        if (!allExistingErrors[key] && !currentErrors[key]) {
+          errors[key] = `Title inconsistency: Cat #${catNumber} has different titles across Super Specialty columns`;
+        }
       }
     }
     
@@ -1378,7 +1441,10 @@ function markTitleInconsistencyErrors(
         const finalsKey = `${section.prefix}-${colIdx}-${rowIdx}`;
         const finalsCatNumber = section.data[key];
         if (finalsCatNumber && finalsCatNumber.trim() === catNumber) {
-          errors[finalsKey] = `Title inconsistency: Cat #${catNumber} is implicitly PR in ${section.sectionName} but has different title in other columns`;
+          // Respect duplicate error precedence - only set if no existing error
+          if (!allExistingErrors[finalsKey] && !currentErrors[finalsKey]) {
+            errors[finalsKey] = `Title inconsistency: Cat #${catNumber} is implicitly PR in ${section.sectionName} but has different title in other columns`;
+          }
         }
       }
     });
@@ -1392,7 +1458,8 @@ function validateRankedCatsPriority(
   input: PremiershipValidationInput,
   longhairColIdx: number,
   shorthairColIdx: number,
-  allbreedColIdx: number
+  allbreedColIdx: number,
+  allExistingErrors: { [key: string]: string } = {}
 ): { [key: string]: string } {
   const errors: { [key: string]: string } = {};
   
@@ -1439,7 +1506,7 @@ function checkRankedCatsPriorityInColumn(
   shorthairRankedCats: Set<string>,
   errors: { [key: string]: string }
 ): void {
-  const allRankedCats = new Set([...longhairRankedCats, ...shorthairRankedCats]);
+  const allRankedCats = new Set(Array.from(longhairRankedCats).concat(Array.from(shorthairRankedCats)));
   
   console.log('Checking ranked cats priority for column', colIdx);
   console.log('All ranked cats:', Array.from(allRankedCats));
@@ -1477,7 +1544,8 @@ function validateOrderPreservation(
   input: PremiershipValidationInput,
   longhairColIdx: number,
   shorthairColIdx: number,
-  allbreedColIdx: number
+  allbreedColIdx: number,
+  allExistingErrors: { [key: string]: string } = {}
 ): { [key: string]: string } {
   const errors: { [key: string]: string } = {};
   
@@ -1572,7 +1640,8 @@ function validateSpecialtyFinalsConsistency(
   input: PremiershipValidationInput,
   longhairColIdx: number,
   shorthairColIdx: number,
-  allbreedColIdx: number
+  allbreedColIdx: number,
+  allExistingErrors: { [key: string]: string } = {}
 ): { [key: string]: string } {
   const errors: { [key: string]: string } = {};
   
@@ -1629,7 +1698,8 @@ function validateCrossColumnDuplicates(
   input: PremiershipValidationInput,
   longhairColIdx: number,
   shorthairColIdx: number,
-  allbreedColIdx: number
+  allbreedColIdx: number,
+  allExistingErrors: { [key: string]: string } = {}
 ): { [key: string]: string } {
   const errors: { [key: string]: string } = {};
   
