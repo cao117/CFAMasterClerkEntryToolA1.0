@@ -400,7 +400,7 @@ OCP Column:
 OCP Ring cross-column validation runs **AFTER** all existing validation is complete:
 
 1. **Existing Validation** (unchanged)
-   - Individual column validation
+   - Individual column validation (duplicate detection, sequential validation, etc.)
    - Finals consistency validation
    - Super Specialty cross-column validation (if applicable)
 
@@ -408,6 +408,30 @@ OCP Ring cross-column validation runs **AFTER** all existing validation is compl
    - Title/Award Consistency
    - Ranked Cats Priority
    - Order Preservation
+
+### Error Precedence (CRITICAL)
+
+**Duplicate errors from main validation ALWAYS take precedence over OCP-specific errors.**
+
+**Precedence Order**:
+1. **Main validation errors** (duplicates, sequential, format, etc.) - **HIGHEST PRIORITY**
+2. **OCP Ring cross-column errors** (title inconsistency, order violations, filler priority) - **LOWER PRIORITY**
+
+**Implementation**: OCP validation functions receive `allExistingErrors` parameter containing all validation that ran before OCP validation. The precedence check pattern:
+
+```typescript
+// Only set OCP error if no existing error present
+if (!allExistingErrors[key] && !currentErrors[key] && !errors[key]) {
+  errors[key] = ocpErrorMessage;
+}
+```
+
+**Example**:
+- Cell has duplicate error from main validation: **Duplicate error shown**
+- Cell has both duplicate + title inconsistency: **Only duplicate error shown**
+- Cell has only title inconsistency: **Title inconsistency error shown**
+
+This ensures users see the most fundamental validation issues first before addressing OCP-specific constraints.
 
 ### Scope
 
@@ -436,7 +460,11 @@ Errors are placed on the specific input boxes where violations occur:
 ### Function Structure
 
 ```typescript
-export function validateOCPRingCrossColumn(input: ValidationInput, maxCats: number): { [key: string]: string } {
+export function validateOCPRingCrossColumn(
+  input: ValidationInput, 
+  maxCats: number, 
+  allExistingErrors: { [key: string]: string } = {}
+): { [key: string]: string } {
   const errors: { [key: string]: string } = {};
   
   // Only run for OCP Ring judges
@@ -445,16 +473,16 @@ export function validateOCPRingCrossColumn(input: ValidationInput, maxCats: numb
   for (const ringInfo of ocpRings) {
     const { allbreedColIdx, ocpColIdx } = ringInfo;
     
-    // 1. Title/Award Consistency Validation
-    const titleErrors = validateOCPTitleConsistency(input, allbreedColIdx, ocpColIdx);
+    // 1. Title/Award Consistency Validation (respect existing errors)
+    const titleErrors = validateOCPTitleConsistency(input, allbreedColIdx, ocpColIdx, allExistingErrors, {});
     Object.assign(errors, titleErrors);
     
-    // 2. Ranked Cats Priority Validation
-    const priorityErrors = validateOCPRankedCatsPriority(input, allbreedColIdx, ocpColIdx);
+    // 2. Ranked Cats Priority Validation (respect existing errors + previous OCP errors)
+    const priorityErrors = validateOCPRankedCatsPriority(input, allbreedColIdx, ocpColIdx, { ...allExistingErrors, ...errors }, {});
     Object.assign(errors, priorityErrors);
     
-    // 3. Order Preservation Validation
-    const orderErrors = validateOCPOrderPreservation(input, allbreedColIdx, ocpColIdx);
+    // 3. Order Preservation Validation (respect existing errors + previous OCP errors)
+    const orderErrors = validateOCPOrderPreservation(input, allbreedColIdx, ocpColIdx, { ...allExistingErrors, ...errors });
     Object.assign(errors, orderErrors);
   }
   
@@ -480,15 +508,15 @@ OCP Ring cross-column validation is integrated into the main validation function
 
 **Championship Tab**:
 ```typescript
-// In validateChampionshipTab()
-const ocpRingErrors = validateOCPRingCrossColumn(input, maxCats);
+// In validateChampionshipTab() - runs AFTER all existing validation
+const ocpRingErrors = validateOCPRingCrossColumn(input, maxCats, errors);
 Object.assign(errors, ocpRingErrors);
 ```
 
 **Premiership Tab**:
 ```typescript
-// In validatePremiershipTab()
-const ocpRingErrors = validateOCPRingCrossColumn(input, maxCats);
+// In validatePremiershipTab() - runs AFTER all existing validation  
+const ocpRingErrors = validateOCPRingCrossColumn(input, maxCats, errors);
 Object.assign(errors, ocpRingErrors);
 ```
 

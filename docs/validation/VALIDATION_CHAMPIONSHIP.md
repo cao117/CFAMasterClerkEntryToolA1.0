@@ -92,7 +92,21 @@ For OCP Ring judges (2 columns: Allbreed + OCP with same judge ID), additional c
   - Order of CH cats in Show Awards (Top 10/15) should be respected in OCP ranking
   - Order of AB CH, LH CH, SH CH in Allbreed column finals should be respected in OCP ranking
 
+**Error Precedence**: Duplicate errors from main validation ALWAYS take precedence over OCP-specific errors.
+
 For detailed OCP Ring validation rules, see `docs/validation/VALIDATION_OCP_RING.md`.
+
+### 5. Super Specialty Cross-Column Validation (NEW)
+For Super Specialty judges (3 columns: LH + SH + AB with same judge ID), additional cross-column validation runs after all existing validation:
+
+- **Title/Award Consistency**: Same cat cannot have different titles across specialty columns
+- **Ranked Cats Priority**: Filler cats cannot appear before ranked cats in Allbreed column
+- **Order Preservation**: Order from specialty columns must be preserved in Allbreed column
+- **Specialty Finals Consistency**: Finals positions must match between specialty and Allbreed columns
+
+**Error Precedence**: Duplicate errors from main validation ALWAYS take precedence over Super Specialty-specific errors.
+
+For detailed Super Specialty validation rules, see `docs/validation/VALIDATION_SUPER_SPECIALTY.md`.
 
 ## Eligibility Rules
 
@@ -165,7 +179,9 @@ _Last Updated: 2024-06-20_
 - This logic is now strictly enforced in code (see `validateColumnRelationships` in `championshipValidation.ts`).
 - This matches the Premiership tab logic and ensures full UI/UX parity.
 
-## Error Precedence and Validation Order (as of [DATE])
+## Error Precedence and Validation Order (as of 2024-08-14)
+
+### Main Validation Error Precedence
 
 | Error Type                | When is it set?                                                                                 |
 |--------------------------|-------------------------------------------------------------------------------------------------|
@@ -176,7 +192,19 @@ _Last Updated: 2024-06-20_
 | Sequential error          | Set only if there is NO range, duplicate, or cross-section duplicate error for that cell.        |
 | Order error               | Set only if there is NO higher error for that cell.                                              |
 
-**Note:** This matches PremiershipTab error precedence exactly as of [DATE].
+### Cross-Column Validation Error Precedence (NEW)
+
+**CRITICAL**: Cross-column validation (OCP Ring, Super Specialty) has LOWER precedence than main validation:
+
+| Priority Level | Error Types                                    | Description                                      |
+|---------------|------------------------------------------------|--------------------------------------------------|
+| **1 (Highest)** | Main validation errors                       | Duplicates, sequential, format, status, etc.   |
+| **2 (Lower)**   | OCP Ring cross-column errors                | Title inconsistency, order violations, etc.     |
+| **3 (Lower)**   | Super Specialty cross-column errors         | Title inconsistency, order violations, etc.     |
+
+**Example**: If a cell has both duplicate error + OCP title inconsistency, only the duplicate error is shown.
+
+**Note:** This matches PremiershipTab error precedence exactly as of 2024-08-14.
 
 ## 2024-06-20: Strict Error Precedence Enforcement (updated)
 - Assignment reminders are now only shown if there is no duplicate or GC/NOV error for that cell. This prevents multiple errors from appearing in the same cell and ensures clear, unambiguous UI feedback.

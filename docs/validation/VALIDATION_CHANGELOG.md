@@ -2,6 +2,34 @@
 
 This changelog records all changes, additions, and deletions to validation rules for each tab in the CFA Master Clerk Entry Tool. Each entry includes the date, affected tab, summary of the change, and rationale/context.
 
+### [2025-08-14] Championship Tab: OCP & SSP Duplicate Error Precedence Fix
+- **Tabs:** Championship
+- **Change:** Fixed critical bug where duplicate errors were not taking precedence over OCP/SSP specific validation errors
+- **Summary:**
+  - **Root Cause**: Incorrect parameter passing in `validateOCPRankedCatsPriority()` function call was breaking error precedence logic
+  - **Problem**: 
+    - OCP and SSP cross-column validation errors were overriding main validation errors (duplicates, sequential, format)
+    - Users were seeing OCP/SSP specific errors instead of more fundamental duplicate errors
+    - Line 1313 in `championshipValidation.ts` was passing `titleErrors` instead of complete existing errors
+  - **Solution**: 
+    - Fixed parameter passing: `validateOCPRankedCatsPriority(input, allbreedColIdx, ocpColIdx, { ...allExistingErrors, ...errors }, {})`
+    - Ensured all OCP and SSP validation functions receive complete `allExistingErrors` parameter
+    - Verified precedence check pattern: `if (!allExistingErrors[key] && !currentErrors[key] && !errors[key])`
+  - **Technical Details**:
+    - OCP validation functions now correctly receive all non-OCP validation that runs before OCP checks
+    - SSP validation functions now correctly receive all non-SSP validation that runs before SSP checks
+    - Main validation (Show Awards, Finals) generates `errors` object passed as `allExistingErrors` to cross-column validation
+  - **Affected Files**: `src/validation/championshipValidation.ts`
+  - **Result**: Duplicate errors now correctly take precedence over OCP/SSP specific errors
+- **Files Modified**: 
+  - `src/validation/championshipValidation.ts` - Fixed parameter passing in `validateOCPRankedCatsPriority` call
+  - `docs/validation/VALIDATION_OCP_RING.md` - Added error precedence documentation
+  - `docs/validation/VALIDATION_SUPER_SPECIALTY.md` - Added error precedence documentation  
+  - `docs/validation/VALIDATION_CHAMPIONSHIP.md` - Added cross-column validation precedence section
+- **Testing**: Manual verification confirmed duplicate errors now show instead of OCP/SSP errors when both are present
+- **Rationale**: Users must see fundamental validation issues (duplicates) before addressing cross-column specific constraints
+- **Impact**: Users now see the most important validation errors first, improving data entry workflow
+
 ### [2025-08-03 00:20:16] Breed Sheets Tab: Autosave Data Restoration Bug Fix
 - **Tabs:** Breed Sheets
 - **Change:** Fixed critical bug where CH (Championship) column values were not being populated after restoring from autosave

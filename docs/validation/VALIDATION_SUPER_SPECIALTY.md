@@ -139,13 +139,29 @@ For cross-column validation errors, the error is displayed under **ALL** offendi
 - **Specialty Finals Consistency Errors**: Error shown under the specific mismatched position in Allbreed column finals section
 - **Cross-Column Duplicate Prevention Errors**: Error shown under ALL instances of the duplicate cat (both in Longhair and Shorthair columns)
 
-### Error Precedence
-Super Specialty cross-column errors have **lower precedence** than existing validation errors:
+### Error Precedence (CRITICAL)
 
-1. **Existing validation errors** (highest priority)
-2. **Super Specialty cross-column errors** (lower priority)
+**Duplicate errors from main validation ALWAYS take precedence over Super Specialty-specific errors.**
 
-If a cell has both an existing validation error and a Super Specialty cross-column error, only the existing validation error is displayed.
+**Precedence Order**:
+1. **Main validation errors** (duplicates, sequential, format, etc.) - **HIGHEST PRIORITY**
+2. **Super Specialty cross-column errors** (title inconsistency, order violations, filler priority, etc.) - **LOWER PRIORITY**
+
+**Implementation**: Super Specialty validation functions receive `allExistingErrors` parameter containing all validation that ran before SSP validation. The precedence check pattern:
+
+```typescript
+// Only set SSP error if no existing error present
+if (!allExistingErrors[key] && !currentErrors[key] && !errors[key]) {
+  errors[key] = sspErrorMessage;
+}
+```
+
+**Example**:
+- Cell has duplicate error from main validation: **Duplicate error shown**
+- Cell has both duplicate + title inconsistency: **Only duplicate error shown**
+- Cell has only title inconsistency: **Title inconsistency error shown**
+
+This ensures users see the most fundamental validation issues first before addressing Super Specialty-specific constraints.
 
 ## Implementation Details
 
@@ -153,21 +169,49 @@ If a cell has both an existing validation error and a Super Specialty cross-colu
 ```typescript
 export function validateSuperSpecialtyCrossColumn(
   input: ValidationInput, 
-  maxCats: number
-): { [key: string]: string }
+  maxCats: number,
+  allExistingErrors: { [key: string]: string } = {}
+): { [key: string]: string } {
+  const errors: { [key: string]: string } = {};
+  
+  // Only run for Super Specialty judges
+  const superSpecialtyRings = findSuperSpecialtyRings(input.columns);
+  
+  for (const ringInfo of superSpecialtyRings) {
+    const { lhColIdx, shColIdx, abColIdx } = ringInfo;
+    
+    // 1. Title/Award Consistency Validation (respect existing errors)
+    const titleErrors = validateTitleConsistencyCH(input, lhColIdx, shColIdx, abColIdx, allExistingErrors, {});
+    Object.assign(errors, titleErrors);
+    
+    // 2. Ranked Cats Priority Validation (respect existing errors + previous SSP errors)
+    const priorityErrors = validateRankedCatsPriorityCH(input, lhColIdx, shColIdx, abColIdx, { ...allExistingErrors, ...errors });
+    Object.assign(errors, priorityErrors);
+    
+    // 3. Order Preservation Validation (respect existing errors + previous SSP errors)
+    const orderErrors = validateOrderPreservationCH(input, lhColIdx, shColIdx, abColIdx, { ...allExistingErrors, ...errors });
+    Object.assign(errors, orderErrors);
+    
+    // 4. Specialty Finals Consistency Validation (respect existing errors + previous SSP errors)
+    const finalsErrors = validateSpecialtyFinalsConsistencyCH(input, lhColIdx, shColIdx, abColIdx, { ...allExistingErrors, ...errors });
+    Object.assign(errors, finalsErrors);
+  }
+  
+  return errors;
+}
 ```
 
 ### Integration
 Super Specialty validation is integrated into the main validation functions as the final step:
 
 ```typescript
-// Existing validation (unchanged)
+// Existing validation (unchanged) - includes Show Awards, Finals validation
 const existingErrors = validateExistingRules(input, maxCats);
 
-// Super Specialty cross-column validation (NEW)
-const superSpecialtyErrors = validateSuperSpecialtyCrossColumn(input, maxCats);
+// Super Specialty cross-column validation (NEW) - runs AFTER all existing validation
+const superSpecialtyErrors = validateSuperSpecialtyCrossColumn(input, maxCats, existingErrors);
 
-// Merge errors (existing errors take precedence)
+// Merge errors (existing errors take precedence via allExistingErrors parameter)
 Object.assign(errors, superSpecialtyErrors);
 ```
 
