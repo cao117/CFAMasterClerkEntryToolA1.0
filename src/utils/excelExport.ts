@@ -254,6 +254,11 @@ export function exportShowToExcel(showState: any): { workbook: XLSX.WorkBook, fi
     }
   }
 
+  // --- Final Awards Sheet ---
+  const finalAwardsData = buildFinalAwardsSection(showState);
+  const finalAwardsWS = XLSX.utils.aoa_to_sheet(finalAwardsData);
+  XLSX.utils.book_append_sheet(workbook, finalAwardsWS, 'Final Awards');
+
   // Filename: YYYYMMDD_HHMMSS_showname.xlsx
   function pad(n: number) { return n < 10 ? '0' + n : n; }
   const now = new Date();
@@ -851,4 +856,258 @@ function transformTabData(tabData: any, judges: any[], tabType: string, showStat
     rings,
     placements
   };
+}
+
+/**
+ * Builds Final Awards section for the Final Awards worksheet
+ * Contains all CH, PR, Kitten, and Household Pet finals in the specified format
+ */
+function buildFinalAwardsSection(showState: any): any[][] {
+  const finalAwardsData: any[][] = [];
+  
+  // Header row
+  finalAwardsData.push(['Type', 'Ring', 'Ring Type', 'Award', 'Catalog Number', 'CH/PR']);
+  
+  // Process Championship tab
+  if (showState.championship && showState.judges) {
+    const chAwards = extractFinalAwardsFromTab(showState, 'championship');
+    finalAwardsData.push(...chAwards);
+  }
+  
+  // Process Premiership tab
+  if (showState.premiership && showState.judges) {
+    const prAwards = extractFinalAwardsFromTab(showState, 'premiership');
+    finalAwardsData.push(...prAwards);
+  }
+  
+  // Process Kitten tab
+  if (showState.kitten && showState.judges) {
+    const kittenAwards = extractFinalAwardsFromTab(showState, 'kitten');
+    finalAwardsData.push(...kittenAwards);
+  }
+  
+  // Process Household Pet tab
+  if (showState.household && showState.judges) {
+    const householdAwards = extractFinalAwardsFromTab(showState, 'household');
+    finalAwardsData.push(...householdAwards);
+  }
+  
+  return finalAwardsData;
+}
+
+/**
+ * Extracts final awards data from a specific tab
+ */
+function extractFinalAwardsFromTab(showState: any, tabType: 'championship' | 'premiership' | 'kitten' | 'household'): any[][] {
+  const awards: any[][] = [];
+  const tabData = showState[tabType];
+  const judges = showState.judges || [];
+  
+  // Build columns: for Double Specialty, split into LH/SH; otherwise, use ringType
+  const columns: { judge: any; specialty: string }[] = [];
+  judges.forEach(judge => {
+    if (judge.ringType === 'Double Specialty') {
+      columns.push({ judge, specialty: 'Longhair' });
+      columns.push({ judge, specialty: 'Shorthair' });
+    } else if (judge.ringType === 'Super Specialty') {
+      columns.push({ judge, specialty: 'Longhair' });
+      columns.push({ judge, specialty: 'Shorthair' });
+      columns.push({ judge, specialty: 'Allbreed' });
+    } else if (judge.ringType === 'OCP Ring') {
+      columns.push({ judge, specialty: 'Allbreed' });
+      columns.push({ judge, specialty: 'OCP' });
+    } else {
+      columns.push({ judge, specialty: judge.ringType });
+    }
+  });
+  
+  // Determine type name and status column for this tab
+  let typeName: string;
+  let statusColumn: string;
+  if (tabType === 'championship') {
+    typeName = 'Championship Awards';
+    statusColumn = 'CH/PR';
+  } else if (tabType === 'premiership') {
+    typeName = 'Premiership Awards';
+    statusColumn = 'CH/PR';
+  } else if (tabType === 'kitten') {
+    typeName = 'Kitten Awards';
+    statusColumn = 'CH/PR';
+  } else {
+    typeName = 'Household Pet Awards';
+    statusColumn = 'CH/PR';
+  }
+  
+  // Process each column (ring)
+  for (let colIdx = 0; colIdx < columns.length; colIdx++) {
+    const col = columns[colIdx];
+    const ringNumber = col.judge.id.toString();
+    const ringType = col.specialty === 'Allbreed' ? 'Allbreed' : 
+                    col.specialty === 'Longhair' ? 'Longhair' :
+                    col.specialty === 'Shorthair' ? 'Shorthair' :
+                    col.specialty === 'OCP' ? 'OCP' : col.specialty;
+    
+    // Extract Show Awards data
+    const maxAwardRows = getMaxAwardRows(showState, tabType);
+    for (let pos = 0; pos < maxAwardRows; pos++) {
+      const key = `${colIdx}-${pos}`;
+      const cellData = tabData.showAwards?.[key];
+      
+      if (cellData && cellData.catNumber && cellData.catNumber.trim() && cellData.catNumber.trim().toUpperCase() !== 'VOID') {
+        const awardName = `Show Award ${pos + 1}`;
+        const catNumber = cellData.catNumber.trim();
+        
+        // For Show Awards, include GC/CH or GP/PR status (but not for OCP rings)
+        let statusValue = '';
+        if (tabType === 'championship' || tabType === 'premiership') {
+          // OCP rings should have empty CH/PR column
+          if (col.specialty === 'OCP') {
+            statusValue = '';
+          } else {
+            statusValue = cellData.status || (tabType === 'championship' ? 'GC' : 'GP');
+          }
+        }
+        
+        awards.push([typeName, ringNumber, ringType, awardName, catNumber, statusValue]);
+      }
+    }
+    
+    // Extract Finals data (only for Championship and Premiership)
+    if (tabType === 'championship' || tabType === 'premiership') {
+      const finalsData = extractFinalsDataForColumn(tabData, col, colIdx, tabType, showState);
+      finalsData.forEach(finalsRow => {
+        awards.push([typeName, ringNumber, ringType, finalsRow.award, finalsRow.catNumber, '']);
+      });
+    }
+  }
+  
+  return awards;
+}
+
+/**
+ * Extracts finals data for a specific column
+ */
+function extractFinalsDataForColumn(tabData: any, col: any, colIdx: number, tabType: 'championship' | 'premiership', showState: any): any[] {
+  const finalsData: any[] = [];
+  
+  // Determine finals row count based on tab total
+  const finalsRowCount = getFinalsRowCount(showState, tabType);
+  
+  // Define finals sections based on tab type
+  let finalsSections: any[];
+  if (tabType === 'championship') {
+    finalsSections = [
+      { 
+        key: 'championsFinals', 
+        labels: ['Best AB CH', '2nd Best AB CH', '3rd Best AB CH', '4th Best AB CH', '5th Best AB CH'].slice(0, finalsRowCount),
+        enabledFor: (col: any) => col.specialty === 'Allbreed'
+      },
+      { 
+        key: 'lhChampionsFinals', 
+        labels: ['Best LH CH', '2nd Best LH CH', '3rd Best LH CH', '4th Best LH CH', '5th Best LH CH'].slice(0, finalsRowCount),
+        enabledFor: (col: any) => {
+          // For Final Awards worksheet, include AB column for SSP rings
+          return col.specialty === 'Longhair' || col.specialty === 'Allbreed';
+        }
+      },
+      { 
+        key: 'shChampionsFinals', 
+        labels: ['Best SH CH', '2nd Best SH CH', '3rd Best SH CH', '4th Best SH CH', '5th Best SH CH'].slice(0, finalsRowCount),
+        enabledFor: (col: any) => {
+          // For Final Awards worksheet, include AB column for SSP rings
+          return col.specialty === 'Shorthair' || col.specialty === 'Allbreed';
+        }
+      }
+    ];
+  } else { // premiership
+    finalsSections = [
+      { 
+        key: 'abPremiersFinals', 
+        labels: ['Best AB PR', '2nd Best AB PR', '3rd Best AB PR', '4th Best AB PR', '5th Best AB PR'].slice(0, finalsRowCount),
+        enabledFor: (col: any) => col.specialty === 'Allbreed'
+      },
+      { 
+        key: 'lhPremiersFinals', 
+        labels: ['Best LH PR', '2nd Best LH PR', '3rd Best LH PR', '4th Best LH PR', '5th Best LH PR'].slice(0, finalsRowCount),
+        enabledFor: (col: any) => {
+          // For Final Awards worksheet, include AB column for SSP rings
+          return col.specialty === 'Longhair' || col.specialty === 'Allbreed';
+        }
+      },
+      { 
+        key: 'shPremiersFinals', 
+        labels: ['Best SH PR', '2nd Best SH PR', '3rd Best SH PR', '4th Best SH PR', '5th Best SH PR'].slice(0, finalsRowCount),
+        enabledFor: (col: any) => {
+          // For Final Awards worksheet, include AB column for SSP rings
+          return col.specialty === 'Shorthair' || col.specialty === 'Allbreed';
+        }
+      }
+    ];
+  }
+  
+  // Process each finals section
+  for (const section of finalsSections) {
+    if (section.enabledFor(col)) {
+      for (let pos = 0; pos < section.labels.length; pos++) {
+        const key = `${colIdx}-${pos}`;
+        // Finals data in Championship is stored as { catNumber: string }
+        // Finals data in Premiership is stored as string directly
+        const cellData = tabType === 'championship' 
+          ? tabData[section.key]?.[key] 
+          : tabData[section.key]?.[key];
+        
+        // Handle both data formats
+        let catNumber = '';
+        if (typeof cellData === 'string') {
+          catNumber = cellData;
+        } else if (cellData && typeof cellData === 'object' && cellData.catNumber) {
+          catNumber = cellData.catNumber;
+        }
+        
+        if (catNumber && catNumber.trim() && catNumber.trim().toUpperCase() !== 'VOID') {
+          finalsData.push({
+            award: section.labels[pos],
+            catNumber: catNumber.trim()
+          });
+        }
+      }
+    }
+  }
+  
+  return finalsData;
+}
+
+/**
+ * Gets the maximum award rows for a tab type
+ */
+function getMaxAwardRows(showState: any, tabType: string): number {
+  if (tabType === 'championship') {
+    const championshipTotal = showState.general?.championshipCounts?.total || 0;
+    return championshipTotal >= 85 ? 15 : 10;
+  } else if (tabType === 'premiership') {
+    const premiershipTotal = showState.general?.premiershipCounts?.total || 0;
+    return premiershipTotal >= 85 ? 15 : 10;
+  } else if (tabType === 'kitten') {
+    const kittenTotal = showState.general?.kittenCounts?.total || 0;
+    return kittenTotal >= 50 ? 15 : 10;
+  } else if (tabType === 'household') {
+    const householdTotal = showState.general?.householdPetCount || 0;
+    return householdTotal >= 50 ? 15 : 10;
+  }
+  return 10;
+}
+
+/**
+ * Gets the finals row count for championship/premiership
+ */
+function getFinalsRowCount(showState: any, tabType: string): number {
+  // This should match the logic in transformTabData
+  if (tabType === 'championship') {
+    const championshipTotal = showState.general?.championshipCounts?.total || 0;
+    return championshipTotal >= 85 ? 5 : 3;
+  } else if (tabType === 'premiership') {
+    const premiershipTotal = showState.general?.premiershipCounts?.total || 0;
+    return premiershipTotal >= 85 ? 5 : 3;
+  }
+  return 3;
 } 

@@ -1,5 +1,17 @@
 # Bugfix Changelog
 
+## [2025-08-14 23:15:00] TECHNICAL FIX: OCP Ring Filler Error Logic - Status Eligibility
+- **Files Modified**: `src/validation/championshipValidation.ts`, `src/validation/premiershipValidation.ts`
+- **Code Changes**:
+  - Championship: Modified `getOCPRankedCatsFromColumn()` function (lines 1565-1570): Changed status check from `'GC' || 'CH'` to `'CH'` only
+  - Premiership: Modified `getOCPRankedCatsFromColumn()` function (lines 981-986): Changed status check from `'PR' || 'GP'` to `'PR'` only
+  - Both tabs: Added explicit GC/GP exclusion logic with detailed logging
+  - Both tabs: Updated function documentation to clarify OCP eligibility requirements
+  - Added console logging to show which cats are processed vs skipped based on status eligibility
+- **Testing Evidence**: Manual verification confirmed GC/GP cats no longer cause false OCP filler errors
+- **Root Cause**: OCP filler validation incorrectly considered non-eligible cats (GC in Championship, GP in Premiership) as "ranked cats" requiring placement
+- **Impact**: OCP filler validation now accurately reflects status-specific eligibility rules, eliminating false positive errors
+
 ## [2025-08-14 23:00:00] TECHNICAL ENHANCEMENT: SSP Ring Excel Import AB Column Population
 - **Files Modified**: `src/utils/excelImport.ts`
 - **Code Changes**:

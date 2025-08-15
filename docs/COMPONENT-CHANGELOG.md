@@ -2,6 +2,41 @@
 
 This document tracks changes to individual components in the CFA Entry application.
 
+## Final Awards Worksheet
+
+### Version 1.0.0 - 2025-08-15
+
+#### New Feature
+- **Final Awards Worksheet**: Added new comprehensive Final Awards worksheet to Excel export containing all Championship, Premiership, Kitten, and Household Pet finals
+
+#### Implementation Details
+- **Data Structure**: CSV-format worksheet with columns: Type, Ring, Ring Type, Award, Catalog Number, CH/PR
+- **Data Sources**: Extracts from Championship, Premiership, Kitten, and Household Pet tabs
+- **Ring Processing**: Processes data ring-by-ring in column order as displayed in tabs
+- **Ring Type Mapping**: Correctly identifies Allbreed, Longhair, Shorthair, and OCP ring types
+
+#### Features
+- **Championship Awards**: Includes Show Awards 1-10/15 + Best AB CH + Best LH CH + Best SH CH sections
+- **Premiership Awards**: Includes Show Awards 1-10/15 + Best AB PR + Best LH PR + Best SH PR sections
+- **Kitten Awards**: Show Awards 1-10/15 only (no finals sections)
+- **Household Pet Awards**: Show Awards 1-10/15 only (no finals sections)
+- **Dynamic Row Counts**: Adjusts to 10 vs 15 awards and 3 vs 5 finals based on entry counts
+
+#### Special Handling
+- **OCP Rings**: CH/PR status column left empty for all OCP ring entries
+- **SSP Rings**: AB column includes LH CH/PR and SH CH/PR sections (unlike CH_Final/PR_Final sheets)
+- **Status Column**: Populated only for Show Awards sections, empty for finals sections
+- **VOID Entries**: Excluded from Final Awards worksheet
+
+#### Technical Implementation
+- **Function**: `buildFinalAwardsSection()` - Main worksheet builder
+- **Helper**: `extractFinalAwardsFromTab()` - Tab-specific data extraction
+- **Helper**: `extractFinalsDataForColumn()` - Finals section data extraction
+- **Data Format Handling**: Supports both object format (Championship) and string format (Premiership) for finals data
+
+#### Files Modified
+- `src/utils/excelExport.ts` - Added Final Awards worksheet generation functions
+
 ## Excel Import Utility
 
 ### Version 1.1.0 - 2025-08-14

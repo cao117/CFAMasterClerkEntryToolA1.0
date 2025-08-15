@@ -48,42 +48,51 @@ OCP Column: Cat #12345 = PR (different title - ERROR)
 
 **Error Message**: `Title inconsistency: Cat #12345 has different titles across OCP Ring columns`
 
-### 2. Ranked Cats Priority
+### 2. Ranked Cats Priority (Updated 2025-08-14)
 
 **Rule**: Filler cats (not ranked in Allbreed ring) cannot appear in OCP column before ranked cats.
 
 **Ranked Cats Definition**:
-- **Championship Tab**: CH cats in top 10/15 OR AB CH OR LH CH OR SH CH
-- **Premiership Tab**: PR cats in top 10/15 OR AB PR OR LH PR OR SH PR
+- **Championship Tab**: **CH cats only** in top 10/15 OR AB CH OR LH CH OR SH CH
+- **Premiership Tab**: **PR cats only** in top 10/15 OR AB PR OR LH PR OR SH PR
+
+**Important Note**: GC cats (Championship) and GP cats (Premiership) are **NOT** considered ranked for OCP validation because:
+- OCP columns are status-specific (CH-only in Championship, PR-only in Premiership)  
+- Only cats with qualifying status are eligible for OCP placement
+- Lower status cats (GC/GP) compete in different categories and should not trigger filler errors
 
 **Examples**:
 
-**Championship Tab - Valid**:
+**Championship Tab - Valid (GC cats ignored)**:
 ```
-Allbreed Column: Cat #12345 = CH (ranked)
-OCP Column: Cat #12345 = CH (ranked cat appears first)
-OCP Column: Cat #67890 = NOV (filler cat appears after ranked cat)
+Allbreed Column: Cat #1 = GC, Cat #2 = GC, Cat #5 = CH (only CH ranked)
+OCP Column: Cat #5 = CH (ranked cat placed)
+OCP Column: Cat #8 = CH (filler cat allowed - no error)
+Note: Cats #1,#2 (GC) are not considered ranked for OCP
 ```
 
 **Championship Tab - Invalid**:
 ```
-Allbreed Column: Cat #12345 = CH (ranked)
-OCP Column: Cat #67890 = NOV (filler cat appears before ranked cat - ERROR)
-OCP Column: Cat #12345 = CH (ranked cat appears after filler cat)
+Allbreed Column: Cat #5 = CH (ranked)
+OCP Column: Cat #8 = CH (filler cat appears before ranked cat - ERROR)
+Best AB CH: Cat #5 not yet placed
+Note: Cat #5 must be placed before filler cat #8
 ```
 
-**Premiership Tab - Valid**:
+**Premiership Tab - Valid (GP cats ignored)**:
 ```
-Allbreed Column: Cat #12345 = PR (ranked)
-OCP Column: Cat #12345 = PR (ranked cat appears first)
-OCP Column: Cat #67890 = NOV (filler cat appears after ranked cat)
+Allbreed Column: Cat #1 = GP, Cat #2 = GP, Cat #5 = PR (only PR ranked)
+OCP Column: Cat #5 = PR (ranked cat placed)
+OCP Column: Cat #8 = PR (filler cat allowed - no error)
+Note: Cats #1,#2 (GP) are not considered ranked for OCP
 ```
 
 **Premiership Tab - Invalid**:
 ```
-Allbreed Column: Cat #12345 = PR (ranked)
-OCP Column: Cat #67890 = NOV (filler cat appears before ranked cat - ERROR)
-OCP Column: Cat #12345 = PR (ranked cat appears after filler cat)
+Allbreed Column: Cat #5 = PR (ranked)
+OCP Column: Cat #8 = PR (filler cat appears before ranked cat - ERROR)
+Best AB PR: Cat #5 not yet placed
+Note: Cat #5 must be placed before filler cat #8
 ```
 
 **Error Message**: `Filler cat placed before ranked cats: Cat #67890 is not ranked in Allbreed column but appears in OCP before ranked cats`

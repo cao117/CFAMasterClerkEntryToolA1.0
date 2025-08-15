@@ -118,6 +118,9 @@ The application uses a complex lifted state pattern where the main App component
 
 ### File Processing
 - **Excel Files**: Uses `xlsx` library for import/export operations
+  - **Final Awards Worksheet**: New comprehensive worksheet added to Excel exports containing all show finals
+  - **Worksheet Order**: Settings, General_Info, CH_Final, PR_Final, Kitten_Final, HHP_Final, BS_[judge], Final Awards
+  - **Special Handling**: OCP rings have empty CH/PR column, SSP rings include LH/SH sections in AB column
 - **Fake Data**: `@faker-js/faker` for test data generation
 - **CSV Parsing**: `papaparse` for CSV data handling
 

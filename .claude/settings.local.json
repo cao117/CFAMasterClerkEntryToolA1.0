@@ -15,7 +15,8 @@
       "mcp__puppeteer__puppeteer_navigate",
       "mcp__sequential-thinking__sequentialthinking",
       "Bash(wsl:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(npm run build:*)"
     ],
     "deny": [],
     "ask": [],

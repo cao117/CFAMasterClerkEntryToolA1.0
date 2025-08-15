@@ -476,6 +476,12 @@ The following action buttons are present in the Championship and Premiership tab
 - **Environment Detection**: Automatically detects runtime environment and uses appropriate file handling methods:
   - **Tauri Desktop Apps**: Uses native OS file picker and file system APIs
   - **Web Browsers**: Uses browser file picker and FileReader API
+- **Final Awards Worksheet**: Excel export includes a comprehensive "Final Awards" worksheet containing:
+  - All Championship, Premiership, Kitten, and Household Pet show awards and finals
+  - Data organized ring-by-ring with Type, Ring #, Ring Type, Award, Catalog Number, and CH/PR columns
+  - Championship/Premiership: Show Awards 1-10/15 + Best AB/LH/SH CH/PR sections
+  - Kitten/Household Pet: Show Awards 1-10/15 only
+  - Special handling for OCP rings (empty CH/PR column) and SSP rings (includes LH/SH sections in AB column)
 - CSV schema and voiding logic are documented in `docs/specs/CSV_SCHEMA.md` and `docs/specs/CSV_EXPORT_VOID_QUESTION.md`.
 
 ---
