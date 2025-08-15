@@ -2,6 +2,16 @@
 
 This document tracks changes to individual components in the CFA Entry application.
 
+## [Unreleased]
+
+### [2025-08-15] BreedSheetsTab: OCP Ring Kitten Support Fix
+- **Component:** BreedSheetsTab
+- **Change:** Added OCP Ring support for Kitten group in breed sheets
+- **Root Cause:** OCP Ring was missing from the ring type check for Kitten hair length availability
+- **Solution:** Added `|| selectedJudge.ringType === 'OCP Ring'` to Kitten case in `getAvailableHairLengths()`
+- **Files Modified:** `src/components/BreedSheetsTab.tsx`
+- **Impact:** OCP Ring judges can now properly select LH/SH for Kitten breed sheets, matching CH/PR behavior
+
 ## Final Awards Worksheet
 
 ### Version 1.0.0 - 2025-08-15

@@ -13,7 +13,8 @@ The exported Excel file contains the following worksheets in order:
 5. **Kitten_Final** - Kitten tab data
 6. **HHP_Final** - Household Pet tab data
 7. **BS_[judge_id]** - Breed Sheets (one per judge)
-8. **Final Awards** - Comprehensive finals summary (NEW)
+8. **Final Awards** - Comprehensive finals summary
+9. **Breed Awards** - Comprehensive breed awards summary (NEW)
 
 ## Final Awards Worksheet
 
@@ -91,6 +92,84 @@ The worksheet contains the following columns:
 - **Championship Finals**: Stored as objects with `catNumber` property
 - **Premiership Finals**: Stored as plain strings
 - The extraction functions handle both formats transparently
+
+## Breed Awards Worksheet
+
+### Purpose
+The Breed Awards worksheet provides a consolidated view of all breed sheet awards (Best of Breed, 2nd Best of Breed, Best CH, Best PR) across all judges and groups in a standardized format.
+
+### Structure
+The worksheet contains the following columns:
+- **Type**: Group type (Championship Sheet, Premiership Sheet, Kitten Sheet)
+- **Ring**: Ring number (corresponds to judge ID)
+- **Breed**: Breed name
+- **BB**: Best of Breed catalog number
+- **2BB**: 2nd Best of Breed catalog number
+- **CHPR**: Best CH (for Championship) or Best PR (for Premiership), empty for Kitten
+
+### Data Organization
+
+#### Write Order
+Data is written in a specific hierarchical order:
+1. **By Judge**: Processes judges in order of their ID (Ring 1, Ring 2, etc.)
+2. **By Group**: Within each judge, processes groups in order: Championship → Premiership → Kitten
+3. **By Hair Length**: Within each group, processes hair lengths: Longhair → Shorthair
+4. **By Breed**: Within each hair length, breeds are listed alphabetically
+
+#### Group Processing
+- **Championship Sheet**: Includes BB, 2BB, and Best CH columns
+- **Premiership Sheet**: Includes BB, 2BB, and Best PR columns
+- **Kitten Sheet**: Includes BB and 2BB columns only (CHPR column left empty)
+
+### Special Handling Rules
+
+#### VOID Entries
+- Any entry containing "VOID" is excluded from the export
+- VOID can appear in any field (BB, 2BB, Best CH/PR)
+
+#### HHP Exclusion
+- Household Pet (HHP) entries are not included in the Breed Awards worksheet
+- HHP does not have breed-specific awards
+
+#### Ring Type Omission
+- Ring type column is not included as there is a fixed 1:1 relationship between breed and hair length
+- Longhair breeds always appear in LH sections, Shorthair breeds in SH sections
+
+#### OCP Ring Support
+- OCP rings behave identically to Allbreed rings for breed sheets
+- Both LH and SH sections are available when counts permit
+- Fixed 2025-08-15: OCP rings now properly support Kitten LH/SH selection
+
+### Data Processing
+
+1. **Judge-by-Judge Processing**: Iterates through all judges in order
+2. **Group Filtering**: Only processes groups with non-zero counts
+3. **Hair Length Filtering**: Only processes hair lengths available for the judge's ring type
+4. **Empty Field Handling**: Empty fields are written as empty cells, not skipped
+5. **Breed Ordering**: Maintains alphabetical order within each hair length section
+
+### Technical Implementation
+
+#### Key Functions
+- `buildBreedAwardsSection()`: Main function that builds the worksheet
+- Data extraction follows the hierarchical structure: `breedEntries[judgeId][groupHairLengthKey][breedKey]`
+- Group-hair length keys format: `Championship_Longhair`, `Premiership_Shorthair`, etc.
+
+#### Data Structure
+```typescript
+breedEntries: {
+  [judgeId]: {
+    [groupHairLengthKey]: {
+      [breed]: {
+        bob: string,
+        secondBest: string,
+        bestCH?: string,
+        bestPR?: string
+      }
+    }
+  }
+}
+```
 
 ## File Naming Convention
 

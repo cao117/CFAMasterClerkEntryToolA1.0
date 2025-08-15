@@ -259,6 +259,11 @@ export function exportShowToExcel(showState: any): { workbook: XLSX.WorkBook, fi
   const finalAwardsWS = XLSX.utils.aoa_to_sheet(finalAwardsData);
   XLSX.utils.book_append_sheet(workbook, finalAwardsWS, 'Final Awards');
 
+  // --- Breed Awards Sheet ---
+  const breedAwardsData = buildBreedAwardsSection(showState);
+  const breedAwardsWS = XLSX.utils.aoa_to_sheet(breedAwardsData);
+  XLSX.utils.book_append_sheet(workbook, breedAwardsWS, 'Breed Awards');
+
   // Filename: YYYYMMDD_HHMMSS_showname.xlsx
   function pad(n: number) { return n < 10 ? '0' + n : n; }
   const now = new Date();
@@ -1110,4 +1115,101 @@ function getFinalsRowCount(showState: any, tabType: string): number {
     return premiershipTotal >= 85 ? 5 : 3;
   }
   return 3;
+}
+
+/**
+ * Builds Breed Awards section for the Breed Awards worksheet
+ * Contains all breed awards from the Breed Sheets tab
+ */
+function buildBreedAwardsSection(showState: any): any[][] {
+  const breedAwardsData: any[][] = [];
+  
+  // Header row
+  breedAwardsData.push(['Type', 'Ring', 'Breed', 'BB', '2BB', 'CHPR']);
+  
+  // Process breed sheets data if available
+  if (showState.breedSheets && showState.judges && showState.globalSettings) {
+    const breedEntries = showState.breedSheets.breedEntries || {};
+    const judges = showState.judges || [];
+    const lhBreeds = showState.globalSettings.long_hair_breeds || [];
+    const shBreeds = showState.globalSettings.short_hair_breeds || [];
+    
+    // Process each judge in order
+    for (const judge of judges) {
+      const judgeId = judge.id.toString();
+      const judgeEntries = breedEntries[judgeId];
+      
+      if (!judgeEntries) continue;
+      
+      // Process in specific order: Championship (LH→SH), Premiership (LH→SH), Kitten (LH→SH)
+      const groupOrder = [
+        { group: 'Championship', type: 'Championship Award' },
+        { group: 'Premiership', type: 'Premiership Award' },
+        { group: 'Kitten', type: 'Kitten Award' }
+      ];
+      
+      for (const { group, type } of groupOrder) {
+        // Process Longhair breeds first, then Shorthair breeds
+        const hairLengthOrder = [
+          { hairLength: 'Longhair', breeds: lhBreeds },
+          { hairLength: 'Shorthair', breeds: shBreeds }
+        ];
+        
+        for (const { hairLength, breeds } of hairLengthOrder) {
+          const groupHairLengthKey = `${group}-${hairLength}`;
+          const entries = judgeEntries[groupHairLengthKey];
+          
+          if (!entries) continue;
+          
+          // Process each breed in the order they appear in the breed list
+          for (const breed of breeds) {
+            const breedPrefix = hairLength === 'Longhair' ? 'lh' : 'sh';
+            const breedKey = `${breedPrefix}-${breed}`;
+            const breedEntry = entries[breedKey];
+            
+            if (!breedEntry) continue;
+            
+            // Check if any field has data (not empty and not VOID)
+            const hasData = (
+              (breedEntry.bob && breedEntry.bob.trim() && breedEntry.bob.trim().toUpperCase() !== 'VOID') ||
+              (breedEntry.secondBest && breedEntry.secondBest.trim() && breedEntry.secondBest.trim().toUpperCase() !== 'VOID') ||
+              (breedEntry.bestCH && breedEntry.bestCH.trim() && breedEntry.bestCH.trim().toUpperCase() !== 'VOID') ||
+              (breedEntry.bestPR && breedEntry.bestPR.trim() && breedEntry.bestPR.trim().toUpperCase() !== 'VOID')
+            );
+            
+            if (!hasData) continue;
+            
+            // Extract cat numbers (excluding VOID entries)
+            const bob = breedEntry.bob && breedEntry.bob.trim() && breedEntry.bob.trim().toUpperCase() !== 'VOID' 
+              ? breedEntry.bob.trim() : '';
+            const secondBest = breedEntry.secondBest && breedEntry.secondBest.trim() && breedEntry.secondBest.trim().toUpperCase() !== 'VOID'
+              ? breedEntry.secondBest.trim() : '';
+            
+            // For CHPR column: use bestCH for Championship, bestPR for Premiership, empty for Kitten
+            let chpr = '';
+            if (group === 'Championship') {
+              chpr = breedEntry.bestCH && breedEntry.bestCH.trim() && breedEntry.bestCH.trim().toUpperCase() !== 'VOID'
+                ? breedEntry.bestCH.trim() : '';
+            } else if (group === 'Premiership') {
+              chpr = breedEntry.bestPR && breedEntry.bestPR.trim() && breedEntry.bestPR.trim().toUpperCase() !== 'VOID'
+                ? breedEntry.bestPR.trim() : '';
+            }
+            // For Kitten, chpr remains empty as requested
+            
+            // Add the breed award row
+            breedAwardsData.push([
+              type,
+              judge.id.toString(),
+              breed,
+              bob,
+              secondBest,
+              chpr
+            ]);
+          }
+        }
+      }
+    }
+  }
+  
+  return breedAwardsData;
 } 

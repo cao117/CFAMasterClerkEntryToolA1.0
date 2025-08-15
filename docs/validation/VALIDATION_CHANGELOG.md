@@ -2,6 +2,32 @@
 
 This changelog records all changes, additions, and deletions to validation rules for each tab in the CFA Master Clerk Entry Tool. Each entry includes the date, affected tab, summary of the change, and rationale/context.
 
+### [2025-08-15] Breed Sheets Tab: OCP Ring Kitten Hair Length Support
+- **Tabs:** Breed Sheets
+- **Change:** Added OCP Ring support for Kitten group hair length selection
+- **Summary:**
+  - **Root Cause**: OCP Ring type was missing from the ring type check for Kitten hair length availability in `getAvailableHairLengths()` function
+  - **Problem**: 
+    - OCP Ring judges could not select Longhair or Shorthair for Kitten entries in Breed Sheets tab
+    - Championship and Premiership groups worked correctly with OCP rings, but Kitten group did not
+    - The condition check for Kitten only included: Longhair, Double Specialty, Super Specialty, Allbreed (missing OCP Ring)
+  - **Solution**: 
+    - Added `|| selectedJudge.ringType === 'OCP Ring'` to both LH and SH condition checks in the Kitten case
+    - Made OCP Ring behavior consistent across all three groups (Championship, Premiership, Kitten)
+  - **Technical Details**:
+    - Lines 220-224: Updated Kitten case in `getAvailableHairLengths()` function
+    - Added OCP Ring to LH condition: `if (kitLHCount > 0 && (... || selectedJudge.ringType === 'OCP Ring'))`
+    - Added OCP Ring to SH condition: `if (kitSHCount > 0 && (... || selectedJudge.ringType === 'OCP Ring'))`
+  - **Affected Files**: `src/components/BreedSheetsTab.tsx`
+  - **Result**: OCP Ring judges can now properly select LH/SH for Kitten breed sheets, matching the behavior for Championship and Premiership groups
+- **Files Modified**: 
+  - `src/components/BreedSheetsTab.tsx` - Added OCP Ring to Kitten hair length availability checks
+  - `docs/validation/VALIDATION_BREED_SHEETS.md` - Updated documentation to reflect OCP Ring support for all groups
+  - `docs/COMPONENT-CHANGELOG.md` - Added component change entry
+- **Testing**: Manual verification confirmed OCP Ring judges can now select both LH and SH for Kitten breed sheets when counts permit
+- **Rationale**: OCP rings should behave identically to Allbreed rings for breed sheet functionality across all groups
+- **Impact**: Users with OCP Ring judges can now properly enter Kitten breed sheet awards for both LH and SH sections
+
 ### [2025-08-14] Championship & Premiership Tabs: OCP Ring Filler Error Logic Fix
 - **Tabs:** Championship, Premiership
 - **Change:** Fixed OCP ring filler validation to exclude non-eligible cats (GC/GP) from ranked cats consideration

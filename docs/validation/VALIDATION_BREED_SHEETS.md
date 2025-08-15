@@ -28,10 +28,11 @@ A group (Championship, Premiership, Kitten) button appears only if:
 ### Hair Length Visibility
 Hair length sections (LH/SH) appear based on judge ring type and show counts:
 
-#### Allbreed (AB), Double Specialty (DBSP), and Super Specialty (SSP) Rings
+#### Allbreed (AB), OCP Ring, Double Specialty (DBSP), and Super Specialty (SSP) Rings
 - **LH Section**: Appears if `LH count for selected group` > 0
 - **SH Section**: Appears if `SH count for selected group` > 0
-- **Note**: Super Specialty (SSP) behaves identically to Allbreed (AB) - shows both sections when counts are available
+- **Note**: Super Specialty (SSP) and OCP Ring behave identically to Allbreed (AB) - shows both sections when counts are available
+- **OCP Ring Support**: Added 2025-08-15 - OCP Ring now properly supports LH/SH selection for all groups (Championship, Premiership, Kitten)
 
 #### Longhair (LH) Rings
 - **LH Section Only**: Appears if `LH count for selected group` > 0

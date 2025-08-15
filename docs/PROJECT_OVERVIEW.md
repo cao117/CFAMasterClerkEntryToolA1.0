@@ -482,6 +482,13 @@ The following action buttons are present in the Championship and Premiership tab
   - Championship/Premiership: Show Awards 1-10/15 + Best AB/LH/SH CH/PR sections
   - Kitten/Household Pet: Show Awards 1-10/15 only
   - Special handling for OCP rings (empty CH/PR column) and SSP rings (includes LH/SH sections in AB column)
+- **Breed Awards Worksheet** (Added 2025-08-15): Excel export includes a comprehensive "Breed Awards" worksheet containing:
+  - All breed sheet awards (Best of Breed, 2nd Best of Breed, Best CH, Best PR) for all judges
+  - Data organized by Judge → Group (Championship/Premiership/Kitten) → Hair Length (LH/SH)
+  - Columns: Type, Ring, Breed, BB (Best of Breed), 2BB (2nd Best of Breed), CHPR (Best CH or Best PR)
+  - Kitten entries have empty CHPR column (no Best Kit award)
+  - VOID entries and HHP excluded from export
+  - Ring type column omitted as breed-to-hair-length mapping is fixed (1:1 relationship)
 - CSV schema and voiding logic are documented in `docs/specs/CSV_SCHEMA.md` and `docs/specs/CSV_EXPORT_VOID_QUESTION.md`.
 
 ---

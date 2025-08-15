@@ -217,10 +217,10 @@ const BreedSheetsTab: React.FC<BreedSheetsTabProps> = (props) => {
       case 'Kitten':
         const kitLHCount = showCounts.kittenCounts.lhKittens;
         const kitSHCount = showCounts.kittenCounts.shKittens;
-        if (kitLHCount > 0 && (selectedJudge.ringType === 'Longhair' || selectedJudge.ringType === 'Double Specialty' || selectedJudge.ringType === 'Super Specialty' || selectedJudge.ringType === 'Allbreed')) {
+        if (kitLHCount > 0 && (selectedJudge.ringType === 'Longhair' || selectedJudge.ringType === 'Double Specialty' || selectedJudge.ringType === 'Super Specialty' || selectedJudge.ringType === 'Allbreed' || selectedJudge.ringType === 'OCP Ring')) {
           hairLengths.push('Longhair');
         }
-        if (kitSHCount > 0 && (selectedJudge.ringType === 'Shorthair' || selectedJudge.ringType === 'Double Specialty' || selectedJudge.ringType === 'Super Specialty' || selectedJudge.ringType === 'Allbreed')) {
+        if (kitSHCount > 0 && (selectedJudge.ringType === 'Shorthair' || selectedJudge.ringType === 'Double Specialty' || selectedJudge.ringType === 'Super Specialty' || selectedJudge.ringType === 'Allbreed' || selectedJudge.ringType === 'OCP Ring')) {
           hairLengths.push('Shorthair');
         }
         break;
