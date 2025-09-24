@@ -16,7 +16,10 @@
       "mcp__sequential-thinking__sequentialthinking",
       "Bash(wsl:*)",
       "Bash(rm:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(./install-tauri-deps.sh:*)",
+      "Bash(claude mcp:list)",
+      "mcp__filesystem__list_directory"
     ],
     "deny": [],
     "ask": [],

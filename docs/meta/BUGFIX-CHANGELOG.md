@@ -1,5 +1,21 @@
 # Bugfix Changelog
 
+## [2025-01-25] TECHNICAL FIX: HHP Ring Number Mapping in Excel Export
+- **Issue**: HHP data in Final Awards and HHP_Final sheets showed incorrect ring numbers (only Ring 1 and Ring 2 instead of 1-4)
+- **Root Cause**: Column expansion logic for specialty ring types created multiple columns per judge, causing visual Ring #3 and Ring #4 data to be mapped to Judge #2's columns instead of their respective judge columns
+- **Files Modified**: `src/utils/excelExport.ts`
+- **Code Changes**:
+  - **First Fix**: Modified `transformTabData()` function (lines 574-576): Added special handling for household tab type
+  - **Second Fix**: Modified `extractFinalAwardsFromTab()` function (lines 919-921): Added identical special handling for household tab type
+  - **Third Fix**: Modified `extractFinalAwardsFromTab()` function (lines 958-962): Added empty ring type for household tab in Final Awards
+  - Both column functions now use condition `if (tabType === 'household')` to always create exactly 1 column per judge regardless of ring type
+  - Ring type assignment now uses `tabType === 'household' ? '' : (original logic)` to make Ring Type column empty for HHP data in Final Awards only
+- **Impact**:
+  - **Final Awards**: Now correctly shows all 4 rings (1, 2, 3, 4) with EMPTY ring type column for HHP data only
+  - **HHP_Final Sheet**: Now shows 4 columns instead of 8, with correct ring numbers and ring types (unchanged)
+  - **Other Tabs**: Championship, Premiership, Kitten tabs in Final Awards remain unaffected (still show ring type labels)
+- **Testing**: TypeScript compilation passed, no new lint errors introduced
+
 ## [2025-08-14 23:15:00] TECHNICAL FIX: OCP Ring Filler Error Logic - Status Eligibility
 - **Files Modified**: `src/validation/championshipValidation.ts`, `src/validation/premiershipValidation.ts`
 - **Code Changes**:

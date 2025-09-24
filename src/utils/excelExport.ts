@@ -568,9 +568,13 @@ function buildBreedSheetSection(breedSheetsData: any, judge: any, globalSettings
  */
 function transformTabData(tabData: any, judges: any[], tabType: string, showState: any): any {
   // Build columns: for Double Specialty, split into LH/SH; otherwise, use ringType
+  // Special handling for household tab: always create exactly 1 column per judge
   const columns: { judge: any; specialty: string }[] = [];
   judges.forEach(judge => {
-    if (judge.ringType === 'Double Specialty') {
+    if (tabType === 'household') {
+      // For household tab: always create exactly 1 column per judge regardless of ring type
+      columns.push({ judge, specialty: judge.ringType });
+    } else if (judge.ringType === 'Double Specialty') {
       columns.push({ judge, specialty: 'Longhair' });
       columns.push({ judge, specialty: 'Shorthair' });
             } else if (judge.ringType === 'Super Specialty') {
@@ -909,9 +913,13 @@ function extractFinalAwardsFromTab(showState: any, tabType: 'championship' | 'pr
   const judges = showState.judges || [];
   
   // Build columns: for Double Specialty, split into LH/SH; otherwise, use ringType
+  // Special handling for household tab: always create exactly 1 column per judge
   const columns: { judge: any; specialty: string }[] = [];
   judges.forEach(judge => {
-    if (judge.ringType === 'Double Specialty') {
+    if (tabType === 'household') {
+      // For household tab: always create exactly 1 column per judge regardless of ring type
+      columns.push({ judge, specialty: judge.ringType });
+    } else if (judge.ringType === 'Double Specialty') {
       columns.push({ judge, specialty: 'Longhair' });
       columns.push({ judge, specialty: 'Shorthair' });
     } else if (judge.ringType === 'Super Specialty') {
@@ -947,10 +955,11 @@ function extractFinalAwardsFromTab(showState: any, tabType: 'championship' | 'pr
   for (let colIdx = 0; colIdx < columns.length; colIdx++) {
     const col = columns[colIdx];
     const ringNumber = col.judge.id.toString();
-    const ringType = col.specialty === 'Allbreed' ? 'Allbreed' : 
-                    col.specialty === 'Longhair' ? 'Longhair' :
-                    col.specialty === 'Shorthair' ? 'Shorthair' :
-                    col.specialty === 'OCP' ? 'OCP' : col.specialty;
+    const ringType = tabType === 'household' ? '' :
+                    (col.specialty === 'Allbreed' ? 'Allbreed' :
+                     col.specialty === 'Longhair' ? 'Longhair' :
+                     col.specialty === 'Shorthair' ? 'Shorthair' :
+                     col.specialty === 'OCP' ? 'OCP' : col.specialty);
     
     // Extract Show Awards data
     const maxAwardRows = getMaxAwardRows(showState, tabType);
