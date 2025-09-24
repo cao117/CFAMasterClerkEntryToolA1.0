@@ -1,21 +1,5 @@
 # Bugfix Changelog
 
-## [2025-01-25] TECHNICAL FIX: Super Specialty Finals Duplication in Final Awards
-- **Issue**: Super Specialty rings in Championship/Premiership tabs were duplicating LH/SH finals data in Final Awards Allbreed column
-- **Root Cause**: LH/SH finals appeared in both their respective columns AND the Allbreed column for Super Specialty rings
-- **Files Modified**: `src/utils/excelExport.ts`
-- **Code Changes**:
-  - Modified `extractFinalsDataForColumn()` function (lines 1024, 1036, 1054, 1066): Added Super Specialty exclusion logic
-  - For Super Specialty rings: LH finals excluded from Allbreed column, SH finals excluded from Allbreed column
-  - Added condition `if (col.judge.ringType === 'Super Specialty' && col.specialty === 'Allbreed') return false;`
-  - Applied to both Championship (LH/SH CH) and Premiership (LH/SH PR) sections
-- **Impact**:
-  - **Final Awards**: Super Specialty Allbreed columns now show only AB CH/PR finals (Best AB CH, 2nd Best AB CH, 3rd Best AB CH)
-  - **Final Awards**: LH/SH finals remain in their respective columns, removed from Allbreed column for Super Specialty rings
-  - **Other Ring Types**: No impact on Allbreed, Double Specialty, OCP, or single specialty rings
-  - **Other Worksheets**: No impact on CH_Final, PR_Final, HHP_Final, or Breed Sheets
-- **Testing**: TypeScript compilation passed, no new lint errors introduced
-
 ## [2025-01-25] TECHNICAL FIX: HHP Ring Number Mapping in Excel Export
 - **Issue**: HHP data in Final Awards and HHP_Final sheets showed incorrect ring numbers (only Ring 1 and Ring 2 instead of 1-4)
 - **Root Cause**: Column expansion logic for specialty ring types created multiple columns per judge, causing visual Ring #3 and Ring #4 data to be mapped to Judge #2's columns instead of their respective judge columns

@@ -1016,25 +1016,19 @@ function extractFinalsDataForColumn(tabData: any, col: any, colIdx: number, tabT
         labels: ['Best AB CH', '2nd Best AB CH', '3rd Best AB CH', '4th Best AB CH', '5th Best AB CH'].slice(0, finalsRowCount),
         enabledFor: (col: any) => col.specialty === 'Allbreed'
       },
-      {
-        key: 'lhChampionsFinals',
+      { 
+        key: 'lhChampionsFinals', 
         labels: ['Best LH CH', '2nd Best LH CH', '3rd Best LH CH', '4th Best LH CH', '5th Best LH CH'].slice(0, finalsRowCount),
         enabledFor: (col: any) => {
-          // For Super Specialty: LH finals should NOT appear in Allbreed column (avoid duplication)
-          if (col.judge.ringType === 'Super Specialty' && col.specialty === 'Allbreed') {
-            return false;  // Skip LH finals in Allbreed column for Super Specialty
-          }
+          // For Final Awards worksheet, include AB column for SSP rings
           return col.specialty === 'Longhair' || col.specialty === 'Allbreed';
         }
       },
-      {
-        key: 'shChampionsFinals',
+      { 
+        key: 'shChampionsFinals', 
         labels: ['Best SH CH', '2nd Best SH CH', '3rd Best SH CH', '4th Best SH CH', '5th Best SH CH'].slice(0, finalsRowCount),
         enabledFor: (col: any) => {
-          // For Super Specialty: SH finals should NOT appear in Allbreed column (avoid duplication)
-          if (col.judge.ringType === 'Super Specialty' && col.specialty === 'Allbreed') {
-            return false;  // Skip SH finals in Allbreed column for Super Specialty
-          }
+          // For Final Awards worksheet, include AB column for SSP rings
           return col.specialty === 'Shorthair' || col.specialty === 'Allbreed';
         }
       }
@@ -1046,25 +1040,19 @@ function extractFinalsDataForColumn(tabData: any, col: any, colIdx: number, tabT
         labels: ['Best AB PR', '2nd Best AB PR', '3rd Best AB PR', '4th Best AB PR', '5th Best AB PR'].slice(0, finalsRowCount),
         enabledFor: (col: any) => col.specialty === 'Allbreed'
       },
-      {
-        key: 'lhPremiersFinals',
+      { 
+        key: 'lhPremiersFinals', 
         labels: ['Best LH PR', '2nd Best LH PR', '3rd Best LH PR', '4th Best LH PR', '5th Best LH PR'].slice(0, finalsRowCount),
         enabledFor: (col: any) => {
-          // For Super Specialty: LH finals should NOT appear in Allbreed column (avoid duplication)
-          if (col.judge.ringType === 'Super Specialty' && col.specialty === 'Allbreed') {
-            return false;  // Skip LH finals in Allbreed column for Super Specialty
-          }
+          // For Final Awards worksheet, include AB column for SSP rings
           return col.specialty === 'Longhair' || col.specialty === 'Allbreed';
         }
       },
-      {
-        key: 'shPremiersFinals',
+      { 
+        key: 'shPremiersFinals', 
         labels: ['Best SH PR', '2nd Best SH PR', '3rd Best SH PR', '4th Best SH PR', '5th Best SH PR'].slice(0, finalsRowCount),
         enabledFor: (col: any) => {
-          // For Super Specialty: SH finals should NOT appear in Allbreed column (avoid duplication)
-          if (col.judge.ringType === 'Super Specialty' && col.specialty === 'Allbreed') {
-            return false;  // Skip SH finals in Allbreed column for Super Specialty
-          }
+          // For Final Awards worksheet, include AB column for SSP rings
           return col.specialty === 'Shorthair' || col.specialty === 'Allbreed';
         }
       }
