@@ -632,47 +632,58 @@ function transformTabData(tabData: any, judges: any[], tabType: string, showStat
       placements.push(row);
     }
 
-    // Calculate finals row count based on championship total
-    const finalsRowCount = championshipTotal >= 85 ? 5 : 3;
+    // Calculate finals row counts based on individual totals for SSP support
+    const lhTotal = showState.general?.championshipCounts?.longhair || 0;
+    const shTotal = showState.general?.championshipCounts?.shorthair || 0;
+    const abFinalsRowCount = championshipTotal >= 85 ? 5 : 3;
+    const lhFinalsRowCount = lhTotal >= 85 ? 5 : 3;
+    const shFinalsRowCount = shTotal >= 85 ? 5 : 3;
     
     // Finals sections with dynamic labels based on actual count
     const finalsSections = [
-      { 
-        key: 'championsFinals', 
+      {
+        key: 'championsFinals',
         voidKey: 'voidedChampionsFinals',
-        labels: ['Best AB CH', '2nd Best AB CH', '3rd Best AB CH', '4th Best AB CH', '5th Best AB CH'].slice(0, finalsRowCount),
+        labels: ['Best AB CH', '2nd Best AB CH', '3rd Best AB CH', '4th Best AB CH', '5th Best AB CH'].slice(0, abFinalsRowCount),
         enabledFor: (col: any) => col.specialty === 'Allbreed'
       },
-      { 
-        key: 'lhChampionsFinals', 
+      {
+        key: 'lhChampionsFinals',
         voidKey: 'voidedLHChampionsFinals',
-        labels: ['Best LH CH', '2nd Best LH CH', '3rd Best LH CH', '4th Best LH CH', '5th Best LH CH'].slice(0, finalsRowCount),
+        getLabels: (col: any) => {
+          const rowCount = col.specialty === 'Longhair' ? lhFinalsRowCount : abFinalsRowCount;
+          return ['Best LH CH', '2nd Best LH CH', '3rd Best LH CH', '4th Best LH CH', '5th Best LH CH'].slice(0, rowCount);
+        },
         enabledFor: (col: any) => {
-          // For Super Specialty: skip AB column for Best LH CH sections (duplicates LH column)
-          if (col.judge.ringType === 'Super Specialty' && col.specialty === 'Allbreed') {
-            return false;
-          }
           return col.specialty === 'Longhair' || col.specialty === 'Allbreed';
         }
       },
-      { 
-        key: 'shChampionsFinals', 
+      {
+        key: 'shChampionsFinals',
         voidKey: 'voidedSHChampionsFinals',
-        labels: ['Best SH CH', '2nd Best SH CH', '3rd Best SH CH', '4th Best SH CH', '5th Best SH CH'].slice(0, finalsRowCount),
+        getLabels: (col: any) => {
+          const rowCount = col.specialty === 'Shorthair' ? shFinalsRowCount : abFinalsRowCount;
+          return ['Best SH CH', '2nd Best SH CH', '3rd Best SH CH', '4th Best SH CH', '5th Best SH CH'].slice(0, rowCount);
+        },
         enabledFor: (col: any) => {
-          // For Super Specialty: skip AB column for Best SH CH sections (duplicates SH column)
-          if (col.judge.ringType === 'Super Specialty' && col.specialty === 'Allbreed') {
-            return false;
-          }
           return col.specialty === 'Shorthair' || col.specialty === 'Allbreed';
         }
       }
     ];
 
     for (const section of finalsSections) {
-      for (let pos = 0; pos < section.labels.length; pos++) {
+      // Determine max rows needed for this section across all columns
+      const maxRows = Math.max(...columns.map(col =>
+        section.enabledFor(col) ? (section.getLabels ? section.getLabels(col).length : section.labels.length) : 0
+      ));
+
+      for (let pos = 0; pos < maxRows; pos++) {
+        // Get label from first enabled column to ensure consistency
+        const firstEnabledCol = columns.find(col => section.enabledFor(col));
+        const sectionLabels = section.getLabels ? section.getLabels(firstEnabledCol) : section.labels;
+
         const row: any = {
-          label: section.labels[pos],
+          label: sectionLabels[pos] || '',
           columns: []
         };
         

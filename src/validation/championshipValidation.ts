@@ -2374,40 +2374,66 @@ function validateHairLengthFinalsConsistencyCH(
   errors: { [key: string]: string },
   allExistingErrors: { [key: string]: string } = {}
 ): void {
-  // Check each position individually (0, 1, 2, 3, 4, etc.)
-  for (let pos = 0; pos < 15; pos++) {
+  // Get correct position counts for each column individually (SSP support)
+  const specialtyColumn = input.columns[specialtyColIdx];
+  const allbreedColumn = input.columns[allbreedColIdx];
+  const specialtyPositions = getFinalsPositionsForRingType(input, specialtyColumn.specialty);
+  const allbreedPositions = getFinalsPositionsForRingType(input, allbreedColumn.specialty);
+
+  // Check up to the maximum positions that either column could have
+  const maxPositions = Math.max(specialtyPositions, allbreedPositions);
+
+  for (let pos = 0; pos < maxPositions; pos++) {
     const specialtyKey = `${specialtyColIdx}-${pos}`;
     const allbreedKey = `${allbreedColIdx}-${pos}`;
-    
+
     const specialtyValue = (input as any)[finalsSection][specialtyKey];
     const allbreedValue = (input as any)[finalsSection][allbreedKey];
-    
-    // Check if there's a mismatch between specialty and allbreed for the same position
-    if (specialtyValue !== allbreedValue) {
-      if (specialtyValue && !allbreedValue) {
-        // Specialty has value but allbreed doesn't
-        const sectionName = finalsSection === 'lhChampionsFinals' ? 'lhChampions' : 'shChampions';
-        const errorKey = `${sectionName}-${allbreedColIdx}-${pos}`;
-        // Respect duplicate error precedence - only set if no existing error
-        if (!allExistingErrors[errorKey] && !errors[errorKey]) {
-          errors[errorKey] = `Finals inconsistency: ${hairLength} specialty has ${specialtyValue} but Allbreed column is missing this cat for position ${pos + 1}`;
+
+    // Determine if each column has this position based on individual breakoffs
+    const specialtyHasPosition = pos < specialtyPositions;
+    const allbreedHasPosition = pos < allbreedPositions;
+
+    // Only validate positions that exist in both columns OR create errors for mismatched expectations
+    if (specialtyHasPosition && allbreedHasPosition) {
+      // Both columns have this position - validate consistency
+      if (specialtyValue !== allbreedValue) {
+        if (specialtyValue && !allbreedValue) {
+          // Specialty has value but allbreed doesn't
+          const sectionName = finalsSection === 'lhChampionsFinals' ? 'lhChampions' : 'shChampions';
+          const errorKey = `${sectionName}-${allbreedColIdx}-${pos}`;
+          // Respect duplicate error precedence - only set if no existing error
+          if (!allExistingErrors[errorKey] && !errors[errorKey]) {
+            errors[errorKey] = `Finals inconsistency: ${hairLength} specialty has ${specialtyValue} but Allbreed column is missing this cat for position ${pos + 1}`;
+          }
+        } else if (!specialtyValue && allbreedValue) {
+          // Allbreed has value but specialty doesn't
+          const sectionName = finalsSection === 'lhChampionsFinals' ? 'lhChampions' : 'shChampions';
+          const errorKey = `${sectionName}-${allbreedColIdx}-${pos}`;
+          // Respect duplicate error precedence - only set if no existing error
+          if (!allExistingErrors[errorKey] && !errors[errorKey]) {
+            errors[errorKey] = `Finals inconsistency: Allbreed column has ${allbreedValue} but ${hairLength} specialty is missing this cat for position ${pos + 1}`;
+          }
+        } else if (specialtyValue && allbreedValue && specialtyValue !== allbreedValue) {
+          // Both have values but they're different
+          const sectionName = finalsSection === 'lhChampionsFinals' ? 'lhChampions' : 'shChampions';
+          const errorKey = `${sectionName}-${allbreedColIdx}-${pos}`;
+          // Respect duplicate error precedence - only set if no existing error
+          if (!allExistingErrors[errorKey] && !errors[errorKey]) {
+            errors[errorKey] = `Finals inconsistency: ${hairLength} specialty has ${specialtyValue} but Allbreed column has ${allbreedValue} for position ${pos + 1}`;
+          }
         }
-      } else if (!specialtyValue && allbreedValue) {
-        // Allbreed has value but specialty doesn't
-        const sectionName = finalsSection === 'lhChampionsFinals' ? 'lhChampions' : 'shChampions';
-        const errorKey = `${sectionName}-${allbreedColIdx}-${pos}`;
-        // Respect duplicate error precedence - only set if no existing error
-        if (!allExistingErrors[errorKey] && !errors[errorKey]) {
-          errors[errorKey] = `Finals inconsistency: Allbreed column has ${allbreedValue} but ${hairLength} specialty is missing this cat for position ${pos + 1}`;
-        }
-      } else if (specialtyValue && allbreedValue && specialtyValue !== allbreedValue) {
-        // Both have values but they're different
-        const sectionName = finalsSection === 'lhChampionsFinals' ? 'lhChampions' : 'shChampions';
-        const errorKey = `${sectionName}-${allbreedColIdx}-${pos}`;
-        // Respect duplicate error precedence - only set if no existing error
-        if (!allExistingErrors[errorKey] && !errors[errorKey]) {
-          errors[errorKey] = `Finals inconsistency: ${hairLength} specialty has ${specialtyValue} but Allbreed column has ${allbreedValue} for position ${pos + 1}`;
-        }
+      }
+    } else if (!specialtyHasPosition && allbreedHasPosition && allbreedValue) {
+      // AB has position but specialty doesn't - this is now VALID for SSP with different breakoffs
+      // Skip validation (no error) - this handles the case where AB gets top 5 but LH/SH only gets top 3
+    } else if (specialtyHasPosition && !allbreedHasPosition && specialtyValue) {
+      // Specialty has position but AB doesn't - still an error (shouldn't happen in practice)
+      const sectionName = finalsSection === 'lhChampionsFinals' ? 'lhChampions' : 'shChampions';
+      const errorKey = `${sectionName}-${allbreedColIdx}-${pos}`;
+      // Respect duplicate error precedence - only set if no existing error
+      if (!allExistingErrors[errorKey] && !errors[errorKey]) {
+        errors[errorKey] = `Finals inconsistency: ${hairLength} specialty has ${specialtyValue} but Allbreed column is missing this position ${pos + 1}`;
       }
     }
   }
