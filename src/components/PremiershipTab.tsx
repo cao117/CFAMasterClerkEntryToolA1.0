@@ -203,9 +203,18 @@ export default function PremiershipTab({
 
   // --- Helper: Get sections that should be shown for each ring type ---
   const getSectionsForRingType = (specialty: string): Array<'ab' | 'lh' | 'sh'> => {
+    // For SSP rings, each column shows only its specific section
+    // For OCP and Allbreed rings, the AB column shows ALL sections
+    const column = columns.find(col => col.specialty === specialty);
+    const isSSPRing = column && judges.find(j => j.id === column.judge.id)?.ringType === 'Super Specialty';
+
     switch (specialty) {
       case 'Allbreed':
-        return ['ab', 'lh', 'sh'];
+        if (isSSPRing) {
+          return ['ab']; // SSP AB column only shows AB PR section
+        } else {
+          return ['ab', 'lh', 'sh']; // OCP/Allbreed rings: AB column shows ALL sections
+        }
       case 'Longhair':
         return ['lh'];
       case 'Shorthair':
@@ -233,39 +242,57 @@ export default function PremiershipTab({
     return count;
   };
 
-  // --- Helper: Get Finals row count for a column/section ---
-  const getFinalsRowCount = (colIdx: number, specialty: string, section: 'ab' | 'lh' | 'sh'): number => {
-    const calculated = getFinalsCount(specialty) >= globalSettings.placement_thresholds.premiership ? 3 : 2;
-    let finalsObj: Record<string, string> = {};
-    if (section === 'ab') finalsObj = premiershipTabData.abPremiersFinals;
-    if (section === 'lh') finalsObj = premiershipTabData.lhPremiersFinals;
-    if (section === 'sh') finalsObj = premiershipTabData.shPremiersFinals;
-    let maxIdx = -1;
-    Object.keys(finalsObj).forEach(key => {
-      const [col, row] = key.split('-').map(Number);
-      if (col === colIdx && row > maxIdx) {
-        maxIdx = row;
-      }
-    });
-    return Math.max(calculated, maxIdx + 1);
-  };
-  const getFinalsPositionsForRingTypeLocal = (ringType: string) => {
-    let count = 0;
+  // --- Helper: Get combined premiership count for uniform finals logic (like Championship tab) ---
+  const getPremiershipCountForRingType = (ringType: string): number => {
     switch (ringType) {
       case 'Allbreed':
-        count = premiershipCounts.gps + premiershipCounts.prs + premiershipCounts.lhNovs + premiershipCounts.shNovs;
-        break;
+        return premiershipCounts.lhGps + premiershipCounts.shGps + premiershipCounts.lhPrs + premiershipCounts.shPrs + premiershipCounts.lhNovs + premiershipCounts.shNovs; // Combined LH+SH totals
       case 'Longhair':
-        count = premiershipCounts.lhGps + premiershipCounts.lhPrs + premiershipCounts.lhNovs;
-        break;
+        return premiershipCounts.lhGps + premiershipCounts.lhPrs + premiershipCounts.lhNovs;
       case 'Shorthair':
-        count = premiershipCounts.shGps + premiershipCounts.shPrs + premiershipCounts.shNovs;
-        break;
+        return premiershipCounts.shGps + premiershipCounts.shPrs + premiershipCounts.shNovs;
       default:
-        count = premiershipCounts.gps + premiershipCounts.prs + premiershipCounts.lhNovs + premiershipCounts.shNovs;
-        break;
+        return 0;
     }
-    return count >= globalSettings.placement_thresholds.premiership ? 3 : 2; // 3 positions if 15 awards, 2 if 10 awards
+  };
+
+  // --- Helper: Get Finals row count for a column/section ---
+  const getFinalsRowCount = (colIdx: number, specialty: string, section: 'ab' | 'lh' | 'sh'): number => {
+    // Always use combined LH+SH total for uniform logic across all sections and ring types
+    const combinedTotal = premiershipCounts.lhGps + premiershipCounts.shGps + premiershipCounts.lhPrs + premiershipCounts.shPrs + premiershipCounts.lhNovs + premiershipCounts.shNovs;
+    const calculated = combinedTotal >= globalSettings.placement_thresholds.premiership ? 3 : 2;
+
+    // Apply uniform logic across ALL ring types and sections for consistent placement counts
+    // This ensures AB, LH, and SH sections all show the same number of placements based on total premiership count
+    return calculated;
+  };
+  const getFinalsPositionsForRingTypeLocal = (ringType: string) => {
+    // Always use combined LH+SH total for uniform logic across all ring types
+    const combinedTotal = premiershipCounts.lhGps + premiershipCounts.shGps + premiershipCounts.lhPrs + premiershipCounts.shPrs + premiershipCounts.lhNovs + premiershipCounts.shNovs;
+    return combinedTotal >= globalSettings.placement_thresholds.premiership ? 3 : 2; // 3 positions if 15 awards, 2 if 10 awards
+  };
+
+  // Helper function to determine which sections should be shown for each ring type (like Championship tab)
+  const shouldShowSection = (specialty: string, section: 'ab' | 'lh' | 'sh'): boolean => {
+    // For SSP rings, each column shows only its specific section
+    // For OCP and Allbreed rings, the AB column shows ALL sections
+    const column = columns.find(col => col.specialty === specialty);
+    const isSSPRing = column && judges.find(j => j.id === column.judge.id)?.ringType === 'Super Specialty';
+
+    switch (specialty) {
+      case 'Allbreed':
+        if (isSSPRing) {
+          return section === 'ab'; // SSP AB column only shows AB PR section
+        } else {
+          return true; // OCP/Allbreed rings: AB column shows ALL sections (AB, LH, SH PR)
+        }
+      case 'Longhair':
+        return section === 'lh'; // Longhair only shows LH PR
+      case 'Shorthair':
+        return section === 'sh'; // Shorthair only shows SH PR
+      default:
+        return false;
+    }
   };
 
   // Helper function to calculate row index for each section (like Championship tab)
@@ -897,7 +924,7 @@ export default function PremiershipTab({
         // LH PR
         const newLH = { ...prev.lhPremiersFinals };
         columns.forEach((col, colIdx) => {
-          if (col.specialty === 'Allbreed' || col.specialty === 'Longhair') {
+          if (col.specialty === 'Longhair') {
             const rowCount = getFinalsPositionsForRingTypeLocal(col.specialty);
             for (let i = 0; i < rowCount; i++) {
               const key = `${colIdx}-${i}`;
@@ -911,7 +938,7 @@ export default function PremiershipTab({
         // SH PR
         const newSH = { ...prev.shPremiersFinals };
         columns.forEach((col, colIdx) => {
-          if (col.specialty === 'Allbreed' || col.specialty === 'Shorthair') {
+          if (col.specialty === 'Shorthair') {
             const rowCount = getFinalsPositionsForRingTypeLocal(col.specialty);
             for (let i = 0; i < rowCount; i++) {
               const key = `${colIdx}-${i}`;
@@ -1169,8 +1196,8 @@ export default function PremiershipTab({
                   return null;
                 })}
                 {/* Best AB PR Section (Allbreed only) */}
-                        {Array.from({ length: Math.max(...columns.map(col => col.specialty === 'Allbreed' ? getFinalsPositionsForRingTypeLocal(col.specialty) : 0)) }, (_, i) => (
-          columns.some(col => col.specialty === 'Allbreed' && i < getFinalsPositionsForRingTypeLocal(col.specialty)) ? (
+                        {Array.from({ length: Math.max(...columns.map((col, colIdx) => shouldShowSection(col.specialty, 'ab') ? getFinalsRowCount(colIdx, col.specialty, 'ab') : 0)) }, (_, i) => (
+          columns.some((col, colIdx) => shouldShowSection(col.specialty, 'ab') && i < getFinalsRowCount(colIdx, col.specialty, 'ab')) ? (
                     <tr key={`abpr-${i}`} className="cfa-table-row">
                       {/* Frozen position column: apply thick blue right border if first data column is focused */}
                       <td
@@ -1181,7 +1208,7 @@ export default function PremiershipTab({
                       </td>
                       {columns.map((col, colIdx) => {
                         const isFocused = focusedColumnIndex === colIdx;
-                        const shouldRenderCell = col.specialty === 'Allbreed' && i < getFinalsPositionsForRingTypeLocal(col.specialty);
+                        const shouldRenderCell = i < getFinalsRowCount(colIdx, col.specialty, 'ab') && shouldShowSection(col.specialty, 'ab');
                           const key = `${colIdx}-${i}`;
                           const value = premiershipTabData.abPremiersFinals[key] || '';
                           const errorKey = `abPremiersFinals-${colIdx}-${i}`;
@@ -1224,8 +1251,8 @@ export default function PremiershipTab({
                   ) : null
                 ))}
                 {/* Best LH PR Section (Allbreed and Longhair) */}
-                        {Array.from({ length: Math.max(...columns.map(col => (col.specialty === 'Allbreed' || col.specialty === 'Longhair') ? getFinalsPositionsForRingTypeLocal(col.specialty) : 0)) }, (_, i) => (
-          columns.some(col => (col.specialty === 'Allbreed' || col.specialty === 'Longhair') && i < getFinalsPositionsForRingTypeLocal(col.specialty)) ? (
+                        {Array.from({ length: Math.max(...columns.map((col, colIdx) => shouldShowSection(col.specialty, 'lh') ? getFinalsRowCount(colIdx, col.specialty, 'lh') : 0)) }, (_, i) => (
+          columns.some((col, colIdx) => shouldShowSection(col.specialty, 'lh') && i < getFinalsRowCount(colIdx, col.specialty, 'lh')) ? (
                     <tr key={`lhpr-${i}`} className="cfa-table-row">
                       {/* Frozen position column: apply thick blue right border if first data column is focused */}
                       <td
@@ -1236,7 +1263,7 @@ export default function PremiershipTab({
                       </td>
                       {columns.map((col, colIdx) => {
                         const isFocused = focusedColumnIndex === colIdx;
-                        const shouldRenderCell = (col.specialty === 'Allbreed' || col.specialty === 'Longhair') && i < getFinalsPositionsForRingTypeLocal(col.specialty);
+                        const shouldRenderCell = i < getFinalsRowCount(colIdx, col.specialty, 'lh') && shouldShowSection(col.specialty, 'lh');
                           const key = `${colIdx}-${i}`;
                           const value = premiershipTabData.lhPremiersFinals[key] || '';
                           const errorKey = `lhPremiersFinals-${colIdx}-${i}`;
@@ -1279,8 +1306,8 @@ export default function PremiershipTab({
                   ) : null
                 ))}
                 {/* Best SH PR Section (Allbreed and Shorthair) */}
-                        {Array.from({ length: Math.max(...columns.map(col => (col.specialty === 'Allbreed' || col.specialty === 'Shorthair') ? getFinalsPositionsForRingTypeLocal(col.specialty) : 0)) }, (_, i) => (
-          columns.some(col => (col.specialty === 'Allbreed' || col.specialty === 'Shorthair') && i < getFinalsPositionsForRingTypeLocal(col.specialty)) ? (
+                        {Array.from({ length: Math.max(...columns.map((col, colIdx) => shouldShowSection(col.specialty, 'sh') ? getFinalsRowCount(colIdx, col.specialty, 'sh') : 0)) }, (_, i) => (
+          columns.some((col, colIdx) => shouldShowSection(col.specialty, 'sh') && i < getFinalsRowCount(colIdx, col.specialty, 'sh')) ? (
                     <tr key={`shpr-${i}`} className="cfa-table-row">
                       {/* Frozen position column: apply thick blue right border if first data column is focused */}
                       <td
@@ -1291,7 +1318,7 @@ export default function PremiershipTab({
                       </td>
                       {columns.map((col, colIdx) => {
                         const isFocused = focusedColumnIndex === colIdx;
-                        const shouldRenderCell = (col.specialty === 'Allbreed' || col.specialty === 'Shorthair') && i < getFinalsPositionsForRingTypeLocal(col.specialty);
+                        const shouldRenderCell = i < getFinalsRowCount(colIdx, col.specialty, 'sh') && shouldShowSection(col.specialty, 'sh');
                           const key = `${colIdx}-${i}`;
                           const value = premiershipTabData.shPremiersFinals[key] || '';
                           const errorKey = `shPremiersFinals-${colIdx}-${i}`;

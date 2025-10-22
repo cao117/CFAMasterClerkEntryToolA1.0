@@ -789,15 +789,14 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
     const getChampionshipCountForRingType = (ringType: string): number => {
       switch (ringType) {
         case 'Allbreed':
-          return championshipCounts.lhGcs + championshipCounts.shGcs + championshipCounts.lhChs + championshipCounts.shChs + championshipCounts.lhNovs + championshipCounts.shNovs; // Championship cats + Novices
         case 'Longhair':
-          return championshipCounts.lhGcs + championshipCounts.lhChs + championshipCounts.lhNovs;
         case 'Shorthair':
-          return championshipCounts.shGcs + championshipCounts.shChs + championshipCounts.shNovs;
+          // For SSP rings, use combined LH+SH total for uniform logic across all sections
+          return championshipCounts.lhGcs + championshipCounts.shGcs + championshipCounts.lhChs + championshipCounts.shChs + championshipCounts.lhNovs + championshipCounts.shNovs;
         case 'OCP':
           return 10; // OCP always requires exactly 10 placements, no threshold checking
         default:
-          return championshipCounts.lhGcs + championshipCounts.shGcs + championshipCounts.lhChs + championshipCounts.shChs + championshipCounts.lhNovs + championshipCounts.shNovs; // Championship cats + Novices
+          return championshipCounts.lhGcs + championshipCounts.shGcs + championshipCounts.lhChs + championshipCounts.shChs + championshipCounts.lhNovs + championshipCounts.shNovs;
       }
     };
 
@@ -826,30 +825,30 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
       return calculated;
     };
     /**
-     * Returns the number of Finals rows to render for a given column/section, based on:
-     *  - The calculated finals count (3/5)
-     *  - The number of rows present in the imported finals for this column/section
-     * This ensures that after CSV import, if 5 rows are present, all are shown, even if the show count is not set before render.
+     * Returns the number of Finals rows to render for a given column/section
+     * Uses uniform logic across all sections and ring types for consistent placement counts
+     * This ensures AB, LH, and SH sections all show the same number of placements based on total championship count
      */
     const getFinalsRowCount = (colIdx: number, specialty: string, section: 'champions' | 'lhChampions' | 'shChampions'): number => {
       const calculated = getChampionshipCountForRingType(specialty) >= globalSettings.placement_thresholds.championship ? 5 : 3;
-      let finalsObj: Record<string, string> = {};
-      if (section === 'champions') finalsObj = championshipTabData.championsFinals;
-      if (section === 'lhChampions') finalsObj = championshipTabData.lhChampionsFinals;
-      if (section === 'shChampions') finalsObj = championshipTabData.shChampionsFinals;
-      let maxIdx = -1;
-      Object.keys(finalsObj).forEach(key => {
-        const [col, row] = key.split('-').map(Number);
-        if (col === colIdx && row > maxIdx) maxIdx = row;
-      });
-      return Math.max(calculated, maxIdx + 1);
+      // Apply uniform logic across ALL ring types and sections for consistent placement counts
+      return calculated;
     };
 
     // Helper functions to determine which sections should be shown for each ring type
     const shouldShowSection = (specialty: string, section: 'champions' | 'lhChampions' | 'shChampions'): boolean => {
+      // For SSP rings, each column shows only its specific section
+      // For OCP and Allbreed rings, the AB column shows ALL sections
+      const column = columns.find(col => col.specialty === specialty);
+      const isSSPRing = column && judges.find(j => j.id === column.judge.id)?.ringType === 'Super Specialty';
+
       switch (specialty) {
         case 'Allbreed':
-          return true; // Allbreed shows all sections
+          if (isSSPRing) {
+            return section === 'champions'; // SSP AB column only shows AB CH section
+          } else {
+            return true; // OCP/Allbreed rings: AB column shows ALL sections (AB, LH, SH CH)
+          }
         case 'Longhair':
           return section === 'lhChampions'; // Longhair only shows LH CH
         case 'Shorthair':
@@ -860,9 +859,18 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
     };
 
     const getSectionsForRingType = (specialty: string): Array<'champions' | 'lhChampions' | 'shChampions'> => {
+      // For SSP rings, each column shows only its specific section
+      // For OCP and Allbreed rings, the AB column shows ALL sections
+      const column = columns.find(col => col.specialty === specialty);
+      const isSSPRing = column && judges.find(j => j.id === column.judge.id)?.ringType === 'Super Specialty';
+
       switch (specialty) {
         case 'Allbreed':
-          return ['champions', 'lhChampions', 'shChampions'];
+          if (isSSPRing) {
+            return ['champions']; // SSP AB column only shows AB CH section
+          } else {
+            return ['champions', 'lhChampions', 'shChampions']; // OCP/Allbreed rings: AB column shows ALL sections
+          }
         case 'Longhair':
           return ['lhChampions'];
         case 'Shorthair':

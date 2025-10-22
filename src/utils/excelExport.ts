@@ -1025,9 +1025,12 @@ function extractFinalAwardsFromTab(showState: any, tabType: 'championship' | 'pr
  */
 function extractFinalsDataForColumn(tabData: any, col: any, colIdx: number, tabType: 'championship' | 'premiership', showState: any): any[] {
   const finalsData: any[] = [];
-  
-  // Determine finals row count based on tab total
-  const finalsRowCount = getFinalsRowCount(showState, tabType);
+
+  // Determine finals row count - use individual logic for SSP rings
+  const isSSP = col.judge?.ringType === 'Super Specialty';
+  const finalsRowCount = isSSP
+    ? getIndividualFinalsRowCount(showState, tabType, col.specialty)
+    : getFinalsRowCount(showState, tabType);
   
   // Define finals sections based on tab type
   let finalsSections: any[];
@@ -1119,16 +1122,20 @@ function extractFinalsDataForColumn(tabData: any, col: any, colIdx: number, tabT
 function getMaxAwardRows(showState: any, tabType: string): number {
   if (tabType === 'championship') {
     const championshipTotal = showState.general?.championshipCounts?.total || 0;
-    return championshipTotal >= 85 ? 15 : 10;
+    const championshipBreakoff = showState.globalSettings?.placement_thresholds?.championship || 85;
+    return championshipTotal >= championshipBreakoff ? 15 : 10;
   } else if (tabType === 'premiership') {
     const premiershipTotal = showState.general?.premiershipCounts?.total || 0;
-    return premiershipTotal >= 85 ? 15 : 10;
+    const premiershipBreakoff = showState.globalSettings?.placement_thresholds?.premiership || 50;
+    return premiershipTotal >= premiershipBreakoff ? 15 : 10;
   } else if (tabType === 'kitten') {
     const kittenTotal = showState.general?.kittenCounts?.total || 0;
-    return kittenTotal >= 50 ? 15 : 10;
+    const kittenBreakoff = showState.globalSettings?.placement_thresholds?.kitten || 75;
+    return kittenTotal >= kittenBreakoff ? 15 : 10;
   } else if (tabType === 'household') {
     const householdTotal = showState.general?.householdPetCount || 0;
-    return householdTotal >= 50 ? 15 : 10;
+    const householdBreakoff = showState.globalSettings?.placement_thresholds?.household_pet || 50;
+    return householdTotal >= householdBreakoff ? 15 : 10;
   }
   return 10;
 }
@@ -1140,10 +1147,60 @@ function getFinalsRowCount(showState: any, tabType: string): number {
   // This should match the logic in transformTabData
   if (tabType === 'championship') {
     const championshipTotal = showState.general?.championshipCounts?.total || 0;
-    return championshipTotal >= 85 ? 5 : 3;
+    const championshipBreakoff = showState.globalSettings?.placement_thresholds?.championship || 85;
+    return championshipTotal >= championshipBreakoff ? 5 : 3;
   } else if (tabType === 'premiership') {
     const premiershipTotal = showState.general?.premiershipCounts?.total || 0;
-    return premiershipTotal >= 85 ? 5 : 3;
+    const premiershipBreakoff = showState.globalSettings?.placement_thresholds?.premiership || 50;
+    return premiershipTotal >= premiershipBreakoff ? 3 : 2;
+  }
+  return 3;
+}
+
+/**
+ * Gets individual finals row count for SSP columns
+ */
+function getIndividualFinalsRowCount(showState: any, tabType: string, specialty: string): number {
+  if (tabType === 'championship') {
+    const championshipBreakoff = showState.globalSettings?.placement_thresholds?.championship || 85;
+    let count = 0;
+    const championshipCounts = showState.general?.championshipCounts;
+
+    if (specialty === 'Allbreed') {
+      // Combined LH + SH total
+      count = (championshipCounts?.total || 0);
+    } else if (specialty === 'Longhair') {
+      // Individual LH total
+      count = (championshipCounts?.lhGcs || 0) + (championshipCounts?.lhChs || 0) + (championshipCounts?.lhNovs || 0);
+    } else if (specialty === 'Shorthair') {
+      // Individual SH total
+      count = (championshipCounts?.shGcs || 0) + (championshipCounts?.shChs || 0) + (championshipCounts?.shNovs || 0);
+    } else {
+      // Default to combined total
+      count = (championshipCounts?.total || 0);
+    }
+
+    return count >= championshipBreakoff ? 5 : 3;
+  } else if (tabType === 'premiership') {
+    const premiershipBreakoff = showState.globalSettings?.placement_thresholds?.premiership || 50;
+    let count = 0;
+    const premiershipCounts = showState.general?.premiershipCounts;
+
+    if (specialty === 'Allbreed') {
+      // Combined LH + SH total
+      count = (premiershipCounts?.gps || 0) + (premiershipCounts?.prs || 0) + (premiershipCounts?.lhNovs || 0) + (premiershipCounts?.shNovs || 0);
+    } else if (specialty === 'Longhair') {
+      // Individual LH total
+      count = (premiershipCounts?.lhGps || 0) + (premiershipCounts?.lhPrs || 0) + (premiershipCounts?.lhNovs || 0);
+    } else if (specialty === 'Shorthair') {
+      // Individual SH total
+      count = (premiershipCounts?.shGps || 0) + (premiershipCounts?.shPrs || 0) + (premiershipCounts?.shNovs || 0);
+    } else {
+      // Default to combined total
+      count = (premiershipCounts?.gps || 0) + (premiershipCounts?.prs || 0) + (premiershipCounts?.lhNovs || 0) + (premiershipCounts?.shNovs || 0);
+    }
+
+    return count >= premiershipBreakoff ? 3 : 2;
   }
   return 3;
 }
