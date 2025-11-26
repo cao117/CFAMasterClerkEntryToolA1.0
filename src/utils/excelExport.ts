@@ -990,7 +990,29 @@ function extractFinalAwardsFromTab(showState: any, tabType: 'championship' | 'pr
       const cellData = tabData.showAwards?.[key];
       
       if (cellData && cellData.catNumber && cellData.catNumber.trim() && cellData.catNumber.trim().toUpperCase() !== 'VOID') {
-        const awardName = `Show Award ${pos + 1}`;
+        // Generate award name - use special format for OCP rings
+        let awardName: string;
+        if (col.specialty === 'OCP') {
+          // OCP rings use "Best AB CH/PR" format instead of "Show Award"
+          if (tabType === 'championship') {
+            const ocpLabels = [
+              'Best AB CH', '2nd Best AB CH', '3rd Best AB CH', '4th Best AB CH', '5th Best AB CH',
+              '6th Best AB CH', '7th Best AB CH', '8th Best AB CH', '9th Best AB CH', '10th Best AB CH'
+            ];
+            awardName = ocpLabels[pos] || `${pos + 1}th Best AB CH`;
+          } else if (tabType === 'premiership') {
+            const ocpLabels = [
+              'Best AB PR', '2nd Best AB PR', '3rd Best AB PR', '4th Best AB PR', '5th Best AB PR',
+              '6th Best AB PR', '7th Best AB PR', '8th Best AB PR', '9th Best AB PR', '10th Best AB PR'
+            ];
+            awardName = ocpLabels[pos] || `${pos + 1}th Best AB PR`;
+          } else {
+            awardName = `Show Award ${pos + 1}`;
+          }
+        } else {
+          // All other ring types use "Show Award" format
+          awardName = `Show Award ${pos + 1}`;
+        }
         const catNumber = cellData.catNumber.trim();
         
         // For Show Awards, include GC/CH or GP/PR status (but not for OCP rings)
