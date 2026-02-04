@@ -97,7 +97,7 @@ Suppose the General tab has the following judges:
 
 - In CFA shows, a "Double Specialty" ring means the judge awards Longhair and Shorthair finals separately, as if they were two distinct rings.
 - A "Super Specialty" ring means the judge awards Longhair, Shorthair, and Allbreed finals separately, as if they were three distinct rings.
-- An "OCP Ring" means the judge awards Allbreed and OCP finals separately, as if they were two distinct rings.
+- An "OCP Ring" (Opens Champions Premiers) means the judge awards Allbreed and OCP finals separately, as if they were two distinct rings.
 - Therefore, the tool must provide separate columns for each specialty, ensuring that awards and validation are handled independently for each specialty.
 
 ---

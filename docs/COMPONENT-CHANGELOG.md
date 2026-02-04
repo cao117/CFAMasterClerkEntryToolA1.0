@@ -4,6 +4,14 @@ This document tracks changes to individual components in the CFA Entry applicati
 
 ## [Unreleased]
 
+### [2026-02-04] Excel Export: Kitten_Final OCP Ring Column Fix
+- **Component:** excelExport.ts
+- **Change:** Fixed OCP Ring column generation in Kitten tab Excel export
+- **Root Cause:** `transformTabData()` and `extractFinalAwardsFromTab()` created OCP columns for kitten tab despite kittens not competing in OCP rings
+- **Solution:** Added tabType check to only create Allbreed column for OCP Ring judges in kitten tab
+- **Files Modified:** `src/utils/excelExport.ts`
+- **Impact:** Kitten_Final worksheet now correctly shows only Allbreed column for OCP Ring judges, matching the UI component behavior
+
 ### [2025-08-15] BreedSheetsTab: OCP Ring Kitten Support Fix
 - **Component:** BreedSheetsTab
 - **Change:** Added OCP Ring support for Kitten group in breed sheets

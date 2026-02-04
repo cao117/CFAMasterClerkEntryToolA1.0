@@ -2,6 +2,13 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Critical: File Path Rules
+
+**ALWAYS use relative paths** when reading or editing files to avoid the "file has been unexpectedly modified" error on Windows.
+
+- ✅ Use: `src/components/App.tsx`, `docs/PROJECT_OVERVIEW.md`
+- ❌ Avoid: `C:/Users/ROG/99_Cursor_CFA_ENTRY/src/components/App.tsx`
+
 ## Project Overview
 
 CFA Entry Tool is a desktop application built with React, TypeScript, Vite, and Tauri for managing Cat Fanciers' Association (CFA) show data. This is a professional cat show data management system with comprehensive form handling, Excel integration, and a complex multi-tab interface.

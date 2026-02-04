@@ -1,0 +1,1 @@
+Read the latest $ARGUMENTS screenshot image(s) from C:/Users/ROG/99_Cursor_CFA_ENTRY/temp folder. If no number specified, read the 1 most recent image. Sort by modification time (newest first). Display and analyze what you see in the screenshot(s).

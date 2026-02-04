@@ -2,6 +2,34 @@
 
 This changelog records all changes, additions, and deletions to validation rules for each tab in the CFA Master Clerk Entry Tool. Each entry includes the date, affected tab, summary of the change, and rationale/context.
 
+### [2026-02-04] Kitten Tab Excel Export: OCP Ring Column Fix
+- **Tabs:** Kitten (Excel Export)
+- **Change:** Fixed OCP Ring column generation in Kitten_Final worksheet export
+- **Summary:**
+  - **Root Cause**: The `transformTabData()` and `extractFinalAwardsFromTab()` functions in `excelExport.ts` were creating both Allbreed and OCP columns for OCP Ring judges in all tabs, but kittens don't compete in OCP rings
+  - **Problem**:
+    - Kitten_Final worksheet incorrectly included OCP column data for OCP Ring judges
+    - The UI component (KittenTab.tsx) correctly handled this by creating only Allbreed column for OCP Ring judges
+    - Export code did not match UI behavior, resulting in incorrect Excel output with kitten data appearing in OCP columns
+    - Master clerks had to manually move data to correct columns after export
+  - **Solution**:
+    - Updated `transformTabData()` to check tabType before creating OCP columns for OCP Ring judges
+    - Updated `extractFinalAwardsFromTab()` with the same logic for Final Awards worksheet consistency
+    - For kitten tab, OCP Ring judges now create only 1 column (Allbreed) instead of 2 (Allbreed + OCP)
+    - Championship and Premiership tabs continue to create both columns as expected
+  - **Technical Details**:
+    - `transformTabData()` (lines 584-592): Added `if (tabType === 'kitten')` check for OCP Ring handling
+    - `extractFinalAwardsFromTab()` (lines 957-965): Added matching check for Final Awards worksheet
+    - Both functions now create only Allbreed column for OCP Ring judges when tabType is 'kitten'
+  - **Affected Files**: `src/utils/excelExport.ts`
+  - **Result**: Kitten_Final worksheet now correctly shows only Allbreed column for OCP Ring judges, matching the UI behavior
+- **Files Modified**:
+  - `src/utils/excelExport.ts` - Added kitten-specific OCP Ring column handling in both export functions
+  - `docs/validation/VALIDATION_CHANGELOG.md` - Added this documentation entry
+- **Testing**: Build verification confirmed no compilation errors
+- **Rationale**: Kittens do not compete in OCP rings; the export should match the UI behavior where OCP Ring judges get only Allbreed column for kitten data
+- **Impact**: Exported Excel files now have correct column structure for kitten data with OCP Ring judges, eliminating need for manual data correction
+
 ### [2025-08-15] Breed Sheets Tab: OCP Ring Kitten Hair Length Support
 - **Tabs:** Breed Sheets
 - **Change:** Added OCP Ring support for Kitten group hair length selection

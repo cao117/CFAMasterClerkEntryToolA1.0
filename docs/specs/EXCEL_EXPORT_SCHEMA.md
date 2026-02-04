@@ -55,7 +55,7 @@ The worksheet contains the following columns:
 ### Special Handling Rules
 
 #### OCP Rings
-- OCP (Open Class Premiership) rings have two columns: Allbreed and OCP
+- OCP (Opens Champions Premiers) rings have two columns: Allbreed and OCP
 - **CH/PR Status Column**: Left empty for all OCP ring entries
 - Show Awards and finals are recorded normally, but without status indicators
 

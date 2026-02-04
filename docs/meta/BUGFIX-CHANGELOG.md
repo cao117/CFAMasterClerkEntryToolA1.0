@@ -1,5 +1,16 @@
 # Bugfix Changelog
 
+## [2026-02-04] TECHNICAL FIX: Kitten_Final OCP Ring Column Generation
+- **Issue**: Kitten_Final worksheet incorrectly included OCP column data for OCP Ring judges when kittens don't compete in OCP rings
+- **Root Cause**: `transformTabData()` and `extractFinalAwardsFromTab()` functions created both Allbreed and OCP columns for OCP Ring judges regardless of tab type
+- **Files Modified**: `src/utils/excelExport.ts`
+- **Code Changes**:
+  - Modified `transformTabData()` (lines 584-592): Added tabType check for OCP Ring handling
+  - Modified `extractFinalAwardsFromTab()` (lines 957-965): Added matching tabType check for Final Awards consistency
+  - Both functions now create only Allbreed column for OCP Ring judges when `tabType === 'kitten'`
+- **Impact**: Kitten_Final worksheet now correctly shows only Allbreed column for OCP Ring judges, matching KittenTab.tsx UI behavior
+- **Testing**: TypeScript compilation passed, build successful
+
 ## [2025-01-25] TECHNICAL FIX: HHP Ring Number Mapping in Excel Export
 - **Issue**: HHP data in Final Awards and HHP_Final sheets showed incorrect ring numbers (only Ring 1 and Ring 2 instead of 1-4)
 - **Root Cause**: Column expansion logic for specialty ring types created multiple columns per judge, causing visual Ring #3 and Ring #4 data to be mapped to Judge #2's columns instead of their respective judge columns

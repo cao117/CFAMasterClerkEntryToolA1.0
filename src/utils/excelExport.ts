@@ -582,8 +582,14 @@ function transformTabData(tabData: any, judges: any[], tabType: string, showStat
           columns.push({ judge, specialty: 'Shorthair' });
           columns.push({ judge, specialty: 'Allbreed' });
         } else if (judge.ringType === 'OCP Ring') {
-          columns.push({ judge, specialty: 'Allbreed' });
-          columns.push({ judge, specialty: 'OCP' });
+          // OCP Ring: For Championship and Premiership, create Allbreed + OCP columns
+          // For Kitten tab, OCP rings only have Allbreed column (kittens don't compete in OCP)
+          if (tabType === 'kitten') {
+            columns.push({ judge, specialty: 'Allbreed' });
+          } else {
+            columns.push({ judge, specialty: 'Allbreed' });
+            columns.push({ judge, specialty: 'OCP' });
+          }
         } else {
           columns.push({ judge, specialty: judge.ringType });
         }
@@ -949,13 +955,19 @@ function extractFinalAwardsFromTab(showState: any, tabType: 'championship' | 'pr
       columns.push({ judge, specialty: 'Shorthair' });
       columns.push({ judge, specialty: 'Allbreed' });
     } else if (judge.ringType === 'OCP Ring') {
-      columns.push({ judge, specialty: 'Allbreed' });
-      columns.push({ judge, specialty: 'OCP' });
+      // OCP Ring: For Championship and Premiership, create Allbreed + OCP columns
+      // For Kitten tab, OCP rings only have Allbreed column (kittens don't compete in OCP)
+      if (tabType === 'kitten') {
+        columns.push({ judge, specialty: 'Allbreed' });
+      } else {
+        columns.push({ judge, specialty: 'Allbreed' });
+        columns.push({ judge, specialty: 'OCP' });
+      }
     } else {
       columns.push({ judge, specialty: judge.ringType });
     }
   });
-  
+
   // Determine type name and status column for this tab
   let typeName: string;
   let statusColumn: string;

@@ -1,0 +1,163 @@
+[
+  {
+    "season": "2025/2026",
+    "month": "May",
+    "show": "(05/24/2025) GOLDEN TRIANGLE CAT FANCIERS",
+    "error": "Waiting for selector `table` failed"
+  },
+  {
+    "season": "2025/2026",
+    "month": "May",
+    "show": "(05/24/2025) SUPERSTITION CAT FANCIERS",
+    "error": "No element found for selector: #ddlShow"
+  },
+  {
+    "season": "2025/2026",
+    "month": "May",
+    "show": "(05/24/2025) JAPAN TONKINESE CAT CLUB",
+    "error": "No element found for selector: #ddlShow"
+  },
+  {
+    "season": "2025/2026",
+    "month": "May",
+    "show": "(05/24/2025) BORNEO CAT FANCIERS INDONESIA",
+    "error": "No element found for selector: #ddlShow"
+  },
+  {
+    "season": "2025/2026",
+    "month": "May",
+    "show": "(05/18/2025) BUFFALO CAT FANCIERS",
+    "error": "No element found for selector: #ddlShow"
+  },
+  {
+    "season": "2025/2026",
+    "month": "May",
+    "show": "(05/17/2025) WORLD WIDE FELINE FANCIERS",
+    "error": "No element found for selector: #ddlShow"
+  },
+  {
+    "season": "2025/2026",
+    "month": "May",
+    "show": "(05/17/2025) TAKARAZUKA CAT FANCIERS",
+    "error": "No element found for selector: #ddlShow"
+  },
+  {
+    "season": "2025/2026",
+    "month": "May",
+    "show": "(05/17/2025) KING CAT CLUB",
+    "error": "No element found for selector: #ddlShow"
+  },
+  {
+    "season": "2025/2026",
+    "month": "May",
+    "show": "(05/10/2025) ANTHONY WAYNE CAT FANCIERS, INC",
+    "error": "No element found for selector: #ddlShow"
+  },
+  {
+    "season": "2025/2026",
+    "month": "May",
+    "show": "(05/04/2025) ORIENTAL DIAMOND CAT FANCIERS",
+    "error": "No element found for selector: #ddlShow"
+  },
+  {
+    "season": "2025/2026",
+    "month": "May",
+    "show": "(05/03/2025) REBEL ROUSERS/OCICATS INTERNATIONAL CAT CLUB",
+    "error": "No element found for selector: #ddlShow"
+  },
+  {
+    "season": "2025/2026",
+    "month": "May",
+    "show": "(05/03/2025) SEACOAST CAT CLUB",
+    "error": "No element found for selector: #ddlShow"
+  },
+  {
+    "season": "2025/2026",
+    "month": "May",
+    "show": "(05/03/2025) SACRAMENTO VALLEY CF",
+    "error": "No element found for selector: #ddlShow"
+  },
+  {
+    "season": "2025/2026",
+    "month": "June",
+    "error": "No element found for selector: #ddlMonths"
+  },
+  {
+    "season": "2025/2026",
+    "month": "July",
+    "error": "No element found for selector: #ddlMonths"
+  },
+  {
+    "season": "2025/2026",
+    "month": "August",
+    "error": "No element found for selector: #ddlMonths"
+  },
+  {
+    "season": "2025/2026",
+    "month": "September",
+    "error": "No element found for selector: #ddlMonths"
+  },
+  {
+    "season": "2025/2026",
+    "month": "October",
+    "error": "No element found for selector: #ddlMonths"
+  },
+  {
+    "season": "2025/2026",
+    "month": "November",
+    "error": "No element found for selector: #ddlMonths"
+  },
+  {
+    "season": "2025/2026",
+    "month": "December",
+    "error": "No element found for selector: #ddlMonths"
+  },
+  {
+    "season": "2025/2026",
+    "month": "January",
+    "error": "No element found for selector: #ddlMonths"
+  },
+  {
+    "season": "2025/2026",
+    "month": "February",
+    "error": "No element found for selector: #ddlMonths"
+  },
+  {
+    "season": "2025/2026",
+    "month": "March",
+    "error": "No element found for selector: #ddlMonths"
+  },
+  {
+    "season": "2025/2026",
+    "month": "April",
+    "error": "No element found for selector: #ddlMonths"
+  },
+  {
+    "season": "2024/2025",
+    "error": "No element found for selector: #ddlSeason"
+  },
+  {
+    "season": "2023/2024",
+    "error": "No element found for selector: #ddlSeason"
+  },
+  {
+    "season": "2022/2023",
+    "error": "No element found for selector: #ddlSeason"
+  },
+  {
+    "season": "2021/2022",
+    "error": "No element found for selector: #ddlSeason"
+  },
+  {
+    "season": "2020/2021",
+    "error": "No element found for selector: #ddlSeason"
+  },
+  {
+    "season": "2019/2020",
+    "error": "No element found for selector: #ddlSeason"
+  },
+  {
+    "season": "2018/2019",
+    "error": "No element found for selector: #ddlSeason"
+  }
+]
