@@ -28,3 +28,9 @@ yyy/cfa-tool
 # Temporary files and directories
 temp/
 tempsave/
+
+# Scraper output (data, logs, index)
+scraper/output/
+
+# Claude command line MDs
+.claude/commands/

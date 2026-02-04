@@ -1,5 +1,19 @@
 import puppeteer from 'puppeteer';
 import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// ============================================
+// Directory Setup (relative to script location)
+// ============================================
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const outputDir = path.join(__dirname, 'output');
+
+// Create output directory if it doesn't exist
+if (!fs.existsSync(outputDir)) {
+  fs.mkdirSync(outputDir, { recursive: true });
+}
 
 // ============================================
 // Command Line Arguments
@@ -83,21 +97,23 @@ if (unrecognized.length > 0) {
 }
 
 // ============================================
-// File Naming Functions
+// File Naming Functions (all output goes to ./output folder)
+// Each year-month gets its own output and index file
 // ============================================
 function getOutputFileName(seasonText, monthText) {
-  if (!seasonText) {
-    return 'cfa-scoreboards-all.html';
-  }
   const seasonPart = seasonText.replace('/', '-');
-  if (monthText) {
-    return `cfa-scoreboards-${seasonPart}-${monthText.toLowerCase()}.html`;
-  }
-  return `cfa-scoreboards-${seasonPart}.html`;
+  const monthPart = monthText.toLowerCase();
+  return path.join(outputDir, `cfa-scoreboards-${seasonPart}-${monthPart}.html`);
 }
 
-// Single error log file
-const errorLogFile = 'cfa-errors.log';
+function getIndexFileName(seasonText, monthText) {
+  const seasonPart = seasonText.replace('/', '-');
+  const monthPart = monthText.toLowerCase();
+  return path.join(outputDir, `cfa-scraped-index-${seasonPart}-${monthPart}.json`);
+}
+
+// Single error log file (in output folder)
+const errorLogFile = path.join(outputDir, 'cfa-errors.log');
 
 // Clear log if --clearlog specified
 if (clearLog) {
@@ -111,36 +127,34 @@ if (clearLog) {
 
 // ============================================
 // Scraped Index Functions (Resume Capability)
+// Each year-month has its own index file for parallel safety
 // ============================================
-const indexFile = 'cfa-scraped-index.json';
-
-function loadIndex() {
+function loadIndex(indexFile) {
   if (fs.existsSync(indexFile)) {
     try {
       return JSON.parse(fs.readFileSync(indexFile, 'utf8'));
     } catch (e) {
-      console.log('Warning: Could not parse index file, starting fresh');
+      console.log(`Warning: Could not parse ${path.basename(indexFile)}, starting fresh`);
       return {};
     }
   }
   return {};
 }
 
-function saveIndex(index) {
+function saveIndex(indexFile, index) {
   fs.writeFileSync(indexFile, JSON.stringify(index, null, 2));
 }
 
-function isScraped(index, season, month, show) {
-  return index[season]?.[month]?.includes(show);
+function isScraped(index, show) {
+  return index.shows?.includes(show);
 }
 
-function markScraped(index, season, month, show) {
-  if (!index[season]) index[season] = {};
-  if (!index[season][month]) index[season][month] = [];
-  if (!index[season][month].includes(show)) {
-    index[season][month].push(show);
+function markScraped(indexFile, index, show) {
+  if (!index.shows) index.shows = [];
+  if (!index.shows.includes(show)) {
+    index.shows.push(show);
   }
-  saveIndex(index);
+  saveIndex(indexFile, index);
 }
 
 // ============================================
@@ -173,10 +187,11 @@ if (forceMode) {
   console.log('  Mode: Resume (will skip already captured shows)');
 }
 console.log('==========================================');
-console.log('Output Files:');
-console.log(`  Data: ${getOutputFileName(seasonFilter, monthFull)}`);
-console.log(`  Errors: ${errorLogFile}`);
-console.log('  Index: cfa-scraped-index.json');
+console.log(`Output Directory: ${outputDir}`);
+console.log('Files (per year-month):');
+console.log('  Data: cfa-scoreboards-{year}-{month}.html');
+console.log('  Index: cfa-scraped-index-{year}-{month}.json');
+console.log(`  Errors: ${path.basename(errorLogFile)}`);
 console.log('==========================================\n');
 
 // ============================================
@@ -242,9 +257,6 @@ console.log('==========================================\n');
   }
   console.log('');
 
-  // Load scraped index for resume capability
-  const scrapedIndex = forceMode ? {} : loadIndex();
-
   // Helper: get all options from a dropdown
   const getOptions = async (selectId) => {
     return await page.evaluate((id) => {
@@ -275,9 +287,51 @@ console.log('==========================================\n');
     });
   };
 
+  // Helper: check if error is critical (requires page recovery)
+  const isCriticalError = (err) => {
+    const msg = err.message.toLowerCase();
+    return msg.includes('execution context') ||
+           msg.includes('target closed') ||
+           msg.includes('session closed') ||
+           msg.includes('page crashed') ||
+           msg.includes('frame was detached');
+  };
+
+  // Helper: recover page state after critical error
+  const recoverPage = async (seasonValue, monthValue) => {
+    console.log('\n    >> Attempting page recovery...');
+    try {
+      // Navigate back to scoreboards
+      await page.goto('https://ecat.cfa.org/ePoints/Scoreboards', { waitUntil: 'networkidle2', timeout: 30000 });
+      await new Promise(r => setTimeout(r, 2000));
+
+      // Wait for season dropdown
+      await page.waitForSelector('#ddlSeason', { visible: true, timeout: 10000 });
+
+      // Re-select season
+      await page.select('#ddlSeason', seasonValue);
+      await new Promise(r => setTimeout(r, 1500));
+
+      // Wait for and re-select month
+      await page.waitForSelector('#ddlMonths', { visible: true, timeout: 10000 });
+      await page.select('#ddlMonths', monthValue);
+      await new Promise(r => setTimeout(r, 1500));
+
+      // Wait for show dropdown
+      await page.waitForSelector('#ddlShow', { visible: true, timeout: 10000 });
+
+      console.log('    >> Recovery successful!\n');
+      return true;
+    } catch (recoveryErr) {
+      console.log(`    >> Recovery failed: ${recoveryErr.message}\n`);
+      return false;
+    }
+  };
+
   let totalReports = 0;
   let skippedReports = 0;
   let errorCount = 0;
+  let needsRecovery = false;
 
   // Get all seasons
   console.log('Getting all seasons...');
@@ -296,45 +350,12 @@ console.log('==========================================\n');
     process.exit(1);
   }
 
-  // Track output files created
+  // Track output files created this session
   const outputFiles = new Set();
 
   // Loop through seasons
   for (const season of seasons) {
     console.log(`\n========== SEASON: ${season.text} ==========`);
-
-    // Determine output file for this season
-    const outputFile = getOutputFileName(seasonFilter ? season.text : null, monthFull);
-
-    // Initialize output file if needed
-    if (!outputFiles.has(outputFile)) {
-      const htmlHeader = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>CFA ePoints Scoreboards - ${seasonFilter ? season.text : 'All Seasons'}${monthFull ? ' - ' + monthFull : ''}</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    .report-section { margin-bottom: 40px; border: 1px solid #ccc; padding: 20px; page-break-inside: avoid; }
-    .report-header { background: #f0f0f0; padding: 10px; margin-bottom: 10px; }
-    .report-header h2 { margin: 0; font-size: 14px; }
-    .report-header p { margin: 5px 0 0 0; color: #666; font-size: 12px; }
-    table { border-collapse: collapse; width: 100%; margin-top: 10px; }
-    th, td { border: 1px solid #ddd; padding: 6px; text-align: left; font-size: 12px; }
-    th { background: #f5f5f5; }
-    .error { color: red; }
-  </style>
-</head>
-<body>
-<h1>CFA ePoints Scoreboards${seasonFilter ? ' - ' + season.text : ''}${monthFull ? ' - ' + monthFull : ''}</h1>
-<p>Generated: ${new Date().toISOString()}</p>
-<p>Output file: ${outputFile}</p>
-<hr>
-`;
-      fs.writeFileSync(outputFile, htmlHeader);
-      outputFiles.add(outputFile);
-      console.log(`Output file created: ${outputFile}`);
-    }
 
     try {
       await page.select('#ddlSeason', season.value);
@@ -357,6 +378,57 @@ console.log('==========================================\n');
       for (const month of months) {
         console.log(`\n  --- ${month.text} ---`);
 
+        // Get month-specific output and index files
+        const outputFile = getOutputFileName(season.text, month.text);
+        const indexFile = getIndexFileName(season.text, month.text);
+
+        // Initialize output file if needed
+        if (!outputFiles.has(outputFile)) {
+          const fileExistsOnDisk = fs.existsSync(outputFile);
+
+          if (fileExistsOnDisk && !forceMode) {
+            // File exists - remove closing tags before appending
+            console.log(`    Output file exists, preparing to append: ${path.basename(outputFile)}`);
+            let existingContent = fs.readFileSync(outputFile, 'utf8');
+            const footerPattern = /<hr>\s*<footer>[\s\S]*?<\/footer>\s*<\/body>\s*<\/html>\s*$/i;
+            if (footerPattern.test(existingContent)) {
+              existingContent = existingContent.replace(footerPattern, '\n<!-- Continued from previous run -->\n');
+              fs.writeFileSync(outputFile, existingContent);
+            }
+          } else {
+            // Create new file
+            const htmlHeader = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>CFA ePoints Scoreboards - ${season.text} - ${month.text}</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    .report-section { margin-bottom: 40px; border: 1px solid #ccc; padding: 20px; page-break-inside: avoid; }
+    .report-header { background: #f0f0f0; padding: 10px; margin-bottom: 10px; }
+    .report-header h2 { margin: 0; font-size: 14px; }
+    .report-header p { margin: 5px 0 0 0; color: #666; font-size: 12px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+    th, td { border: 1px solid #ddd; padding: 6px; text-align: left; font-size: 12px; }
+    th { background: #f5f5f5; }
+    .error { color: red; }
+  </style>
+</head>
+<body>
+<h1>CFA ePoints Scoreboards - ${season.text} - ${month.text}</h1>
+<p>Generated: ${new Date().toISOString()}</p>
+<p>Output file: ${path.basename(outputFile)}</p>
+<hr>
+`;
+            fs.writeFileSync(outputFile, htmlHeader);
+            console.log(`    Output file created: ${path.basename(outputFile)}`);
+          }
+          outputFiles.add(outputFile);
+        }
+
+        // Load month-specific index
+        const monthIndex = forceMode ? {} : loadIndex(indexFile);
+
         try {
           await page.select('#ddlMonths', month.value);
           await new Promise(r => setTimeout(r, 1500));
@@ -369,10 +441,21 @@ console.log('==========================================\n');
             process.stdout.write(`      ${shortName} `);
 
             // Check if already scraped (resume capability)
-            if (!forceMode && isScraped(scrapedIndex, season.text, month.text, show.text)) {
+            if (!forceMode && isScraped(monthIndex, show.text)) {
               console.log('(skipped - already scraped)');
               skippedReports++;
               continue;
+            }
+
+            // If previous error required recovery, attempt it now
+            if (needsRecovery) {
+              const recovered = await recoverPage(season.value, month.value);
+              if (!recovered) {
+                console.log('(skipped - recovery failed)');
+                errorCount++;
+                continue;
+              }
+              needsRecovery = false;
             }
 
             try {
@@ -397,13 +480,48 @@ console.log('==========================================\n');
               // Extra wait to ensure everything is rendered
               await new Promise(r => setTimeout(r, 1000));
 
-              // Capture ALL tables and content
+              // Capture ALL tables with their headers (Championship, Kittens, Premier, HHP)
               const tableHtml = await page.evaluate(() => {
                 const tables = document.querySelectorAll('table');
                 if (tables.length > 0) {
-                  return Array.from(tables).map(t => t.outerHTML).join('\n<hr>\n');
+                  const results = [];
+                  for (const table of tables) {
+                    let headerHtml = '';
+                    // Look for preceding header elements (h1-h6, strong, b, div with class containing 'header' or 'title')
+                    let prev = table.previousElementSibling;
+                    const headers = [];
+                    // Walk backwards to find headers that belong to this table
+                    while (prev) {
+                      const tagName = prev.tagName.toLowerCase();
+                      const isHeader = /^h[1-6]$/.test(tagName) ||
+                                       tagName === 'strong' ||
+                                       tagName === 'b' ||
+                                       (prev.className && /header|title|label|caption/i.test(prev.className));
+                      const isTextElement = prev.innerText && prev.innerText.trim().length > 0 && prev.innerText.trim().length < 100;
+
+                      // Stop if we hit another table or a major block element
+                      if (tagName === 'table' || tagName === 'hr') break;
+
+                      // Capture headers and short text labels
+                      if (isHeader || (isTextElement && !prev.querySelector('table'))) {
+                        headers.unshift(prev.outerHTML);
+                      }
+
+                      // Only go back a few elements
+                      if (headers.length >= 3) break;
+                      prev = prev.previousElementSibling;
+                    }
+
+                    if (headers.length > 0) {
+                      headerHtml = headers.join('\n');
+                    }
+
+                    results.push(headerHtml + '\n' + table.outerHTML);
+                  }
+                  return results.join('\n<hr class="table-separator">\n');
                 }
-                const content = document.querySelector('.results, .content, #results, main, .report-content');
+                // Fallback: capture entire content area
+                const content = document.querySelector('.results, .content, #results, main, .report-content, #main_pnlReport');
                 if (content) return content.innerHTML;
                 return '<p class="error">No tables found</p>';
               });
@@ -422,8 +540,8 @@ console.log('==========================================\n');
 `;
               fs.appendFileSync(outputFile, showSection);
 
-              // Mark as scraped in index
-              markScraped(scrapedIndex, season.text, month.text, show.text);
+              // Mark as scraped in month index
+              markScraped(indexFile, monthIndex, show.text);
 
               totalReports++;
               console.log('✓');
@@ -440,6 +558,11 @@ ${'='.repeat(80)}
 `;
               fs.appendFileSync(errorLogFile, errorEntry);
               errorCount++;
+
+              // Check if this is a critical error requiring page recovery
+              if (isCriticalError(showErr)) {
+                needsRecovery = true;
+              }
             }
           }
 
@@ -454,6 +577,15 @@ ${'='.repeat(80)}
 `;
           fs.appendFileSync(errorLogFile, errorEntry);
           errorCount++;
+
+          // If selector not found, page likely needs recovery
+          if (monthErr.message.includes('No element found') || isCriticalError(monthErr)) {
+            console.log('    >> Page state lost, attempting recovery before next month...');
+            const recovered = await recoverPage(season.value, month.value);
+            if (!recovered) {
+              console.log('    >> Recovery failed, continuing to next month...');
+            }
+          }
         }
       }
 
@@ -491,11 +623,13 @@ ${'='.repeat(80)}
   console.log(`Total reports captured: ${totalReports}`);
   console.log(`Skipped (already scraped): ${skippedReports}`);
   console.log(`Errors: ${errorCount}`);
-  console.log(`Output files: ${[...outputFiles].join(', ')}`);
-  if (errorCount > 0) {
-    console.log(`Error log: ${errorLogFile}`);
+  console.log(`Output files (${outputFiles.size}):`);
+  for (const f of outputFiles) {
+    console.log(`  - ${path.basename(f)}`);
   }
-  console.log(`Scraped index: ${indexFile}`);
+  if (errorCount > 0) {
+    console.log(`Error log: ${path.basename(errorLogFile)}`);
+  }
   console.log('==========================================\n');
 
   await browser.close();

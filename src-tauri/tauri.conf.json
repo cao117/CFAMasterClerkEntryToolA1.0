@@ -1,6 +1,6 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "CFA_MC_Entry_v0.1",
+  "productName": "CFA Master Clerk Entry Tool",
   "version": "0.3.0",
   "identifier": "com.cfa.masterclerk.entry",
   "build": {
@@ -12,7 +12,7 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "CFA_MC_Entry_v0.1",
+        "title": "CFA Master Clerk Entry Tool",
         "width": 1280,
         "height": 800,
         "minWidth": 1280,

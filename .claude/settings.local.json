@@ -39,7 +39,9 @@
       "Bash(git config:*)",
       "Bash(gh repo view:*)",
       "Bash(gh api:*)",
-      "Bash(gh workflow:*)"
+      "Bash(gh workflow:*)",
+      "Bash(git rm:*)",
+      "Bash(npm run tauri:build:*)"
     ],
     "deny": [],
     "ask": [],
