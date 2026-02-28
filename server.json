@@ -1,0 +1,9 @@
+{
+  "host": "107.175.67.55",
+  "user": "deploy",
+  "domain": "mce.cfa.services",
+  "type": "static",
+  "buildCommand": "npm run build",
+  "buildOutput": "dist",
+  "remotePath": "/opt/sites/mce.cfa.services"
+}
