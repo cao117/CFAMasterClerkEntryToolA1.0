@@ -18,7 +18,7 @@ jobs:
 
       - run: npm run build
 
-      - uses: burnett01/rsync-deployments@7
+      - uses: burnett01/rsync-deployments@v7
         with:
           switches: -avz --delete
           path: dist/
