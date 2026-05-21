@@ -2,7 +2,7 @@ name: 'Build macOS App'
 
 on:
   push:
-    branches: [ dev ]  # Only triggers on dev branch pushes
+    tags: [ 'v*' ]  # Only triggers when a version tag is pushed (e.g. v1.3.0)
 
 jobs:
   build-macos:
