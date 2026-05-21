@@ -34,3 +34,8 @@ scraper/output/
 
 # Claude command line MDs
 .claude/commands/
+
+# Environment files (never commit secrets)
+.env
+.env.*
+!.env.example
