@@ -55,6 +55,9 @@ const CustomSelect: React.FC<{
   const ref = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLUListElement>(null);
+  // Type-to-match: accumulate typed characters briefly and jump to the first matching option.
+  const typeBufferRef = useRef('');
+  const typeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /**
    * Calculate optimal dropdown position based on available viewport space
@@ -117,6 +120,19 @@ const CustomSelect: React.FC<{
 
   // Keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Type-to-match: a printable key opens the list (if closed) and highlights the first
+    // option starting with the recently-typed characters. Space is excluded (it selects).
+    const isPrintable = e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey && /\S/.test(e.key);
+    if (isPrintable) {
+      if (!open) handleDropdownToggle();
+      if (typeTimerRef.current) clearTimeout(typeTimerRef.current);
+      typeBufferRef.current += e.key.toLowerCase();
+      typeTimerRef.current = setTimeout(() => { typeBufferRef.current = ''; }, 600);
+      const idx = options.findIndex(opt => opt.toLowerCase().startsWith(typeBufferRef.current));
+      if (idx >= 0) setHighlighted(idx);
+      e.preventDefault();
+      return;
+    }
     if (!open && (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ')) {
       handleDropdownToggle();
       setHighlighted(options.findIndex(opt => opt === value));

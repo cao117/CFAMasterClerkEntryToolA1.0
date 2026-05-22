@@ -5,6 +5,7 @@ import ActionButtons from './ActionButtons';
 import * as premiershipValidation from '../validation/premiershipValidation';
 import CustomSelect from './CustomSelect';
 import { formatJumpToMenuOptions, formatJumpToMenuValue, getRoomTypeAbbreviation } from '../utils/jumpToMenuUtils';
+import { generateColumnsForTab, getEffectiveRingType } from '../utils/ringTypeUtils';
 
 
 interface Judge {
@@ -13,6 +14,7 @@ interface Judge {
   acronym: string;
   ringType: string;
   ringNumber: number;
+  sspClasses?: { championship: boolean; premiership: boolean; kitten: boolean };
 }
 
 interface Column {
@@ -159,26 +161,12 @@ export default function PremiershipTab({
     }
   };
 
-  // Memoize columns for consistent reference
-  const columns: Column[] = useMemo(() => {
-    const cols: Column[] = [];
-    judges.forEach((judge: Judge) => {
-      if (judge.ringType === 'Double Specialty') {
-        cols.push({ judge: { ...judge }, specialty: 'Longhair', columnIndex: cols.length });
-        cols.push({ judge: { ...judge }, specialty: 'Shorthair', columnIndex: cols.length });
-      } else if (judge.ringType === 'Super Specialty') {
-        cols.push({ judge: { ...judge }, specialty: 'Longhair', columnIndex: cols.length });
-        cols.push({ judge: { ...judge }, specialty: 'Shorthair', columnIndex: cols.length });
-        cols.push({ judge: { ...judge }, specialty: 'Allbreed', columnIndex: cols.length });
-      } else if (judge.ringType === 'OCP Ring') {
-        cols.push({ judge: { ...judge }, specialty: 'Allbreed', columnIndex: cols.length });
-        cols.push({ judge: { ...judge }, specialty: 'OCP', columnIndex: cols.length });
-      } else {
-        cols.push({ judge, specialty: judge.ringType, columnIndex: cols.length });
-      }
-    });
-    return cols;
-  }, [judges]);
+  // Memoize columns for consistent reference. Columns reflect each judge's EFFECTIVE ring
+  // type for Premiership (per-class Super Specialty selection collapses to 1 AB column when off).
+  const columns: Column[] = useMemo(
+    () => generateColumnsForTab(judges, 'premiership').map((c, i) => ({ ...c, columnIndex: i })),
+    [judges]
+  );
 
   // Update numAwardRows based on breakpoint (like Championship tab)
   useEffect(() => {
@@ -202,19 +190,14 @@ export default function PremiershipTab({
   };
 
   // --- Helper: Get sections that should be shown for each ring type ---
-  const getSectionsForRingType = (specialty: string): Array<'ab' | 'lh' | 'sh'> => {
-    // For SSP rings, each column shows only its specific section
-    // For OCP and Allbreed rings, the AB column shows ALL sections
-    const column = columns.find(col => col.specialty === specialty);
-    const isSSPRing = column && judges.find(j => j.id === column.judge.id)?.ringType === 'Super Specialty';
-
-    switch (specialty) {
+  const getSectionsForRingType = (col: Column): Array<'ab' | 'lh' | 'sh'> => {
+    // SSP rings: each column shows only its own section. Allbreed/OCP: the AB column shows ALL sections.
+    // Uses EFFECTIVE ring type so a Super Specialty judge NOT doing SSP this class behaves as a normal
+    // Allbreed column (shows AB + LH + SH PR). Per-column, so SSP & Allbreed judges can mix.
+    const isSSPRing = getEffectiveRingType(col.judge, 'premiership') === 'Super Specialty';
+    switch (col.specialty) {
       case 'Allbreed':
-        if (isSSPRing) {
-          return ['ab']; // SSP AB column only shows AB PR section
-        } else {
-          return ['ab', 'lh', 'sh']; // OCP/Allbreed rings: AB column shows ALL sections
-        }
+        return isSSPRing ? ['ab'] : ['ab', 'lh', 'sh'];
       case 'Longhair':
         return ['lh'];
       case 'Shorthair':
@@ -273,23 +256,15 @@ export default function PremiershipTab({
   };
 
   // Helper function to determine which sections should be shown for each ring type (like Championship tab)
-  const shouldShowSection = (specialty: string, section: 'ab' | 'lh' | 'sh'): boolean => {
-    // For SSP rings, each column shows only its specific section
-    // For OCP and Allbreed rings, the AB column shows ALL sections
-    const column = columns.find(col => col.specialty === specialty);
-    const isSSPRing = column && judges.find(j => j.id === column.judge.id)?.ringType === 'Super Specialty';
-
-    switch (specialty) {
+  const shouldShowSection = (col: Column, section: 'ab' | 'lh' | 'sh'): boolean => {
+    const isSSPRing = getEffectiveRingType(col.judge, 'premiership') === 'Super Specialty';
+    switch (col.specialty) {
       case 'Allbreed':
-        if (isSSPRing) {
-          return section === 'ab'; // SSP AB column only shows AB PR section
-        } else {
-          return true; // OCP/Allbreed rings: AB column shows ALL sections (AB, LH, SH PR)
-        }
+        return isSSPRing ? section === 'ab' : true;
       case 'Longhair':
-        return section === 'lh'; // Longhair only shows LH PR
+        return section === 'lh';
       case 'Shorthair':
-        return section === 'sh'; // Shorthair only shows SH PR
+        return section === 'sh';
       default:
         return false;
     }
@@ -297,7 +272,7 @@ export default function PremiershipTab({
 
   // Helper function to calculate row index for each section (like Championship tab)
   const getRowIndexForSection = (colIdx: number, specialty: string, section: 'showAwards' | 'ab' | 'lh' | 'sh', position: number): number => {
-    const sections = getSectionsForRingType(specialty);
+    const sections = getSectionsForRingType(columns[colIdx]);
     let rowIndex = 0;
     
     // Add Show Awards rows
@@ -385,7 +360,7 @@ export default function PremiershipTab({
         if (!col) return null;
 
         // Get the sections that should be shown for this ring type
-        const sections = getSectionsForRingType(col.specialty);
+        const sections = getSectionsForRingType(col);
         
         // Calculate the total number of rows for this column
         const showAwardsCount = getShowAwardsRowCount(currentCol, col.specialty);
@@ -419,7 +394,7 @@ export default function PremiershipTab({
               return null; // Beginning of table
             }
             const prevCol = columns[nextCol];
-            const prevSections = getSectionsForRingType(prevCol.specialty);
+            const prevSections = getSectionsForRingType(prevCol);
             const prevShowAwardsCount = getShowAwardsRowCount(nextCol, prevCol.specialty);
             nextRow = prevShowAwardsCount + prevSections.reduce((total, section) => {
               return total + getFinalsRowCount(nextCol, prevCol.specialty, section);
@@ -471,7 +446,7 @@ export default function PremiershipTab({
     }
     setPremiershipTabData((prev: any) => {
       const prevCell = prev.showAwards[key] || {};
-      let newCell = { ...prevCell, [field]: value };
+      const newCell = { ...prevCell, [field]: value };
       // If setting catNumber and status is missing, determine default based on column specialty
       if (field === 'catNumber' && value && (!prevCell.status || prevCell.status === '')) {
         const column = columns[colIdx];
@@ -1196,8 +1171,8 @@ export default function PremiershipTab({
                   return null;
                 })}
                 {/* Best AB PR Section (Allbreed only) */}
-                        {Array.from({ length: Math.max(...columns.map((col, colIdx) => shouldShowSection(col.specialty, 'ab') ? getFinalsRowCount(colIdx, col.specialty, 'ab') : 0)) }, (_, i) => (
-          columns.some((col, colIdx) => shouldShowSection(col.specialty, 'ab') && i < getFinalsRowCount(colIdx, col.specialty, 'ab')) ? (
+                        {Array.from({ length: Math.max(...columns.map((col, colIdx) => shouldShowSection(col,'ab') ? getFinalsRowCount(colIdx, col.specialty, 'ab') : 0)) }, (_, i) => (
+          columns.some((col, colIdx) => shouldShowSection(col,'ab') && i < getFinalsRowCount(colIdx, col.specialty, 'ab')) ? (
                     <tr key={`abpr-${i}`} className="cfa-table-row">
                       {/* Frozen position column: apply thick blue right border if first data column is focused */}
                       <td
@@ -1208,7 +1183,7 @@ export default function PremiershipTab({
                       </td>
                       {columns.map((col, colIdx) => {
                         const isFocused = focusedColumnIndex === colIdx;
-                        const shouldRenderCell = i < getFinalsRowCount(colIdx, col.specialty, 'ab') && shouldShowSection(col.specialty, 'ab');
+                        const shouldRenderCell = i < getFinalsRowCount(colIdx, col.specialty, 'ab') && shouldShowSection(col,'ab');
                           const key = `${colIdx}-${i}`;
                           const value = premiershipTabData.abPremiersFinals[key] || '';
                           const errorKey = `abPremiersFinals-${colIdx}-${i}`;
@@ -1251,8 +1226,8 @@ export default function PremiershipTab({
                   ) : null
                 ))}
                 {/* Best LH PR Section (Allbreed and Longhair) */}
-                        {Array.from({ length: Math.max(...columns.map((col, colIdx) => shouldShowSection(col.specialty, 'lh') ? getFinalsRowCount(colIdx, col.specialty, 'lh') : 0)) }, (_, i) => (
-          columns.some((col, colIdx) => shouldShowSection(col.specialty, 'lh') && i < getFinalsRowCount(colIdx, col.specialty, 'lh')) ? (
+                        {Array.from({ length: Math.max(...columns.map((col, colIdx) => shouldShowSection(col,'lh') ? getFinalsRowCount(colIdx, col.specialty, 'lh') : 0)) }, (_, i) => (
+          columns.some((col, colIdx) => shouldShowSection(col,'lh') && i < getFinalsRowCount(colIdx, col.specialty, 'lh')) ? (
                     <tr key={`lhpr-${i}`} className="cfa-table-row">
                       {/* Frozen position column: apply thick blue right border if first data column is focused */}
                       <td
@@ -1263,7 +1238,7 @@ export default function PremiershipTab({
                       </td>
                       {columns.map((col, colIdx) => {
                         const isFocused = focusedColumnIndex === colIdx;
-                        const shouldRenderCell = i < getFinalsRowCount(colIdx, col.specialty, 'lh') && shouldShowSection(col.specialty, 'lh');
+                        const shouldRenderCell = i < getFinalsRowCount(colIdx, col.specialty, 'lh') && shouldShowSection(col,'lh');
                           const key = `${colIdx}-${i}`;
                           const value = premiershipTabData.lhPremiersFinals[key] || '';
                           const errorKey = `lhPremiersFinals-${colIdx}-${i}`;
@@ -1306,8 +1281,8 @@ export default function PremiershipTab({
                   ) : null
                 ))}
                 {/* Best SH PR Section (Allbreed and Shorthair) */}
-                        {Array.from({ length: Math.max(...columns.map((col, colIdx) => shouldShowSection(col.specialty, 'sh') ? getFinalsRowCount(colIdx, col.specialty, 'sh') : 0)) }, (_, i) => (
-          columns.some((col, colIdx) => shouldShowSection(col.specialty, 'sh') && i < getFinalsRowCount(colIdx, col.specialty, 'sh')) ? (
+                        {Array.from({ length: Math.max(...columns.map((col, colIdx) => shouldShowSection(col,'sh') ? getFinalsRowCount(colIdx, col.specialty, 'sh') : 0)) }, (_, i) => (
+          columns.some((col, colIdx) => shouldShowSection(col,'sh') && i < getFinalsRowCount(colIdx, col.specialty, 'sh')) ? (
                     <tr key={`shpr-${i}`} className="cfa-table-row">
                       {/* Frozen position column: apply thick blue right border if first data column is focused */}
                       <td
@@ -1318,7 +1293,7 @@ export default function PremiershipTab({
                       </td>
                       {columns.map((col, colIdx) => {
                         const isFocused = focusedColumnIndex === colIdx;
-                        const shouldRenderCell = i < getFinalsRowCount(colIdx, col.specialty, 'sh') && shouldShowSection(col.specialty, 'sh');
+                        const shouldRenderCell = i < getFinalsRowCount(colIdx, col.specialty, 'sh') && shouldShowSection(col,'sh');
                           const key = `${colIdx}-${i}`;
                           const value = premiershipTabData.shPremiersFinals[key] || '';
                           const errorKey = `shPremiersFinals-${colIdx}-${i}`;

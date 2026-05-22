@@ -4,6 +4,19 @@ This document tracks changes to individual components in the CFA Entry applicati
 
 ## [Unreleased]
 
+### [2026-05-21] Per-Class Super Specialty Selection
+- **Components:** `ringTypeUtils.ts` (new), `GeneralTab`, `ChampionshipTab`, `PremiershipTab`, `KittenTab`, `CustomSelect`, `App`, `excelExport`, `excelImport`
+- **Change:** Super Specialty judges can be configured per-class (CH/PR/KIT). New `Judge.sspClasses` field + `getEffectiveRingType`/`generateColumnsForTab`/`remapColumnKeyedData` helpers in `ringTypeUtils.ts`.
+- **Details:**
+  - All per-tab `generateColumns` now delegate to `generateColumnsForTab(judges, tab)` — single source of truth for column layout (also centralizes the OCP-in-Kitten rule).
+  - `App.handleJudgeRingTypeChange` made per-tab-aware and a new `handleJudgeSspClassChange` re-indexes only the affected tab via the pure `remapColumnKeyedData` helper (drops the affected judge's data, re-keys later judges).
+  - `GeneralTab` renders inline CH/PR/KIT pill-toggles for Super Specialty judges; cells switched to `align-top`.
+  - `CustomSelect` gained type-to-match keyboard support.
+  - Export adds a `SSP Classes` column to the General_Info judges table and uses effective ring type per worksheet; import parses it back (missing/legacy → all classes) and gates AB-column population per class.
+- **Files Modified:** `src/utils/ringTypeUtils.ts` (new), `src/App.tsx`, `src/components/{GeneralTab,ChampionshipTab,PremiershipTab,KittenTab,HouseholdPetTab,CustomSelect}.tsx`, `src/utils/{excelExport,excelImport}.ts`
+- **Tests:** `src/utils/ringTypeUtils.test.ts`, `src/utils/sspRoundTrip.test.ts` (21 passing).
+- **Impact:** Fixes the Midland-style show where a Super Specialty judge ran Allbreed in one class; that class now uses a single Allbreed column that saves/export correctly.
+
 ### [2026-02-04] Excel Export: Kitten_Final OCP Ring Column Fix
 - **Component:** excelExport.ts
 - **Change:** Fixed OCP Ring column generation in Kitten tab Excel export

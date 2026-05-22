@@ -2,6 +2,7 @@
 // Handles parsing Excel data and restoring application state
 
 import * as XLSX from 'xlsx';
+import { generateColumnsForTab } from './ringTypeUtils';
 
 // Type definitions for import functionality (reusing from csvImport)
 interface ImportedShowState {
@@ -48,6 +49,7 @@ interface ImportedShowState {
     acronym: string;
     ringNumber: number;
     ringType: string;
+    sspClasses?: { championship: boolean; premiership: boolean; kitten: boolean };
   }>;
   championship: {
     showAwards: { [key: string]: { catNumber: string; status: string } };
@@ -415,12 +417,30 @@ function parseGeneralInfoWorksheet(data: string[][], general: ImportedShowState[
     
     // Parse judge data
     if (inJudgesSection && firstCell && firstCell !== 'Judge Name') {
+      const ringType = row[3]?.toString().trim() || '';
+      // "SSP Classes" (col 5) records which classes a Super Specialty judge does SSP in.
+      // Missing/empty (legacy files) defaults to all classes for Super Specialty judges.
+      let sspClasses: { championship: boolean; premiership: boolean; kitten: boolean } | undefined;
+      if (ringType === 'Super Specialty') {
+        const raw = row[4]?.toString().trim() || '';
+        if (raw) {
+          const picked = raw.split(',').map(s => s.trim().toLowerCase());
+          sspClasses = {
+            championship: picked.includes('championship'),
+            premiership: picked.includes('premiership'),
+            kitten: picked.includes('kitten'),
+          };
+        } else {
+          sspClasses = { championship: true, premiership: true, kitten: true };
+        }
+      }
       judges.push({
         id: judges.length + 1,
         name: firstCell,
         ringNumber: parseNumber(row[1]) || judges.length + 1, // Default to judge ID if not provided
         acronym: row[2]?.toString().trim() || '',
-        ringType: row[3]?.toString().trim() || ''
+        ringType,
+        ...(sspClasses ? { sspClasses } : {}),
       });
       continue;
     }
@@ -871,29 +891,11 @@ function populateSuperSpecialtyABColumns(restoredState: ImportedShowState) {
     return; // No Super Specialty judges, nothing to do
   }
 
-  // Build column mapping (similar logic from excelExport.ts)
-  const columns: { judge: any; specialty: string }[] = [];
-  restoredState.judges.forEach(judge => {
-    if (judge.ringType === 'Super Specialty') {
-      columns.push({ judge, specialty: 'Longhair' });
-      columns.push({ judge, specialty: 'Shorthair' });
-      columns.push({ judge, specialty: 'Allbreed' });
-    } else if (judge.ringType === 'Double Specialty') {
-      columns.push({ judge, specialty: 'Longhair' });
-      columns.push({ judge, specialty: 'Shorthair' });
-    } else if (judge.ringType === 'OCP Ring') {
-      columns.push({ judge, specialty: 'Allbreed' });
-      columns.push({ judge, specialty: 'OCP' });
-    } else {
-      columns.push({ judge, specialty: judge.ringType });
-    }
-  });
-
-  // Process Championship data
-  populateTabSuperSpecialtyAB(restoredState.championship, columns, 'championship');
-  
-  // Process Premiership data
-  populateTabSuperSpecialtyAB(restoredState.premiership, columns, 'premiership');
+  // Build columns PER TAB via the effective-ring-type resolver: a Super Specialty judge not
+  // doing SSP in a given class produces a single Allbreed column there (not a 3-column ring),
+  // so it is correctly skipped by populateTabSuperSpecialtyAB.
+  populateTabSuperSpecialtyAB(restoredState.championship, generateColumnsForTab(restoredState.judges, 'championship'), 'championship');
+  populateTabSuperSpecialtyAB(restoredState.premiership, generateColumnsForTab(restoredState.judges, 'premiership'), 'premiership');
 
   // Note: Kitten tab doesn't have Best CH/PR sections, so no processing needed
 }

@@ -9,6 +9,15 @@ Super Specialty rings consist of three columns with the same judge ID:
 - **Shorthair column**: Judges all short hair cats and gives placements  
 - **Allbreed column**: Combines both long hair and short hair cats for final placements
 
+### Per-Class Selection (added 2026-05-21)
+
+A judge whose Ring Type is "Super Specialty" does **not** necessarily judge SSP format in every class. In the General tab the clerk selects which classes (Championship / Premiership / Kitten) the judge actually judges as Super Specialty (default: all three). This is stored on `Judge.sspClasses`.
+
+- For a **selected** class, the judge produces the three columns (LH/SH/AB) described here and all the cross-column rules below apply.
+- For an **unselected** class, the judge produces a **single Allbreed column** (a normal allbreed ring carrying Best AB CH/PR + Best LH CH/PR + Best SH CH/PR). No Super Specialty ring exists for that judge in that class, so none of the cross-column rules below run.
+
+This is resolved by `getEffectiveRingType(judge, tab)` in `src/utils/ringTypeUtils.ts`; column generation, Excel export, and Excel import all use it. Because Super Specialty validation is **column-driven** (`findSuperSpecialtyRings` detects a ring only when a judge has exactly the 3 LH/SH/AB columns), the rules in this document required no change — a class run as Allbreed simply has no SSP ring to detect.
+
 ## Excel Export/Import Behavior
 
 ### Data Export Rules (Updated 2025-08-14)
@@ -322,4 +331,4 @@ Potential future enhancements for Super Specialty validation:
 
 ---
 
-*Last Updated: 2025-07-31 19:04:38* 
+*Last Updated: 2026-05-21 (added Per-Class Selection section)* 

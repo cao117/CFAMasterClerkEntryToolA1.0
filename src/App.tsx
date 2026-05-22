@@ -26,6 +26,7 @@ import { useRecentWorkDetection } from './hooks/useRecentWorkDetection';
 import { handleSaveToExcel } from './utils/excelExport';
 import { handleRestoreFromExcel, parseExcelAndRestoreState } from './utils/excelImport';
 import { isTauriEnvironment } from './utils/platformDetection';
+import { generateColumnsForTab, remapColumnKeyedData, SSP_CLASS_DEFAULT, type ClassTab } from './utils/ringTypeUtils';
 import { APP_VERSION } from './version';
 
 import FallbackNotice from './components/FallbackNotice';
@@ -39,6 +40,8 @@ interface Judge {
   acronym: string;
   ringType: string;
   ringNumber: number;
+  /** Per-class SSP selection; only meaningful when ringType === 'Super Specialty'. undefined = all classes (default). */
+  sspClasses?: { championship: boolean; premiership: boolean; kitten: boolean };
 }
 
 interface ShowData {
@@ -609,86 +612,72 @@ function App() {
     !isShowInfoValid(showData) ||
     !areJudgesValid(judges);
 
-  // Helper: Reset championship and premiership columns for a judge when ring type changes (any change)
-  const handleJudgeRingTypeChange = (
-    judgeId: number,
-    oldType: string,
-    newType: string
+  // Remap a single tab's column-indexed data when a judge's column COUNT changes in that tab.
+  // Data is keyed by raw column index ("colIdx-pos"), so a count change shifts every later
+  // judge's columns. We drop the affected judge's data for that tab and re-index every other
+  // judge's data by matching stable "judgeId-specialty" keys across the old/new layouts.
+  // `oldJudges`/`newJudges` differ only in the affected judge (ringType or sspClasses).
+  const remapTabData = (
+    setTabData: React.Dispatch<React.SetStateAction<unknown>>,
+    tabType: ClassTab,
+    oldJudges: Judge[],
+    newJudges: Judge[],
+    affectedJudgeId: number
   ) => {
-    // Helper to generate columns for a given judges array
-    function generateColumns(judgesArr: Judge[]): { judge: Judge; specialty: string }[] {
-      const columns: { judge: Judge; specialty: string }[] = [];
-      judgesArr.forEach(judge => {
-        if (judge.ringType === 'Double Specialty') {
-          columns.push({ judge, specialty: 'Longhair' });
-          columns.push({ judge, specialty: 'Shorthair' });
-        } else if (judge.ringType === 'Super Specialty') {
-          columns.push({ judge, specialty: 'Longhair' });
-          columns.push({ judge, specialty: 'Shorthair' });
-          columns.push({ judge, specialty: 'Allbreed' });
-        } else if (judge.ringType === 'OCP Ring') {
-          columns.push({ judge, specialty: 'Allbreed' });
-          columns.push({ judge, specialty: 'OCP' });
-        } else {
-          columns.push({ judge, specialty: judge.ringType });
-        }
-      });
-      return columns;
-    }
+    const sections = tabType === 'championship'
+      ? ['showAwards', 'championsFinals', 'lhChampionsFinals', 'shChampionsFinals', 'voidedShowAwards', 'voidedChampionsFinals', 'voidedLHChampionsFinals', 'voidedSHChampionsFinals', 'errors']
+      : tabType === 'premiership'
+        ? ['showAwards', 'premiersFinals', 'abPremiersFinals', 'lhPremiersFinals', 'shPremiersFinals', 'voidedShowAwards', 'voidedPremiersFinals', 'voidedABPremiersFinals', 'voidedLHPremiersFinals', 'voidedSHPremiersFinals', 'errors']
+        : ['showAwards', 'voidedShowAwards', 'errors'];
 
-    // Helper to build a reverse map for old columns: columnIndex -> {judgeId, specialty}
-    function buildIdxToKey(columns: { judge: Judge; specialty: string }[]) {
-      const map: Record<number, string> = {};
-      columns.forEach((col, idx) => {
-        map[idx] = `${col.judge.id}-${col.specialty}`;
-      });
-      return map;
-    }
+    const oldColumns = generateColumnsForTab(oldJudges, tabType);
+    const newColumns = generateColumnsForTab(newJudges, tabType);
 
-    // For each section, rebuild the data:
-    function resetColumns(
-      setTabData: React.Dispatch<React.SetStateAction<unknown>>,
-      tabType: 'championship' | 'premiership' | 'kitten'
-    ) {
-      const sections = tabType === 'championship'
-        ? ['showAwards', 'championsFinals', 'lhChampionsFinals', 'shChampionsFinals', 'voidedShowAwards', 'voidedChampionsFinals', 'voidedLHChampionsFinals', 'voidedSHChampionsFinals', 'errors']
-        : ['showAwards', 'premiersFinals', 'abPremiersFinals', 'lhPremiersFinals', 'shPremiersFinals', 'voidedShowAwards', 'voidedPremiersFinals', 'voidedABPremiersFinals', 'voidedLHPremiersFinals', 'voidedSHPremiersFinals', 'errors'];
-      setTabData((prev: unknown) => {
-        const oldJudges = judges.map(j => j.id === judgeId ? { ...j, ringType: oldType } : j);
-        const newJudges = judges.map(j => j.id === judgeId ? { ...j, ringType: newType } : j);
-        const oldColumns = generateColumns(oldJudges);
-        const newColumns = generateColumns(newJudges);
-        const oldIdxToKey = buildIdxToKey(oldColumns);
-        const newIdxToKey = buildIdxToKey(newColumns);
-        const newData = { ...(prev as Record<string, unknown>) };
-        for (const section of sections) {
-          if (!newData[section]) continue;
-          const rebuilt: Record<string, unknown> = {};
-          Object.entries(newIdxToKey).forEach(([newIdxStr, key]) => {
-            const [jIdStr] = key.split('-');
-            if (parseInt(jIdStr, 10) === judgeId) {
-              // Reset all data for affected judge's columns (do not copy old data)
-            } else {
-              const oldIdx = Object.entries(oldIdxToKey).find(([, k]) => k === key)?.[0];
-              if (oldIdx !== undefined) {
-                Object.entries(newData[section] as Record<string, unknown>).forEach(([dataKey, value]) => {
-                  const [colIdxStr] = dataKey.split(/[-_]/);
-                  if (parseInt(colIdxStr, 10) === parseInt(oldIdx, 10)) {
-                    const newKey = dataKey.replace(/^[0-9]+/, newIdxStr);
-                    rebuilt[newKey] = value;
-                  }
-                });
-              }
-            }
-          });
-          newData[section] = rebuilt;
-        }
-        return newData;
-      });
-    }
-    resetColumns(setChampionshipTabData as React.Dispatch<React.SetStateAction<unknown>>, 'championship');
-    resetColumns(setPremiershipTabData as React.Dispatch<React.SetStateAction<unknown>>, 'premiership');
-    resetColumns(setKittenTabData as React.Dispatch<React.SetStateAction<unknown>>, 'kitten');
+    setTabData((prev: unknown) => {
+      const newData = { ...(prev as Record<string, unknown>) };
+      for (const section of sections) {
+        if (!newData[section]) continue;
+        newData[section] = remapColumnKeyedData(
+          oldColumns,
+          newColumns,
+          affectedJudgeId,
+          newData[section] as Record<string, unknown>
+        );
+      }
+      return newData;
+    });
+  };
+
+  // Reset/realign Championship, Premiership, Kitten columns when a judge's ring type changes.
+  // Per-tab aware (via generateColumnsForTab) so OCP-in-Kitten and per-class SSP layouts stay correct.
+  const handleJudgeRingTypeChange = (judgeId: number, oldType: string, newType: string) => {
+    const oldJudges = judges.map(j => j.id === judgeId ? { ...j, ringType: oldType } : j);
+    // Becoming Super Specialty defaults to SSP in all classes (mirrors GeneralTab.updateJudge),
+    // so the remap layout matches what each tab will actually render.
+    const newJudges = judges.map(j => {
+      if (j.id !== judgeId) return j;
+      const next: Judge = { ...j, ringType: newType };
+      if (newType === 'Super Specialty') next.sspClasses = { ...SSP_CLASS_DEFAULT };
+      return next;
+    });
+    remapTabData(setChampionshipTabData as React.Dispatch<React.SetStateAction<unknown>>, 'championship', oldJudges, newJudges, judgeId);
+    remapTabData(setPremiershipTabData as React.Dispatch<React.SetStateAction<unknown>>, 'premiership', oldJudges, newJudges, judgeId);
+    remapTabData(setKittenTabData as React.Dispatch<React.SetStateAction<unknown>>, 'kitten', oldJudges, newJudges, judgeId);
+  };
+
+  // Toggle whether a Super Specialty judge judges SSP format in one specific class.
+  // Changes that class's column count (3 LH/SH/AB <-> 1 AB), so remap only that tab.
+  const handleJudgeSspClassChange = (judgeId: number, tab: ClassTab, nextSelected: boolean) => {
+    const newJudges = judges.map(j => {
+      if (j.id !== judgeId) return j;
+      const current = j.sspClasses ?? { ...SSP_CLASS_DEFAULT };
+      return { ...j, sspClasses: { ...current, [tab]: nextSelected } };
+    });
+    setJudges(newJudges);
+    const setter = tab === 'championship' ? setChampionshipTabData
+      : tab === 'premiership' ? setPremiershipTabData
+      : setKittenTabData;
+    remapTabData(setter as React.Dispatch<React.SetStateAction<unknown>>, tab, judges, newJudges, judgeId);
   };
 
 
@@ -739,6 +728,7 @@ function App() {
                   showWarning={showWarning}
                   showInfo={showInfo}
                   onJudgeRingTypeChange={handleJudgeRingTypeChange}
+                  onJudgeSspClassChange={handleJudgeSspClassChange}
                   getShowState={getShowState}
                   onCSVImport={handleCSVImport}
                   globalSettings={globalSettings}

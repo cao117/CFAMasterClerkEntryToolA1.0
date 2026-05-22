@@ -12,6 +12,7 @@ interface Judge {
   acronym: string;
   ringType: string;
   ringNumber: number;
+  sspClasses?: { championship: boolean; premiership: boolean; kitten: boolean };
 }
 
 interface Column {

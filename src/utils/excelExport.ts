@@ -5,6 +5,7 @@
 
 import * as XLSX from 'xlsx';
 import { isTauriEnvironment } from './platformDetection';
+import { generateColumnsForTab, getEffectiveRingType, type ClassTab } from './ringTypeUtils';
 
 export interface GetShowStateFunction {
   (): any;
@@ -392,12 +393,23 @@ function buildGeneralSectionForExcel(general: any, judges: any[]): any[][] {
       rows.push([key, value]);
     }
   }
-  // Add judge information as a table
+  // Add judge information as a table. "SSP Classes" records which classes a Super Specialty
+  // judge actually judges in SSP format (empty for non-SSP judges); used to restore sspClasses
+  // on import. Missing column (legacy files) defaults to all classes.
   if (judges && judges.length > 0) {
     rows.push(['Judges']);
-    rows.push(['Judge Name', 'Ring Number', 'Acronym', 'Ring Type']);
+    rows.push(['Judge Name', 'Ring Number', 'Acronym', 'Ring Type', 'SSP Classes']);
     for (const judge of judges) {
-      rows.push([judge.name, judge.ringNumber, judge.acronym, judge.ringType]);
+      let sspClassesCell = '';
+      if (judge.ringType === 'Super Specialty') {
+        const ssp = judge.sspClasses ?? { championship: true, premiership: true, kitten: true };
+        sspClassesCell = [
+          ssp.championship ? 'Championship' : null,
+          ssp.premiership ? 'Premiership' : null,
+          ssp.kitten ? 'Kitten' : null,
+        ].filter(Boolean).join(',');
+      }
+      rows.push([judge.name, judge.ringNumber, judge.acronym, judge.ringType, sspClassesCell]);
     }
   }
   return rows;
@@ -567,33 +579,11 @@ function buildBreedSheetSection(breedSheetsData: any, judge: any, globalSettings
  * @param showState - The full show state to access counts for determining row limits
  */
 function transformTabData(tabData: any, judges: any[], tabType: string, showState: any): any {
-  // Build columns: for Double Specialty, split into LH/SH; otherwise, use ringType
-  // Special handling for household tab: always create exactly 1 column per judge
-  const columns: { judge: any; specialty: string }[] = [];
-  judges.forEach(judge => {
-    if (tabType === 'household') {
-      // For household tab: always create exactly 1 column per judge regardless of ring type
-      columns.push({ judge, specialty: judge.ringType });
-    } else if (judge.ringType === 'Double Specialty') {
-      columns.push({ judge, specialty: 'Longhair' });
-      columns.push({ judge, specialty: 'Shorthair' });
-            } else if (judge.ringType === 'Super Specialty') {
-          columns.push({ judge, specialty: 'Longhair' });
-          columns.push({ judge, specialty: 'Shorthair' });
-          columns.push({ judge, specialty: 'Allbreed' });
-        } else if (judge.ringType === 'OCP Ring') {
-          // OCP Ring: For Championship and Premiership, create Allbreed + OCP columns
-          // For Kitten tab, OCP rings only have Allbreed column (kittens don't compete in OCP)
-          if (tabType === 'kitten') {
-            columns.push({ judge, specialty: 'Allbreed' });
-          } else {
-            columns.push({ judge, specialty: 'Allbreed' });
-            columns.push({ judge, specialty: 'OCP' });
-          }
-        } else {
-          columns.push({ judge, specialty: judge.ringType });
-        }
-  });
+  // Build columns per each judge's EFFECTIVE ring type for this tab (per-class Super Specialty
+  // collapses to a single Allbreed column when off). Household is always 1 column per judge.
+  const columns: { judge: any; specialty: string }[] = tabType === 'household'
+    ? judges.map(judge => ({ judge, specialty: judge.ringType }))
+    : generateColumnsForTab(judges, tabType as ClassTab);
 
   // Create rings array for the tabular section
   const rings = columns.map((col) => ({
@@ -940,33 +930,11 @@ function extractFinalAwardsFromTab(showState: any, tabType: 'championship' | 'pr
   const tabData = showState[tabType];
   const judges = showState.judges || [];
   
-  // Build columns: for Double Specialty, split into LH/SH; otherwise, use ringType
-  // Special handling for household tab: always create exactly 1 column per judge
-  const columns: { judge: any; specialty: string }[] = [];
-  judges.forEach(judge => {
-    if (tabType === 'household') {
-      // For household tab: always create exactly 1 column per judge regardless of ring type
-      columns.push({ judge, specialty: judge.ringType });
-    } else if (judge.ringType === 'Double Specialty') {
-      columns.push({ judge, specialty: 'Longhair' });
-      columns.push({ judge, specialty: 'Shorthair' });
-    } else if (judge.ringType === 'Super Specialty') {
-      columns.push({ judge, specialty: 'Longhair' });
-      columns.push({ judge, specialty: 'Shorthair' });
-      columns.push({ judge, specialty: 'Allbreed' });
-    } else if (judge.ringType === 'OCP Ring') {
-      // OCP Ring: For Championship and Premiership, create Allbreed + OCP columns
-      // For Kitten tab, OCP rings only have Allbreed column (kittens don't compete in OCP)
-      if (tabType === 'kitten') {
-        columns.push({ judge, specialty: 'Allbreed' });
-      } else {
-        columns.push({ judge, specialty: 'Allbreed' });
-        columns.push({ judge, specialty: 'OCP' });
-      }
-    } else {
-      columns.push({ judge, specialty: judge.ringType });
-    }
-  });
+  // Build columns per each judge's EFFECTIVE ring type for this tab (per-class Super Specialty
+  // collapses to a single Allbreed column when off). Household is always 1 column per judge.
+  const columns: { judge: any; specialty: string }[] = tabType === 'household'
+    ? judges.map(judge => ({ judge, specialty: judge.ringType }))
+    : generateColumnsForTab(judges, tabType as ClassTab);
 
   // Determine type name and status column for this tab
   let typeName: string;
@@ -1060,8 +1028,10 @@ function extractFinalAwardsFromTab(showState: any, tabType: 'championship' | 'pr
 function extractFinalsDataForColumn(tabData: any, col: any, colIdx: number, tabType: 'championship' | 'premiership', showState: any): any[] {
   const finalsData: any[] = [];
 
-  // Determine finals row count - use individual logic for SSP rings
-  const isSSP = col.judge?.ringType === 'Super Specialty';
+  // Determine finals row count - use individual logic only for rings that are actually SSP in
+  // THIS class. A Super Specialty judge not doing SSP here has a single Allbreed column that
+  // must export like a normal allbreed ring (all of Best AB/LH/SH), not an SSP per-specialty count.
+  const isSSP = getEffectiveRingType(col.judge, tabType as ClassTab) === 'Super Specialty';
   const finalsRowCount = isSSP
     ? getIndividualFinalsRowCount(showState, tabType, col.specialty)
     : getFinalsRowCount(showState, tabType);

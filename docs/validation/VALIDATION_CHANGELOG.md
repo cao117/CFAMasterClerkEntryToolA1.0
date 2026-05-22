@@ -2,6 +2,15 @@
 
 This changelog records all changes, additions, and deletions to validation rules for each tab in the CFA Master Clerk Entry Tool. Each entry includes the date, affected tab, summary of the change, and rationale/context.
 
+### [2026-05-21] Per-Class Super Specialty Selection
+- **Tabs:** General (config), Championship, Premiership, Kitten (column generation + Excel export/import)
+- **Change:** A Super Specialty judge can now be configured to judge SSP format in only specific classes (Championship / Premiership / Kitten). Selected class → 3 columns (LH/SH/AB); unselected class → 1 Allbreed column. Default is all classes (backward-compatible).
+- **Root Cause:** `ringType` was a single global value, so a Super Specialty judge always produced 3 columns in every class. Real shows (e.g. Midland Cat Fanciers' Club) have judges who run SSP in one class but plain Allbreed in another. The empty LH/SH columns in the Allbreed-run class triggered `validateSpecialtyFinalsConsistency*` errors that blocked saving the Allbreed column ("only AB CH shows up").
+- **Solution:** Added `Judge.sspClasses` and a per-tab `getEffectiveRingType` resolver (`src/utils/ringTypeUtils.ts`). All column generation (tabs + export + import AB-population) now uses the effective ring type per class. Validation logic is unchanged — it is column-driven, so a class where the judge runs Allbreed simply has no 3-column SSP ring to validate. Column-index-keyed tab data is re-indexed via `remapColumnKeyedData` when a judge's column count changes in a class (also fixes a latent OCP-in-Kitten remap offset).
+- **Files Modified:** `src/utils/ringTypeUtils.ts` (new), `src/App.tsx`, `src/components/{GeneralTab,ChampionshipTab,PremiershipTab,KittenTab,HouseholdPetTab,CustomSelect}.tsx`, `src/utils/{excelExport,excelImport}.ts`
+- **Tests:** `src/utils/ringTypeUtils.test.ts` (resolver, per-class column generation, re-indexing boundaries), `src/utils/sspRoundTrip.test.ts` (export→import preservation). 21 tests passing.
+- **Impact:** Shows with per-class Super Specialty judges can now be entered and exported correctly; the previously-blocked Allbreed column saves without spurious SSP finals errors.
+
 ### [2026-02-04] Kitten Tab Excel Export: OCP Ring Column Fix
 - **Tabs:** Kitten (Excel Export)
 - **Change:** Fixed OCP Ring column generation in Kitten_Final worksheet export

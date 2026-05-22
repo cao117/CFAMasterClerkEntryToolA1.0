@@ -11,6 +11,7 @@ import type { CellData } from '../validation/championshipValidation';
 import { handleSaveToExcel } from '../utils/excelExport';
 import CustomSelect from './CustomSelect';
 import { formatJumpToMenuOptions, formatJumpToMenuValue, getRoomTypeAbbreviation } from '../utils/jumpToMenuUtils';
+import { generateColumnsForTab, getEffectiveRingType } from '../utils/ringTypeUtils';
 
 interface Judge {
   id: number;
@@ -18,6 +19,7 @@ interface Judge {
   acronym: string;
   ringType: string;
   ringNumber: number;
+  sspClasses?: { championship: boolean; premiership: boolean; kitten: boolean };
 }
 
 interface ChampionshipTabProps {
@@ -179,7 +181,7 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
           if (!col) return null;
 
           // Get the sections that should be shown for this ring type
-          const sections = getSectionsForRingType(col.specialty);
+          const sections = getSectionsForRingType(col);
           
           // Calculate the total number of rows for this column
           const showAwardsCount = getShowAwardsRowCount(currentCol, col.specialty);
@@ -209,7 +211,7 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
               nextCol--;
               if (nextCol < 0) return null; // Beginning of table
               const prevCol = columns[nextCol];
-              const prevSections = getSectionsForRingType(prevCol.specialty);
+              const prevSections = getSectionsForRingType(prevCol);
               const prevShowAwardsCount = getShowAwardsRowCount(nextCol, prevCol.specialty);
               nextRow = prevShowAwardsCount + prevSections.reduce((total, section) => {
                 return total + getFinalsRowCount(nextCol, prevCol.specialty, section);
@@ -234,54 +236,10 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
     };
 
     // Generate columns based on judges
+    // Columns reflect each judge's EFFECTIVE ring type for Championship (Super Specialty
+    // judges produce 3 columns only in the classes they're doing SSP in; otherwise 1 AB column).
     const generateColumns = useCallback((): Column[] => {
-      const columns: Column[] = [];
-      
-      judges.forEach(judge => {
-        if (judge.ringType === 'Double Specialty') {
-          // For Double Specialty, create two columns (LH, SH) but both use the original judge's id (ring number) and info
-          columns.push({
-            judge: { ...judge }, // keep original id
-            specialty: 'Longhair'
-          });
-          columns.push({
-            judge: { ...judge }, // keep original id
-            specialty: 'Shorthair'
-          });
-        } else if (judge.ringType === 'Super Specialty') {
-          // For Super Specialty, create three columns (LH, SH, AB) but all use the original judge's id (ring number) and info
-          columns.push({
-            judge: { ...judge }, // keep original id
-            specialty: 'Longhair'
-          });
-          columns.push({
-            judge: { ...judge }, // keep original id
-            specialty: 'Shorthair'
-          });
-          columns.push({
-            judge: { ...judge }, // keep original id
-            specialty: 'Allbreed'
-          });
-        } else if (judge.ringType === 'OCP Ring') {
-          // For OCP Ring, create two columns (AB, OCP) but both use the original judge's id (ring number) and info
-          columns.push({
-            judge: { ...judge }, // keep original id
-            specialty: 'Allbreed'
-          });
-          columns.push({
-            judge: { ...judge }, // keep original id
-            specialty: 'OCP'
-          });
-        } else {
-          // For all other types, just use the judge as-is
-          columns.push({
-            judge,
-            specialty: judge.ringType
-          });
-        }
-      });
-      
-      return columns;
+      return generateColumnsForTab(judges, 'championship');
     }, [judges]);
 
     /**
@@ -836,41 +794,28 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
     };
 
     // Helper functions to determine which sections should be shown for each ring type
-    const shouldShowSection = (specialty: string, section: 'champions' | 'lhChampions' | 'shChampions'): boolean => {
-      // For SSP rings, each column shows only its specific section
-      // For OCP and Allbreed rings, the AB column shows ALL sections
-      const column = columns.find(col => col.specialty === specialty);
-      const isSSPRing = column && judges.find(j => j.id === column.judge.id)?.ringType === 'Super Specialty';
-
-      switch (specialty) {
+    const shouldShowSection = (col: Column, section: 'champions' | 'lhChampions' | 'shChampions'): boolean => {
+      // SSP rings: each column shows only its own section. Allbreed/OCP: the AB column shows ALL sections.
+      // Uses EFFECTIVE ring type, so a Super Specialty judge NOT doing SSP this class behaves as a
+      // normal Allbreed column (shows AB + LH + SH CH). Per-column, so SSP & Allbreed judges can mix.
+      const isSSPRing = getEffectiveRingType(col.judge, 'championship') === 'Super Specialty';
+      switch (col.specialty) {
         case 'Allbreed':
-          if (isSSPRing) {
-            return section === 'champions'; // SSP AB column only shows AB CH section
-          } else {
-            return true; // OCP/Allbreed rings: AB column shows ALL sections (AB, LH, SH CH)
-          }
+          return isSSPRing ? section === 'champions' : true;
         case 'Longhair':
-          return section === 'lhChampions'; // Longhair only shows LH CH
+          return section === 'lhChampions';
         case 'Shorthair':
-          return section === 'shChampions'; // Shorthair only shows SH CH
+          return section === 'shChampions';
         default:
           return false;
       }
     };
 
-    const getSectionsForRingType = (specialty: string): Array<'champions' | 'lhChampions' | 'shChampions'> => {
-      // For SSP rings, each column shows only its specific section
-      // For OCP and Allbreed rings, the AB column shows ALL sections
-      const column = columns.find(col => col.specialty === specialty);
-      const isSSPRing = column && judges.find(j => j.id === column.judge.id)?.ringType === 'Super Specialty';
-
-      switch (specialty) {
+    const getSectionsForRingType = (col: Column): Array<'champions' | 'lhChampions' | 'shChampions'> => {
+      const isSSPRing = getEffectiveRingType(col.judge, 'championship') === 'Super Specialty';
+      switch (col.specialty) {
         case 'Allbreed':
-          if (isSSPRing) {
-            return ['champions']; // SSP AB column only shows AB CH section
-          } else {
-            return ['champions', 'lhChampions', 'shChampions']; // OCP/Allbreed rings: AB column shows ALL sections
-          }
+          return isSSPRing ? ['champions'] : ['champions', 'lhChampions', 'shChampions'];
         case 'Longhair':
           return ['lhChampions'];
         case 'Shorthair':
@@ -1100,7 +1045,7 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
 
     // Helper function to calculate the correct row index for ref assignments based on actual rendered sections
     const getRowIndexForSection = (colIdx: number, specialty: string, section: 'showAwards' | 'champions' | 'lhChampions' | 'shChampions', position: number): number => {
-      const sections = getSectionsForRingType(specialty);
+      const sections = getSectionsForRingType(columns[colIdx]);
       let rowIndex = 0;
       
       // Add Show Awards rows
@@ -1354,7 +1299,7 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                 })}
                     {/* Finals Sections (Rows 19-23) */}
                   {Array.from({ length: 5 }, (_, i) => {
-                    if (columns.some(col => i < getFinalsRowCount(columns.indexOf(col), col.specialty, 'champions') && shouldShowSection(col.specialty, 'champions'))) {
+                    if (columns.some(col => i < getFinalsRowCount(columns.indexOf(col), col.specialty, 'champions') && shouldShowSection(col,'champions'))) {
                       const ordinals = ['Best', '2nd Best', '3rd Best', '4th Best', '5th Best'];
                       return (
                         <tr key={`champions-${i}`} className={`cfa-table-row transition-all duration-150 ${i % 2 === 0 ? 'bg-white' : ''} hover:shadow-sm`}>
@@ -1364,7 +1309,7 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                           {columns.map((_, columnIndex) => {
                             const col = columns[columnIndex];
                             const isFocused = focusedColumnIndex === columnIndex;
-                            const shouldRenderCell = i < getFinalsRowCount(columnIndex, col.specialty, 'champions') && shouldShowSection(col.specialty, 'champions');
+                            const shouldRenderCell = i < getFinalsRowCount(columnIndex, col.specialty, 'champions') && shouldShowSection(col,'champions');
                             const errorKey = `champions-${columnIndex}-${i}`;
                             return (
                               <td key={`champions-${i}-${columnIndex}`} className={`py-2 px-2 border-r border-gray-200 align-top transition-all duration-150${isFocused ? ' border-l-4 border-r-4 border-violet-300 z-10' : ''} hover:bg-gray-50`}>
@@ -1421,7 +1366,7 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                         {columns.map((_, columnIndex) => {
                           const col = columns[columnIndex];
                           const isFocused = focusedColumnIndex === columnIndex;
-                          const shouldRenderCell = i < getFinalsRowCount(columnIndex, col.specialty, 'lhChampions') && shouldShowSection(col.specialty, 'lhChampions');
+                          const shouldRenderCell = i < getFinalsRowCount(columnIndex, col.specialty, 'lhChampions') && shouldShowSection(col,'lhChampions');
                             const errorKey = `lhChampions-${columnIndex}-${i}`;
                             return (
                             <td key={`lhChampions-${i}-${columnIndex}`} className={`py-2 px-2 border-r border-gray-200 align-top transition-all duration-150${isFocused ? ' border-l-4 border-r-4 border-violet-300 z-10' : ''} hover:bg-gray-50`}>
@@ -1478,7 +1423,7 @@ const ChampionshipTab = React.forwardRef<ChampionshipTabRef, ChampionshipTabProp
                         {columns.map((_, columnIndex) => {
                           const col = columns[columnIndex];
                           const isFocused = focusedColumnIndex === columnIndex;
-                          const shouldRenderCell = i < getFinalsRowCount(columnIndex, col.specialty, 'shChampions') && shouldShowSection(col.specialty, 'shChampions');
+                          const shouldRenderCell = i < getFinalsRowCount(columnIndex, col.specialty, 'shChampions') && shouldShowSection(col,'shChampions');
                             const errorKey = `shChampions-${columnIndex}-${i}`;
                             return (
                             <td key={`shChampions-${i}-${columnIndex}`} className={`py-2 px-2 border-r border-gray-200 align-top transition-all duration-150${isFocused ? ' border-l-4 border-r-4 border-violet-300 z-10' : ''} hover:bg-gray-50`}>

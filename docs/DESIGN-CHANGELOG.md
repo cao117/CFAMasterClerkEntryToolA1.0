@@ -1,5 +1,15 @@
 # Design Changelog
 
+## [Design v1.23.0] - 2026-05-21
+
+### [DESIGN-ADDED]
+- **Per-Class Super Specialty pill-toggles (General tab)**: When a judge's Ring Type is "Super Specialty", an inline `Judges SSP in:` line appears beneath the ring-type dropdown with three pill-toggles — CH / PR / KIT.
+  - **Problem**: Clerks need to express that a Super Specialty judge runs SSP in only some classes; there was no UI for it.
+  - **Solution**: Inline pill-toggles shown only on Super Specialty rows (progressive disclosure). Selected = filled indigo, unselected = outline; both states carry a 1px border so toggling never shifts layout. Judge-row cells changed from `align-middle` to `align-top` so the dropdown stays on the first line and the pills hang beneath it without pushing other cells out of alignment. Reuses the existing indigo theme and `rounded-full` motif from `CustomSelect`.
+  - **Keyboard**: Pills are `<button role="checkbox">`, so Tab order is Acronym → Ring Type → CH → PR → KIT → next row, and Space/Enter toggles. `CustomSelect` also gained type-to-match (type a letter to jump to an option), benefiting every dropdown in the app.
+  - **Impact**: Clerks can configure per-class Super Specialty without leaving the judges table; non-SSP rows are visually unchanged.
+  - **Files Modified**: `src/components/GeneralTab.tsx`, `src/components/CustomSelect.tsx`
+
 ## [Design v1.22.0] - 2025-08-04
 
 ### DESIGN-FIXED
