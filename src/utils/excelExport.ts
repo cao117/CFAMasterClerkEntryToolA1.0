@@ -957,7 +957,7 @@ function extractFinalAwardsFromTab(showState: any, tabType: 'championship' | 'pr
   for (let colIdx = 0; colIdx < columns.length; colIdx++) {
     const col = columns[colIdx];
     const ringNumber = col.judge.id.toString();
-    const ringType = tabType === 'household' ? '' :
+    const ringType = tabType === 'household' ? 'Allbreed' :
                     (col.specialty === 'Allbreed' ? 'Allbreed' :
                      col.specialty === 'Longhair' ? 'Longhair' :
                      col.specialty === 'Shorthair' ? 'Shorthair' :
