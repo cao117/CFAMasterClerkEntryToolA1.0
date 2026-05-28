@@ -1,5 +1,17 @@
 # Bugfix Changelog
 
+## [2026-05-27] SSP finals order (PR) + cross-column duplicate + message unification (MCE-4b + MCE-5)
+- **Issue (MCE-4b)**: For a Premiership SSP ring, the "Best LH/SH PR must follow Best AB PR order" rule never fired. Reported via a live case: LH PR `[1,2]`, Best AB PR `[2,1]` produced no order violation, while the equivalent Championship case did. MCE-4 had added the resolver but the PR call site gated the check behind `column.specialty === 'Allbreed'`, so it was unreachable for an SSP Longhair/Shorthair column. (Reopen of MCE-4 — the PR finals-order side was never actually closed; its test passed because a different rule emitted a matching "out of order" string.)
+- **Issue (MCE-5)**: A cat placed in both Best LH and Best SH finals of an SSP ring was not flagged (the same-column "cannot be both longhair and shorthair" check only compares within one column; SSP splits LH/SH across columns).
+- **Root Cause**: Championship runs the LH/SH AB-subsequence order check **unconditionally** (additive with the separate top-15 check); Premiership collapsed both into a single either/or switch on `column.specialty` built on a pre-SSP assumption that a specialty column is always a standalone ring. SSP columns are simultaneously a specialty column and part of an allbreed ring, so the switch skipped the AB check.
+- **Files Modified**: `src/validation/championshipValidation.ts`, `src/validation/premiershipValidation.ts`
+- **Code Changes**:
+  - PR LH/SH order dispatch made **additive** (mirrors CH): `validateBestHairPROrder` now runs for LH/SH regardless of specialty (self-no-ops when there is no AB sibling).
+  - Added `validateSpecialtyFinalsCrossColumnDuplicatesCH`/`PR` to the SSP cross-column suite (step 6) for the LH-vs-SH finals duplicate.
+  - Unified all finals-section duplicate messages to `Duplicate: Cat #<n> cannot be both longhair and shorthair` (was generic "a cat …"), matching Show Awards.
+- **Impact**: Premiership SSP finals order/filler now enforced (parity with Championship); cross-column finals duplicates caught in both tabs; duplicate messages consistent across sections.
+- **Testing**: `sspReminder.test.ts` reworked to cell-specific assertions + error-class/partition coverage; confirmed the SSP order tests fail on the pre-fix code. 74 jest tests pass; `vite build` clean; lint at baseline.
+
 ## [2026-05-27] SSP cross-column validation: false-positive fix + gap closure (MCE-3 + MCE-4)
 - **Issue (MCE-3)**: On a freshly-entered Super Specialty ring, the AB column showed false "needs to be assigned to either LH or SH CH final" reminders even when the cats were placed in the LH/SH specialty columns. Present on production.
 - **Issue (MCE-4)**: The "LH/SH CH must be a subsequence of AB CH" order rule and the filler-priority rule were silently unenforced for SSP rings.

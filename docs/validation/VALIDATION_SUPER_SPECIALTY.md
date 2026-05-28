@@ -27,6 +27,12 @@ Validators that relate AB CH(PR) to LH/SH CH(PR) for SSP **must** read LH/SH fro
 - **Order (subsequence of AB) + filler priority**: AB list resolved via `getAbChSourceColIdx` / `getAbPrSourceColIdx`.
 - The former `validateSpecialtyFinalsConsistency*` was **removed** (it compared specialty finals to the empty AB sub-section → only false-fired live / passed trivially on import).
 
+### Additive order dispatch + cross-column finals duplicate (added 2026-05-27, MCE-4b/MCE-5)
+
+- **MCE-4b (Premiership):** the LH/SH AB-subsequence order check must be dispatched **additively**, not as an either/or on `column.specialty`. Championship runs `validateBestHairCHOrder` for LH/SH **unconditionally** (the single-specialty top-15 check is a separate, independent block). Premiership originally collapsed both into `if (Longhair) top015 else if (Allbreed) abSubsequence`, which skipped the AB-subsequence check for an SSP Longhair/Shorthair column (it matched the `Longhair` arm). Fixed to run `validateBestHairPROrder` for LH/SH regardless of specialty; it self-no-ops when there is no AB sibling. **Lesson:** an SSP specialty column is *simultaneously* a specialty column and part of an allbreed ring — any `specialty`-switch that assumes mutual exclusivity is a latent SSP bug.
+- **MCE-5 (CH + PR):** the same-column "cannot be both longhair and shorthair" finals check compares LH vs SH finals at the same column index, so it no-ops for SSP. `validateSpecialtyFinalsCrossColumnDuplicatesCH`/`PR` (step 6 of the SSP cross-column suite) re-runs it across the split LH/SH columns.
+- **Message:** all finals duplicate messages now read `Duplicate: Cat #<n> cannot be both longhair and shorthair` (unified with Show Awards).
+
 A full execution-ordered catalog of every Championship rule and its SSP impact, plus the regression test matrix, is in `docs/validation/CH_VALIDATION_RULES.md`.
 
 ## Excel Export/Import Behavior
