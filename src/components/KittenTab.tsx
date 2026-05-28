@@ -6,12 +6,14 @@ import type { KittenValidationInput } from '../validation/kittenValidation';
 import { handleSaveToExcel } from '../utils/excelExport';
 import CustomSelect from './CustomSelect';
 import { formatJumpToMenuOptions, formatJumpToMenuValue, getRoomTypeAbbreviation } from '../utils/jumpToMenuUtils';
+import { generateColumnsForTab } from '../utils/ringTypeUtils';
 
 interface Judge {
   id: number;
   name: string;
   acronym: string;
   ringType: string;
+  sspClasses?: { championship: boolean; premiership: boolean; kitten: boolean };
   ringNumber: number;
 }
 
@@ -81,27 +83,10 @@ export default function KittenTab({
   onCSVImport,
   globalSettings
 }: KittenTabProps) {
-  // --- Helper: Generate columns (one per judge, handle Double Specialty) ---
-  const generateColumns = (): Column[] => {
-    const cols: Column[] = [];
-    judges.forEach((judge: Judge) => {
-      if (judge.ringType === 'Double Specialty') {
-        cols.push({ judge: { ...judge }, specialty: 'Longhair', columnIndex: cols.length });
-        cols.push({ judge: { ...judge }, specialty: 'Shorthair', columnIndex: cols.length });
-      } else if (judge.ringType === 'Super Specialty') {
-        cols.push({ judge: { ...judge }, specialty: 'Longhair', columnIndex: cols.length });
-        cols.push({ judge: { ...judge }, specialty: 'Shorthair', columnIndex: cols.length });
-        cols.push({ judge: { ...judge }, specialty: 'Allbreed', columnIndex: cols.length });
-      } else if (judge.ringType === 'OCP Ring') {
-        // OCP Ring judges only create Allbreed column for Kitten tab (same as regular Allbreed judges)
-        // OCP columns are only needed for Championship and Premiership tabs
-        cols.push({ judge: { ...judge }, specialty: 'Allbreed', columnIndex: cols.length });
-      } else {
-        cols.push({ judge, specialty: judge.ringType, columnIndex: cols.length });
-      }
-    });
-    return cols;
-  };
+  // --- Helper: Generate columns per judge's EFFECTIVE ring type for the Kitten class ---
+  // (Super Specialty -> 3 cols only when doing SSP in Kitten; OCP Ring -> 1 AB col in Kitten.)
+  const generateColumns = (): Column[] =>
+    generateColumnsForTab(judges, 'kitten').map((c, i) => ({ ...c, columnIndex: i }));
 
   const columns: Column[] = useMemo(() => generateColumns(), [judges]);
 

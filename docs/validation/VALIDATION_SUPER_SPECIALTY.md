@@ -9,6 +9,32 @@ Super Specialty rings consist of three columns with the same judge ID:
 - **Shorthair column**: Judges all short hair cats and gives placements  
 - **Allbreed column**: Combines both long hair and short hair cats for final placements
 
+### Per-Class Selection (added 2026-05-21)
+
+A judge whose Ring Type is "Super Specialty" does **not** necessarily judge SSP format in every class. In the General tab the clerk selects which classes (Championship / Premiership / Kitten) the judge actually judges as Super Specialty (default: all three). This is stored on `Judge.sspClasses`.
+
+- For a **selected** class, the judge produces the three columns (LH/SH/AB) described here and all the cross-column rules below apply.
+- For an **unselected** class, the judge produces a **single Allbreed column** (a normal allbreed ring carrying Best AB CH/PR + Best LH CH/PR + Best SH CH/PR). No Super Specialty ring exists for that judge in that class, so none of the cross-column rules below run.
+
+This is resolved by `getEffectiveRingType(judge, tab)` in `src/utils/ringTypeUtils.ts`; column generation, Excel export, and Excel import all use it. Because Super Specialty validation is **column-driven** (`findSuperSpecialtyRings` detects a ring only when a judge has exactly the 3 LH/SH/AB columns), the rules in this document required no change — a class run as Allbreed simply has no SSP ring to detect.
+
+### Live-entry vs import data shape (added 2026-05-27, MCE-3/MCE-4)
+
+**Critical invariant:** in a Super Specialty ring the Best LH/SH CH(PR) bests live in the **separate specialty columns**. The AB column's *own* `lh/shChampionsFinals[abColIdx]` sub-sections are **empty during live entry** and are populated only on import (`populateSuperSpecialtyABColumns` copies them from the specialty columns). Any validator that reads the AB column's own LH/SH sub-sections will therefore behave inconsistently between live entry and import.
+
+Validators that relate AB CH(PR) to LH/SH CH(PR) for SSP **must** read LH/SH from the specialty columns and the AB list from the sibling AB column — never the AB column's own sub-sections:
+- **Assignment reminder** ("needs to be assigned to either LH or SH …"): `isCatInSpecialtyCHFinal` / `isCatInSpecialtyPRFinal`.
+- **Order (subsequence of AB) + filler priority**: AB list resolved via `getAbChSourceColIdx` / `getAbPrSourceColIdx`.
+- The former `validateSpecialtyFinalsConsistency*` was **removed** (it compared specialty finals to the empty AB sub-section → only false-fired live / passed trivially on import).
+
+### Additive order dispatch + cross-column finals duplicate (added 2026-05-27, MCE-4b/MCE-5)
+
+- **MCE-4b (Premiership):** the LH/SH AB-subsequence order check must be dispatched **additively**, not as an either/or on `column.specialty`. Championship runs `validateBestHairCHOrder` for LH/SH **unconditionally** (the single-specialty top-15 check is a separate, independent block). Premiership originally collapsed both into `if (Longhair) top015 else if (Allbreed) abSubsequence`, which skipped the AB-subsequence check for an SSP Longhair/Shorthair column (it matched the `Longhair` arm). Fixed to run `validateBestHairPROrder` for LH/SH regardless of specialty; it self-no-ops when there is no AB sibling. **Lesson:** an SSP specialty column is *simultaneously* a specialty column and part of an allbreed ring — any `specialty`-switch that assumes mutual exclusivity is a latent SSP bug.
+- **MCE-5 → MCE-6 (CH + PR):** a cat is one hair length, so within an SSP ring it may appear in the LH OR the SH specialty column, never both — across **every** section. The original same-column "cannot be both longhair and shorthair" check no-ops for SSP, and the section-matched cross-column checks (show-vs-show + finals-vs-finals) missed the cross pairings (Best LH × SH show awards, and the mirror). **MCE-6 consolidates** all of this into one rule per tab — `validateSSPHairLengthExclusivityCH`/`PR` — which intersects the LH column's full cat set (show awards ∪ finals) with the SH column's full cat set and flags every cell of any shared cat. The **AB column does not participate** (Best AB is drawn from the specialty winners). **Lesson:** model cross-column uniqueness at the *column* level (full cat set), not per matching section — section-matched checks silently miss cross-section duplicates.
+- **Message:** all duplicate messages read `Duplicate: Cat #<n> cannot be both longhair and shorthair` (unified across Show Awards + finals).
+
+A full execution-ordered catalog of every Championship rule and its SSP impact, plus the regression test matrix, is in `docs/validation/CH_VALIDATION_RULES.md`.
+
 ## Excel Export/Import Behavior
 
 ### Data Export Rules (Updated 2025-08-14)
@@ -322,4 +348,4 @@ Potential future enhancements for Super Specialty validation:
 
 ---
 
-*Last Updated: 2025-07-31 19:04:38* 
+*Last Updated: 2026-05-27 (MCE-3/MCE-4 — live-entry vs import data-shape invariant; validators read specialty columns)* 

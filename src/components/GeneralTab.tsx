@@ -10,6 +10,7 @@ interface Judge {
   name: string;
   acronym: string;
   ringType: string;
+  sspClasses?: { championship: boolean; premiership: boolean; kitten: boolean };
   ringNumber: number;
 }
 
@@ -60,6 +61,7 @@ interface GeneralTabProps {
   showWarning: (title: string, message?: string, duration?: number) => void;
   showInfo: (title: string, message?: string, duration?: number) => void;
   onJudgeRingTypeChange?: (id: number, oldType: string, newType: string) => void;
+  onJudgeSspClassChange?: (id: number, tab: 'championship' | 'premiership' | 'kitten', nextSelected: boolean) => void;
   getShowState: () => Record<string, unknown>;
   onCSVImport: () => Promise<void>;
   globalSettings: {
@@ -129,6 +131,7 @@ export default function GeneralTab({
   showWarning: _showWarning, // unused, prefix with _
   showInfo: _showInfo, // unused, prefix with _
   onJudgeRingTypeChange,
+  onJudgeSspClassChange,
   getShowState,
   onCSVImport,
   globalSettings,
@@ -331,10 +334,16 @@ export default function GeneralTab({
       if (judge) oldType = judge.ringType;
     }
     
-    let updatedJudges = judges.map(judge =>
-      judge.id === id ? { ...judge, [field]: value } : judge
-    );
-    
+    const updatedJudges = judges.map(judge => {
+      if (judge.id !== id) return judge;
+      const next = { ...judge, [field]: value } as Judge;
+      // Becoming Super Specialty defaults to judging SSP in all classes; clerk deselects as needed.
+      if (field === 'ringType' && value === 'Super Specialty') {
+        next.sspClasses = { championship: true, premiership: true, kitten: true };
+      }
+      return next;
+    });
+
     // Ring numbers don't need to be unique - allow any valid ring number
     
     setJudges(updatedJudges);
@@ -1436,14 +1445,14 @@ export default function GeneralTab({
                 <tbody>
                   {judges.map((judge, index) => (
                           <tr key={judge.id} className={`${index % 2 === 0 ? "bg-white" : "bg-indigo-50/30"} hover:bg-indigo-100/30 transition-all duration-200`} style={{ height: 48 }}>
-                            <td className="px-4 py-3 align-middle">
-                              {/* Judge number badge - displays sequential judge number */}
+                            <td className="px-4 py-3 align-top">
+                              {/*Judge number badge - displays sequential judge number */}
                               <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-amber-200 to-orange-200 text-gray-800 font-bold text-sm text-center shadow-md border border-amber-300/50 hover:shadow-lg hover:from-amber-300 hover:to-orange-300 transition-all duration-200" >
                                 {index + 1}
                               </span>
                             </td>
-                            <td className="px-4 py-3 align-middle">
-                              {/* Ring number input - compact width for two-digit numbers */}
+                            <td className="px-4 py-3 align-top">
+                              {/*Ring number input - compact width for two-digit numbers */}
                               <input 
                                 type="number" 
                                 min="1" 
@@ -1467,8 +1476,8 @@ export default function GeneralTab({
                                  
                               />
                             </td>
-                            <td className="px-4 py-3 align-middle">
-                              {/* Judge name input - full width for longer names */}
+                            <td className="px-4 py-3 align-top">
+                              {/*Judge name input - full width for longer names */}
                               <input 
                                 type="text" 
                                 value={judge.name} 
@@ -1480,8 +1489,8 @@ export default function GeneralTab({
                                  
                               />
                             </td>
-                            <td className="px-4 py-3 align-middle">
-                              {/* Acronym input - compact width for max 5 characters, auto-converts to uppercase */}
+                            <td className="px-4 py-3 align-top">
+                              {/*Acronym input - compact width for max 5 characters, auto-converts to uppercase */}
                               <input 
                                 type="text" 
                                 value={judge.acronym} 
@@ -1494,26 +1503,53 @@ export default function GeneralTab({
                                  
                               />
                             </td>
-                            <td className="px-4 py-3 align-middle relative overflow-visible">
-                              {/* Ring type dropdown - custom select component for specialty types */}
-                              <CustomSelect 
-                                options={["Longhair", "Shorthair", "Allbreed", "Double Specialty", "Super Specialty", "OCP Ring"]} 
-                                value={judge.ringType} 
-                                onChange={val => updateJudge(judge.id, 'ringType', val)} 
-                                ariaLabel="Ring Type" 
-                                className="min-w-[140px] rounded-lg transition-all duration-300 shadow-sm"
-                                borderColor={errors[`judge${judge.id}RingType`] ? "border-red-300" : "border-indigo-300"}
-                                focusBorderColor={errors[`judge${judge.id}RingType`] ? "focus:border-red-500" : "focus:border-indigo-500"}
-                                textColor={errors[`judge${judge.id}RingType`] ? "text-red-700" : "text-indigo-700"}
-                                highlightBg={errors[`judge${judge.id}RingType`] ? "bg-red-50" : "bg-indigo-50"}
-                                highlightText={errors[`judge${judge.id}RingType`] ? "text-red-900" : "text-indigo-900"}
-                                selectedBg={errors[`judge${judge.id}RingType`] ? "bg-red-100" : "bg-indigo-100"}
-                                selectedText={errors[`judge${judge.id}RingType`] ? "text-red-800" : "text-indigo-800"}
-                                hoverBg={errors[`judge${judge.id}RingType`] ? "bg-red-50" : "bg-indigo-50"}
-                                hoverText={errors[`judge${judge.id}RingType`] ? "text-red-900" : "text-indigo-900"}
-                              />
+                            <td className="px-4 py-3 align-top relative overflow-visible">
+                              <div className="flex flex-col">
+                                {/* Ring type dropdown - custom select component for specialty types */}
+                                <CustomSelect
+                                  options={["Longhair", "Shorthair", "Allbreed", "Double Specialty", "Super Specialty", "OCP Ring"]}
+                                  value={judge.ringType}
+                                  onChange={val => updateJudge(judge.id, 'ringType', val)}
+                                  ariaLabel="Ring Type"
+                                  className="min-w-[140px] rounded-lg transition-all duration-300 shadow-sm"
+                                  borderColor={errors[`judge${judge.id}RingType`] ? "border-red-300" : "border-indigo-300"}
+                                  focusBorderColor={errors[`judge${judge.id}RingType`] ? "focus:border-red-500" : "focus:border-indigo-500"}
+                                  textColor={errors[`judge${judge.id}RingType`] ? "text-red-700" : "text-indigo-700"}
+                                  highlightBg={errors[`judge${judge.id}RingType`] ? "bg-red-50" : "bg-indigo-50"}
+                                  highlightText={errors[`judge${judge.id}RingType`] ? "text-red-900" : "text-indigo-900"}
+                                  selectedBg={errors[`judge${judge.id}RingType`] ? "bg-red-100" : "bg-indigo-100"}
+                                  selectedText={errors[`judge${judge.id}RingType`] ? "text-red-800" : "text-indigo-800"}
+                                  hoverBg={errors[`judge${judge.id}RingType`] ? "bg-red-50" : "bg-indigo-50"}
+                                  hoverText={errors[`judge${judge.id}RingType`] ? "text-red-900" : "text-indigo-900"}
+                                />
+                                {/* Per-class Super Specialty selection — only for Super Specialty judges.
+                                    Selected class -> 3 columns (LH/SH/AB); unselected -> 1 Allbreed column. */}
+                                {judge.ringType === 'Super Specialty' && (
+                                  <div className="mt-2 flex items-center gap-2">
+                                    <span className="text-[11px] font-semibold text-indigo-500 whitespace-nowrap">Judges SSP in:</span>
+                                    <div className="flex gap-1.5">
+                                      {([['championship', 'CH'], ['premiership', 'PR'], ['kitten', 'KIT']] as const).map(([classKey, label]) => {
+                                        const selected = judge.sspClasses?.[classKey] ?? true;
+                                        return (
+                                          <button
+                                            key={classKey}
+                                            type="button"
+                                            role="checkbox"
+                                            aria-checked={selected}
+                                            aria-label={`Super Specialty in ${label}`}
+                                            onClick={() => onJudgeSspClassChange?.(judge.id, classKey, !selected)}
+                                            className={`px-2.5 py-0.5 rounded-full text-xs font-bold border outline-none transition-all duration-150 focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-1 ${selected ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-white text-indigo-300 border-indigo-200 hover:border-indigo-300 hover:text-indigo-500'}`}
+                                          >
+                                            {label}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
                             </td>
-                            <td className="px-4 py-3 align-middle text-center">
+                            <td className="px-4 py-3 align-top text-center">
                               <div className="flex items-center justify-center">
                                 <div className="relative group">
                                   <button 
