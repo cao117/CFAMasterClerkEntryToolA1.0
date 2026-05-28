@@ -4,6 +4,12 @@ This document tracks changes to individual components in the CFA Entry applicati
 
 ## [Unreleased]
 
+### [2026-05-27] SSP cross-column validation correctness (MCE-3 + MCE-4)
+- **Components:** `championshipValidation.ts`, `premiershipValidation.ts`
+- **Change:** SSP rings validate LH/SH finals from the specialty columns and the AB list from the sibling AB column (not the AB column's own live-empty sub-sections). Reminder made SSP-aware (`isCatInSpecialtyCHFinal`/`PR`); order/filler made SSP-aware (`getAbChSourceColIdx`/`getAbPrSourceColIdx`). Championship reminder consolidated from 3 sites to 1; dead `validateLHSHWithBestCHAndGetFirstError` and vacuous `validateSpecialtyFinalsConsistency*` removed.
+- **Tests:** `chValidationMatrix.test.ts` (21-rule matrix), `sspReminder.test.ts` (23 SSP cases). 65 tests pass.
+- **Impact:** Fixes false "assign to LH/SH" reminders on live SSP entry and enforces SSP finals order/filler; Allbreed/OCP/standalone unchanged.
+
 ### [2026-05-21] Per-Class Super Specialty Selection
 - **Components:** `ringTypeUtils.ts` (new), `GeneralTab`, `ChampionshipTab`, `PremiershipTab`, `KittenTab`, `CustomSelect`, `App`, `excelExport`, `excelImport`
 - **Change:** Super Specialty judges can be configured per-class (CH/PR/KIT). New `Judge.sspClasses` field + `getEffectiveRingType`/`generateColumnsForTab`/`remapColumnKeyedData` helpers in `ringTypeUtils.ts`.

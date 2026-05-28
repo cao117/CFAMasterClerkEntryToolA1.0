@@ -2,6 +2,19 @@
 
 This changelog records all changes, additions, and deletions to validation rules for each tab in the CFA Master Clerk Entry Tool. Each entry includes the date, affected tab, summary of the change, and rationale/context.
 
+### [2026-05-27] Super Specialty cross-column validation correctness (MCE-3 + MCE-4)
+- **Tabs:** Championship, Premiership (finals validation)
+- **Root cause (both):** validators written for the single-column Allbreed ring assume Best AB CH and Best LH/SH CH live in one column. A Super Specialty ring splits them across separate LH/SH/AB columns, and the AB column's *own* LH/SH finals sub-sections are **empty during live entry** (populated only on import). Validators reading those sub-sections therefore either false-fired or silently no-opped on live SSP entry. Fix pattern: read LH/SH from the **specialty columns** and the AB list from the **sibling AB column** (consistent with the existing SSP cross-column suite).
+- **MCE-3 — false-positive reminder + de-duplication:**
+  - Made the "needs to be assigned to either LH or SH CH/PR final" reminder SSP-aware (`isCatInSpecialtyCHFinal` / `isCatInSpecialtyPRFinal`): it now finds the cat in the ring's specialty columns rather than the AB column's empty sub-section.
+  - Consolidated Championship's reminder from **three** redundant sites to one (equivalence-proven). Removed dead `validateLHSHWithBestCHAndGetFirstError`.
+  - **Removed** `validateSpecialtyFinalsConsistency*` (CH + PR): it compared specialty finals to the AB column's own sub-section, which is empty live (false positives) and an exact copy on import (trivially passes) — so it could never catch a real error.
+- **MCE-4 — finals order + filler now enforced for SSP:**
+  - The "LH/SH CH/PR must be a subsequence of AB CH/PR" order rule and the "fillers must follow AB cats" rule (`validateBestHairCHOrder`, `validateBestHairCHWithFiller`, PR `validateBestHairPROrder`) were single-column and silently unenforced for SSP. Added `getAbChSourceColIdx` / `getAbPrSourceColIdx` so SSP specialty columns read the AB list from the sibling AB column.
+- **Unchanged:** Allbreed / OCP / standalone-specialty / Double-Specialty behavior (resolvers return the column itself when there is no SSP AB sibling). The SSP show-awards cross-column suite (title / ranked-priority / order-preservation / cross-column-duplicate) was already SSP-aware. The finals-level cross-section duplicate (cat in both Best LH CH & SH CH) for SSP was left as an intentionally-skipped gap (covered indirectly by the show-awards duplicate + eligibility checks).
+- **Files:** `src/validation/championshipValidation.ts`, `src/validation/premiershipValidation.ts`
+- **Tests:** `src/validation/chValidationMatrix.test.ts` (21-rule CH execution-order matrix), `src/validation/sspReminder.test.ts` (23 SSP cases incl. live≡import equivalence). 65 tests pass; build + lint clean.
+
 ### [2026-05-21] Per-Class Super Specialty Selection
 - **Tabs:** General (config), Championship, Premiership, Kitten (column generation + Excel export/import)
 - **Change:** A Super Specialty judge can now be configured to judge SSP format in only specific classes (Championship / Premiership / Kitten). Selected class → 3 columns (LH/SH/AB); unselected class → 1 Allbreed column. Default is all classes (backward-compatible).

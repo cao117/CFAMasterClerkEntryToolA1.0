@@ -495,57 +495,21 @@ export function validateBestSHCHWithTop15(input: ChampionshipValidationInput, co
   return validateBestSHCHWithTop15AndGetFirstError(input, columnIndex).isValid;
 }
 
+
 /**
- * PATCH: For each filled Best AB CH cell, if the cat is not assigned to either LH or SH CH final,
- * set the assignment reminder in that cell. This ensures reminders are shown for all unassigned cats,
- * matching Premiership logic. Previous logic could miss reminders for multiple unassigned cats.
+ * Resolves which column holds the Best AB CH list to compare a given column's LH/SH CH against.
+ * For an SSP specialty column (Longhair/Shorthair), the AB CH list lives in the sibling AB column
+ * (same judge id) — so order/filler rules are checked cross-column. For Allbreed/OCP/standalone
+ * specialty/Double Specialty columns there is no SSP AB sibling, so it returns the column itself
+ * (unchanged behavior: Allbreed reads its own AB CH; standalone/DS have no AB CH to enforce).
  */
-export function validateLHSHWithBestCHAndGetFirstError(input: ChampionshipValidationInput, columnIndex: number): { isValid: boolean, errorKeys?: string[], errorMessages?: string[], isReminder?: boolean } {
-  const { columns, championsFinals, lhChampionsFinals, shChampionsFinals } = input;
-  const column = columns[columnIndex];
-  // Only validate for Allbreed rings
-  if (!column || column.specialty !== 'Allbreed') {
-    return { isValid: true };
+function getAbChSourceColIdx(input: ChampionshipValidationInput, columnIndex: number): number {
+  const col = input.columns[columnIndex];
+  if (col && (col.specialty === 'Longhair' || col.specialty === 'Shorthair')) {
+    const abSibling = input.columns.findIndex(c => c.judge.id === col.judge.id && c.specialty === 'Allbreed');
+    if (abSibling !== -1) return abSibling;
   }
-  const numPositions = getFinalsPositionsForRingType(input, column.specialty);
-  const errorKeys: string[] = [];
-  const errorMessages: string[] = [];
-  // For each Best AB CH cat, check if assigned to LH or SH
-  for (let i = 0; i < numPositions; i++) {
-    const abValue = championsFinals[`${columnIndex}-${i}`];
-    if (abValue && abValue.trim() !== '' && !isVoidInput(abValue)) {
-      let foundInLH = false;
-      let foundInSH = false;
-      // Check if this cat appears in LH section
-      for (let j = 0; j < numPositions; j++) {
-        const lhValue = lhChampionsFinals[`${columnIndex}-${j}`];
-        if (lhValue && lhValue.trim() === abValue.trim() && !isVoidInput(lhValue)) foundInLH = true;
-      }
-      // Check if this cat appears in SH section
-      for (let j = 0; j < numPositions; j++) {
-        const shValue = shChampionsFinals[`${columnIndex}-${j}`];
-        if (shValue && shValue.trim() === abValue.trim() && !isVoidInput(shValue)) foundInSH = true;
-      }
-      // If cat is not assigned to either LH or SH, set reminder in this cell
-      if (!foundInLH && !foundInSH) {
-        /**
-         * IMPORTANT: Error key must match 'champions-${columnIndex}-${i}' for UI to display the reminder in the correct cell.
-         * If the key does not match, the reminder will not appear in the UI.
-         */
-        errorKeys.push(`champions-${columnIndex}-${i}`);
-        errorMessages.push(`${abValue.trim()} needs to be assigned to either LH or SH CH final.`);
-      }
-    }
-  }
-  if (errorKeys.length > 0) {
-    return {
-      isValid: false,
-      errorKeys,
-      errorMessages,
-      isReminder: true // This is a reminder, not a hard error
-    };
-  }
-  return { isValid: true };
+  return columnIndex;
 }
 
 /**
@@ -562,17 +526,20 @@ function validateBestHairCHOrder(input: ChampionshipValidationInput, columnIndex
   const { championsFinals, lhChampionsFinals, shChampionsFinals } = input;
   const column = input.columns[columnIndex];
   const numPositions = column ? getChampionshipCountForRingType(input, column.specialty) >= 85 ? 5 : 3 : 3;
-  
-  // Get Best AB CH cats for this column
+  // For an SSP specialty column the AB CH list lives in the sibling AB column.
+  const abColIdx = getAbChSourceColIdx(input, columnIndex);
+  const abColumn = input.columns[abColIdx];
+  const abPositions = abColumn ? (getChampionshipCountForRingType(input, abColumn.specialty) >= 85 ? 5 : 3) : numPositions;
+
+  // Get Best AB CH cats (from the AB column for this ring)
   const abCats: string[] = [];
-  for (let i = 0; i < numPositions; i++) {
-    const key = `${columnIndex}-${i}`;
-    const value = championsFinals[key];
+  for (let i = 0; i < abPositions; i++) {
+    const value = championsFinals[`${abColIdx}-${i}`];
     if (value && value.trim() !== '' && !isVoidInput(value)) {
       abCats.push(value.trim());
     }
   }
-  
+
   // Get section values (LH or SH CH)
   const sectionFinals = hair === 'LH' ? lhChampionsFinals : shChampionsFinals;
   const hairCats: string[] = [];
@@ -712,16 +679,8 @@ export function validateColumnRelationships(input: ChampionshipValidationInput, 
       }
     }
     
-    // 4. Assignment reminder for each cell (LOWEST PRIORITY - if no higher-precedence error in that cell)
-    const lhshResult = validateLHSHWithBestCHAndGetFirstError(input, columnIndex);
-    if (lhshResult.errorKeys && lhshResult.errorMessages) {
-      lhshResult.errorKeys.forEach((errorKey, idx) => {
-        // errorKey is already section-prefixed (e.g., 'champions-0-0')
-        if (!errors[errorKey]) {
-          errors[errorKey] = `[REMINDER] ${lhshResult.errorMessages ? lhshResult.errorMessages[idx] : 'LH/SH split reminder'}`;
-        }
-      });
-    }
+    // 4. (Best AB CH assignment reminder removed here — consolidated into the single section-loop
+    //     site in validateChampionshipTab, which is SSP-aware via isCatInSpecialtyCHFinal.)
   }
   
   // Check LH CH for GC/NOV/MISSING/INVALID errors
@@ -894,6 +853,34 @@ function isVoidInput(catNumber: string): boolean {
  * @param input ChampionshipValidationInput
  * @returns { [key: string]: string } errors object with section-prefixed keys
  */
+/**
+ * SSP-aware lookup: is `cat` (a Best AB CH cat in the AB column at abColIdx) placed in the
+ * ring's LH or SH CH final? For a Super Specialty ring the LH/SH bests live in the SEPARATE
+ * specialty columns (same judge id), so we read those; for a plain Allbreed/OCP ring they live
+ * in the AB column itself, so we read its own index. This keeps SSP validated by its real
+ * 3-column structure (consistent with the other SSP cross-column validators).
+ */
+function isCatInSpecialtyCHFinal(input: ChampionshipValidationInput, abColIdx: number, cat: string): boolean {
+  const { columns, lhChampionsFinals, shChampionsFinals } = input;
+  const judgeId = columns[abColIdx]?.judge.id;
+  const lhSibling = columns.findIndex(c => c.judge.id === judgeId && c.specialty === 'Longhair');
+  const shSibling = columns.findIndex(c => c.judge.id === judgeId && c.specialty === 'Shorthair');
+  const lhColIdx = lhSibling !== -1 ? lhSibling : abColIdx;
+  const shColIdx = shSibling !== -1 ? shSibling : abColIdx;
+  const target = cat.trim();
+  const lhN = getFinalsPositionsForRingType(input, columns[lhColIdx].specialty);
+  for (let j = 0; j < lhN; j++) {
+    const v = lhChampionsFinals[`${lhColIdx}-${j}`];
+    if (v && v.trim() === target && !isVoidInput(v)) return true;
+  }
+  const shN = getFinalsPositionsForRingType(input, columns[shColIdx].specialty);
+  for (let j = 0; j < shN; j++) {
+    const v = shChampionsFinals[`${shColIdx}-${j}`];
+    if (v && v.trim() === target && !isVoidInput(v)) return true;
+  }
+  return false;
+}
+
 export function validateChampionshipTab(input: ChampionshipValidationInput, maxCats: number): { [key: string]: string } {
   const errors: { [key: string]: string } = {};
 
@@ -1065,24 +1052,10 @@ export function validateChampionshipTab(input: ChampionshipValidationInput, maxC
           errors[errorKey] = orderError;
         }
       }
-        // 6. Assignment reminder for Best AB CH (champions section)
+        // 6. Assignment reminder for Best AB CH (champions section). SSP-aware: looks for the cat
+        // in the ring's LH/SH specialty columns (separate columns for SSP, own column otherwise).
         if (!errors[errorKey] && section.prefix === 'champions' && column.specialty === 'Allbreed') {
-          let foundInLH = false, foundInSH = false;
-          const lhFinals = input.lhChampionsFinals || {};
-          const shFinals = input.shChampionsFinals || {};
-          for (let j = 0; j < numPositions; j++) {
-            if (lhFinals[`${colIdx}-${j}`] && lhFinals[`${colIdx}-${j}`].trim() === cat && !isVoidInput(lhFinals[`${colIdx}-${j}`])) {
-              foundInLH = true;
-              break;
-            }
-          }
-          for (let j = 0; j < numPositions; j++) {
-            if (shFinals[`${colIdx}-${j}`] && shFinals[`${colIdx}-${j}`].trim() === cat && !isVoidInput(shFinals[`${colIdx}-${j}`])) {
-              foundInSH = true;
-              break;
-            }
-          }
-          if (!foundInLH && !foundInSH) {
+          if (!isCatInSpecialtyCHFinal(input, colIdx, cat)) {
             errors[errorKey] = `${cat} needs to be assigned to either LH or SH CH final.`;
           }
         }
@@ -1090,26 +1063,9 @@ export function validateChampionshipTab(input: ChampionshipValidationInput, maxC
     }
   }
 
-  // Assignment reminder for Best AB CH (champions section):
-  for (let colIdx = 0; colIdx < input.columns.length; colIdx++) {
-    const numPositions = getFinalsPositionsForRingType(input, input.columns[colIdx].specialty);
-    for (let pos = 0; pos < numPositions; pos++) {
-      const errorKey = `champions-${colIdx}-${pos}`;
-      if (errors[errorKey]) continue;
-      const cat = (input.championsFinals && input.championsFinals[`${colIdx}-${pos}`]) ? input.championsFinals[`${colIdx}-${pos}`].trim() : '';
-      if (!cat || isVoidInput(cat)) continue;
-      let foundInLH = false, foundInSH = false;
-      const lhFinals = input.lhChampionsFinals || {};
-      const shFinals = input.shChampionsFinals || {};
-      for (let i = 0; i < numPositions; i++) {
-        if (lhFinals[`${colIdx}-${i}`] && lhFinals[`${colIdx}-${i}`].trim() === cat && !isVoidInput(lhFinals[`${colIdx}-${i}`])) foundInLH = true;
-        if (shFinals[`${colIdx}-${i}`] && shFinals[`${colIdx}-${i}`].trim() === cat && !isVoidInput(shFinals[`${colIdx}-${i}`])) foundInSH = true;
-      }
-      if (!foundInLH && !foundInSH) {
-        errors[errorKey] = `${cat} needs to be assigned to either LH or SH CH final.`;
-      }
-    }
-  }
+  // (Best AB CH assignment reminder is handled in a single place — the section loop above,
+  // via isCatInSpecialtyCHFinal. Former duplicate second-pass and validateColumnRelationships
+  // copies were removed; proven redundant by equivalence testing.)
 
   // Validate column relationships (including validateBestHairCHWithFiller logic)
   for (let colIdx = 0; colIdx < input.columns.length; colIdx++) {
@@ -1174,10 +1130,13 @@ export function validateBestHairCHWithFiller(input: ChampionshipValidationInput,
   const errors: { [key: string]: string } = {};
   const seen = new Set<string>();
   
-  // Build set of AB CH cats for this section
+  // Build set of AB CH cats (from the sibling AB column for SSP specialty columns; own column otherwise)
+  const abColIdx = getAbChSourceColIdx(input, columnIndex);
+  const abColumn = input.columns[abColIdx];
+  const abPositions = abColumn ? (getChampionshipCountForRingType(input, abColumn.specialty) >= 85 ? 5 : 3) : numPositions;
   const abCHSet = new Set<string>([]);
-  for (let i = 0; i < numPositions; i++) {
-    const abCat = input.championsFinals[`${columnIndex}-${i}`];
+  for (let i = 0; i < abPositions; i++) {
+    const abCat = input.championsFinals[`${abColIdx}-${i}`];
     if (abCat && abCat.trim() && !isVoidInput(abCat)) abCHSet.add(abCat.trim());
   }
   
@@ -1914,10 +1873,12 @@ export function validateSuperSpecialtyCrossColumn(input: ChampionshipValidationI
     const orderErrors = validateOrderPreservationCH(input, lhColIdx, shColIdx, abColIdx, { ...allExistingErrors, ...errors });
     Object.assign(errors, orderErrors);
     
-    // 4. Specialty Finals Consistency Validation (respect existing errors)
-    const finalsErrors = validateSpecialtyFinalsConsistencyCH(input, lhColIdx, shColIdx, abColIdx, { ...allExistingErrors, ...errors });
-    Object.assign(errors, finalsErrors);
-    
+    // 4. (Specialty Finals Consistency removed: it compared the specialty finals to the AB column's
+    //     own LH/SH sub-sections, which are empty during live entry (false positives) and an exact
+    //     copy on import (trivially passes) — so it could never catch a real error. The genuine
+    //     "AB CH cats must come from a specialty" rule is enforced by the assignment reminder +
+    //     title/priority/order validators.)
+
     // 5. Cross-Column Duplicate Prevention Validation (respect existing errors)
     const duplicateErrors = validateCrossColumnDuplicatesCH(input, lhColIdx, shColIdx, abColIdx, { ...allExistingErrors, ...errors });
     Object.assign(errors, duplicateErrors);
@@ -2340,104 +2301,10 @@ function checkOrderPreservationInAllbreedCH(
   }
 }
 
-/**
- * Specialty Finals Consistency Validation for Championship - Finals sections only
- * Rule: LH/SH finals consistency with AB column finals
- */
-function validateSpecialtyFinalsConsistencyCH(
-  input: ChampionshipValidationInput,
-  longhairColIdx: number,
-  shorthairColIdx: number,
-  allbreedColIdx: number,
-  allExistingErrors: { [key: string]: string } = {}
-): { [key: string]: string } {
-  const errors: { [key: string]: string } = {};
-  
-  // Validate Longhair finals consistency (LH CH section to LH CH section)
-  validateHairLengthFinalsConsistencyCH(input, longhairColIdx, allbreedColIdx, 'Longhair', 'lhChampionsFinals', errors, allExistingErrors);
-  
-  // Validate Shorthair finals consistency (SH CH section to SH CH section)
-  validateHairLengthFinalsConsistencyCH(input, shorthairColIdx, allbreedColIdx, 'Shorthair', 'shChampionsFinals', errors, allExistingErrors);
-  
-  return errors;
-}
-
-/**
- * Validates finals consistency for a specific hair length
- */
-function validateHairLengthFinalsConsistencyCH(
-  input: ChampionshipValidationInput,
-  specialtyColIdx: number,
-  allbreedColIdx: number,
-  hairLength: string,
-  finalsSection: 'lhChampionsFinals' | 'shChampionsFinals',
-  errors: { [key: string]: string },
-  allExistingErrors: { [key: string]: string } = {}
-): void {
-  // Get correct position counts for each column individually (SSP support)
-  const specialtyColumn = input.columns[specialtyColIdx];
-  const allbreedColumn = input.columns[allbreedColIdx];
-  const specialtyPositions = getFinalsPositionsForRingType(input, specialtyColumn.specialty);
-  const allbreedPositions = getFinalsPositionsForRingType(input, allbreedColumn.specialty);
-
-  // Check up to the maximum positions that either column could have
-  const maxPositions = Math.max(specialtyPositions, allbreedPositions);
-
-  for (let pos = 0; pos < maxPositions; pos++) {
-    const specialtyKey = `${specialtyColIdx}-${pos}`;
-    const allbreedKey = `${allbreedColIdx}-${pos}`;
-
-    const specialtyValue = (input as any)[finalsSection][specialtyKey];
-    const allbreedValue = (input as any)[finalsSection][allbreedKey];
-
-    // Determine if each column has this position based on individual breakoffs
-    const specialtyHasPosition = pos < specialtyPositions;
-    const allbreedHasPosition = pos < allbreedPositions;
-
-    // Only validate positions that exist in both columns OR create errors for mismatched expectations
-    if (specialtyHasPosition && allbreedHasPosition) {
-      // Both columns have this position - validate consistency
-      if (specialtyValue !== allbreedValue) {
-        if (specialtyValue && !allbreedValue) {
-          // Specialty has value but allbreed doesn't
-          const sectionName = finalsSection === 'lhChampionsFinals' ? 'lhChampions' : 'shChampions';
-          const errorKey = `${sectionName}-${allbreedColIdx}-${pos}`;
-          // Respect duplicate error precedence - only set if no existing error
-          if (!allExistingErrors[errorKey] && !errors[errorKey]) {
-            errors[errorKey] = `Finals inconsistency: ${hairLength} specialty has ${specialtyValue} but Allbreed column is missing this cat for position ${pos + 1}`;
-          }
-        } else if (!specialtyValue && allbreedValue) {
-          // Allbreed has value but specialty doesn't
-          const sectionName = finalsSection === 'lhChampionsFinals' ? 'lhChampions' : 'shChampions';
-          const errorKey = `${sectionName}-${allbreedColIdx}-${pos}`;
-          // Respect duplicate error precedence - only set if no existing error
-          if (!allExistingErrors[errorKey] && !errors[errorKey]) {
-            errors[errorKey] = `Finals inconsistency: Allbreed column has ${allbreedValue} but ${hairLength} specialty is missing this cat for position ${pos + 1}`;
-          }
-        } else if (specialtyValue && allbreedValue && specialtyValue !== allbreedValue) {
-          // Both have values but they're different
-          const sectionName = finalsSection === 'lhChampionsFinals' ? 'lhChampions' : 'shChampions';
-          const errorKey = `${sectionName}-${allbreedColIdx}-${pos}`;
-          // Respect duplicate error precedence - only set if no existing error
-          if (!allExistingErrors[errorKey] && !errors[errorKey]) {
-            errors[errorKey] = `Finals inconsistency: ${hairLength} specialty has ${specialtyValue} but Allbreed column has ${allbreedValue} for position ${pos + 1}`;
-          }
-        }
-      }
-    } else if (!specialtyHasPosition && allbreedHasPosition && allbreedValue) {
-      // AB has position but specialty doesn't - this is now VALID for SSP with different breakoffs
-      // Skip validation (no error) - this handles the case where AB gets top 5 but LH/SH only gets top 3
-    } else if (specialtyHasPosition && !allbreedHasPosition && specialtyValue) {
-      // Specialty has position but AB doesn't - still an error (shouldn't happen in practice)
-      const sectionName = finalsSection === 'lhChampionsFinals' ? 'lhChampions' : 'shChampions';
-      const errorKey = `${sectionName}-${allbreedColIdx}-${pos}`;
-      // Respect duplicate error precedence - only set if no existing error
-      if (!allExistingErrors[errorKey] && !errors[errorKey]) {
-        errors[errorKey] = `Finals inconsistency: ${hairLength} specialty has ${specialtyValue} but Allbreed column is missing this position ${pos + 1}`;
-      }
-    }
-  }
-}
+// (validateSpecialtyFinalsConsistencyCH / validateHairLengthFinalsConsistencyCH removed — see
+//  note in validateSuperSpecialtyCrossColumn. They compared specialty finals to the AB column's
+//  own LH/SH sub-sections, which are empty during live entry and an exact copy on import, so they
+//  could only emit false positives (live) or trivially pass (import).)
 
 /**
  * Finds Super Specialty rings (3 columns: LH + SH + AB with same judge ID)

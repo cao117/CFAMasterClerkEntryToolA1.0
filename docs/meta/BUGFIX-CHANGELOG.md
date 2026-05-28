@@ -1,5 +1,17 @@
 # Bugfix Changelog
 
+## [2026-05-27] SSP cross-column validation: false-positive fix + gap closure (MCE-3 + MCE-4)
+- **Issue (MCE-3)**: On a freshly-entered Super Specialty ring, the AB column showed false "needs to be assigned to either LH or SH CH final" reminders even when the cats were placed in the LH/SH specialty columns. Present on production.
+- **Issue (MCE-4)**: The "LH/SH CH must be a subsequence of AB CH" order rule and the filler-priority rule were silently unenforced for SSP rings.
+- **Root Cause**: Validators built for the single-column Allbreed ring read the AB column's own LH/SH finals sub-sections, which are empty during live entry (populated only on import). For SSP, LH/SH bests live in separate specialty columns, so these checks false-fired (reminder) or no-opped (order/filler).
+- **Files Modified**: `src/validation/championshipValidation.ts`, `src/validation/premiershipValidation.ts`
+- **Code Changes**:
+  - Added SSP-aware helpers `isCatInSpecialtyCHFinal`/`isCatInSpecialtyPRFinal` (reminder reads specialty columns) and `getAbChSourceColIdx`/`getAbPrSourceColIdx` (order/filler read the AB list from the sibling AB column).
+  - Consolidated Championship's 3 redundant reminder sites to 1; removed dead `validateLHSHWithBestCHAndGetFirstError`.
+  - Removed vacuous `validateSpecialtyFinalsConsistency*` (CH + PR) — compared specialty finals to the empty AB sub-section.
+- **Impact**: SSP rings entered live no longer show false "assign to LH/SH" reminders; SSP finals order/filler are now enforced cross-column. Allbreed/OCP/standalone behavior unchanged.
+- **Testing**: 65 jest tests pass (full CH rule matrix + SSP suite with live≡import equivalence); `vite build` clean; lint below baseline.
+
 ## [2026-02-04] TECHNICAL FIX: Kitten_Final OCP Ring Column Generation
 - **Issue**: Kitten_Final worksheet incorrectly included OCP column data for OCP Ring judges when kittens don't compete in OCP rings
 - **Root Cause**: `transformTabData()` and `extractFinalAwardsFromTab()` functions created both Allbreed and OCP columns for OCP Ring judges regardless of tab type
