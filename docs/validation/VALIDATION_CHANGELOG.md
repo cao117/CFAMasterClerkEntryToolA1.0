@@ -2,6 +2,15 @@
 
 This changelog records all changes, additions, and deletions to validation rules for each tab in the CFA Master Clerk Entry Tool. Each entry includes the date, affected tab, summary of the change, and rationale/context.
 
+### [2026-05-27] SSP hair-length exclusivity — consolidated cross-column duplicate rule (MCE-6)
+- **Tabs:** Championship, Premiership (Super Specialty cross-column)
+- **Problem:** the LH↔SH duplicate check only compared *matching* sections — show-awards-vs-show-awards (rule #26) and finals-vs-finals (rule #27, MCE-5). A cat that was **Best LH CH/PR** but also sat in the **SH show awards** (or the mirror: in LH show awards and Best SH) was never flagged, even though a cat is physically one hair length. (Reported from a Premiership screenshot: cats 1 and 2 were Best LH Premier and also in the SH Top-10/15, with no duplicate error.)
+- **Fix:** replaced the two section-specific functions with a single consolidated rule per tab — `validateSSPHairLengthExclusivityCH` / `validateSSPHairLengthExclusivityPR`. It builds the LH specialty column's full cat set (Top 10/15 show awards ∪ Best LH finals) and the SH column's full cat set, and flags **every** cell — show award and finals, in both columns — of any cat in the intersection. Covers all four pairings (show∩show, finals∩finals, and the two cross pairings that were missed). The **AB column does not participate** (Best AB is drawn from the specialty winners, so a cat legitimately appears in AB + its own specialty). Voids ignored; runs late, respecting higher-priority errors.
+- **Removed:** `validateCrossColumnDuplicatesCH`/`validateCrossColumnDuplicates` (PR) and `validateSpecialtyFinalsCrossColumnDuplicatesCH/PR` (the MCE-5 functions) — folded into the consolidated rule.
+- **Scope:** CH + PR (the tabs with finals sections). **Kitten unchanged** — kittens have no CH/PR finals, so its show-vs-show check is already complete.
+- **Files:** `src/validation/championshipValidation.ts`, `src/validation/premiershipValidation.ts`
+- **Tests:** `src/validation/sspReminder.test.ts` MCE-6 blocks cover all four pairings + AB-excluded negative + different-cats negative + same-column regression guard (CH + PR). Verified by simulating the old section-matched behavior that the two cross-pairing tests **fail** without the consolidation. 82 tests pass; `vite build` clean; lint at/below baseline.
+
 ### [2026-05-27] SSP finals order (PR) + cross-column finals duplicate + message unification (MCE-4b + MCE-5)
 - **Tabs:** Championship, Premiership (finals validation)
 - **MCE-4b — Premiership finals AB-subsequence order was still unenforced for SSP (reopen of MCE-4):**

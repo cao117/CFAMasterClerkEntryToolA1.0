@@ -1293,60 +1293,67 @@ export function validateSuperSpecialtyCrossColumn(input: PremiershipValidationIn
     //     finals to the AB column's own LH/SH sub-sections, which are empty during live entry
     //     (false positives) and an exact copy on import (trivially passes).)
 
-    // 5. Cross-Column Duplicate Prevention Validation (show awards) (pass existing errors to respect validation precedence)
-    const duplicateErrors = validateCrossColumnDuplicates(input, longhairColIdx, shorthairColIdx, allbreedColIdx, { ...allExistingErrors, ...errors });
-    Object.assign(errors, duplicateErrors);
-
-    // 6. Cross-Column Finals Duplicate Prevention (Best LH PR vs Best SH PR) (respect existing errors)
-    //    The same-column "cannot be both longhair and shorthair" finals check no-ops for SSP
-    //    (LH PR final and SH PR final live in different columns), so re-run it across the split columns.
-    const finalsDupErrors = validateSpecialtyFinalsCrossColumnDuplicatesPR(input, longhairColIdx, shorthairColIdx, { ...allExistingErrors, ...errors });
-    Object.assign(errors, finalsDupErrors);
+    // 5. SSP hair-length exclusivity (consolidated cross-column duplicate). Replaces the former
+    //    show-vs-show and finals-vs-finals checks, which missed the cross pairings (e.g. a cat that
+    //    is Best LH PR but also sits in the SH show awards). A cat is one hair length, so within an
+    //    SSP ring its number may appear in the LH OR the SH specialty column, never both.
+    const hairExclusivityErrors = validateSSPHairLengthExclusivityPR(input, longhairColIdx, shorthairColIdx, { ...allExistingErrors, ...errors });
+    Object.assign(errors, hairExclusivityErrors);
   }
 
   return errors;
 }
 
 /**
- * Cross-Column Finals Duplicate Prevention for Premiership Super Specialty rings.
- * Mirrors validateSpecialtyFinalsCrossColumnDuplicatesCH: in an Allbreed (single-column) ring the
- * per-section finals loop catches a cat placed in both Best LH PR and Best SH PR because both
- * sections share the column index; for a Super Specialty ring those finals live in different
- * columns, so that check never compares them. This re-runs the cross-section duplicate check
- * across the split LH/SH specialty columns. A cat is either longhair or shorthair.
+ * SSP hair-length exclusivity (consolidated cross-column duplicate rule) for Premiership.
+ * Mirrors validateSSPHairLengthExclusivityCH. A cat is one hair length, so within a Super Specialty
+ * ring its number may appear in the LH OR the SH specialty column, never both — across the Top 10/15
+ * show awards AND the Best LH/SH PR finals. The AB column does not participate (Best AB PR is drawn
+ * from the specialty winners). Flags every cell (show award and finals, both columns) where a
+ * duplicated cat appears. Replaces the former section-specific checks that compared only matching
+ * sections and missed the cross pairings (LH finals vs SH show awards, and the mirror).
  */
-function validateSpecialtyFinalsCrossColumnDuplicatesPR(
+function validateSSPHairLengthExclusivityPR(
   input: PremiershipValidationInput,
   longhairColIdx: number,
   shorthairColIdx: number,
   allExistingErrors: { [key: string]: string } = {}
 ): { [key: string]: string } {
   const errors: { [key: string]: string } = {};
-  const lhFinals = input.lhPremiersFinals || {};
-  const shFinals = input.shPremiersFinals || {};
-  const lhN = input.columns[longhairColIdx] ? getFinalsPositionsForRingType(input, input.columns[longhairColIdx].specialty) : 3;
-  const shN = input.columns[shorthairColIdx] ? getFinalsPositionsForRingType(input, input.columns[shorthairColIdx].specialty) : 3;
 
-  // Map each non-void Best LH PR cat -> its position in the LH column.
-  const lhCatPos: { [cat: string]: number } = {};
-  for (let pos = 0; pos < lhN; pos++) {
-    const value = lhFinals[`${longhairColIdx}-${pos}`];
-    if (value && value.trim() && !isVoidInput(value)) lhCatPos[value.trim()] = pos;
-  }
-
-  // Flag any Best SH PR cat that also appears in Best LH PR (mark both cells, respecting precedence).
-  for (let pos = 0; pos < shN; pos++) {
-    const value = shFinals[`${shorthairColIdx}-${pos}`];
-    if (!value || !value.trim() || isVoidInput(value)) continue;
-    const cat = value.trim();
-    if (lhCatPos[cat] === undefined) continue;
-    const shKey = `shPremiersFinals-${shorthairColIdx}-${pos}`;
-    const lhKey = `lhPremiersFinals-${longhairColIdx}-${lhCatPos[cat]}`;
-    if (!allExistingErrors[shKey] && !errors[shKey]) {
-      errors[shKey] = `Duplicate: Cat #${cat} cannot be both longhair and shorthair`;
+  // Collect every cell error-key in a specialty column, keyed by the cat number placed there
+  // (across the Top 10/15 show awards and the Best LH/SH PR finals). Voids are ignored.
+  const collect = (colIdx: number, finals: { [k: string]: string }, finalsPrefix: string): Map<string, string[]> => {
+    const map = new Map<string, string[]>();
+    const add = (raw: string, key: string) => {
+      const cat = raw.trim();
+      if (!cat || isVoidInput(cat)) return;
+      const arr = map.get(cat);
+      if (arr) arr.push(key); else map.set(cat, [key]);
+    };
+    for (let pos = 0; pos < 15; pos++) {                       // show awards (bare cell key)
+      const cell = input.showAwards[`${colIdx}-${pos}`];
+      if (cell && cell.catNumber) add(cell.catNumber, `${colIdx}-${pos}`);
     }
-    if (!allExistingErrors[lhKey] && !errors[lhKey]) {
-      errors[lhKey] = `Duplicate: Cat #${cat} cannot be both longhair and shorthair`;
+    const col = input.columns[colIdx];
+    const nFinals = col ? getFinalsPositionsForRingType(input, col.specialty) : 3;
+    for (let pos = 0; pos < nFinals; pos++) {                  // Best LH/SH PR finals (prefixed key)
+      const v = finals[`${colIdx}-${pos}`];
+      if (v) add(v, `${finalsPrefix}-${colIdx}-${pos}`);
+    }
+    return map;
+  };
+
+  const lhCells = collect(longhairColIdx, input.lhPremiersFinals || {}, 'lhPremiersFinals');
+  const shCells = collect(shorthairColIdx, input.shPremiersFinals || {}, 'shPremiersFinals');
+
+  // Any cat present in BOTH columns is a hair-length contradiction → flag every one of its cells.
+  for (const [cat, lhKeys] of lhCells) {
+    const shKeys = shCells.get(cat);
+    if (!shKeys) continue;
+    const msg = `Duplicate: Cat #${cat} cannot be both longhair and shorthair`;
+    for (const key of [...lhKeys, ...shKeys]) {
+      if (!allExistingErrors[key] && !errors[key]) errors[key] = msg;
     }
   }
   return errors;
@@ -1726,64 +1733,9 @@ function checkOrderPreservationInAllbreed(
 //  validateSuperSpecialtyCrossColumn. They compared specialty finals to the AB column's own LH/SH
 //  sub-sections, which are empty during live entry and an exact copy on import.)
 
-/**
- * Validates that a cat number cannot appear in both Longhair and Shorthair columns
- * Rule: A cat number cannot be both longhair and shorthair in the same Super Specialty ring
- */
-function validateCrossColumnDuplicates(
-  input: PremiershipValidationInput,
-  longhairColIdx: number,
-  shorthairColIdx: number,
-  allbreedColIdx: number,
-  allExistingErrors: { [key: string]: string } = {}
-): { [key: string]: string } {
-  const errors: { [key: string]: string } = {};
-  
-  console.log('validateCrossColumnDuplicates (PR) called for ring:', { longhairColIdx, shorthairColIdx, allbreedColIdx });
-  
-  // Collect cats from Longhair column
-  const lhCats: Set<string> = new Set();
-  for (let rowIdx = 0; rowIdx < 15; rowIdx++) {
-    const key = `${longhairColIdx}-${rowIdx}`;
-    const cell = input.showAwards[key];
-    if (cell && cell.catNumber && !isVoidInput(cell.catNumber)) {
-      const catNumber = cell.catNumber.trim();
-      lhCats.add(catNumber);
-      console.log(`LH cat collected: ${catNumber} at position ${rowIdx}`);
-    }
-  }
-  
-  console.log('LH cats collected (PR):', Array.from(lhCats));
-  
-  // Check if any LH cats appear in SH column
-  for (let rowIdx = 0; rowIdx < 15; rowIdx++) {
-    const key = `${shorthairColIdx}-${rowIdx}`;
-    const cell = input.showAwards[key];
-    if (cell && cell.catNumber && !isVoidInput(cell.catNumber)) {
-      const catNumber = cell.catNumber.trim();
-      
-      if (lhCats.has(catNumber)) {
-        console.log(`Duplicate found (PR): Cat #${catNumber} appears in both LH and SH columns`);
-        
-        // Mark error in SH column
-        errors[key] = `Duplicate: Cat #${catNumber} cannot be both longhair and shorthair`;
-        
-        // Mark error in LH column (find the position)
-        for (let lhRowIdx = 0; lhRowIdx < 15; lhRowIdx++) {
-          const lhKey = `${longhairColIdx}-${lhRowIdx}`;
-          const lhCell = input.showAwards[lhKey];
-          if (lhCell && lhCell.catNumber && lhCell.catNumber.trim() === catNumber) {
-            errors[lhKey] = `Duplicate: Cat #${catNumber} cannot be both longhair and shorthair`;
-            break;
-          }
-        }
-      }
-    }
-  }
-  
-  console.log('Cross-column duplicate validation (PR) errors:', errors);
-  return errors;
-}
+// (validateCrossColumnDuplicates removed — folded into validateSSPHairLengthExclusivityPR, which
+//  checks the LH column's full cat set against the SH column's full cat set across show awards AND
+//  finals, covering the cross pairings the old show-awards-only check missed.)
 
 /**
  * Gets ordered PR cats from Show Awards for a column (for PR cats in Top 10/15)

@@ -1,5 +1,13 @@
 # Bugfix Changelog
 
+## [2026-05-27] SSP hair-length exclusivity — consolidated LH/SH cross-column duplicate (MCE-6)
+- **Issue**: A cat that was Best LH CH/PR but also placed in the SH Top-10/15 show awards (or the mirror) was not flagged as a duplicate. Reported from a Premiership screenshot — cats 1 and 2 were Best LH Premier and also sat in the SH show awards with no error.
+- **Root Cause**: the LH↔SH duplicate check only compared matching sections (show-vs-show via the old `validateCrossColumnDuplicates`, finals-vs-finals via the MCE-5 `validateSpecialtyFinalsCrossColumnDuplicates`). The two cross pairings (LH finals × SH show awards, and LH show awards × SH finals) were never checked.
+- **Files Modified**: `src/validation/championshipValidation.ts`, `src/validation/premiershipValidation.ts`
+- **Code Changes**: replaced both section-specific functions with one consolidated rule per tab (`validateSSPHairLengthExclusivityCH/PR`) that intersects the LH column's full cat set (show awards ∪ Best LH finals) with the SH column's full cat set and flags every cell of any shared cat. AB column excluded (Best AB is drawn from the specialties).
+- **Impact**: any cat recorded in both the LH and SH specialty columns of an SSP ring — in any section — is now flagged "cannot be both longhair and shorthair". Kitten unchanged (no finals → already complete).
+- **Testing**: MCE-6 test blocks cover all four pairings + negatives (CH + PR); verified the two cross-pairing tests fail under simulated old behavior. 82 jest tests pass; `vite build` clean; lint at/below baseline.
+
 ## [2026-05-27] SSP finals order (PR) + cross-column duplicate + message unification (MCE-4b + MCE-5)
 - **Issue (MCE-4b)**: For a Premiership SSP ring, the "Best LH/SH PR must follow Best AB PR order" rule never fired. Reported via a live case: LH PR `[1,2]`, Best AB PR `[2,1]` produced no order violation, while the equivalent Championship case did. MCE-4 had added the resolver but the PR call site gated the check behind `column.specialty === 'Allbreed'`, so it was unreachable for an SSP Longhair/Shorthair column. (Reopen of MCE-4 — the PR finals-order side was never actually closed; its test passed because a different rule emitted a matching "out of order" string.)
 - **Issue (MCE-5)**: A cat placed in both Best LH and Best SH finals of an SSP ring was not flagged (the same-column "cannot be both longhair and shorthair" check only compares within one column; SSP splits LH/SH across columns).

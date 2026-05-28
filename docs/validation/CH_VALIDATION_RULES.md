@@ -40,25 +40,24 @@ Per-cell precedence: range/duplicate → status → sequential → order → rem
 | 23 | SSP title consistency | `validateTitleConsistencyCH` | LH/SH/AB | Yes | SSP-aware ✓ |
 | 24 | SSP ranked-cats priority (show awards) | `validateRankedCatsPriorityCH` | LH/SH/AB show awards | Yes | SSP-aware ✓ |
 | 25 | SSP order preservation (show awards) | `validateOrderPreservationCH` | LH/SH/AB show awards | Yes | SSP-aware ✓ |
-| 26 | SSP cross-column duplicate (show awards) | `validateCrossColumnDuplicatesCH` | LH/SH show awards | Yes | SSP-aware ✓ |
-| 27 | SSP cross-column finals duplicate (Best LH vs Best SH) | `validateSpecialtyFinalsCrossColumnDuplicatesCH` | LH↔SH finals | Yes | **Added (MCE-5)** — closes #6 for SSP |
+| 26 | SSP hair-length exclusivity (LH column vs SH column, ALL sections) | `validateSSPHairLengthExclusivityCH` | LH↔SH show awards + finals | Yes | **Consolidated (MCE-6)** — replaces former show-vs-show + finals-vs-finals; intersects each column's full cat set, covering all four pairings (incl. LH-finals × SH-show). AB excluded. Closes #6. |
 | — | ~~SSP specialty finals consistency~~ | *(removed MCE-3)* | — | Yes | Removed — vacuous (empty live / copy on import) |
 
 > **Premiership note (MCE-4b):** the equivalent of rules #10/#17/#18 (LH/SH AB-subsequence order + filler) was unenforced for SSP in Premiership because the PR call site dispatched the LH/SH order check as an either/or on `column.specialty` (`Longhair/Shorthair` → top-15 only; `Allbreed` → AB-subsequence). Championship runs the AB-subsequence check **unconditionally** (additive). PR was made additive to match, so `validateBestHairPROrder` now runs for SSP specialty columns too.
 
 ## SSP impact summary
 - **Affected & fixed:** #10, #11, #17, #18 + the removed finals-consistency. (Premiership #17/#18 equivalents fixed in MCE-4b — additive dispatch.)
-- **Affected gap now closed (MCE-5):** #6 — finals cross-section duplicate enforced cross-column for SSP via rule #27.
+- **Affected gap now closed (MCE-5 → consolidated in MCE-6):** #6 — the LH↔SH duplicate check now intersects each specialty column's full cat set (show awards + finals) via the consolidated rule #26, covering finals-vs-finals and the cross pairings (e.g. Best LH × SH show awards).
 - **Run on SSP specialty columns but correct:** #15, #16, #19, Phase-1 show-awards rules.
 - **SSP cross-column suite (#23–26):** SSP-specific by design, show-awards-based, already correct.
 - **Not SSP-related:** #1–5, #7–9, #12–14 (per-cell/per-column/AB-internal); #20–22 (OCP-only).
 - **Root cause of the affected ones:** validators built for the single-column Allbreed ring read the AB column's own LH/SH sub-sections, empty during live entry. Fix: read LH/SH from the specialty columns and the AB list from the sibling AB column.
 
-## Regression coverage (`npm test`, ts-jest + jsdom — 74 tests)
+## Regression coverage (`npm test`, ts-jest + jsdom — 82 tests)
 | Test file | Covers | Count |
 |-----------|--------|-------|
 | `src/validation/chValidationMatrix.test.ts` | All 21 distinct CH rules, trigger + clean each | 21 |
-| `src/validation/sspReminder.test.ts` | SSP reminder + finals order/filler + cross-column finals duplicate (CH+PR), **cell-specific & rule-specific** assertions; coverage indexed by error-class × partition (subsequence / filler / valid × SSP-LH / SSP-SH / plain-Allbreed / standalone / 5-position); live≡import equivalence; multi-ring & mixed-ring isolation | 32 |
+| `src/validation/sspReminder.test.ts` | SSP reminder + finals order/filler + **hair-length exclusivity (MCE-6, all four LH↔SH pairings)** (CH+PR), **cell-specific & rule-specific** assertions; coverage indexed by error-class × partition (subsequence / filler / valid × SSP-LH / SSP-SH / plain-Allbreed / standalone / 5-position); live≡import equivalence; multi-ring & mixed-ring isolation | 40 |
 | `src/utils/ringTypeUtils.test.ts` | per-class resolver, `generateColumnsForTab`, `remapColumnKeyedData` | 12 |
 | `src/utils/sspRoundTrip.test.ts` | per-class SSP Excel export→import round-trip | 2 |
 

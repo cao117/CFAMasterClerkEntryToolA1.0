@@ -3,7 +3,7 @@ import { validateChampionshipTab, type ChampionshipValidationInput } from './cha
 import { validatePremiershipTab, type PremiershipValidationInput } from './premiershipValidation';
 
 /**
- * SSP cross-column validation coverage (MCE-3, MCE-4, MCE-4b, MCE-5).
+ * SSP cross-column validation coverage (MCE-3, MCE-4, MCE-4b, MCE-5, MCE-6).
  *
  * Super Specialty rings keep LH/SH bests in SEPARATE specialty columns; the AB column holds only
  * Best AB. Validators must read LH/SH from the specialty columns and the AB list from the sibling
@@ -185,27 +185,66 @@ describe('CH edge cases', () => {
   });
 });
 
-describe('CH — SSP cross-column finals duplicate (Best LH CH vs Best SH CH) (MCE-5)', () => {
-  test('same cat in Best LH CH and Best SH CH of an SSP ring -> duplicate on both finals cells', () => {
+const anyCrossDup = (e: Record<string, string>) => Object.values(e).filter(m => CROSS_DUP.test(m));
+
+describe('CH — SSP hair-length exclusivity: LH column vs SH column, ALL sections (MCE-6)', () => {
+  // Pairing 1: finals ∩ finals (formerly MCE-5)
+  test('finals∩finals: same cat is Best LH CH and Best SH CH -> flagged on both finals cells', () => {
     const e = validateChampionshipTab(ch({
       columns: SSP3(),
-      showAwards: { ...sa(0, ['11']), ...sa(1, ['11']), ...sa(2, ['11']) },
-      lhChampionsFinals: { '0-0': '11' }, shChampionsFinals: { '1-0': '11' }, championsFinals: { '2-0': '11' },
+      showAwards: { ...sa(0, ['11']), ...sa(1, ['11']) },
+      lhChampionsFinals: { '0-0': '11' }, shChampionsFinals: { '1-0': '11' },
     }), 450);
     expect(e['lhChampions-0-0']).toMatch(CROSS_DUP);
     expect(e['shChampions-1-0']).toMatch(CROSS_DUP);
   });
-  test('different cats in Best LH CH and Best SH CH -> no cross-column finals duplicate', () => {
+  // Pairing 2: LH finals ∩ SH show awards (the screenshot case — MISSED before MCE-6).
+  // The SH show-award cell is flagged ONLY by the consolidated rule (cat is not in LH show awards,
+  // so the old show-vs-show rule was silent; not in SH finals, so the old finals rule was silent).
+  test('LH-finals ∩ SH-show: Best LH CH cat sitting in SH show awards -> SH show-award cells flagged', () => {
+    const e = validateChampionshipTab(ch({
+      columns: SSP3(),
+      showAwards: { ...sa(0, ['11', '22', '33']), ...sa(1, ['44', '55', '66', '1', '2']) },
+      lhChampionsFinals: { '0-0': '1', '0-1': '2' },
+    }), 450);
+    expect(e['1-3']).toMatch(CROSS_DUP);   // cat 1 in SH show awards (col1 pos3)
+    expect(e['1-4']).toMatch(CROSS_DUP);   // cat 2 in SH show awards (col1 pos4)
+  });
+  // Pairing 3: LH show awards ∩ SH finals (mirror — MISSED before MCE-6).
+  test('LH-show ∩ SH-finals: Best SH CH cat sitting in LH show awards -> LH show-award cell flagged', () => {
+    const e = validateChampionshipTab(ch({
+      columns: SSP3(),
+      showAwards: { ...sa(0, ['44', '55', '7']), ...sa(1, ['11', '22', '33']) },
+      shChampionsFinals: { '1-0': '7' },
+    }), 450);
+    expect(e['0-2']).toMatch(CROSS_DUP);   // cat 7 in LH show awards (col0 pos2)
+  });
+  // Pairing 4: show ∩ show (formerly rule #26) still covered
+  test('show∩show: cat in both LH and SH show awards -> both show-award cells flagged', () => {
+    const e = validateChampionshipTab(ch({ columns: SSP3(), showAwards: { ...sa(0, ['9']), ...sa(1, ['9']) } }), 450);
+    expect(e['0-0']).toMatch(CROSS_DUP);
+    expect(e['1-0']).toMatch(CROSS_DUP);
+  });
+  // Negatives
+  test('different cats across LH and SH columns -> no exclusivity error', () => {
     const e = validateChampionshipTab(ch({
       columns: SSP3(),
       showAwards: { ...sa(0, ['11']), ...sa(1, ['12']), ...sa(2, ['11', '12']) },
       lhChampionsFinals: { '0-0': '11' }, shChampionsFinals: { '1-0': '12' }, championsFinals: { '2-0': '11', '2-1': '12' },
     }), 450);
-    expect(Object.entries(e).filter(([k, m]) => /^(lhChampions|shChampions)-/.test(k) && CROSS_DUP.test(m))).toEqual([]);
+    expect(anyCrossDup(e)).toEqual([]);
   });
-  test('plain Allbreed single-column LH/SH finals duplicate still caught (regression guard)', () => {
+  test('AB excluded: a cat in the LH column AND the AB column (Best AB drawn from LH) is NOT flagged', () => {
+    const e = validateChampionshipTab(ch({
+      columns: SSP3(),
+      showAwards: { ...sa(0, ['5']), ...sa(2, ['5']) },
+      lhChampionsFinals: { '0-0': '5' }, championsFinals: { '2-0': '5' },
+    }), 450);
+    expect(anyCrossDup(e)).toEqual([]);
+  });
+  test('plain Allbreed single-column LH/SH finals duplicate still caught (same-column rule, regression guard)', () => {
     const e = validateChampionshipTab(ch({ columns: [J(1, 'Allbreed')], showAwards: sa(0, ['11']), championsFinals: { '0-0': '11' }, lhChampionsFinals: { '0-0': '11' }, shChampionsFinals: { '0-0': '11' } }), 450);
-    expect(Object.values(e).some(m => CROSS_DUP.test(m))).toBe(true);
+    expect(anyCrossDup(e).length).toBeGreaterThan(0);
   });
 });
 
@@ -278,22 +317,53 @@ describe('PR finals order — AB-subsequence rule, per error-class & partition (
   });
 });
 
-describe('PR — SSP cross-column finals duplicate (Best LH PR vs Best SH PR) (MCE-5)', () => {
-  test('same cat in Best LH PR and Best SH PR of an SSP ring -> duplicate on both finals cells', () => {
+describe('PR — SSP hair-length exclusivity: LH column vs SH column, ALL sections (MCE-6)', () => {
+  test('finals∩finals: same cat is Best LH PR and Best SH PR -> flagged on both finals cells', () => {
     const e = validatePremiershipTab(pr({
       columns: SSP3(),
-      showAwards: { ...sa(0, ['11'], 'PR'), ...sa(1, ['11'], 'PR'), ...sa(2, ['11'], 'PR') },
-      lhPremiersFinals: { '0-0': '11' }, shPremiersFinals: { '1-0': '11' }, abPremiersFinals: { '2-0': '11' },
+      showAwards: { ...sa(0, ['11'], 'PR'), ...sa(1, ['11'], 'PR') },
+      lhPremiersFinals: { '0-0': '11' }, shPremiersFinals: { '1-0': '11' },
     }), 450);
     expect(e['lhPremiersFinals-0-0']).toMatch(CROSS_DUP);
     expect(e['shPremiersFinals-1-0']).toMatch(CROSS_DUP);
   });
-  test('different cats in Best LH PR and Best SH PR -> no cross-column finals duplicate', () => {
+  // The screenshot case: Best LH PR cat also in SH show awards. SH show-award cells flagged only by MCE-6.
+  test('LH-finals ∩ SH-show: Best LH PR cat sitting in SH show awards -> SH show-award cells flagged', () => {
+    const e = validatePremiershipTab(pr({
+      columns: SSP3(),
+      showAwards: { ...sa(0, ['11', '22', '33'], 'PR'), ...sa(1, ['44', '55', '66', '1', '2'], 'PR') },
+      lhPremiersFinals: { '0-0': '1', '0-1': '2' },
+    }), 450);
+    expect(e['1-3']).toMatch(CROSS_DUP);   // cat 1 in SH show awards
+    expect(e['1-4']).toMatch(CROSS_DUP);   // cat 2 in SH show awards
+  });
+  test('LH-show ∩ SH-finals: Best SH PR cat sitting in LH show awards -> LH show-award cell flagged', () => {
+    const e = validatePremiershipTab(pr({
+      columns: SSP3(),
+      showAwards: { ...sa(0, ['44', '55', '7'], 'PR'), ...sa(1, ['11', '22', '33'], 'PR') },
+      shPremiersFinals: { '1-0': '7' },
+    }), 450);
+    expect(e['0-2']).toMatch(CROSS_DUP);   // cat 7 in LH show awards
+  });
+  test('show∩show: cat in both LH and SH show awards -> both show-award cells flagged', () => {
+    const e = validatePremiershipTab(pr({ columns: SSP3(), showAwards: { ...sa(0, ['9'], 'PR'), ...sa(1, ['9'], 'PR') } }), 450);
+    expect(e['0-0']).toMatch(CROSS_DUP);
+    expect(e['1-0']).toMatch(CROSS_DUP);
+  });
+  test('different cats across LH and SH columns -> no exclusivity error', () => {
     const e = validatePremiershipTab(pr({
       columns: SSP3(),
       showAwards: { ...sa(0, ['11'], 'PR'), ...sa(1, ['12'], 'PR'), ...sa(2, ['11', '12'], 'PR') },
       lhPremiersFinals: { '0-0': '11' }, shPremiersFinals: { '1-0': '12' }, abPremiersFinals: { '2-0': '11', '2-1': '12' },
     }), 450);
-    expect(Object.entries(e).filter(([k, m]) => /^(lhPremiersFinals|shPremiersFinals)-/.test(k) && CROSS_DUP.test(m))).toEqual([]);
+    expect(anyCrossDup(e)).toEqual([]);
+  });
+  test('AB excluded: a cat in the LH column AND the AB column is NOT flagged', () => {
+    const e = validatePremiershipTab(pr({
+      columns: SSP3(),
+      showAwards: { ...sa(0, ['5'], 'PR'), ...sa(2, ['5'], 'PR') },
+      lhPremiersFinals: { '0-0': '5' }, abPremiersFinals: { '2-0': '5' },
+    }), 450);
+    expect(anyCrossDup(e)).toEqual([]);
   });
 });
