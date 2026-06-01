@@ -1,0 +1,51 @@
+name: 'Build Desktop App'
+
+on:
+  push:
+    tags: [ 'v*' ]  # Only triggers when a version tag is pushed (e.g. v0.4.0)
+
+jobs:
+  build-desktop:
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: 'macos-latest'    # builds a universal (Intel + Apple Silicon) .dmg/.app
+            args: '--target universal-apple-darwin'
+          - platform: 'windows-latest'  # builds .msi (WiX) + .exe (NSIS)
+            args: ''
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v6
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v6
+      with:
+        node-version: 'lts/*'
+        cache: 'npm'
+
+    - name: Setup Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        # macOS needs both arches for the universal binary; Windows uses the host msvc target.
+        targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Build Tauri app
+      uses: tauri-apps/tauri-action@v0
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tagName: 'v__VERSION__'
+        releaseName: 'Desktop Release v__VERSION__'
+        releaseBody: 'CFA Master Clerk Entry Tool desktop installers (macOS .dmg + Windows .msi/.exe). Unsigned build — on macOS, right-click the app and choose Open (or System Settings to Privacy and Security to Open Anyway); on Windows, click More info then Run anyway if SmartScreen appears.'
+        releaseDraft: false
+        prerelease: false
+        args: ${{ matrix.args }}
