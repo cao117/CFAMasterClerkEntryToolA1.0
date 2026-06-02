@@ -33,7 +33,6 @@ export class RecentSaveService {
     // 15 seconds in milliseconds (hardcoded as per requirements)
     const intervalMs = 15 * 1000;
     
-    console.log(`🔍 DEBUG: Recent-save timer started - every 15 seconds, enhanced detection: ${!!checkForData}`);
     
     // Set up recurring recent save - timer starts but no immediate save on page load
     // Recent save will only execute after the first 15-second interval is reached
@@ -79,7 +78,6 @@ export class RecentSaveService {
       // Use localStorage for both browser and Tauri - simplified single implementation
       await this.saveToBrowserStorage(formData);
       
-      console.log('✅ RECENT-SAVE COMPLETED: Recent Save');
       
     } catch (error) {
       console.error('❌ RECENT-SAVE FAILED:', error);

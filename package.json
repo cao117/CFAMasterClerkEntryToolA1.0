@@ -1,7 +1,7 @@
 {
   "name": "cfa_entry_tool_a1.0",
   "private": true,
-  "version": "0.4.1",
+  "version": "0.4.2",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -17,7 +17,6 @@
     "tauri:build:debug": "tauri build --debug"
   },
   "dependencies": {
-    "@faker-js/faker": "^9.8.0",
     "@tauri-apps/api": "^2.7.0",
     "@tauri-apps/plugin-dialog": "^2.3.2",
     "@tauri-apps/plugin-fs": "^2.4.1",
@@ -25,11 +24,10 @@
     "@types/xlsx": "^0.0.35",
     "lucide-react": "^0.536.0",
     "papaparse": "^5.5.3",
-    "puppeteer": "^24.36.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-sticky-el": "^2.1.1",
-    "xlsx": "^0.18.5"
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "mcpDependencies": {
     "@21st-dev/magic": "^0.1.0",
@@ -40,6 +38,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.29.0",
+    "@faker-js/faker": "^9.8.0",
     "@tauri-apps/cli": "^2.6.0",
     "@testing-library/jest-dom": "^6.7.0",
     "@testing-library/react": "^16.3.0",
@@ -59,6 +58,7 @@
     "jest": "^30.0.5",
     "jest-environment-jsdom": "^30.0.5",
     "postcss": "^8.5.6",
+    "puppeteer": "^24.36.1",
     "tailwindcss": "^3.4.0",
     "ts-jest": "^29.4.1",
     "typescript": "~5.8.3",

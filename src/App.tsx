@@ -151,10 +151,8 @@ function App() {
           numberOfSaves: parsedSettings.numberOfSaves ?? DEFAULT_SETTINGS.numberOfSaves,
           saveCycle: parsedSettings.saveCycle ?? DEFAULT_SETTINGS.saveCycle
         };
-        console.log('Settings loaded from localStorage during initialization:', mergedSettings);
         return mergedSettings;
       } else {
-        console.log('No saved settings found during initialization, using defaults');
         return DEFAULT_SETTINGS;
       }
     } catch (error) {
@@ -178,7 +176,6 @@ function App() {
     if (isInitialized) {
       try {
         localStorage.setItem('cfa_global_settings', JSON.stringify(globalSettings));
-        console.log('Settings saved to localStorage:', globalSettings);
       } catch (error) {
         console.error('Error saving settings to localStorage:', error);
       }
@@ -231,7 +228,6 @@ function App() {
         const result = parseExcelAndRestoreState(
           excelBuffer,
           (title, message) => {
-            console.log(`✅ Resume work Excel parsing success: ${title} - ${message}`);
           },
           (title, message) => {
             console.error(`❌ Resume work Excel parsing error: ${title} - ${message}`);
@@ -442,12 +438,10 @@ function App() {
         // Add any other critical initialization states
       };
 
-      console.log('🔍 Checking fully loaded conditions:', conditions);
 
       const allConditionsMet = Object.values(conditions).every(condition => condition === true);
       
       if (allConditionsMet) {
-        console.log('✅ Page fully loaded - ready for resume modal check');
         setIsFullyLoaded(true);
       }
     };
@@ -515,7 +509,6 @@ function App() {
       setJudges(restoredState.judges);
     });
     
-    console.log('🔍 RESTORATION: Championship counts after setShowData():', restoredState.general.championshipCounts);
       setChampionshipTabData(restoredState.championship);
       setPremiershipTabData(restoredState.premiership);
       setKittenTabData(restoredState.kitten);

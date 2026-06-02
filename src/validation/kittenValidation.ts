@@ -482,7 +482,6 @@ function validateCrossColumnDuplicates(
 ): { [key: string]: string } {
   const errors: { [key: string]: string } = {};
   
-  console.log('validateCrossColumnDuplicates (KT) called for ring:', { longhairColIdx, shorthairColIdx });
   
   // Collect cats from Longhair column
   const lhCats: Set<string> = new Set();
@@ -492,11 +491,9 @@ function validateCrossColumnDuplicates(
     if (cell && cell.catNumber && !isVoidInput(cell.catNumber)) {
       const catNumber = cell.catNumber.trim();
       lhCats.add(catNumber);
-      console.log(`LH cat collected (KT): ${catNumber} at position ${rowIdx}`);
     }
   }
   
-  console.log('LH cats collected (KT):', Array.from(lhCats));
   
   // Check if any LH cats appear in SH column
   for (let rowIdx = 0; rowIdx < 15; rowIdx++) {
@@ -506,7 +503,6 @@ function validateCrossColumnDuplicates(
       const catNumber = cell.catNumber.trim();
       
       if (lhCats.has(catNumber)) {
-        console.log(`Duplicate found (KT): Cat #${catNumber} appears in both LH and SH columns`);
         
         // Mark error in SH column
         errors[key] = `Duplicate: Cat #${catNumber} cannot be both longhair and shorthair`;
@@ -524,6 +520,5 @@ function validateCrossColumnDuplicates(
     }
   }
   
-  console.log('Cross-column duplicate validation (KT) errors:', errors);
   return errors;
 } 

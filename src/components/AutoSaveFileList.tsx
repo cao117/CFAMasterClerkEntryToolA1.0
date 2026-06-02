@@ -119,7 +119,6 @@ export function AutoSaveFileList({
         throw new Error('Auto-save file not found in localStorage');
       }
       
-      console.log('Auto-save data retrieved from localStorage:', file.key);
       
       let parsed;
       try {
@@ -132,13 +131,11 @@ export function AutoSaveFileList({
         throw new Error('No Excel data found in auto-save entry');
       }
       
-      console.log('Auto-save entry parsed successfully, Excel data length:', parsed.excelData.length);
       
       // Convert base64 back to Excel buffer
       let excelBuffer;
       try {
         excelBuffer = base64ToBuffer(parsed.excelData);
-        console.log('Base64 to buffer conversion successful, buffer size:', excelBuffer.byteLength);
       } catch (conversionError) {
         throw new Error(`Failed to convert base64 to buffer: ${conversionError}`);
       }
@@ -150,7 +147,6 @@ export function AutoSaveFileList({
         result = parseExcelAndRestoreState(
           excelBuffer, 
           (title, message) => {
-            console.log(`✅ Excel parsing success: ${title} - ${message}`);
           }, // Success callback
           (title, message) => {
             console.error(`❌ Excel parsing error: ${title} - ${message}`);
@@ -166,7 +162,6 @@ export function AutoSaveFileList({
       }
       
       if (result) {
-        console.log('✅ Excel parsing successful, calling onRestore with result');
         onRestore(result);
         onClose();
       } else {

@@ -12,9 +12,7 @@ export const TitleBar: React.FC = () => {
   const handleMinimize = async () => {
     try {
       const appWindow = getCurrentWindow();
-      console.log('🔍 Attempting to minimize window...');
       await appWindow.minimize();
-      console.log('✅ Window minimized successfully');
     } catch (error) {
       console.error('❌ Failed to minimize:', error);
     }
@@ -23,9 +21,7 @@ export const TitleBar: React.FC = () => {
   const handleMaximize = async () => {
     try {
       const appWindow = getCurrentWindow();
-      console.log('🔍 Attempting to toggle maximize window...');
       await appWindow.toggleMaximize();
-      console.log('✅ Window maximize toggled successfully');
     } catch (error) {
       console.error('❌ Failed to maximize:', error);
     }
@@ -34,9 +30,7 @@ export const TitleBar: React.FC = () => {
   const handleClose = async () => {
     try {
       const appWindow = getCurrentWindow();
-      console.log('🔍 Attempting to close window...');
       await appWindow.close();
-      console.log('✅ Window closed successfully');
     } catch (error) {
       console.error('❌ Failed to close:', error);
     }

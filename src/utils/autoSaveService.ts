@@ -28,7 +28,6 @@ export class AutoSaveService {
     // Convert frequency to milliseconds
     const intervalMs = frequencyMinutes * 60 * 1000;
     
-    console.log(`🔍 DEBUG: Auto-save timer started - ${numberOfFiles} files, every ${frequencyMinutes} minutes, enhanced detection: ${!!checkForData}`);
     
     // Set up recurring auto-save - timer starts but no immediate save on page load
     // Auto-save will only execute after the first save cycle interval is reached
@@ -69,7 +68,6 @@ export class AutoSaveService {
       // Use localStorage for both browser and Tauri - simplified single implementation
       await this.saveToBrowserStorage(formData, fileNumber);
       
-      console.log(`✅ AUTO-SAVE COMPLETED: autosave${fileNumber}`);
       
       // Trigger auto-save notification event for UI
       this.triggerAutoSaveNotification(fileNumber);
@@ -133,7 +131,6 @@ export class AutoSaveService {
       // Use localStorage for both browser and Tauri - simplified single implementation
       await this.saveToBrowserStorage(formData, fileNumber);
       
-      console.log(`✅ AUTO-SAVE COMPLETED: autosave${fileNumber}`);
       
       // Trigger auto-save notification event for UI
       this.triggerAutoSaveNotification(fileNumber);

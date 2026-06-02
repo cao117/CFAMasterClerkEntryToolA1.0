@@ -244,7 +244,6 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess, globalSett
         try {
           const autoSaveService = new AutoSaveService();
           await autoSaveService.cleanupExcessAutoSaveFiles(cappedValue);
-          console.log(`Cleaned up auto-save files: reduced from ${currentNumberOfSaves} to ${cappedValue}`);
         } catch (error) {
           console.error('Failed to cleanup excess auto-save files:', error);
         }
@@ -412,7 +411,6 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess, globalSett
 
   // Save settings
   const handleSaveSettings = () => {
-    console.log('Save Settings clicked');
     
     // Validate max_judges before saving
     if (!validateMaxJudgesBeforeSave()) {

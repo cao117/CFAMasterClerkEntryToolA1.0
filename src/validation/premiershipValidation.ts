@@ -520,8 +520,6 @@ export function validatePremiershipTab(input: PremiershipValidationInput, maxCat
   const errors: { [key: string]: string } = {};
   
   // Debug: Log the input columns to see what we're working with
-  console.log('Premiership validation - Input columns:', input.columns);
-  console.log('Premiership validation - Column specialties:', input.columns.map(col => ({ id: col.judge.id, specialty: col.specialty })));
   
   // Finals sections to validate
   const finalsSections = [
@@ -724,9 +722,7 @@ export function validatePremiershipTab(input: PremiershipValidationInput, maxCat
   }
 
   // Super Specialty cross-column validation (runs AFTER all existing validation)
-  console.log('About to call Super Specialty validation...');
   const superSpecialtyErrors = validateSuperSpecialtyCrossColumn(input, maxCats, errors);
-  console.log('Super Specialty validation completed, errors:', superSpecialtyErrors);
   Object.assign(errors, superSpecialtyErrors);
 
   // OCP Ring cross-column validation (runs AFTER all existing validation)
@@ -813,12 +809,6 @@ function findOCPRings(columns: { judge: Judge; specialty: string }[]): Array<{
         rings.push({
           allbreedColIdx: allbreed.colIdx,
           ocpColIdx: ocp.colIdx
-        });
-        console.log('OCP Ring found:', { 
-          allbreedColIdx: allbreed.colIdx, 
-          ocpColIdx: ocp.colIdx,
-          allbreedSpecialty: allbreed.specialty,
-          ocpSpecialty: ocp.specialty
         });
       }
     }
@@ -983,12 +973,10 @@ function validateOCPRankedCatsPriority(
   // Get ranked cats from Allbreed column (Show Awards + Finals)
   const rankedCats = getOCPRankedCatsFromColumn(input, allbreedColIdx);
   
-  console.log('Ranked cats validation (PR) - AB cats:', Array.from(rankedCats));
   
   // Check OCP column for filler cats appearing before ranked cats
   checkOCPRankedCatsPriorityInColumn(input, ocpColIdx, rankedCats, errors, titleErrors, allExistingErrors);
   
-  console.log('Ranked cats validation (PR) - Errors found:', errors);
   
   return errors;
 }
@@ -1003,18 +991,14 @@ function getOCPRankedCatsFromColumn(input: PremiershipValidationInput, colIdx: n
   
   // Collect from Show Awards (Only PR cats in top 10/15 for OCP validation)
   // GP cats are not eligible for OCP placement, so they should not be considered "ranked" for OCP
-  console.log(`Getting ranked cats from AB column ${colIdx}:`);
   Object.keys(input.showAwards).forEach(key => {
     const [col, row] = key.split('-').map(Number);
     if (col === colIdx && row < 10) { // Top 10 for OCP validation
       const cell = input.showAwards[key];
       if (cell && cell.catNumber && !isVoidInput(cell.catNumber)) {
-        console.log(`  Row ${row}: Cat #${cell.catNumber}, status: ${cell.status}`);
         if (cell.status === 'PR') { // Only PR cats are ranked for OCP, not GP
           rankedCats.add(cell.catNumber.trim());
-          console.log(`    Added ${cell.catNumber} as ranked cat (PR only)`);
         } else if (cell.status === 'GP') {
-          console.log(`    Skipped ${cell.catNumber} - GP cats not eligible for OCP`);
         }
       }
     }
@@ -1065,8 +1049,6 @@ function checkOCPRankedCatsPriorityInColumn(
   titleErrors: { [key: string]: string } = {},
   allExistingErrors: { [key: string]: string } = {}
 ): void {
-  console.log('Checking OCP ranked cats priority (PR) for column', colIdx);
-  console.log('All ranked cats (PR):', Array.from(rankedCats));
   
   // Collect all placed cats and separate into ranked/filler
   const placedCats: Array<{cat: string, position: number, isRanked: boolean}> = [];
@@ -1088,7 +1070,6 @@ function checkOCPRankedCatsPriorityInColumn(
         isRanked: isRanked
       });
       
-      console.log(`  Position ${row}: Cat ${cell.catNumber}, ranked: ${isRanked}`);
     }
   }
   
@@ -1096,8 +1077,6 @@ function checkOCPRankedCatsPriorityInColumn(
   const rankedCatsInOCP = placedCats.filter(cat => cat.isRanked);
   const fillerCats = placedCats.filter(cat => !cat.isRanked);
   
-  console.log('Ranked cats in OCP:', rankedCatsInOCP.map(c => c.cat));
-  console.log('Filler cats in OCP:', fillerCats.map(c => c.cat));
   
   for (const fillerCat of fillerCats) {
     // Find all ranked cats that should be placed but appear after this filler cat
@@ -1110,14 +1089,12 @@ function checkOCPRankedCatsPriorityInColumn(
       const key = `${colIdx}-${fillerCat.position}`;
       if (unplacedRankedCats.length === Array.from(rankedCats).length) {
         // If ALL ranked cats are unplaced, this filler violates the rule
-        console.log(`    Filler cat ${fillerCat.cat} at position ${fillerCat.position} violates rule - ranked cats ${unplacedRankedCats.join(', ')} should be placed first!`);
         // Respect duplicate error precedence - only set if no existing error
         if (!errors[key]) {
           errors[key] = `Filler cat placed before ranked cats: Cat #${fillerCat.cat} is not ranked in Allbreed column but appears in OCP before all ranked cats are placed (${unplacedRankedCats.join(', ')} not placed yet)`;
         }
       }
     } else {
-      console.log(`    Filler cat ${fillerCat.cat} at position ${fillerCat.position} is valid - all ranked cats placed before it`);
     }
   }
 }
@@ -1269,13 +1246,10 @@ export function validateSuperSpecialtyCrossColumn(input: PremiershipValidationIn
   const superSpecialtyRings = findSuperSpecialtyRings(input.columns);
   
   // Debug logging to see if Super Specialty rings are detected
-  console.log('Super Specialty validation - Input columns:', input.columns);
-  console.log('Super Specialty validation - Found rings:', superSpecialtyRings);
   
   for (const ringInfo of superSpecialtyRings) {
     const { longhairColIdx, shorthairColIdx, allbreedColIdx } = ringInfo;
     
-    console.log('Processing Super Specialty ring:', { longhairColIdx, shorthairColIdx, allbreedColIdx });
     
     // 1. Title/Award Consistency Validation (respect existing errors)
     const titleErrors = validateTitleConsistency(input, longhairColIdx, shorthairColIdx, allbreedColIdx, allExistingErrors, {});
@@ -1373,30 +1347,25 @@ function findSuperSpecialtyRings(columns: { judge: Judge; specialty: string }[])
     allbreedColIdx: number;
   }> = [];
   
-  console.log('findSuperSpecialtyRings (PR) called with columns:', columns);
   
   // Group columns by judge ID
   const columnsByJudge: { [judgeId: number]: Array<{ colIdx: number; specialty: string }> } = {};
   
   columns.forEach((col, colIdx) => {
-    console.log(`Column ${colIdx}:`, { judgeId: col.judge.id, specialty: col.specialty, judgeName: col.judge.name });
     if (!columnsByJudge[col.judge.id]) {
       columnsByJudge[col.judge.id] = [];
     }
     columnsByJudge[col.judge.id].push({ colIdx, specialty: col.specialty });
   });
   
-  console.log('Columns grouped by judge ID (PR):', columnsByJudge);
   
   // Find Super Specialty rings (3 columns with same judge ID)
   Object.entries(columnsByJudge).forEach(([judgeId, judgeColumns]) => {
-    console.log(`Checking judge ID ${judgeId} with ${judgeColumns.length} columns:`, judgeColumns);
     if (judgeColumns.length === 3) {
       const longhair = judgeColumns.find(col => col.specialty === 'Longhair');
       const shorthair = judgeColumns.find(col => col.specialty === 'Shorthair');
       const allbreed = judgeColumns.find(col => col.specialty === 'Allbreed');
       
-      console.log(`Judge ${judgeId} has 3 columns:`, { longhair, shorthair, allbreed });
       
       if (longhair && shorthair && allbreed) {
         rings.push({
@@ -1404,20 +1373,12 @@ function findSuperSpecialtyRings(columns: { judge: Judge; specialty: string }[])
           shorthairColIdx: shorthair.colIdx,
           allbreedColIdx: allbreed.colIdx
         });
-        console.log('Super Specialty ring found (PR):', { longhairColIdx: longhair.colIdx, shorthairColIdx: shorthair.colIdx, allbreedColIdx: allbreed.colIdx });
       } else {
-        console.log(`Judge ${judgeId} missing required specialties:`, { 
-          hasLonghair: !!longhair, 
-          hasShorthair: !!shorthair, 
-          hasAllbreed: !!allbreed 
-        });
       }
     } else {
-      console.log(`Judge ${judgeId} has ${judgeColumns.length} columns (not 3)`);
     }
   });
   
-  console.log('findSuperSpecialtyRings (PR) returning rings:', rings);
   return rings;
 }
 
@@ -1565,13 +1526,10 @@ function validateRankedCatsPriority(
   const longhairRankedCats = getRankedCatsFromColumn(input, longhairColIdx);
   const shorthairRankedCats = getRankedCatsFromColumn(input, shorthairColIdx);
   
-  console.log('Ranked cats validation - LH cats:', Array.from(longhairRankedCats));
-  console.log('Ranked cats validation - SH cats:', Array.from(shorthairRankedCats));
   
   // Check Allbreed column for violations
   checkRankedCatsPriorityInColumn(input, allbreedColIdx, longhairRankedCats, shorthairRankedCats, errors);
   
-  console.log('Ranked cats validation - Errors found:', errors);
   
   return errors;
 }
@@ -1606,28 +1564,21 @@ function checkRankedCatsPriorityInColumn(
 ): void {
   const allRankedCats = new Set(Array.from(longhairRankedCats).concat(Array.from(shorthairRankedCats)));
   
-  console.log('Checking ranked cats priority for column', colIdx);
-  console.log('All ranked cats:', Array.from(allRankedCats));
   
   // Check each position in the Allbreed column
-  console.log(`Checking Allbreed column ${colIdx} for cats:`);
   for (let rowIdx = 0; rowIdx < 15; rowIdx++) {
     const key = `${colIdx}-${rowIdx}`;
     const cell = input.showAwards[key];
     if (cell && cell.catNumber && !isVoidInput(cell.catNumber)) {
       const catNumber = cell.catNumber.trim();
-      console.log(`  Row ${rowIdx}: Cat #${catNumber}, is ranked: ${allRankedCats.has(catNumber)}`);
       
       // If this is a filler cat (not ranked in specialty columns)
       if (!allRankedCats.has(catNumber)) {
-        console.log(`  Found filler cat ${catNumber} at position ${rowIdx}`);
         
         // Check if there are any ranked cats that should be placed before this position
         // by looking at the ranked cats list and checking if any should come before this position
         const rankedCatsArray = Array.from(allRankedCats);
         if (rankedCatsArray.length > 0) {
-          console.log(`    There are ${rankedCatsArray.length} ranked cats that should be placed first: ${rankedCatsArray.join(', ')}`);
-          console.log(`    Filler cat ${catNumber} at position ${rowIdx} violates the rule - ranked cats should come first!`);
           errors[key] = `Filler cat placed before ranked cats: Cat #${catNumber} is not ranked in specialty columns but appears in Allbreed before ranked cats`;
         }
       }

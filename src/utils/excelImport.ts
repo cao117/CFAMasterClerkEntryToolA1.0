@@ -1101,7 +1101,6 @@ async function selectAndImportExcelFileInTauri(
       // Convert Excel buffer to data using existing logic
       const result = parseExcelAndRestoreState(fileContents, showSuccess, showError);
       
-      console.log('File loaded from:', selected);
       return result;
     }
     
