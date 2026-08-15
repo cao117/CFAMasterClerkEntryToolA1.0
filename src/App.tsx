@@ -26,6 +26,8 @@ import { useRecentWorkDetection } from './hooks/useRecentWorkDetection';
 import { handleSaveToExcel } from './utils/excelExport';
 import { handleRestoreFromExcel, parseExcelAndRestoreState } from './utils/excelImport';
 import { isTauriEnvironment } from './utils/platformDetection';
+import { SHORT_HAIR_BREEDS, LONG_HAIR_BREEDS } from './data/breedList';
+import { loadGlobalSettings, serializeSettingsForStorage, withCanonicalBreeds } from './utils/settingsLoader';
 import { generateColumnsForTab, remapColumnKeyedData, SSP_CLASS_DEFAULT, type ClassTab } from './utils/ringTypeUtils';
 import { APP_VERSION } from './version';
 
@@ -91,25 +93,8 @@ const DEFAULT_SETTINGS = {
     premiership: 50,
     household_pet: 50,
   },
-  short_hair_breeds: [
-    "ABYSSINIAN", "AMERICAN SH", "AMERICAN WH", "BALINESE", "BALINESE-JAVANESE",
-    "BENGAL", "BOMBAY", "BRITISH SH", "BURMESE", "BURMILLA - LH", "BURMILLA - SH",
-    "CHARTREUX", "COLORPOINT SH", "CORNISH REX", "DEVON REX", "EGYPTIAN MAU",
-    "EUROPEAN BURM", "HAVANA BROWN", "JAPANESE BOBTAIL - LH", "JAPANESE BOBTAIL - SH",
-    "KORAT", "LAPERM - LH", "LAPERM - SH", "LYKOI", "MANX - LH", "MANX - SH",
-    "OCICAT", "ORIENTAL - LH", "ORIENTAL - SH", "RUSSIAN BLUE", "SCOTTISH FOLD - LH",
-    "SCOTTISH FOLD - SH", "SCOTTISH STRAIGHT EAR - LH", "SCOTTISH STRAIGHT EAR - SH",
-    "SELKIRK REX - LH", "SELKIRK REX - SH", "SIAMESE", "SINGAPURA", "SOMALI",
-    "SPHYNX", "TONKINESE", "TOYBOB"
-  ],
-  long_hair_breeds: [
-    "AMERICAN BOBTAIL-LH", "AMERICAN BOBTAIL-SH", "AMERICAN CURL-LH", "AMERICAN CURL-SH",
-    "BIRMAN", "EXOTIC SOLID", "EXOTIC SILVER/GOLDEN", "EXOTIC SHADED/SMOKE",
-    "EXOTIC TABBY", "EXOTIC PARTI-COLOR", "EXOTIC CALICO/BI-COLOR", "EXOTIC POINTED",
-    "MAINE COON CAT", "NORWEGIAN FOREST CAT", "PERSIAN SOLID", "PERSIAN SILVER/GOLDEN",
-    "PERSIAN SHADED/SMOKE", "PERSIAN TABBY", "PERSIAN PARTI-COLOR", "PERSIAN CALICO/BI-COLOR",
-    "PERSIAN HIMALAYAN", "RAGAMUFFIN", "RAGDOLL", "SIBERIAN", "TURKISH ANGORA", "TURKISH VAN"
-  ],
+  short_hair_breeds: SHORT_HAIR_BREEDS,
+  long_hair_breeds: LONG_HAIR_BREEDS,
   numberOfSaves: 3, // Default auto-save file rotation count (1-10 range)
   saveCycle: 5 // Default auto-save frequency in minutes (1-60 range)
 };
@@ -132,34 +117,10 @@ function App() {
   const [isAppReady, setIsAppReady] = useState(true);
   
   // Global settings state with localStorage persistence
-  const [globalSettings, setGlobalSettings] = useState(() => {
-    // Load settings from localStorage synchronously during initialization
-    try {
-      const savedSettings = localStorage.getItem('cfa_global_settings');
-      if (savedSettings) {
-        const parsedSettings = JSON.parse(savedSettings);
-        // Merge with defaults to ensure all required fields exist
-        const mergedSettings = {
-          ...DEFAULT_SETTINGS,
-          ...parsedSettings,
-          // Ensure nested objects are properly merged
-          placement_thresholds: {
-            ...DEFAULT_SETTINGS.placement_thresholds,
-            ...parsedSettings.placement_thresholds
-          },
-          // Ensure auto-save settings have defaults if not present
-          numberOfSaves: parsedSettings.numberOfSaves ?? DEFAULT_SETTINGS.numberOfSaves,
-          saveCycle: parsedSettings.saveCycle ?? DEFAULT_SETTINGS.saveCycle
-        };
-        return mergedSettings;
-      } else {
-        return DEFAULT_SETTINGS;
-      }
-    } catch (error) {
-      console.error('Error loading settings from localStorage during initialization:', error);
-      return DEFAULT_SETTINGS;
-    }
-  });
+  const [globalSettings, setGlobalSettings] = useState(() =>
+    // Breed lists always come from canonical season data, never from storage
+    loadGlobalSettings(localStorage.getItem('cfa_global_settings'), DEFAULT_SETTINGS)
+  );
 
   // Save settings to localStorage whenever they change (but not during initial load)
   const [isInitialized, setIsInitialized] = useState(false);
@@ -175,7 +136,8 @@ function App() {
     // Only save to localStorage if we're past the initial load
     if (isInitialized) {
       try {
-        localStorage.setItem('cfa_global_settings', JSON.stringify(globalSettings));
+        // Breed lists are canonical season data — excluded from persistence
+        localStorage.setItem('cfa_global_settings', serializeSettingsForStorage(globalSettings));
       } catch (error) {
         console.error('Error saving settings to localStorage:', error);
       }
@@ -493,9 +455,11 @@ function App() {
     try {
       const { showState: restoredState, settings: importedSettings } = result;
       
-      // Update global settings if imported (same as Load from Excel)
+      // Update global settings if imported (same as Load from Excel).
+      // Breed lists from the file are discarded — canonical lists always win,
+      // so pre-2026-27 files cannot revert the season's breed update.
       if (importedSettings) {
-        setGlobalSettings((prev: any) => ({
+        setGlobalSettings((prev: any) => withCanonicalBreeds({
           ...prev,
           ...importedSettings
         }));
@@ -683,9 +647,9 @@ function App() {
 
       const { showState: restoredState, settings: importedSettings } = importResult;
 
-      // Update global settings if imported
+      // Update global settings if imported; breed lists stay canonical
       if (importedSettings) {
-        setGlobalSettings((prev: any) => ({
+        setGlobalSettings((prev: any) => withCanonicalBreeds({
           ...prev,
           ...importedSettings
         }));

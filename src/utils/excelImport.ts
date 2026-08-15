@@ -3,6 +3,7 @@
 
 import * as XLSX from 'xlsx';
 import { generateColumnsForTab } from './ringTypeUtils';
+import { mapLegacyBreedName } from '../data/breedList';
 
 // Type definitions for import functionality (reusing from csvImport)
 interface ImportedShowState {
@@ -377,14 +378,19 @@ function parseSettingsWorksheet(data: string[][]): any {
       }
     }
     
-    // Parse breed lists
-    if (currentSection === 'breeds' && inBreedList && firstCell && firstCell !== 'Category' && firstCell !== 'Threshold') {
-      if (firstCell !== 'No long hair breeds configured' && firstCell !== 'No short hair breeds configured') {
-        settings[breedListType].push(firstCell);
-      }
+    // Breed list rows in the Settings sheet are intentionally skipped:
+    // breed lists are canonical season data (src/data/breedList.ts) and old
+    // files must not revert them. `breedListType`/`inBreedList` still track
+    // the section so its rows aren't misread as other settings.
+    if (currentSection === 'breeds' && inBreedList && breedListType) {
+      continue;
     }
   }
-  
+
+  // Never expose breed arrays from imported files
+  delete settings.short_hair_breeds;
+  delete settings.long_hair_breeds;
+
   return settings;
 }
 
@@ -811,7 +817,9 @@ function parseBreedSheetWorksheet(data: string[][], breedSheets: NonNullable<Imp
     
     // Parse breed data rows
     if (inBreedRows && firstCell && currentSection) {
-      const breedName = firstCell;
+      // Map pre-2026-27 breed names (BENGAL, MANX - LH/SH) to their current
+      // divisions so awards in old files land under the renamed breeds
+      const breedName = mapLegacyBreedName(firstCell);
       const hairLengthPrefix = currentHairLength === 'Longhair' ? 'lh' : 'sh';
       const breedKey = `${hairLengthPrefix}-${breedName}`;
       

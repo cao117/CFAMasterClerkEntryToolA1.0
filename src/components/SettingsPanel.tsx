@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import SettingsInput from './SettingsInput';
 import Modal from './Modal';
 import { AutoSaveService } from '../utils/autoSaveService';
+import { SHORT_HAIR_BREEDS, LONG_HAIR_BREEDS } from '../data/breedList';
 
 
 // Settings data structure
@@ -32,25 +33,8 @@ const DEFAULT_SETTINGS: SettingsData = {
     premiership: 50,
     household_pet: 50,
   },
-  short_hair_breeds: [
-    "ABYSSINIAN", "AMERICAN SH", "AMERICAN WH", "BALINESE", "BALINESE-JAVANESE",
-    "BENGAL", "BOMBAY", "BRITISH SH", "BURMESE", "BURMILLA - LH", "BURMILLA - SH",
-    "CHARTREUX", "COLORPOINT SH", "CORNISH REX", "DEVON REX", "EGYPTIAN MAU",
-    "EUROPEAN BURM", "HAVANA BROWN", "JAPANESE BOBTAIL - LH", "JAPANESE BOBTAIL - SH",
-    "KORAT", "LAPERM - LH", "LAPERM - SH", "LYKOI", "MANX - LH", "MANX - SH",
-    "OCICAT", "ORIENTAL - LH", "ORIENTAL - SH", "RUSSIAN BLUE", "SCOTTISH FOLD - LH",
-    "SCOTTISH FOLD - SH", "SCOTTISH STRAIGHT EAR - LH", "SCOTTISH STRAIGHT EAR - SH",
-    "SELKIRK REX - LH", "SELKIRK REX - SH", "SIAMESE", "SINGAPURA", "SOMALI",
-    "SPHYNX", "TONKINESE", "TOYBOB"
-  ],
-  long_hair_breeds: [
-    "AMERICAN BOBTAIL-LH", "AMERICAN BOBTAIL-SH", "AMERICAN CURL-LH", "AMERICAN CURL-SH",
-    "BIRMAN", "EXOTIC SOLID", "EXOTIC SILVER/GOLDEN", "EXOTIC SHADED/SMOKE",
-    "EXOTIC TABBY", "EXOTIC PARTI-COLOR", "EXOTIC CALICO/BI-COLOR", "EXOTIC POINTED",
-    "MAINE COON CAT", "NORWEGIAN FOREST CAT", "PERSIAN SOLID", "PERSIAN SILVER/GOLDEN",
-    "PERSIAN SHADED/SMOKE", "PERSIAN TABBY", "PERSIAN PARTI-COLOR", "PERSIAN CALICO/BI-COLOR",
-    "PERSIAN HIMALAYAN", "RAGAMUFFIN", "RAGDOLL", "SIBERIAN", "TURKISH ANGORA", "TURKISH VAN"
-  ],
+  short_hair_breeds: SHORT_HAIR_BREEDS,
+  long_hair_breeds: LONG_HAIR_BREEDS,
   numberOfSaves: 3,
   saveCycle: 5
 };
@@ -256,156 +240,14 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess, globalSett
     }));
   };
 
-  // Show new breed input
-  const showAddBreedInput = () => {
-    setShowNewBreedInput(true);
-    setNewBreedValue('');
-    setTimeout(() => {
-      const input = document.querySelector('#new-breed-input') as HTMLInputElement;
-      if (input) {
-        input.focus();
-      }
-    }, 10);
-  };
+  // Breed lists are read-only canonical season data (src/data/breedList.ts).
+  // Add/edit/delete UI was removed with the 2026-27 breed update — changes to
+  // breeds ship as app releases so every clerk runs the identical list.
 
-  // Add breed with cool animation
-  const addBreed = () => {
-    if (!newBreedValue.trim()) return;
-    
-    const trimmedBreed = newBreedValue.trim().toUpperCase();
-      const targetList = breedTab === 'SHORT HAIR' ? 'short_hair_breeds' : 'long_hair_breeds';
-      
-      // Check if breed already exists
-      if (globalSettings[targetList].includes(trimmedBreed)) {
-      showSuccess('Breed Exists', `${trimmedBreed} already exists in the ${breedTab.toLowerCase()} breeds list.`);
-        return;
-      }
-
-      setGlobalSettings(prev => ({
-        ...prev,
-        [targetList]: [...prev[targetList], trimmedBreed].sort()
-      }));
-    
-    setShowNewBreedInput(false);
-    setNewBreedValue('');
-    showSuccess('Breed Added', `${trimmedBreed} has been added to the ${breedTab.toLowerCase()} breeds list.`);
-  };
-
-  // Cancel new breed input
-  const cancelAddBreed = () => {
-    setShowNewBreedInput(false);
-    setNewBreedValue('');
-  };
-
-  // Handle new breed input keydown
-  const handleNewBreedKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      addBreed();
-    } else if (e.key === 'Escape') {
-      cancelAddBreed();
-    }
-  };
-
-  // Inline editing state
-  const [editingBreed, setEditingBreed] = useState<string | null>(null);
-  const [editValue, setEditValue] = useState('');
-  
-  // New breed input state
-  const [showNewBreedInput, setShowNewBreedInput] = useState(false);
-  const [newBreedValue, setNewBreedValue] = useState('');
-  
-  // Delete confirmation modal state
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [breedToDelete, setBreedToDelete] = useState<string>('');
-  
   // Restore defaults modal state
   const [showRestoreDefaultsModal, setShowRestoreDefaultsModal] = useState(false);
-  
 
 
-  // Edit input ref for auto-focus
-  const editInputRef = useRef<HTMLInputElement>(null);
-  
-  // Start inline editing with auto-highlight
-  const startEditBreed = (breed: string) => {
-    setEditingBreed(breed);
-    setEditValue(breed);
-    // Auto-highlight the text after a brief delay to ensure input is focused
-    setTimeout(() => {
-      if (editInputRef.current) {
-        editInputRef.current.focus();
-        editInputRef.current.select();
-      }
-    }, 10);
-  };
-
-  // Save inline edit
-  const saveEditBreed = () => {
-    if (!editingBreed || !editValue.trim()) return;
-    
-    const trimmedBreed = editValue.trim().toUpperCase();
-      const targetList = breedTab === 'SHORT HAIR' ? 'short_hair_breeds' : 'long_hair_breeds';
-      
-      // Check if new breed name already exists (excluding the current one)
-    if (globalSettings[targetList].includes(trimmedBreed) && trimmedBreed !== editingBreed) {
-      showSuccess('Breed Exists', `${trimmedBreed} already exists in the ${breedTab.toLowerCase()} breeds list.`);
-        return;
-      }
-
-      setGlobalSettings(prev => ({
-        ...prev,
-        [targetList]: prev[targetList].map(breed => 
-        breed === editingBreed ? trimmedBreed : breed
-        ).sort()
-      }));
-    showSuccess('Breed Updated', `${editingBreed} has been updated to ${trimmedBreed}.`);
-    setEditingBreed(null);
-    setEditValue('');
-  };
-
-  // Cancel inline edit
-  const cancelEditBreed = () => {
-    setEditingBreed(null);
-    setEditValue('');
-  };
-
-  // Handle edit input keydown
-  const handleEditKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      saveEditBreed();
-    } else if (e.key === 'Escape') {
-      cancelEditBreed();
-    }
-  };
-
-  // Show delete confirmation modal
-  const showDeleteConfirmation = (breed: string) => {
-    setBreedToDelete(breed);
-    setShowDeleteModal(true);
-  };
-
-  // Delete breed from the appropriate list with toast notification
-    const deleteBreed = () => {
-    if (!breedToDelete) return;
-    
-    const targetList = breedTab === 'SHORT HAIR' ? 'short_hair_breeds' : 'long_hair_breeds';
-    
-    setGlobalSettings(prev => ({
-      ...prev,
-      [targetList]: prev[targetList].filter(breed => breed !== breedToDelete)
-    }));
-    
-    setShowDeleteModal(false);
-    setBreedToDelete('');
-    showSuccess('Breed Deleted', `${breedToDelete} has been removed from the ${breedTab.toLowerCase()} breeds list.`);
-  };
-
-  // Cancel delete
-  const cancelDelete = () => {
-    setShowDeleteModal(false);
-    setBreedToDelete('');
-  };
-  
   // Championship threshold change modal handlers
 
 
@@ -699,15 +541,33 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess, globalSett
     </div>
   );
 
-  // Render Breed List section with table format and inline editing
+  // Render Breed List section — read-only display of the canonical season list
   const renderBreedSection = () => {
     const currentBreeds = breedTab === 'SHORT HAIR' ? globalSettings.short_hair_breeds : globalSettings.long_hair_breeds;
     const totalBreeds = currentBreeds.length;
     return (
       <div className="space-y-8">
         <div className="text-center">
-          <h3 className="text-2xl font-bold text-gray-800 mb-2 tracking-tight">Breed List Settings</h3>
+          <div className="flex items-center justify-center space-x-3 mb-2">
+            <h3 className="text-2xl font-bold text-gray-800 tracking-tight">Breed List</h3>
+            <span className="inline-flex items-center space-x-1.5 px-3 py-1 bg-amber-50 border border-amber-300 rounded-full text-xs font-semibold text-amber-700 uppercase tracking-wide">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              <span>Read-Only</span>
+            </span>
+          </div>
           <div className="w-24 h-1 bg-gradient-to-r from-emerald-400 to-green-500 rounded-full mx-auto"></div>
+        </div>
+
+        {/* Read-only explanation banner */}
+        <div className="flex items-start space-x-3 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
+          <svg className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p className="text-sm text-blue-800">
+            This is the official CFA breed list and cannot be edited here. Breed and division changes are issued by CFA and delivered with app releases, so every clerk works from the identical list.
+          </p>
         </div>
         {/* Ultra-Modern Breed Type Tabs */}
         <div className="relative bg-gray-100 rounded-2xl p-1.5 shadow-inner">
@@ -785,144 +645,25 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess, globalSett
           </div>
         </div>
 
-        {/* Breed Count and Add Button */}
-        <div className="flex justify-between items-center">
-        <div className="text-sm text-gray-600">
-          {totalBreeds} {breedTab.toLowerCase()} breeds
+        {/* Breed count */}
+        <div className="text-sm font-medium text-gray-600">
+          {totalBreeds} {breedTab === 'SHORT HAIR' ? 'Short Hair' : 'Long Hair'} Breeds
         </div>
 
-          {/* Cool Inline Add Breed Input */}
-          {showNewBreedInput ? (
-            <div className="flex items-center space-x-2 bg-white border-2 border-amber-300 rounded-xl shadow-lg px-4 py-2 animate-in slide-in-from-right-2 duration-300">
-              <SettingsInput
-                id="new-breed-input"
-                type="text"
-                value={newBreedValue}
-                onChange={(e) => setNewBreedValue(e.target.value)}
-                onKeyDown={handleNewBreedKeyDown}
-                placeholder={`Enter ${breedTab.toLowerCase()} breed name...`}
-                width="min-w-[200px]"
-                className="text-sm font-mono bg-transparent border-none outline-none focus:ring-0"
-                autoFocus
-              />
-                  <button
-                onClick={addBreed}
-                className="p-1.5 text-green-600 hover:text-green-800 transition-colors bg-green-50 rounded-lg hover:bg-green-100 hover:shadow-sm"
-                title="Add Breed"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                  </button>
-                  <button
-                onClick={cancelAddBreed}
-                className="p-1.5 text-red-600 hover:text-red-800 transition-colors bg-red-50 rounded-lg hover:bg-red-100 hover:shadow-sm"
-                title="Cancel"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-          ) : (
-            <button
-              type="button"
-              onClick={showAddBreedInput}
-              className="group relative inline-flex items-center px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-medium rounded-lg hover:from-emerald-600 hover:to-teal-600 transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105"
-              title="Add new breed"
-            >
-              {/* Animated background glow */}
-              <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-teal-400 rounded-lg opacity-0 group-hover:opacity-20 transition-opacity duration-300 animate-pulse"></div>
-              
-              {/* Icon with animation */}
-              <div className="relative flex items-center justify-center w-5 h-5 mr-2 bg-white/20 rounded-full group-hover:bg-white/30 transition-all duration-300">
-                <svg className="w-3 h-3 text-white group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-              </div>
-              
-              <span className="relative font-medium text-sm">Add Breed</span>
-              
-              {/* Sparkle effect */}
-              <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-yellow-300 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-ping"></div>
-            </button>
-          )}
-        </div>
-
-        {/* Zingy Two-Column Breed Grid with Compact Design */}
+        {/* Read-only two-column breed grid */}
         <div className="grid grid-cols-2 gap-4">
           {currentBreeds.map((breed, index) => (
-            <div 
-              key={index} 
-              className={`group p-3 rounded-lg border border-gray-200 hover:border-amber-300 hover:shadow-lg hover:shadow-amber-200/30 transition-all duration-300 transform hover:scale-[1.02] ${
-                index % 2 === 0 
-                  ? 'bg-gradient-to-r from-white to-gray-50/30' 
+            <div
+              key={index}
+              className={`p-3 rounded-lg border border-gray-200 ${
+                index % 2 === 0
+                  ? 'bg-gradient-to-r from-white to-gray-50/30'
                   : 'bg-gradient-to-r from-gray-50/50 to-white'
               }`}
             >
-              <div className="flex items-center justify-between">
-                <div className="flex-1 min-w-0">
-                  {editingBreed === breed ? (
-                    <div className="flex items-center space-x-2">
-                      <SettingsInput
-                        ref={editInputRef}
-                        type="text"
-                        value={editValue}
-                        onChange={(e) => setEditValue(e.target.value)}
-                        onKeyDown={handleEditKeyDown}
-                        onBlur={saveEditBreed}
-                        width="w-full"
-                        className="text-sm font-mono"
-                        autoFocus
-                      />
-                      <button
-                        onClick={saveEditBreed}
-                        className="p-1.5 text-green-600 hover:text-green-800 transition-colors bg-green-50 rounded-lg hover:bg-green-100 hover:shadow-sm"
-                        title="Save"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                      </button>
-                      <button
-                        onClick={cancelEditBreed}
-                        className="p-1.5 text-red-600 hover:text-red-800 transition-colors bg-red-50 rounded-lg hover:bg-red-100 hover:shadow-sm"
-                        title="Cancel"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
-                  ) : (
-                    <span className="text-sm font-mono text-gray-800 group-hover:text-gray-900 transition-colors truncate block">{breed}</span>
-                  )}
-          </div>
-                <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-all duration-300 ml-2">
-                  <button
-                    type="button"
-                    onClick={() => startEditBreed(breed)}
-                    className="p-1.5 text-gray-500 hover:text-amber-600 transition-all duration-200 rounded-lg hover:bg-amber-100/50 hover:shadow-sm"
-                    title={`Edit ${breed}`}
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => showDeleteConfirmation(breed)}
-                    className="p-1.5 text-gray-500 hover:text-red-500 transition-all duration-200 rounded-lg hover:bg-red-100/50 hover:shadow-sm"
-                    title={`Delete ${breed}`}
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
-                </div>
-                </div>
-              </div>
-            ))}
+              <span className="text-sm font-mono text-gray-800 truncate block">{breed}</span>
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -1286,46 +1027,6 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess, globalSett
         </div>
       </div>
       
-      {/* Delete Confirmation Modal */}
-      {showDeleteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 transform animate-in zoom-in-95 duration-200">
-            <div className="flex items-center space-x-4 mb-6">
-              <div className="p-3 bg-red-100 rounded-xl">
-                <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-gray-900">Delete Breed</h3>
-                <p className="text-gray-600">This action cannot be undone.</p>
-              </div>
-            </div>
-            
-            <div className="bg-gray-50 rounded-lg p-4 mb-6">
-              <p className="text-gray-800 font-medium">
-                Are you sure you want to delete <span className="text-red-600 font-bold">"{breedToDelete}"</span> from the {breedTab.toLowerCase()} breeds list?
-              </p>
-            </div>
-            
-            <div className="flex space-x-3">
-              <button
-                onClick={cancelDelete}
-                className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-colors duration-200"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={deleteBreed}
-                className="flex-1 px-4 py-3 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors duration-200 shadow-md hover:shadow-lg"
-              >
-                Delete Breed
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      
       {/* Maximum Judges Error Modal */}
       <Modal
         isOpen={showMaxJudgesErrorModal}
@@ -1343,7 +1044,7 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess, globalSett
         isOpen={showRestoreDefaultsModal}
         onClose={() => setShowRestoreDefaultsModal(false)}
         title="Restore Default Settings"
-        message="Are you sure you want to restore all settings to default values? This action cannot be undone and will reset all current settings including maximum judges, rings, cats, placement thresholds, and breed lists."
+        message="Are you sure you want to restore all settings to default values? This action cannot be undone and will reset maximum judges, maximum cats, placement thresholds, and auto-save settings. The breed list is not affected — it is fixed by the app release."
         type="warning"
         confirmText="Restore Defaults"
         cancelText="Cancel"
