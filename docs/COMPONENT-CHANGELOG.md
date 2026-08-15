@@ -4,6 +4,14 @@ This document tracks changes to individual components in the CFA Entry applicati
 
 ## [Unreleased]
 
+### [2026-08-15] 2026-27 season breed update — canonical breed lists (MCE-7)
+- **Components:** `data/breedList.ts` (new), `utils/settingsLoader.ts` (new), `App`, `SettingsPanel`, `excelImport`
+- **Change:** Per CFA request (James Simbro, 2026-08-03): renamed `BENGAL` → `BENGAL - SH`, `MANX - LH/SH` → `MANX (TAILLESS) - LH/SH`; added new divisions `BENGAL - LH`, `MANX (TAILED) - LH`, `MANX (TAILED) - SH` (all in the shorthair list, matching existing convention).
+- **Architecture:** Breed lists converted from user-editable persisted settings to canonical season data in `src/data/breedList.ts`. They are no longer read from localStorage or imported files (`withCanonicalBreeds` guard in both import handlers; `serializeSettingsForStorage` excludes them; `parseSettingsWorksheet` skips breed rows) — a deploy now updates every user's list, and pre-2026-27 files cannot revert it.
+- **Backward compatibility:** `mapLegacyBreedName` in `parseBreedSheetWorksheet` maps legacy breed names in old Excel files/auto-saves to the new divisions (1:1 — LH Bengals and Tailed Manx were not judged divisions before this season, so no historical record is ambiguous). Zero data loss on old-file import.
+- **UI:** SettingsPanel breed section is now read-only (add/edit/delete controls and delete-confirmation modal removed); shows "Official CFA list — updated with each app release".
+- **Tests:** `breedList.test.ts` (21), `settingsLoader.test.ts` (15), `excelImport.breedMapping.test.ts` (12) — incl. legacy-file retro-compat, round-trip, localStorage migration, orphan/edge cases. Full suite 130/130.
+
 ### [2026-05-27] SSP cross-column validation correctness (MCE-3 + MCE-4)
 - **Components:** `championshipValidation.ts`, `premiershipValidation.ts`
 - **Change:** SSP rings validate LH/SH finals from the specialty columns and the AB list from the sibling AB column (not the AB column's own live-empty sub-sections). Reminder made SSP-aware (`isCatInSpecialtyCHFinal`/`PR`); order/filler made SSP-aware (`getAbChSourceColIdx`/`getAbPrSourceColIdx`). Championship reminder consolidated from 3 sites to 1; dead `validateLHSHWithBestCHAndGetFirstError` and vacuous `validateSpecialtyFinalsConsistency*` removed.
