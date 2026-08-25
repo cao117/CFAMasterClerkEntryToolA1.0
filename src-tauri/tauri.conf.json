@@ -30,6 +30,12 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "publisher": "Cat Fanciers' Association",
+    "copyright": "Copyright (c) 2024-2026 Cat Fanciers' Association",
+    "license": "MIT",
+    "homepage": "https://mce.cfa.services",
+    "shortDescription": "CFA Master Clerk Entry Tool",
+    "longDescription": "Desktop tool for CFA master clerks to record show results, validate finals, and export official CFA reports.",
     "macOS": {
       "signingIdentity": "-"
     },

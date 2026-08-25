@@ -1,5 +1,13 @@
 # Bugfix Changelog
 
+## [2026-08-25] Windows Defender / SmartScreen false positive — release metadata hygiene (MCE-8)
+- **Issue**: James (CFA) reported Windows Defender quarantining the v0.5.0 desktop installer as `Trojan:Win32/Bearfoos.A!ml` plus the usual SmartScreen "unrecognized app" prompt.
+- **Root Cause**: `!ml` is a machine-learning heuristic, not a signature match. Code audit found nothing malicious (29-line Rust backend, stock dialog/fs/os plugins, no shell/network). Contributing signals on our side: the build is unsigned, `setup.exe` shipped with no `CompanyName` and a corrupt `LegalCopyright` (no `bundle.publisher`/`copyright` in `tauri.conf.json`), and the release profile shipped debug symbols (`debug = true, strip = false`).
+- **Files Modified**: `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml`, `LICENSE` (new, MIT), `docs/meta/LICENSE.md`, `package.json`, `docs/specs/PACKAGING.md`
+- **Code Changes**: populated bundle publisher/copyright/description metadata; release profile now `debug = false, strip = true`; declared MIT license in Cargo/package/root LICENSE.
+- **Impact**: next tagged release builds a smaller, correctly-attributed installer. This lowers but does not eliminate the heuristic risk — only code signing or Store distribution removes the warnings (see `docs/specs/PACKAGING.md`). v0.5.0 hashes submitted to Microsoft as a false positive.
+- **Testing**: `cargo metadata` parses Cargo.toml; `tauri info` loads the config; `vite build` clean. Windows binary verification happens on the next CI release.
+
 ## [2026-05-27] SSP hair-length exclusivity — consolidated LH/SH cross-column duplicate (MCE-6)
 - **Issue**: A cat that was Best LH CH/PR but also placed in the SH Top-10/15 show awards (or the mirror) was not flagged as a duplicate. Reported from a Premiership screenshot — cats 1 and 2 were Best LH Premier and also sat in the SH show awards with no error.
 - **Root Cause**: the LH↔SH duplicate check only compared matching sections (show-vs-show via the old `validateCrossColumnDuplicates`, finals-vs-finals via the MCE-5 `validateSpecialtyFinalsCrossColumnDuplicates`). The two cross pairings (LH finals × SH show awards, and LH show awards × SH finals) were never checked.
