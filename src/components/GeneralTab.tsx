@@ -707,7 +707,7 @@ export default function GeneralTab({
     // Generate test data for General tab
     const testShowData: ShowData = {
       showDate: '2025-01-15',
-      clubName: 'Test Cat Fanciers Club',
+      clubName: 'CFA ID banquet',
       masterClerk: 'Test Master Clerk',
       numberOfJudges: numJudges,
       championshipCounts: {

@@ -4,6 +4,12 @@ This document tracks changes to individual components in the CFA Entry applicati
 
 ## [Unreleased]
 
+### [2026-08-26] GeneralTab: Test data club name changed to "CFA ID banquet"
+- **Components:** `GeneralTab`
+- **Change:** The "Fill Test Data" generator now populates Club Name with `CFA ID banquet` instead of `Test Cat Fanciers Club`.
+- **Files Modified:** `src/components/GeneralTab.tsx`
+- **Impact:** Test/demo shows generated in-app are labeled `CFA ID banquet`; exported filenames derive from Club Name, so generated Excel files are now named accordingly. No validation or production data path is affected.
+
 ### [2026-08-15] 2026-27 season breed update — canonical breed lists (MCE-7)
 - **Components:** `data/breedList.ts` (new), `utils/settingsLoader.ts` (new), `App`, `SettingsPanel`, `excelImport`
 - **Change:** Per CFA request (James Simbro, 2026-08-03): renamed `BENGAL` → `BENGAL - SH`, `MANX - LH/SH` → `MANX (TAILLESS) - LH/SH`; added new divisions `BENGAL - LH`, `MANX (TAILED) - LH`, `MANX (TAILED) - SH` (all in the shorthair list, matching existing convention).
