@@ -1,0 +1,33 @@
+Privacy Policy - CFA Master Clerk Entry Program
+
+Effective date: September 28, 2026
+Publisher: The Cat Fanciers' Association Inc. ("CFA"), 260 East Main Street, Alliance, OH 44601, United States. Phone (330) 680-4070. Website https://cfa.org
+
+This policy applies to the CFA Master Clerk Entry Program desktop app distributed through the Microsoft Store.
+
+1. Summary
+The app works entirely on your computer. It does not connect to the internet, has no user accounts or sign-in, and does not collect, transmit, sell or share any information with CFA or with anyone else.
+
+2. Information you enter
+While clerking a show you enter show details (date, club name, master clerk name), judge names and acronyms, ring assignments, entry numbers and awards. This information may include the names of judges and clerks. The app processes it only on your device, to build the finals and breed sheets, check entries against CFA finals rules, and produce Excel files. CFA does not receive any of it through the app. If you send an exported file to CFA or to a club, you do so yourself, outside the app.
+
+3. Storage on your computer
+The app keeps auto-save files and your settings in its own data folder under your Windows user profile so that you can resume unfinished work. Auto-save files are rotated according to the number of saves you choose in Settings, and they are removed when you uninstall the app. Excel files that you export are stored wherever you choose to save them and remain there until you delete them.
+
+4. No tracking
+The app contains no analytics, advertising, telemetry or crash-reporting components, uses no cookies, and creates no identifiers.
+
+5. Microsoft components
+Installation and updates are delivered by the Microsoft Store, and the app's screens are displayed by the Microsoft Edge WebView2 runtime, a component of Windows. The app does not pass your show data to Microsoft. Any information Microsoft itself collects through the Store or WebView2 is governed by the Microsoft Privacy Statement at https://privacy.microsoft.com.
+
+6. Children
+The app is a professional tool for show clerks and is not directed to children. It collects no information from anyone.
+
+7. Security
+Because your data never leaves your computer, its protection depends on your device: keep Windows updated, use a password-protected Windows account, and store exported files in a location you control.
+
+8. Changes to this policy
+If the app's data practices change, this policy will be updated and the new version published with the app's Store listing.
+
+9. Contact
+Questions about this policy: The Cat Fanciers' Association Inc., 260 East Main Street, Alliance, OH 44601, United States. Phone (330) 680-4070. Email gavin.cao@cfa.org (application maintainer).
