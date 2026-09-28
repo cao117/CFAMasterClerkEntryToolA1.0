@@ -1,0 +1,122 @@
+name: 'Build MSIX (Microsoft Store)'
+
+# Manual only for now: the Store requires package versions >= 1.0.0.0, and the app is still 0.x.
+# Run from the Actions tab (or `gh workflow run build-msix.yml --ref <branch> -f msix_version=1.0.0.0`).
+on:
+  workflow_dispatch:
+    inputs:
+      msix_version:
+        description: 'MSIX version a.b.c.0 (blank = tauri.conf.json version + .0; must start at 1)'
+        required: false
+        default: ''
+
+jobs:
+  msix:
+    runs-on: windows-latest
+    timeout-minutes: 60
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v6
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v6
+      with:
+        node-version: 'lts/*'
+        cache: 'npm'
+
+    - name: Setup Rust
+      uses: dtolnay/rust-toolchain@stable
+
+    - name: Cache cargo build
+      uses: Swatinem/rust-cache@v2
+      with:
+        workspaces: src-tauri
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Build release exe and pack MSIX (unsigned + self-signed test copy)
+      shell: powershell
+      env:
+        MSIX_VERSION: ${{ inputs.msix_version }}
+      run: |
+        if ($env:MSIX_VERSION) { .\scripts\build-msix.ps1 -Build -DevSign -Version $env:MSIX_VERSION } else { .\scripts\build-msix.ps1 -Build -DevSign }
+
+    - name: Upload Store package (unsigned, for Partner Center)
+      uses: actions/upload-artifact@v4
+      with:
+        name: msix-store-upload
+        path: dist-msix/*_x64.msix
+        if-no-files-found: error
+
+    - name: Upload self-signed test package
+      uses: actions/upload-artifact@v4
+      with:
+        name: msix-devsigned-test
+        path: |
+          dist-msix/*-devsigned.msix
+          dist-msix/devsign.cer
+        if-no-files-found: error
+
+    # ---- Smoke test: install the self-signed copy on the runner and launch it under package identity ----
+    - name: Ensure WebView2 runtime is present
+      shell: powershell
+      run: |
+        $key = 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}'
+        if (Test-Path $key) { "WebView2 runtime present: $((Get-ItemProperty $key).pv)"; exit 0 }
+        Invoke-WebRequest 'https://go.microsoft.com/fwlink/p/?LinkId=2124703' -OutFile wv2setup.exe
+        Start-Process .\wv2setup.exe -ArgumentList '/silent','/install' -Wait
+        "WebView2 runtime installed: $((Get-ItemProperty $key).pv)"
+
+    - name: Install, launch and remove the test package
+      shell: powershell
+      run: |
+        $ErrorActionPreference = 'Stop'
+        Import-Certificate -FilePath (Get-Item dist-msix\devsign.cer).FullName -CertStoreLocation Cert:\LocalMachine\Root | Out-Null
+        Add-AppxPackage -Path (Get-Item dist-msix\*-devsigned.msix).FullName
+        $app = Get-AppxPackage -Name TheCatFanciersAssociation.CFAMasterClerkEntryProgr
+        if (-not $app) { throw 'Package did not install' }
+        "Installed: $($app.PackageFullName)"
+        # PFN is derived from Identity/Publisher; matching Partner Center proves the publisher string is right.
+        $expectedPfn = 'TheCatFanciersAssociation.CFAMasterClerkEntryProgr_f0jtan6w2ebm2'
+        if ($app.PackageFamilyName -ne $expectedPfn) { throw "PFN mismatch: got $($app.PackageFamilyName), Partner Center says $expectedPfn" }
+        "Package family name matches Partner Center."
+        Start-Process explorer.exe "shell:AppsFolder\$($app.PackageFamilyName)!CFAMasterClerkEntry"
+        Start-Sleep -Seconds 25
+        $proc = Get-Process CFAMasterClerkEntry -ErrorAction SilentlyContinue | Select-Object -First 1
+        if (-not $proc) { throw 'App process is not running 25 s after launch' }
+        "App running: PID $($proc.Id), $([math]::Round($proc.WorkingSet64 / 1MB)) MB, window '$($proc.MainWindowTitle)'"
+        $wv = Get-Process msedgewebview2 -ErrorAction SilentlyContinue
+        "WebView2 child processes: $(@($wv).Count)"
+        Stop-Process -Id $proc.Id -Force
+        Remove-AppxPackage -Package $app.PackageFullName
+        "Removed test package."
+
+    # ---- Windows App Certification Kit: same checks the Store runs; advisory only on hosted runners ----
+    - name: Run Windows App Certification Kit
+      shell: powershell
+      continue-on-error: true
+      timeout-minutes: 25
+      run: |
+        $wack = Join-Path ${env:ProgramFiles(x86)} 'Windows Kits\10\App Certification Kit\appcert.exe'
+        if (-not (Test-Path $wack)) { 'WACK not present on this runner; skipped.'; exit 0 }
+        $pkg = (Get-Item dist-msix\*-devsigned.msix).FullName
+        & $wack reset | Out-Null
+        & $wack test -appxpackagepath $pkg -reportoutputpath "$PWD\wack-report.xml"
+        "appcert exit code: $LASTEXITCODE"
+        if (Test-Path wack-report.xml) {
+          [xml]$r = Get-Content wack-report.xml
+          "OVERALL_RESULT: $($r.REPORT.OVERALL_RESULT)"
+          foreach ($req in $r.REPORT.REQUIREMENTS.REQUIREMENT) {
+            foreach ($t in $req.TEST) { "  [$($t.RESULT)] $($req.TITLE) / $($t.NAME)" }
+          }
+        }
+
+    - name: Upload WACK report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: wack-report
+        path: wack-report.xml
+        if-no-files-found: ignore
