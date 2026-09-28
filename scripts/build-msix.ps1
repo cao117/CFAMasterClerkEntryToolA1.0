@@ -40,7 +40,7 @@ Set-Location $root
 # Must equal Identity/Publisher in AppxManifest.xml (assigned by Partner Center).
 $publisher = "CN=BA9C661F-E938-4631-B3F8-36A01C6A77C2"
 $exeName   = "CFAMasterClerkEntry.exe"   # Executable attribute in the manifest
-$logos     = "StoreLogo", "Square44x44Logo", "Square150x150Logo", "Square71x71Logo", "Square310x310Logo"
+$logos     = "StoreLogo", "Square44x44Logo", "Square150x150Logo"   # the only logos the manifest references
 
 function Find-SdkTool([string]$name) {
   $kits = Join-Path ${env:ProgramFiles(x86)} "Windows Kits\10\bin"

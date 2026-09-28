@@ -41,11 +41,8 @@
         Description="Desktop tool for CFA master clerks to record show results, validate finals, and export official CFA reports."
         BackgroundColor="transparent"
         Square150x150Logo="Assets\Square150x150Logo.png"
-        Square44x44Logo="Assets\Square44x44Logo.png">
-        <uap:DefaultTile
-          Square71x71Logo="Assets\Square71x71Logo.png"
-          Square310x310Logo="Assets\Square310x310Logo.png" />
-      </uap:VisualElements>
+        Square44x44Logo="Assets\Square44x44Logo.png" />
+      <!-- No DefaultTile: the schema requires a Wide310x150Logo alongside Square310x310Logo, and no wide asset exists. -->
     </Application>
   </Applications>
 
