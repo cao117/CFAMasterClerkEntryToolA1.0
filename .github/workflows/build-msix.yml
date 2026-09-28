@@ -43,19 +43,19 @@ jobs:
     - name: Build release exe and pack MSIX (unsigned + self-signed test copy)
       shell: powershell
       env:
-        MSIX_VERSION: ${{ github.event_name == 'push' && '1.0.0.0' || inputs.msix_version }}
+        MSIX_VERSION: ${{ inputs.msix_version }}
       run: |
         if ($env:MSIX_VERSION) { .\scripts\build-msix.ps1 -Build -DevSign -Version $env:MSIX_VERSION } else { .\scripts\build-msix.ps1 -Build -DevSign }
 
     - name: Upload Store package (unsigned, for Partner Center)
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: msix-store-upload
         path: dist-msix/*_x64.msix
         if-no-files-found: error
 
     - name: Upload self-signed test package
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: msix-devsigned-test
         path: |
@@ -119,7 +119,7 @@ jobs:
 
     - name: Upload WACK report
       if: always()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: wack-report
         path: wack-report.xml
