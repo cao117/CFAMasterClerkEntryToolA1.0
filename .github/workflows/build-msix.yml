@@ -9,10 +9,6 @@ on:
         description: 'MSIX version a.b.c.0 (blank = tauri.conf.json version + .0; must start at 1)'
         required: false
         default: ''
-  # TEMP until this file exists on master: GitHub only registers workflow_dispatch for workflows on the
-  # default branch, so pushes to the packaging branch run it with a fixed 1.0.0.0 test version. Remove before merge.
-  push:
-    branches: [ 'chore/msix-packaging' ]
 
 jobs:
   msix:
