@@ -1,5 +1,5 @@
 # License
 
-[Choose an open-source license: MIT, Apache, etc.]
- 
-Copyright (c) 2024 CFA Master Clerk Entry Authors 
+This project is licensed under the MIT License — see the root [`LICENSE`](../../LICENSE) file.
+
+Copyright (c) 2024-2026 Cat Fanciers' Association

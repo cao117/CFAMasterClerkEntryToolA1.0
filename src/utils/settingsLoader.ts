@@ -37,6 +37,23 @@ export function withCanonicalBreeds<T extends object>(settings: T): T & {
 }
 
 /**
+ * Household Pet top-15 cutoff: a saved 50 is read as 30.
+ *
+ * CFA Show Rule 11.32 puts the cutoff at 30 entries. Builds before MCE-9
+ * shipped 50 (never a CFA rule) and wrote it to localStorage and to every
+ * saved file's Settings sheet, where it overrides the built-in default. A
+ * saved 50 cannot be told apart from that old default, so it is read as 30.
+ * Any other saved value is kept.
+ *
+ * If CFA changes this cutoff — above all to 50, which this function would
+ * silently turn back into 30 — follow "Changing the Cutoff" in
+ * docs/validation/VALIDATION_HOUSEHOLD.md before editing the defaults.
+ */
+export function correctedHouseholdPetThreshold(threshold: number): number {
+  return threshold === 50 ? 30 : threshold;
+}
+
+/**
  * Build runtime settings from a raw localStorage value (may be null/corrupt).
  * User preferences merge over defaults; breed lists are always canonical —
  * this silently retires breed arrays saved by pre-2026-27 versions.
@@ -50,7 +67,10 @@ export function loadGlobalSettings(raw: string | null, defaults: GlobalSettings)
       ...parsed,
       placement_thresholds: {
         ...defaults.placement_thresholds,
-        ...parsed.placement_thresholds
+        ...parsed.placement_thresholds,
+        household_pet: correctedHouseholdPetThreshold(
+          parsed.placement_thresholds?.household_pet ?? defaults.placement_thresholds.household_pet
+        )
       },
       numberOfSaves: parsed.numberOfSaves ?? defaults.numberOfSaves,
       saveCycle: parsed.saveCycle ?? defaults.saveCycle

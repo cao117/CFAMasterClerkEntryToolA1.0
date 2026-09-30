@@ -2,6 +2,16 @@
 
 This changelog records all changes, additions, and deletions to validation rules for each tab in the CFA Master Clerk Entry Tool. Each entry includes the date, affected tab, summary of the change, and rationale/context.
 
+### [2026-09-30] Household Pet top-15 cutoff corrected from 50 to 30 (MCE-9)
+- **Tabs:** Household Pet (placement rows, validation, Excel export/import, Settings default)
+- **Problem:** a show with 30–49 household pets was given 10 placement rows instead of 15. Reported by CFA after a show with over 30 HHP entries. CFA Show Rule 11.32 sets the cutoff at 30 ("if 30 or more are entered, Eleventh through Fifteenth Best Cat"); the tool had used 50 since the tab was first built (2025-07-04). Not a regression.
+- **Fix:** the cutoff is 30 everywhere it appears — the default in `App.tsx`, `SettingsPanel.tsx` (Restore Defaults + input placeholder) and the importer; the validator's default parameter; and three places in `excelExport.ts` (Settings sheet fallback, `HHP_Final` row count, Final Awards fallback).
+- **Saved values:** the old 50 is saved in each clerk's localStorage and in every saved file's Settings sheet, and those override the default. `correctedHouseholdPetThreshold()` reads a saved 50 as 30 on app load and on file import; any other saved value is kept. Consequence: a Household Pet cutoff of exactly 50 can no longer be kept.
+- **Unchanged:** Championship (85), Kitten (75) and Premiership (50) cutoffs. The `HHP_Final` row count in `transformTabData()` is still a fixed number that does not read Settings, as before.
+- **Files:** `src/App.tsx`, `src/components/SettingsPanel.tsx`, `src/utils/excelExport.ts`, `src/utils/excelImport.ts`, `src/utils/settingsLoader.ts`, `src/validation/householdPetValidation.ts`
+- **Tests:** new `src/utils/hhpPlacementCutoff.test.ts` (15 tests: 29/30 boundaries for export and validation, saved-50 conversion on load and import, custom values kept, guard against a future default of 50); one assertion updated in `excelImport.breedMapping.test.ts`. Seven of the new tests failed on the pre-fix code. 145 tests pass; `vite build` clean; type-check and lint counts unchanged from baseline.
+- **Reference:** reasoning and the procedure for a future rule change are in `VALIDATION_HOUSEHOLD.md` ("Cutoff Value: Why a Saved 50 Is Read as 30" and "Changing the Cutoff").
+
 ### [2026-05-27] SSP hair-length exclusivity — consolidated cross-column duplicate rule (MCE-6)
 - **Tabs:** Championship, Premiership (Super Specialty cross-column)
 - **Problem:** the LH↔SH duplicate check only compared *matching* sections — show-awards-vs-show-awards (rule #26) and finals-vs-finals (rule #27, MCE-5). A cat that was **Best LH CH/PR** but also sat in the **SH show awards** (or the mirror: in LH show awards and Best SH) was never flagged, even though a cat is physically one hair length. (Reported from a Premiership screenshot: cats 1 and 2 were Best LH Premier and also in the SH Top-10/15, with no duplicate error.)
