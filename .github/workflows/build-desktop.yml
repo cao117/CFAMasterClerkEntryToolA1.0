@@ -5,7 +5,29 @@ on:
     tags: [ 'v*' ]  # Only triggers when a version tag is pushed (e.g. v0.4.0)
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v6
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v6
+      with:
+        node-version: 'lts/*'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run tests
+      run: npm test
+
+    - name: Tag matches app version
+      run: node scripts/bump-version.mjs --check --tag "$GITHUB_REF_NAME"
+
   build-desktop:
+    needs: test
     permissions:
       contents: write
     strategy:

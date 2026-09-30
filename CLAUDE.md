@@ -146,6 +146,7 @@ The application uses a complex lifted state pattern where the main App component
 - **Window Management**: Frameless Tauri window requires custom title bar implementation
 - **Data Integrity**: Excel import/export includes settings - ensure consistency across operations
 - **Placement Cutoffs (85 / 75 / 50 / 30)**: These are CFA Show Rule values. The app also saves them in each clerk's localStorage and in every saved file's Settings sheet, and those saved copies override the code defaults, so editing the defaults alone does not reach existing installs or old show files. Before changing any cutoff, read "Changing the Cutoff" in `docs/validation/VALIDATION_HOUSEHOLD.md`. A saved Household Pet cutoff of 50 is deliberately read as 30 (MCE-9), which would silently undo a future change to 50.
+- **Releases**: Every release follows `docs/RELEASE.md` — one version number shipped to dev web, production web, the Mac and Windows installers and the Microsoft Store package, in that order. Set the version with `npm run release:version -- X.Y.Z` rather than editing the five version files by hand. Pushing `dev` deploys to the dev site, so verify locally first. Pushing `master` deploys to production and pushing a `v*` tag publishes the installers and builds the Store package, so confirm with the project owner before either.
 
 # Mandatory Documentation Rules
 

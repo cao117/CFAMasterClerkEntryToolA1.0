@@ -1,4 +1,6 @@
 # Packaging
+
+Release steps (version, dev, production, tag, Store upload) are in `docs/RELEASE.md`. This file covers how the packages are built and why.
  
 1. Ensure Rust and Tauri CLI are installed
 2. Run `npm run tauri build`
