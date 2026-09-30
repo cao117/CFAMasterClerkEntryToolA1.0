@@ -41,7 +41,9 @@
       "Bash(gh api:*)",
       "Bash(gh workflow:*)",
       "Bash(git rm:*)",
-      "Bash(npm run tauri:build:*)"
+      "Bash(npm run tauri:build:*)",
+      "mcp__plugin_vercel_vercel__list_teams",
+      "mcp__plugin_vercel_vercel__get_project"
     ],
     "deny": [],
     "ask": [],

@@ -43,7 +43,16 @@ npm run tauri:build:debug    # Build Tauri app with debug symbols
 # Quality Assurance
 npm run lint                  # Run ESLint for code quality
 npm run preview              # Preview production build locally
+
+# Testing (Jest + ts-jest + Testing Library, jsdom env)
+npm test                      # Run full test suite
+npm run test:watch            # Run tests in watch mode
+npm run test:coverage         # Run with coverage report (output in coverage/)
+./node_modules/.bin/jest src/path/to.test.ts   # Run a single test file
+./node_modules/.bin/jest -t "test name"        # Run tests matching a name pattern
 ```
+
+**Dev server:** Vite runs on **port 3000** (configured in `vite.config.ts`, not the default 5173) and auto-opens the browser.
 
 ### Tauri-specific Development
 - **Desktop Window**: Custom frameless window (1280x800 min, maximized by default)
@@ -73,9 +82,21 @@ The application uses a complex lifted state pattern where the main App component
 - Household Pet: Require valid show info + judges + householdPetCount > 0
 - Breed Sheets: Only require valid show info + judges (no count requirements)
 
-**Validation Functions:**
+**Validation Functions (App-level gates):**
 - `isShowInfoValid()`: Validates show date, club name, master clerk
 - `areJudgesValid()`: Validates judge completeness and uniqueness
+
+### Validation Layer (`src/validation/`)
+This directory holds the bulk of the application's business logic, separate from components. Each tab has its own module (`championshipValidation.ts` ~2500 lines, `premiershipValidation.ts` ~1850, `kittenValidation.ts`, `householdPetValidation.ts`, `breedSheetsValidation.ts`, `generalValidation.ts`).
+
+**Pattern:** Validation functions are **pure** — they take a typed `*ValidationInput` object (columns, `showAwards`, `voidedShowAwards`, etc.) and return an error map `{ [key: string]: string }`. Components own the state; validation modules own the rules. Keep complex rule logic here, not in components.
+
+**Cross-column rules:** `validateOCPRingCrossColumn()` and `validateSuperSpecialtyCrossColumn()` (in `championshipValidation.ts` and the premiership equivalent) implement the OCP Ring and Super Specialty business logic — see `docs/validation/VALIDATION_OCP_RING.md` and `VALIDATION_SUPER_SPECIALTY.md`.
+
+### Critical: Object Key Format — Always Hyphens
+**Cell/award keys MUST use hyphens, never underscores:** `` `${colIdx}-${pos}` `` ✅, not `` `${colIdx}_${pos}` `` ❌.
+
+This applies to all key generation in `src/validation/*.ts`, `src/components/*Tab.tsx`, and `src/utils/excelExport.ts`. CSV/Excel export logic parses hyphen-separated keys — mixing in underscores has caused recurring validation and export bugs. When writing or modifying any code that generates or reads cell keys, verify hyphen consistency.
 
 ### Data Persistence System
 **Auto-save Features:**

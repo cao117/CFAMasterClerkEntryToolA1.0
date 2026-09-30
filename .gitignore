@@ -39,3 +39,6 @@ scraper/output/
 .env
 .env.*
 !.env.example
+
+# Claude Code personal instructions (not tracked)
+CLAUDE.local.md
