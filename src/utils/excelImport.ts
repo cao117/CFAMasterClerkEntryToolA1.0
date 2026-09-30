@@ -4,6 +4,7 @@
 import * as XLSX from 'xlsx';
 import { generateColumnsForTab } from './ringTypeUtils';
 import { mapLegacyBreedName } from '../data/breedList';
+import { correctedHouseholdPetThreshold } from './settingsLoader';
 
 // Type definitions for import functionality (reusing from csvImport)
 interface ImportedShowState {
@@ -308,7 +309,7 @@ function parseSettingsWorksheet(data: string[][]): any {
       championship: 85,
       kitten: 75,
       premiership: 50,
-      household_pet: 50
+      household_pet: 30
     },
     short_hair_breeds: [],
     long_hair_breeds: []
@@ -373,7 +374,7 @@ function parseSettingsWorksheet(data: string[][]): any {
           settings.placement_thresholds.premiership = value;
           break;
         case 'Household Pet':
-          settings.placement_thresholds.household_pet = value;
+          settings.placement_thresholds.household_pet = correctedHouseholdPetThreshold(value);
           break;
       }
     }

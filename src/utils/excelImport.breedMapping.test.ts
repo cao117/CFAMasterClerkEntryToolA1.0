@@ -189,8 +189,9 @@ describe('Area B — legacy Excel file retro-compatibility (old breed names, old
     const runtimeSettings = withCanonicalBreeds(importedSettings);
     expect(runtimeSettings.max_judges).toBe(12);
     expect(runtimeSettings.max_cats).toBe(450);
+    // The legacy file's Household Pet 50 is the pre-MCE-9 default, read as 30 (Show Rule 11.32)
     expect(runtimeSettings.placement_thresholds).toEqual({
-      championship: 85, kitten: 75, premiership: 50, household_pet: 50
+      championship: 85, kitten: 75, premiership: 50, household_pet: 30
     });
   });
 });

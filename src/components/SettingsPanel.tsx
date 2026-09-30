@@ -31,7 +31,7 @@ const DEFAULT_SETTINGS: SettingsData = {
     championship: 85,
     kitten: 75,
     premiership: 50,
-    household_pet: 50,
+    household_pet: 30,
   },
   short_hair_breeds: SHORT_HAIR_BREEDS,
   long_hair_breeds: LONG_HAIR_BREEDS,
@@ -531,7 +531,7 @@ export default function SettingsPanel({ isOpen, onClose, showSuccess, globalSett
                 max={999}
                 value={localHouseholdPet}
                 onChange={(e) => setLocalHouseholdPet(e.target.value)}
-                placeholder="50"
+                placeholder="30"
                 width="md"
               />
             </div>
