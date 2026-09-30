@@ -82,7 +82,7 @@ git checkout dev && git merge --ff-only master && git push origin dev
 ```
 
 ### 8. Record and notify
-- Add a row to the release log at the bottom of this file
+- Add a row to the release log at the bottom of this file, committed on `dev` (it reaches `master` with the next release)
 - Confirm each change in the release has its entry in `docs/meta/BUGFIX-CHANGELOG.md` or the matching changelog
 - Send CFA the GitHub Release link, and the Store link once certification passes
 - Until the installers are code-signed, submit the `.exe` and `.msi` hashes to Microsoft as described in `docs/specs/PACKAGING.md`
@@ -105,5 +105,6 @@ git checkout dev && git merge --ff-only master && git push origin dev
 
 | Version | Date | Contents | Channels |
 |---------|------|----------|----------|
+| 1.0.1 | 2026-09-30 | Household Pet top-15 cutoff corrected from 50 to 30 (MCE-9). First release made with this procedure. | Web, desktop installers, Store |
 | 1.0.0 | 2026-09-28 | First Microsoft Store release (same features as 0.5.0) | Store only |
 | 0.5.0 | 2026-08-15 | 2026-27 season breed update | Web, desktop installers |
