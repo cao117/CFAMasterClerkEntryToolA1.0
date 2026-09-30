@@ -353,7 +353,7 @@ function buildSettingsSectionForExcel(globalSettings: any): any[][] {
   rows.push(['Championship', globalSettings?.placement_thresholds?.championship || 85]);
   rows.push(['Kitten', globalSettings?.placement_thresholds?.kitten || 75]);
   rows.push(['Premiership', globalSettings?.placement_thresholds?.premiership || 50]);
-  rows.push(['Household Pet', globalSettings?.placement_thresholds?.household_pet || 50]);
+  rows.push(['Household Pet', globalSettings?.placement_thresholds?.household_pet || 30]);
   
   // Breed Lists
   rows.push([]);
@@ -854,7 +854,7 @@ function transformTabData(tabData: any, judges: any[], tabType: string, showStat
   } else if (tabType === 'household') {
     // Calculate actual Show Awards row count based on household pet count
     const householdPetCount = showState.general?.householdPetCount || 0;
-    const maxAwardRows = householdPetCount >= 50 ? 15 : 10;
+    const maxAwardRows = householdPetCount >= 30 ? 15 : 10;
     
     // Show Awards section (Top 10/15 based on actual count)
     for (let pos = 0; pos < maxAwardRows; pos++) {
@@ -1138,7 +1138,7 @@ function getMaxAwardRows(showState: any, tabType: string): number {
     return kittenTotal >= kittenBreakoff ? 15 : 10;
   } else if (tabType === 'household') {
     const householdTotal = showState.general?.householdPetCount || 0;
-    const householdBreakoff = showState.globalSettings?.placement_thresholds?.household_pet || 50;
+    const householdBreakoff = showState.globalSettings?.placement_thresholds?.household_pet || 30;
     return householdTotal >= householdBreakoff ? 15 : 10;
   }
   return 10;

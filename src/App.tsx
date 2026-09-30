@@ -91,7 +91,7 @@ const DEFAULT_SETTINGS = {
     championship: 85,
     kitten: 75,
     premiership: 50,
-    household_pet: 50,
+    household_pet: 30,
   },
   short_hair_breeds: SHORT_HAIR_BREEDS,
   long_hair_breeds: LONG_HAIR_BREEDS,

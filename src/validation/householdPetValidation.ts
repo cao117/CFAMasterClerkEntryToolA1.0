@@ -36,7 +36,7 @@ function isVoidInput(catNumber: string): boolean {
  */
 import { validateCatNumber as validateCatNumberHelper, getCatNumberValidationMessage } from '../utils/validationHelpers';
 
-export function validateHouseholdPetTab(input: HouseholdPetValidationInput, maxCats: number, householdPetThreshold: number = 50): Record<string, string> {
+export function validateHouseholdPetTab(input: HouseholdPetValidationInput, maxCats: number, householdPetThreshold: number = 30): Record<string, string> {
   const errors: Record<string, string> = {};
   const { columns, showAwards, householdPetCount } = input;
   // Breakpoint logic: configurable household pet threshold for 15 positions

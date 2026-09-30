@@ -1,5 +1,13 @@
 # Bugfix Changelog
 
+## [2026-09-30] Household Pet top-15 cutoff corrected from 50 to 30 (MCE-9)
+- **Issue**: At a show with over 30 Household Pet entries the tool allowed only the top 10 to be entered instead of the top 15. Reported by CFA (J. Simbro).
+- **Root Cause**: the Household Pet cutoff was built as 50 on 2025-07-04 and never changed; CFA Show Rule 11.32 sets it at 30. The value is also saved in localStorage and in every saved file's Settings sheet, where it overrides the code default.
+- **Files Modified**: `src/App.tsx`, `src/components/SettingsPanel.tsx`, `src/utils/excelExport.ts`, `src/utils/excelImport.ts`, `src/utils/settingsLoader.ts`, `src/validation/householdPetValidation.ts`
+- **Code Changes**: eight 50 → 30 changes (defaults, validator default, export fallbacks and `HHP_Final` row count), plus `correctedHouseholdPetThreshold()`, which reads a saved 50 as 30 on app load and file import.
+- **Impact**: shows with 30 or more household pets get 15 placement rows. Existing installs and old show files pick up the correct cutoff with no action by the clerk. A Household Pet cutoff of exactly 50 can no longer be kept. Other classes unchanged.
+- **Testing**: 15 new tests in `src/utils/hhpPlacementCutoff.test.ts`; 145 jest tests pass; `vite build` clean; live check on the fix branch (29 → 10 rows, 30 → 15 rows; saved 50 → 30; custom 40 kept).
+
 ## [2026-05-27] SSP hair-length exclusivity — consolidated LH/SH cross-column duplicate (MCE-6)
 - **Issue**: A cat that was Best LH CH/PR but also placed in the SH Top-10/15 show awards (or the mirror) was not flagged as a duplicate. Reported from a Premiership screenshot — cats 1 and 2 were Best LH Premier and also sat in the SH show awards with no error.
 - **Root Cause**: the LH↔SH duplicate check only compared matching sections (show-vs-show via the old `validateCrossColumnDuplicates`, finals-vs-finals via the MCE-5 `validateSpecialtyFinalsCrossColumnDuplicates`). The two cross pairings (LH finals × SH show awards, and LH show awards × SH finals) were never checked.

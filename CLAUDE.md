@@ -145,6 +145,7 @@ The application uses a complex lifted state pattern where the main App component
 - **Settings Persistence**: Global settings auto-save to localStorage with proper merging
 - **Window Management**: Frameless Tauri window requires custom title bar implementation
 - **Data Integrity**: Excel import/export includes settings - ensure consistency across operations
+- **Placement Cutoffs (85 / 75 / 50 / 30)**: These are CFA Show Rule values. The app also saves them in each clerk's localStorage and in every saved file's Settings sheet, and those saved copies override the code defaults, so editing the defaults alone does not reach existing installs or old show files. Before changing any cutoff, read "Changing the Cutoff" in `docs/validation/VALIDATION_HOUSEHOLD.md`. A saved Household Pet cutoff of 50 is deliberately read as 30 (MCE-9), which would silently undo a future change to 50.
 
 # Mandatory Documentation Rules
 
