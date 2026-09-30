@@ -105,6 +105,6 @@ git checkout dev && git merge --ff-only master && git push origin dev
 
 | Version | Date | Contents | Channels |
 |---------|------|----------|----------|
-| 1.0.1 | 2026-09-30 | Household Pet top-15 cutoff corrected from 50 to 30 (MCE-9). First release made with this procedure. | Web, desktop installers, Store |
+| 1.0.1 | 2026-09-30 | Household Pet top-15 cutoff corrected from 50 to 30 (MCE-9). First release made with this procedure. | Web, desktop installers; Store package built, upload pending |
 | 1.0.0 | 2026-09-28 | First Microsoft Store release (same features as 0.5.0) | Store only |
 | 0.5.0 | 2026-08-15 | 2026-27 season breed update | Web, desktop installers |
